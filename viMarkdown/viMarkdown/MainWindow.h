@@ -23,6 +23,7 @@ protected:
     void	onAction_Close();
 
 private:
+    int		m_tab_number = 0;
     Ui::MainWindowClass *ui;
 };
 
