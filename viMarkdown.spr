@@ -16,7 +16,7 @@
 0014 ● D 12/13            │ToDo│タブ：マウスドラッグで移動可能に
 0015 ◎ C 12/13 12/13 0.001│ToDo│QPlainTextEdit 編集シグナルをメインウィンドウで処理
 0016 ◎ C 12/13 12/13 0.001│ToDo│マークダウン→HTMLコンバータクラス（MarkdownToHtmlConvertor）追加
-0017 ● C 12/13            │ToDo│
-0018 ● C 12/13            │ToDo│
+0017 ● C 12/13            │ToDo│HTML/Source 切り替えアクション追加
+0018 ◎ C 12/13 12/13 0.001│ToDo│新規タブ追加時、QPlainTextEdit にフォーカスを当てる
 0019 ● C 12/13            │ToDo│
 0020 ● C 12/13            │ToDo│

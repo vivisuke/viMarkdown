@@ -50,6 +50,14 @@ void MainWindow::onAction_New() {
 	auto ptr = newTabWidget();
 	int ix = ui->tabWidget->addTab(ptr, QString("Tab-%1").arg(++m_tab_number));
 	ui->tabWidget->setCurrentIndex(ix);
+
+	auto containerWidget = ui->tabWidget->currentWidget();
+	if( containerWidget == nullptr ) return;
+	QSplitter *splitter = containerWidget->findChild<QSplitter*>();
+	if( splitter == nullptr ) return;
+	QPlainTextEdit *mdEditor = (QPlainTextEdit*)splitter->widget(0);
+	mdEditor->setFocus();
+
 }
 void MainWindow::onAction_Close() {
 	qDebug() << "MainWindow::onAction_Close()";
