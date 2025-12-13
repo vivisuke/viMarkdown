@@ -75,6 +75,10 @@
    <widget class="QWidget" name="dockWidgetContents"/>
   </widget>
   <action name="action_New">
+   <property name="icon">
+    <iconset>
+     <normaloff>images/add_notes_48.png</normaloff>images/add_notes_48.png</iconset>
+   </property>
    <property name="text">
     <string>&amp;New</string>
    </property>
