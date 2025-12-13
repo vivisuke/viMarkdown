@@ -18,5 +18,5 @@
 0016 ◎ C 12/13 12/13 0.001│ToDo│マークダウン→HTMLコンバータクラス（MarkdownToHtmlConvertor）追加
 0017 ● C 12/13            │ToDo│HTML/Source 切り替えアクション追加
 0018 ◎ C 12/13 12/13 0.001│ToDo│新規タブ追加時、QPlainTextEdit にフォーカスを当てる
-0019 ● C 12/13            │ToDo│
+0019 ◎ C 12/13 12/13 0.001│ToDo│カレントタブのスプリッター取得関数追加
 0020 ● C 12/13            │ToDo│

@@ -44,6 +44,12 @@ QWidget *MainWindow::newTabWidget() {
 	return containerWidget;
 }
 
+QSplitter *MainWindow::getCurTabSplitter() {
+	auto containerWidget = ui->tabWidget->currentWidget();
+	if( containerWidget == nullptr ) return nullptr;
+	return containerWidget->findChild<QSplitter*>();
+}
+
 void MainWindow::onAction_New() {
 	qDebug() << "MainWindow::onAction_New()";
 
@@ -51,9 +57,10 @@ void MainWindow::onAction_New() {
 	int ix = ui->tabWidget->addTab(ptr, QString("Tab-%1").arg(++m_tab_number));
 	ui->tabWidget->setCurrentIndex(ix);
 
-	auto containerWidget = ui->tabWidget->currentWidget();
-	if( containerWidget == nullptr ) return;
-	QSplitter *splitter = containerWidget->findChild<QSplitter*>();
+	//auto containerWidget = ui->tabWidget->currentWidget();
+	//if( containerWidget == nullptr ) return;
+	//QSplitter *splitter = containerWidget->findChild<QSplitter*>();
+	QSplitter *splitter = getCurTabSplitter();
 	if( splitter == nullptr ) return;
 	QPlainTextEdit *mdEditor = (QPlainTextEdit*)splitter->widget(0);
 	mdEditor->setFocus();
@@ -73,9 +80,10 @@ void MainWindow::onPlainTextChanged() {
 	m_plainText = mdEditor->toPlainText();
 	m_htmlComvertor.setMarkdownText(m_plainText);
 	m_htmlText = m_htmlComvertor.convert();
-	auto containerWidget = ui->tabWidget->currentWidget();
-	if( containerWidget == nullptr ) return;
-	QSplitter *splitter = containerWidget->findChild<QSplitter*>();
+	//auto containerWidget = ui->tabWidget->currentWidget();
+	//if( containerWidget == nullptr ) return;
+	//QSplitter *splitter = containerWidget->findChild<QSplitter*>();
+	QSplitter *splitter = getCurTabSplitter();
 	if( splitter == nullptr ) return;
 	QTextEdit *previewer = (QTextEdit*)splitter->widget(1);
 	previewer->setHtml(m_htmlText);

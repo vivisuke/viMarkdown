@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <QtWidgets/QMainWindow>
+#include <qsplitter>
 #include "ui_MainWindow.h"
 #include "markdowntohtmlconvertor.h"
 
@@ -20,6 +21,7 @@ protected:
     void	setup_connections();
     QWidget	*newTabWidget();
     void	onPlainTextChanged();
+    QSplitter	*getCurTabSplitter();
 
     void	onAction_New();
     void	onAction_Close();
