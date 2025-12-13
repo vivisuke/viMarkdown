@@ -16,6 +16,8 @@ public:
     ~MainWindow();
 
 protected:
+    void	setup_connections();
+
     void	onAction_New();
 
 private:

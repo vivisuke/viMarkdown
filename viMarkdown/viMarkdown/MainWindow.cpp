@@ -5,13 +5,18 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindowClass())
 {
     ui->setupUi(this);
+    setWindowTitle("viMarkdown ver 0.001");
 
-    connect(ui->action_New, &QAction::triggered, this, &MainWindow::onAction_New);
+	setup_connections();
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::setup_connections() {
+    connect(ui->action_New, &QAction::triggered, this, &MainWindow::onAction_New);
 }
 
 void MainWindow::onAction_New() {
