@@ -39,6 +39,8 @@ QWidget *MainWindow::newTabWidget() {
 	layout->addWidget(splitter);
 	layout->setContentsMargins(0, 0, 0, 0); // 余白をなくして端まで広げる
 
+	connect(mdEditor, &QPlainTextEdit::textChanged, this, &MainWindow::onPlainTextChanged);
+
 	return containerWidget;
 }
 
@@ -55,5 +57,8 @@ void MainWindow::onAction_Close() {
 	int ix = ui->tabWidget->currentIndex();
 	if( ix >= 0 )
 		ui->tabWidget->removeTab(ix);
+}
+void MainWindow::onPlainTextChanged() {
+	qDebug() << "MainWindow::onPlainTextChanged()";
 }
 

@@ -18,6 +18,7 @@ public:
 protected:
     void	setup_connections();
     QWidget	*newTabWidget();
+    void	onPlainTextChanged();
 
     void	onAction_New();
     void	onAction_Close();
