@@ -15,6 +15,9 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+protected:
+    void	onAction_New();
+
 private:
     Ui::MainWindowClass *ui;
 };
