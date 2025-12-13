@@ -36,8 +36,9 @@ protected:
     void	onAction_Source(bool);
 
 private:
-    int		m_tab_number = 0;
+    bool	m_opening_file = false;
     bool	m_htmlMode = true;
+    int		m_tab_number = 0;
     QString	m_plainText;
     QString	m_htmlText;
     MarkdownToHtmlConvertor	m_htmlComvertor;

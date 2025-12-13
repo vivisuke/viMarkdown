@@ -92,6 +92,7 @@ void MainWindow::onAction_Open() {
 
 	if (!fullPath.isEmpty()) {
 		qDebug() << "path = " << fullPath;
+		m_opening_file = true;
 		QFile file(fullPath);
 		if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
 			QMessageBox::warning(this, tr("エラー"), tr("ファイルが開けません:\n%1").arg(fullPath));
@@ -102,6 +103,7 @@ void MainWindow::onAction_Open() {
 		QFileInfo fileInfo(fullPath);
 		addTab(fileInfo.fileName(), fullPath, content);
 		QDir::setCurrent(fileInfo.path());
+		m_opening_file = false;
 	}
 }
 void MainWindow::onAction_Save() {
@@ -126,6 +128,8 @@ void MainWindow::onAction_Save() {
 		out << mdEditor->toPlainText();
 		file.close();
 		//QMessageBox::information(nullptr, "成功", "ファイルが保存されました:\n" + fullPath);
+		doc->m_modified = false;		//	保存済み
+		ui->tabWidget->setTabText(ix, doc->m_title);
 	} else {
 		//QMessageBox::warning(nullptr, "エラー", "ファイルを開けませんでした。");
 	}
@@ -165,5 +169,11 @@ void MainWindow::onPlainTextChanged() {
 	m_htmlComvertor.setMarkdownText(m_plainText);
 	m_htmlText = m_htmlComvertor.convert();
 	updatePreview();
+	if( !m_opening_file ) {
+		DocWidget *docWidget = (DocWidget*)ui->tabWidget->currentWidget();
+		if( docWidget == nullptr ) return;
+		docWidget->m_modified = true;
+		ui->tabWidget->setTabText(ui->tabWidget->currentIndex(), docWidget->m_title + " *");
+	}
 }
 

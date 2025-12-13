@@ -6,8 +6,8 @@ public:
 	DocWidget(const QString& title, const QString& fullPath, QWidget* parent = nullptr);
 
 public:
-	bool	m_modified_notSaved = false;
-	QString	m_title;			//	タブタイトル
+	bool	m_modified = false;		//	編集＆未保存状態
+	QString	m_title;				//	タブタイトル
 	QString	m_fullPath;
 };
 
