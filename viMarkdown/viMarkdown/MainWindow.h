@@ -23,6 +23,7 @@ protected:
     void	onPlainTextChanged();
     QSplitter	*getCurTabSplitter();
     void	updateHTMLModeCheck();
+    void	updatePreview();
 
     void	onAction_New();
     void	onAction_Close();

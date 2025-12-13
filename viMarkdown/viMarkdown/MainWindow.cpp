@@ -84,10 +84,21 @@ void MainWindow::onAction_HTML(bool checked) {
 	//if( m_htmlMode ) return;
 	m_htmlMode = checked;
 	updateHTMLModeCheck();
+	updatePreview();
 }
 void MainWindow::onAction_Source(bool checked) {
 	m_htmlMode = !checked;
 	updateHTMLModeCheck();
+	updatePreview();
+}
+void MainWindow::updatePreview() {
+	QSplitter *splitter = getCurTabSplitter();
+	if( splitter == nullptr ) return;
+	QTextEdit *previewer = (QTextEdit*)splitter->widget(1);
+	if( m_htmlMode )
+		previewer->setHtml(m_htmlText);
+	else
+		previewer->setPlainText(m_htmlText);
 }
 void MainWindow::onPlainTextChanged() {
 	//qDebug() << "MainWindow::onPlainTextChanged()";
@@ -96,12 +107,6 @@ void MainWindow::onPlainTextChanged() {
 	m_plainText = mdEditor->toPlainText();
 	m_htmlComvertor.setMarkdownText(m_plainText);
 	m_htmlText = m_htmlComvertor.convert();
-	//auto containerWidget = ui->tabWidget->currentWidget();
-	//if( containerWidget == nullptr ) return;
-	//QSplitter *splitter = containerWidget->findChild<QSplitter*>();
-	QSplitter *splitter = getCurTabSplitter();
-	if( splitter == nullptr ) return;
-	QTextEdit *previewer = (QTextEdit*)splitter->widget(1);
-	previewer->setHtml(m_htmlText);
+	updatePreview();
 }
 
