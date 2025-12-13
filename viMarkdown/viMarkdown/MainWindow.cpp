@@ -7,8 +7,9 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindowClass())
 {
-    ui->setupUi(this);
     setWindowTitle("viMarkdown ver 0.001");
+    ui->setupUi(this);
+    updateHTMLModeCheck();
 
 	setup_connections();
 	onAction_New();
@@ -22,6 +23,12 @@ MainWindow::~MainWindow()
 void MainWindow::setup_connections() {
     connect(ui->action_New, &QAction::triggered, this, &MainWindow::onAction_New);
     connect(ui->action_Close, &QAction::triggered, this, &MainWindow::onAction_Close);
+    connect(ui->action_HTML, &QAction::toggled, this, &MainWindow::onAction_HTML);
+    connect(ui->action_Source, &QAction::toggled, this, &MainWindow::onAction_Source);
+}
+void MainWindow::updateHTMLModeCheck() {
+	ui->action_HTML->setChecked(m_htmlMode);
+	ui->action_Source->setChecked(!m_htmlMode);
 }
 
 QWidget *MainWindow::newTabWidget() {
@@ -72,6 +79,15 @@ void MainWindow::onAction_Close() {
 	int ix = ui->tabWidget->currentIndex();
 	if( ix >= 0 )
 		ui->tabWidget->removeTab(ix);
+}
+void MainWindow::onAction_HTML(bool checked) {
+	//if( m_htmlMode ) return;
+	m_htmlMode = checked;
+	updateHTMLModeCheck();
+}
+void MainWindow::onAction_Source(bool checked) {
+	m_htmlMode = !checked;
+	updateHTMLModeCheck();
 }
 void MainWindow::onPlainTextChanged() {
 	//qDebug() << "MainWindow::onPlainTextChanged()";

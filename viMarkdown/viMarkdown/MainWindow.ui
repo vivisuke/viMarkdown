@@ -57,7 +57,7 @@
      <string>&amp;View</string>
     </property>
     <addaction name="action_HTML"/>
-    <addaction name="action_Sorce"/>
+    <addaction name="action_Source"/>
    </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_View"/>
@@ -72,7 +72,7 @@
    <addaction name="action_New"/>
    <addaction name="action_Close"/>
    <addaction name="action_HTML"/>
-   <addaction name="action_Sorce"/>
+   <addaction name="action_Source"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <widget class="QDockWidget" name="dockWidget">
@@ -106,13 +106,22 @@
    </property>
   </action>
   <action name="action_HTML">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>&amp;HTML</string>
    </property>
   </action>
-  <action name="action_Sorce">
+  <action name="action_Source">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
-    <string>&amp;Sorce</string>
+    <string>&amp;Source</string>
+   </property>
+   <property name="toolTip">
+    <string>Source</string>
    </property>
   </action>
  </widget>

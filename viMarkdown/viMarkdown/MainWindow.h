@@ -22,9 +22,12 @@ protected:
     QWidget	*newTabWidget();
     void	onPlainTextChanged();
     QSplitter	*getCurTabSplitter();
+    void	updateHTMLModeCheck();
 
     void	onAction_New();
     void	onAction_Close();
+    void	onAction_HTML(bool);
+    void	onAction_Source(bool);
 
 private:
     int		m_tab_number = 0;
