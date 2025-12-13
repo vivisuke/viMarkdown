@@ -5,6 +5,7 @@
 #include <qsplitter.h>
 #include <QMessageBox>
 #include <QScrollBar>
+#include <QSettings>
 #include "MainWindow.h"
 #include "DocWidget.h"
 
@@ -18,6 +19,10 @@ MainWindow::MainWindow(QWidget *parent)
 
 	setup_connections();
 	onAction_New();
+
+	QSettings settings;
+	QString recentFilePath = settings.value("recentFilePath").toString();
+	qDebug() << "recentFilePath = " << recentFilePath;
 }
 
 MainWindow::~MainWindow()
@@ -108,6 +113,9 @@ void MainWindow::onAction_Open() {
 		addTab(fileInfo.fileName(), fullPath, content);
 		QDir::setCurrent(fileInfo.path());
 		m_opening_file = false;
+
+		QSettings settings;
+		settings.setValue("recentFilePath", fullPath);
 	}
 }
 void MainWindow::onAction_Save() {

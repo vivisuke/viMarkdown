@@ -96,6 +96,17 @@ QString MarkdownToHtmlConvertor::parceInline(const QString& line) {
 		result = result.left(s) + " ☑ " + result.mid(s+3);
 		match = re_checked.match(result);
 	}
+	static QRegularExpression re_link(R"((?<!!)\[([^\]]*)\]\(([^)]*)\))");
+	match = re_link.match(result);
+	while (match.hasMatch()) {
+        int s = match.capturedStart();  // 最初のマッチ位置 
+        int length = match.capturedLength();	//	マッチ長
+        QString title = match.captured(1); // グループ1: タイトル
+        QString url   = match.captured(2); // グループ2: URL
+        result = result.left(s) + "<a href=\"" + url + "\">" + title + "</a>" + result.mid(s+length);
+		match = re_link.match(result);
+	}
+
     result.replace("\\*", "*");
     result.replace("\\_", "_");
     //##result.replace("--", "-");		//	この変換は拡張仕様？
