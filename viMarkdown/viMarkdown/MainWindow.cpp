@@ -1,6 +1,7 @@
 ﻿#include <qsplitter.h>
 #include <qplaintextedit>
 #include <qtextedit>
+#include <QFileDialog>
 #include "MainWindow.h"
 
 MainWindow::MainWindow(QWidget *parent)
@@ -22,6 +23,8 @@ MainWindow::~MainWindow()
 
 void MainWindow::setup_connections() {
     connect(ui->action_New, &QAction::triggered, this, &MainWindow::onAction_New);
+    connect(ui->action_Open, &QAction::triggered, this, &MainWindow::onAction_Open);
+    connect(ui->action_Save, &QAction::triggered, this, &MainWindow::onAction_Save);
     connect(ui->action_Close, &QAction::triggered, this, &MainWindow::onAction_Close);
     connect(ui->action_HTML, &QAction::toggled, this, &MainWindow::onAction_HTML);
     connect(ui->action_Source, &QAction::toggled, this, &MainWindow::onAction_Source);
@@ -72,6 +75,20 @@ void MainWindow::onAction_New() {
 	QPlainTextEdit *mdEditor = (QPlainTextEdit*)splitter->widget(0);
 	mdEditor->setFocus();
 
+}
+void MainWindow::onAction_Open() {
+	QString filePath = QFileDialog::getOpenFileName(
+	    this,
+	    "open File",            // ダイアログのタイトル
+	    QDir::homePath(),       // 初期ディレクトリ（ホームフォルダ）
+	    "markdown file (*.md)"  // フィルター
+	);
+
+	if (!filePath.isEmpty()) {
+		qDebug() << "path = " << filePath;
+	}
+}
+void MainWindow::onAction_Save() {
 }
 void MainWindow::onAction_Close() {
 	qDebug() << "MainWindow::onAction_Close()";

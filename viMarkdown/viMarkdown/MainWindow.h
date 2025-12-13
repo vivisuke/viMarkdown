@@ -26,6 +26,8 @@ protected:
     void	updatePreview();
 
     void	onAction_New();
+    void	onAction_Open();
+    void	onAction_Save();
     void	onAction_Close();
     void	onAction_HTML(bool);
     void	onAction_Source(bool);
