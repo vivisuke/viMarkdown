@@ -17,6 +17,8 @@ MainWindow::~MainWindow()
 void MainWindow::onAction_New() {
 	qDebug() << "MainWindow::onAction_New()";
 
-	ui->tabWidget->addTab(new QWidget, QString("Tab-%1").arg(ui->tabWidget->count()+1));
+	auto ptr = new QWidget;
+	int ix = ui->tabWidget->addTab(ptr, QString("Tab-%1").arg(ui->tabWidget->count()+1));
+	ui->tabWidget->setCurrentIndex(ix);
 }
 
