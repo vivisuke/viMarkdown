@@ -8,12 +8,12 @@
 #include "DocWidget.h"
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
-    , ui(new Ui::MainWindowClass())
+	: QMainWindow(parent)
+	, ui(new Ui::MainWindowClass())
 {
-    setWindowTitle("viMarkdown ver 0.001");
-    ui->setupUi(this);
-    updateHTMLModeCheck();
+	setWindowTitle("viMarkdown ver 0.001");
+	ui->setupUi(this);
+	updateHTMLModeCheck();
 
 	setup_connections();
 	onAction_New();
@@ -21,16 +21,16 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
-    delete ui;
+	delete ui;
 }
 
 void MainWindow::setup_connections() {
-    connect(ui->action_New, &QAction::triggered, this, &MainWindow::onAction_New);
-    connect(ui->action_Open, &QAction::triggered, this, &MainWindow::onAction_Open);
-    connect(ui->action_Save, &QAction::triggered, this, &MainWindow::onAction_Save);
-    connect(ui->action_Close, &QAction::triggered, this, &MainWindow::onAction_Close);
-    connect(ui->action_HTML, &QAction::toggled, this, &MainWindow::onAction_HTML);
-    connect(ui->action_Source, &QAction::toggled, this, &MainWindow::onAction_Source);
+	connect(ui->action_New, &QAction::triggered, this, &MainWindow::onAction_New);
+	connect(ui->action_Open, &QAction::triggered, this, &MainWindow::onAction_Open);
+	connect(ui->action_Save, &QAction::triggered, this, &MainWindow::onAction_Save);
+	connect(ui->action_Close, &QAction::triggered, this, &MainWindow::onAction_Close);
+	connect(ui->action_HTML, &QAction::toggled, this, &MainWindow::onAction_HTML);
+	connect(ui->action_Source, &QAction::toggled, this, &MainWindow::onAction_Source);
 }
 void MainWindow::updateHTMLModeCheck() {
 	ui->action_HTML->setChecked(m_htmlMode);
@@ -84,26 +84,50 @@ void MainWindow::addTab(const QString &title, const QString fullPath, const QStr
 }
 void MainWindow::onAction_Open() {
 	QString fullPath = QFileDialog::getOpenFileName(
-	    this,
-	    "open File",            // ダイアログのタイトル
-	    QDir::homePath(),       // 初期ディレクトリ（ホームフォルダ）
-	    "markdown file (*.md)"  // フィルター
+		this,
+		"open File",			// ダイアログのタイトル
+		QDir::homePath(),		// 初期ディレクトリ（ホームフォルダ）
+		"markdown file (*.md)"	// フィルター
 	);
 
 	if (!fullPath.isEmpty()) {
 		qDebug() << "path = " << fullPath;
 		QFile file(fullPath);
-	    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-	        QMessageBox::warning(this, tr("エラー"), tr("ファイルが開けません:\n%1").arg(fullPath));
-	        return;
-	    }
+		if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+			QMessageBox::warning(this, tr("エラー"), tr("ファイルが開けません:\n%1").arg(fullPath));
+			return;
+		}
 
-	    QString content = file.readAll();
-	    QFileInfo fileInfo(fullPath);
-	    addTab(fileInfo.fileName(), fullPath, content);
+		QString content = file.readAll();
+		QFileInfo fileInfo(fullPath);
+		addTab(fileInfo.fileName(), fullPath, content);
 	}
 }
 void MainWindow::onAction_Save() {
+	int ix = ui->tabWidget->currentIndex();
+	if( ix < 0 ) return;
+	DocWidget *doc = (DocWidget*)ui->tabWidget->widget(ix);
+	QString fullPath = doc->m_fullPath;
+	if( fullPath.isEmpty() )
+		fullPath = QFileDialog::getSaveFileName(
+						this,				   // 親ウィジェット（メインウィンドウがあれば this）
+						"Save File",		 // ダイアログのタイトル
+						QDir::homePath(),		  // 初期ディレクトリ（ホームディレクトリ）
+						"markdown (*.md)"  // ファイルフィルタ
+					);
+	if( fullPath.isEmpty() ) return;
+	QFile file(fullPath);
+	if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+		QTextStream out(&file);
+		QSplitter *splitter = getCurTabSplitter();
+		if( splitter == nullptr ) return;
+		QPlainTextEdit *mdEditor = (QPlainTextEdit*)splitter->widget(0);
+		out << mdEditor->toPlainText();
+		file.close();
+		//QMessageBox::information(nullptr, "成功", "ファイルが保存されました:\n" + fullPath);
+	} else {
+		//QMessageBox::warning(nullptr, "エラー", "ファイルを開けませんでした。");
+	}
 }
 void MainWindow::onAction_Close() {
 	qDebug() << "MainWindow::onAction_Close()";
