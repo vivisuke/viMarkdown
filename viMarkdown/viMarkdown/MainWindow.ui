@@ -50,6 +50,8 @@
      <string>&amp;File</string>
     </property>
     <addaction name="action_New"/>
+    <addaction name="action_Open"/>
+    <addaction name="action_Save"/>
     <addaction name="action_Close"/>
    </widget>
    <widget class="QMenu" name="menu_View">
@@ -70,7 +72,10 @@
     <bool>false</bool>
    </attribute>
    <addaction name="action_New"/>
+   <addaction name="action_Open"/>
+   <addaction name="action_Save"/>
    <addaction name="action_Close"/>
+   <addaction name="separator"/>
    <addaction name="action_HTML"/>
    <addaction name="action_Source"/>
   </widget>
@@ -122,6 +127,24 @@
    </property>
    <property name="toolTip">
     <string>Source</string>
+   </property>
+  </action>
+  <action name="action_Open">
+   <property name="icon">
+    <iconset>
+     <normaloff>images/file_open_48.png</normaloff>images/file_open_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Open</string>
+   </property>
+  </action>
+  <action name="action_Save">
+   <property name="icon">
+    <iconset>
+     <normaloff>images/save_48.png</normaloff>images/save_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Save</string>
    </property>
   </action>
  </widget>

@@ -61,7 +61,7 @@ void MainWindow::onAction_New() {
 	qDebug() << "MainWindow::onAction_New()";
 
 	auto ptr = newTabWidget();
-	int ix = ui->tabWidget->addTab(ptr, QString("Tab-%1").arg(++m_tab_number));
+	int ix = ui->tabWidget->addTab(ptr, QString("無題-%1").arg(++m_tab_number));
 	ui->tabWidget->setCurrentIndex(ix);
 
 	//auto containerWidget = ui->tabWidget->currentWidget();
