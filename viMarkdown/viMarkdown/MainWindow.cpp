@@ -101,6 +101,7 @@ void MainWindow::onAction_Open() {
 		QString content = file.readAll();
 		QFileInfo fileInfo(fullPath);
 		addTab(fileInfo.fileName(), fullPath, content);
+		QDir::setCurrent(fileInfo.path());
 	}
 }
 void MainWindow::onAction_Save() {
