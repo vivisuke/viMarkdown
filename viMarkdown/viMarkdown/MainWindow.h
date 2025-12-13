@@ -22,6 +22,7 @@ protected:
     QWidget	*newTabWidget();
     void	onPlainTextChanged();
     QSplitter	*getCurTabSplitter();
+    void	addTab(const QString&, const QString txt = "");
     void	updateHTMLModeCheck();
     void	updatePreview();
 

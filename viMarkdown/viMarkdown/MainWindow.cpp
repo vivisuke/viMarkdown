@@ -2,6 +2,8 @@
 #include <qplaintextedit>
 #include <qtextedit>
 #include <QFileDialog>
+#include <qsplitter.h>
+#include <QMessageBox>
 #include "MainWindow.h"
 
 MainWindow::MainWindow(QWidget *parent)
@@ -63,16 +65,18 @@ QSplitter *MainWindow::getCurTabSplitter() {
 void MainWindow::onAction_New() {
 	qDebug() << "MainWindow::onAction_New()";
 
+	addTab(QString("無題-%1").arg(++m_tab_number));
+}
+void MainWindow::addTab(const QString &name, const QString txt) {
 	auto ptr = newTabWidget();
-	int ix = ui->tabWidget->addTab(ptr, QString("無題-%1").arg(++m_tab_number));
+	int ix = ui->tabWidget->addTab(ptr, name);
 	ui->tabWidget->setCurrentIndex(ix);
 
-	//auto containerWidget = ui->tabWidget->currentWidget();
-	//if( containerWidget == nullptr ) return;
-	//QSplitter *splitter = containerWidget->findChild<QSplitter*>();
 	QSplitter *splitter = getCurTabSplitter();
 	if( splitter == nullptr ) return;
 	QPlainTextEdit *mdEditor = (QPlainTextEdit*)splitter->widget(0);
+	if( !txt.isEmpty() )
+		mdEditor->setPlainText(txt);
 	mdEditor->setFocus();
 
 }
@@ -86,6 +90,15 @@ void MainWindow::onAction_Open() {
 
 	if (!filePath.isEmpty()) {
 		qDebug() << "path = " << filePath;
+		QFile file(filePath);
+	    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+	        QMessageBox::warning(this, tr("エラー"), tr("ファイルが開けません:\n%1").arg(filePath));
+	        return;
+	    }
+
+	    QString content = file.readAll();
+	    QFileInfo fileInfo(filePath);
+	    addTab(fileInfo.fileName(), content);
 	}
 }
 void MainWindow::onAction_Save() {
