@@ -59,6 +59,17 @@ void MainWindow::onAction_Close() {
 		ui->tabWidget->removeTab(ix);
 }
 void MainWindow::onPlainTextChanged() {
-	qDebug() << "MainWindow::onPlainTextChanged()";
+	//qDebug() << "MainWindow::onPlainTextChanged()";
+
+	QPlainTextEdit *mdEditor = (QPlainTextEdit *)sender();
+	m_plainText = mdEditor->toPlainText();
+	m_htmlComvertor.setMarkdownText(m_plainText);
+	m_htmlText = m_htmlComvertor.convert();
+	auto containerWidget = ui->tabWidget->currentWidget();
+	if( containerWidget == nullptr ) return;
+	QSplitter *splitter = containerWidget->findChild<QSplitter*>();
+	if( splitter == nullptr ) return;
+	QTextEdit *previewer = (QTextEdit*)splitter->widget(1);
+	previewer->setHtml(m_htmlText);
 }
 

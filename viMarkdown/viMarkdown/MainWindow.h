@@ -2,6 +2,7 @@
 
 #include <QtWidgets/QMainWindow>
 #include "ui_MainWindow.h"
+#include "markdowntohtmlconvertor.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindowClass; };
@@ -25,6 +26,11 @@ protected:
 
 private:
     int		m_tab_number = 0;
+    bool	m_htmlMode = true;
+    QString	m_plainText;
+    QString	m_htmlText;
+    MarkdownToHtmlConvertor	m_htmlComvertor;
+
     Ui::MainWindowClass *ui;
 };
 
