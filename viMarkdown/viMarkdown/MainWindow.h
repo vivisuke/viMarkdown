@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <QtWidgets/QMainWindow>
 #include "ui_MainWindow.h"
@@ -17,6 +17,7 @@ public:
 
 protected:
     void	setup_connections();
+    QWidget	*newTabWidget();
 
     void	onAction_New();
     void	onAction_Close();

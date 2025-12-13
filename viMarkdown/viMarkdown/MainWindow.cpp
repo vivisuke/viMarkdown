@@ -1,3 +1,6 @@
+﻿#include <qsplitter.h>
+#include <qplaintextedit>
+#include <qtextedit>
 #include "MainWindow.h"
 
 MainWindow::MainWindow(QWidget *parent)
@@ -8,6 +11,7 @@ MainWindow::MainWindow(QWidget *parent)
     setWindowTitle("viMarkdown ver 0.001");
 
 	setup_connections();
+	onAction_New();
 }
 
 MainWindow::~MainWindow()
@@ -20,10 +24,28 @@ void MainWindow::setup_connections() {
     connect(ui->action_Close, &QAction::triggered, this, &MainWindow::onAction_Close);
 }
 
+QWidget *MainWindow::newTabWidget() {
+	auto containerWidget = new QWidget;
+	QSplitter *splitter = new QSplitter(Qt::Horizontal, containerWidget);
+	QPlainTextEdit *mdEditor = new QPlainTextEdit(splitter);
+	mdEditor->setPlaceholderText("ここにMarkdownを入力...");
+	QTextEdit *previewer = new QTextEdit(splitter);
+	previewer->setReadOnly(true); // プレビューなので読み取り専用にする
+	previewer->setPlaceholderText("プレビュー画面");
+	splitter->addWidget(mdEditor);
+	splitter->addWidget(previewer);
+	splitter->setSizes(QList<int>() << 500 << 500);
+	QVBoxLayout *layout = new QVBoxLayout(containerWidget);
+	layout->addWidget(splitter);
+	layout->setContentsMargins(0, 0, 0, 0); // 余白をなくして端まで広げる
+
+	return containerWidget;
+}
+
 void MainWindow::onAction_New() {
 	qDebug() << "MainWindow::onAction_New()";
 
-	auto ptr = new QWidget;
+	auto ptr = newTabWidget();
 	int ix = ui->tabWidget->addTab(ptr, QString("Tab-%1").arg(ui->tabWidget->count()+1));
 	ui->tabWidget->setCurrentIndex(ix);
 }
