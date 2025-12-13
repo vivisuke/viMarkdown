@@ -4,6 +4,7 @@
 #include <QFileDialog>
 #include <qsplitter.h>
 #include <QMessageBox>
+#include <QScrollBar>
 #include "MainWindow.h"
 #include "DocWidget.h"
 
@@ -158,11 +159,14 @@ void MainWindow::onAction_Source(bool checked) {
 void MainWindow::updatePreview() {
 	QSplitter *splitter = getCurTabSplitter();
 	if( splitter == nullptr ) return;
-	QTextEdit *previewer = (QTextEdit*)splitter->widget(1);
+	QTextEdit *textEdit = (QTextEdit*)splitter->widget(1);
+	QScrollBar *vScrollBar = textEdit->verticalScrollBar();
+	int currentPos = vScrollBar->value();
 	if( m_htmlMode )
-		previewer->setHtml(m_htmlText);
+		textEdit->setHtml(m_htmlText);
 	else
-		previewer->setPlainText(m_htmlText);
+		textEdit->setPlainText(m_htmlText);
+	vScrollBar->setValue(currentPos);
 }
 void MainWindow::onMDTextChanged() {
 	//qDebug() << "MainWindow::onMDTextChanged()";
