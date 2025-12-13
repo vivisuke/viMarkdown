@@ -17,6 +17,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::setup_connections() {
     connect(ui->action_New, &QAction::triggered, this, &MainWindow::onAction_New);
+    connect(ui->action_Close, &QAction::triggered, this, &MainWindow::onAction_Close);
 }
 
 void MainWindow::onAction_New() {
@@ -25,5 +26,12 @@ void MainWindow::onAction_New() {
 	auto ptr = new QWidget;
 	int ix = ui->tabWidget->addTab(ptr, QString("Tab-%1").arg(ui->tabWidget->count()+1));
 	ui->tabWidget->setCurrentIndex(ix);
+}
+void MainWindow::onAction_Close() {
+	qDebug() << "MainWindow::onAction_Close()";
+
+	int ix = ui->tabWidget->currentIndex();
+	if( ix >= 0 )
+		ui->tabWidget->removeTab(ix);
 }
 

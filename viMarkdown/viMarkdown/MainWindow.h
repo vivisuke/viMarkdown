@@ -19,6 +19,7 @@ protected:
     void	setup_connections();
 
     void	onAction_New();
+    void	onAction_Close();
 
 private:
     Ui::MainWindowClass *ui;

@@ -55,6 +55,7 @@
      <string>&amp;File</string>
     </property>
     <addaction name="action_New"/>
+    <addaction name="action_Close"/>
    </widget>
    <addaction name="menu_File"/>
   </widget>
@@ -66,6 +67,7 @@
     <bool>false</bool>
    </attribute>
    <addaction name="action_New"/>
+   <addaction name="action_Close"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <widget class="QDockWidget" name="dockWidget">
@@ -84,6 +86,18 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="action_Close">
+   <property name="icon">
+    <iconset>
+     <normaloff>images/tab_close_48.png</normaloff>images/tab_close_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Close</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+W</string>
    </property>
   </action>
  </widget>
