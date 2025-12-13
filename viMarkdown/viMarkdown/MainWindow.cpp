@@ -86,7 +86,7 @@ void MainWindow::onAction_Open() {
 	QString fullPath = QFileDialog::getOpenFileName(
 		this,
 		"open File",			// ダイアログのタイトル
-		QDir::homePath(),		// 初期ディレクトリ（ホームフォルダ）
+		QDir::currentPath(),		// 初期ディレクトリ
 		"markdown file (*.md)"	// フィルター
 	);
 
@@ -112,7 +112,7 @@ void MainWindow::onAction_Save() {
 		fullPath = QFileDialog::getSaveFileName(
 						this,				   // 親ウィジェット（メインウィンドウがあれば this）
 						"Save File",		 // ダイアログのタイトル
-						QDir::homePath(),		  // 初期ディレクトリ（ホームディレクトリ）
+						QDir::currentPath(),		  // 初期ディレクトリ
 						"markdown (*.md)"  // ファイルフィルタ
 					);
 	if( fullPath.isEmpty() ) return;
