@@ -2,5 +2,5 @@
   <Configurations>
     <Platform Name="x64" />
   </Configurations>
-  <Project Path="viMarkdown/viMarkdown.vcxproj" />
+  <Project Path="viMarkdown/viMarkdown.vcxproj" Id="febe64db-6ef0-4bc8-8dfc-f347bd0a629f" />
 </Solution>

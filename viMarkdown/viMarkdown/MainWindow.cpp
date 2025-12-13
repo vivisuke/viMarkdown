@@ -5,6 +5,7 @@
 #include <qsplitter.h>
 #include <QMessageBox>
 #include "MainWindow.h"
+#include "DocWidget.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -36,9 +37,10 @@ void MainWindow::updateHTMLModeCheck() {
 	ui->action_Source->setChecked(!m_htmlMode);
 }
 
-QWidget *MainWindow::newTabWidget() {
-	auto containerWidget = new QWidget;
-	QSplitter *splitter = new QSplitter(Qt::Horizontal, containerWidget);
+DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPath) {
+	//auto containerWidget = new QWidget;
+	auto docWidget = new DocWidget(title, fullPath);
+	QSplitter *splitter = new QSplitter(Qt::Horizontal, docWidget);
 	QPlainTextEdit *mdEditor = new QPlainTextEdit(splitter);
 	mdEditor->setPlaceholderText("ここにMarkdownを入力...");
 	QTextEdit *previewer = new QTextEdit(splitter);
@@ -47,19 +49,19 @@ QWidget *MainWindow::newTabWidget() {
 	splitter->addWidget(mdEditor);
 	splitter->addWidget(previewer);
 	splitter->setSizes(QList<int>() << 500 << 500);
-	QVBoxLayout *layout = new QVBoxLayout(containerWidget);
+	QVBoxLayout *layout = new QVBoxLayout(docWidget);
 	layout->addWidget(splitter);
 	layout->setContentsMargins(0, 0, 0, 0); // 余白をなくして端まで広げる
 
 	connect(mdEditor, &QPlainTextEdit::textChanged, this, &MainWindow::onPlainTextChanged);
 
-	return containerWidget;
+	return docWidget;
 }
 
 QSplitter *MainWindow::getCurTabSplitter() {
-	auto containerWidget = ui->tabWidget->currentWidget();
-	if( containerWidget == nullptr ) return nullptr;
-	return containerWidget->findChild<QSplitter*>();
+	auto docWidget = ui->tabWidget->currentWidget();
+	if( docWidget == nullptr ) return nullptr;
+	return docWidget->findChild<QSplitter*>();
 }
 
 void MainWindow::onAction_New() {
@@ -67,9 +69,9 @@ void MainWindow::onAction_New() {
 
 	addTab(QString("無題-%1").arg(++m_tab_number));
 }
-void MainWindow::addTab(const QString &name, const QString txt) {
-	auto ptr = newTabWidget();
-	int ix = ui->tabWidget->addTab(ptr, name);
+void MainWindow::addTab(const QString &title, const QString fullPath, const QString txt) {
+	auto ptr = newTabWidget(title, fullPath);
+	int ix = ui->tabWidget->addTab(ptr, title);
 	ui->tabWidget->setCurrentIndex(ix);
 
 	QSplitter *splitter = getCurTabSplitter();
@@ -81,24 +83,24 @@ void MainWindow::addTab(const QString &name, const QString txt) {
 
 }
 void MainWindow::onAction_Open() {
-	QString filePath = QFileDialog::getOpenFileName(
+	QString fullPath = QFileDialog::getOpenFileName(
 	    this,
 	    "open File",            // ダイアログのタイトル
 	    QDir::homePath(),       // 初期ディレクトリ（ホームフォルダ）
 	    "markdown file (*.md)"  // フィルター
 	);
 
-	if (!filePath.isEmpty()) {
-		qDebug() << "path = " << filePath;
-		QFile file(filePath);
+	if (!fullPath.isEmpty()) {
+		qDebug() << "path = " << fullPath;
+		QFile file(fullPath);
 	    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-	        QMessageBox::warning(this, tr("エラー"), tr("ファイルが開けません:\n%1").arg(filePath));
+	        QMessageBox::warning(this, tr("エラー"), tr("ファイルが開けません:\n%1").arg(fullPath));
 	        return;
 	    }
 
 	    QString content = file.readAll();
-	    QFileInfo fileInfo(filePath);
-	    addTab(fileInfo.fileName(), content);
+	    QFileInfo fileInfo(fullPath);
+	    addTab(fileInfo.fileName(), fullPath, content);
 	}
 }
 void MainWindow::onAction_Save() {

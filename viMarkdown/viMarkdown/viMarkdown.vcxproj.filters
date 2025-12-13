@@ -43,9 +43,15 @@
     <ClCompile Include="MarkdownToHtmlConvertor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DocWidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MarkdownToHtmlConvertor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DocWidget.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

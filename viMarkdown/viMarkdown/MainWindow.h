@@ -9,6 +9,8 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindowClass; };
 QT_END_NAMESPACE
 
+class DocWidget;
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -19,10 +21,10 @@ public:
 
 protected:
     void	setup_connections();
-    QWidget	*newTabWidget();
+    DocWidget	*newTabWidget(const QString& title, const QString& fullPath);
     void	onPlainTextChanged();
     QSplitter	*getCurTabSplitter();
-    void	addTab(const QString&, const QString txt = "");
+    void	addTab(const QString& title, const QString fullPath = "", const QString txt = "");
     void	updateHTMLModeCheck();
     void	updatePreview();
 
