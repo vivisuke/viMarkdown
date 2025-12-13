@@ -63,7 +63,7 @@ QString MarkdownToHtmlConvertor::parceInline(const QString& line) {
 	//QRegularExpression italicRe("\\*(.+?)\\*");
 	//result.replace(italicRe, "<em>\\1</em>");
 
-    static QRegularExpression re_bold(R"((?<![\\])(\*\*|__))");  // 直前が \ でない ** or __ をマッチ
+    static QRegularExpression re_bold(R"((?<![\\])(\*\*|__))");  // 直前が \ でない ** or __ とマッチ
 	QRegularExpressionMatch match = re_bold.match(result);
 	while (match.hasMatch()) {
         int s = match.capturedStart();  // 最初のマッチ位置
@@ -72,7 +72,7 @@ QString MarkdownToHtmlConvertor::parceInline(const QString& line) {
         int e = match.capturedStart();  // ２番目のマッチ位置 
 		result = result.left(s) + "<b>" + result.mid(s+2, e - s - 2) + "</b>" + result.mid(e+2);
 	}
-    static QRegularExpression re_italic(R"((?<![\\])(\*|_))");  // 直前が \ でない * or _ をマッチ
+    static QRegularExpression re_italic(R"((?<![\\])(\*|_))");  // 直前が \ でない * or _ とマッチ
 	match = re_italic.match(result);
 	while (match.hasMatch()) {
         int s = match.capturedStart();  // 最初のマッチ位置 
@@ -81,6 +81,20 @@ QString MarkdownToHtmlConvertor::parceInline(const QString& line) {
         int e = match.capturedStart();  // ２番目のマッチ位置 
         if( e == s + 1 ) break;
 		result = result.left(s) + "<i>" + result.mid(s+1, e - s - 1) + "</i>" + result.mid(e+1);
+	}
+    static QRegularExpression re_check(R"((?<![\\])(\[ \]))");  // 直前が \ でない [ ] とマッチ
+	match = re_check.match(result);
+	while (match.hasMatch()) {
+        int s = match.capturedStart();  // 最初のマッチ位置 
+		result = result.left(s) + " □ " + result.mid(s+3);
+		match = re_check.match(result);
+	}
+    static QRegularExpression re_checked(R"((?<![\\])(\[[xX]\]))");  // 直前が \ でない [x] [X]とマッチ
+	match = re_checked.match(result);
+	while (match.hasMatch()) {
+        int s = match.capturedStart();  // 最初のマッチ位置 
+		result = result.left(s) + " ☑ " + result.mid(s+3);
+		match = re_checked.match(result);
 	}
     result.replace("\\*", "*");
     result.replace("\\_", "_");
@@ -111,7 +125,7 @@ void MarkdownToHtmlConvertor::do_list(const QString& line) {
 	    close_ul(lvl);
     else
 	    open_ul(lvl);
-	m_htmlText += "<li>" + line.mid(2) + "\n";
+	m_htmlText += "<li>" + parceInline(line.mid(2)) + "\n";
 }
 void MarkdownToHtmlConvertor::do_olist(const QString& line) {
     if( !m_isInsideOl ) {
@@ -125,7 +139,7 @@ void MarkdownToHtmlConvertor::do_olist(const QString& line) {
 	    close_ol(lvl);
     else
 	    open_ol(lvl);
-	m_htmlText += "<li>" + line.mid(2) + "\n";
+	m_htmlText += "<li>" + parceInline(line.mid(2)) + "\n";
 }
 void MarkdownToHtmlConvertor::do_paragraph(const QString& line) {
 	close_ul();

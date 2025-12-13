@@ -22,7 +22,7 @@ public:
 protected:
     void	setup_connections();
     DocWidget	*newTabWidget(const QString& title, const QString& fullPath);
-    void	onPlainTextChanged();
+    void	onMDTextChanged();
     QSplitter	*getCurTabSplitter();
     void	addTab(const QString& title, const QString fullPath = "", const QString txt = "");
     void	updateHTMLModeCheck();

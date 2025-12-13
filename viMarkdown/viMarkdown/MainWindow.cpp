@@ -42,6 +42,7 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	auto docWidget = new DocWidget(title, fullPath);
 	QSplitter *splitter = new QSplitter(Qt::Horizontal, docWidget);
 	QPlainTextEdit *mdEditor = new QPlainTextEdit(splitter);
+	//QTextEdit *mdEditor = new QTextEdit(splitter);
 	mdEditor->setPlaceholderText("ここにMarkdownを入力...");
 	QTextEdit *previewer = new QTextEdit(splitter);
 	previewer->setReadOnly(true); // プレビューなので読み取り専用にする
@@ -53,7 +54,8 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	layout->addWidget(splitter);
 	layout->setContentsMargins(0, 0, 0, 0); // 余白をなくして端まで広げる
 
-	connect(mdEditor, &QPlainTextEdit::textChanged, this, &MainWindow::onPlainTextChanged);
+	connect(mdEditor, &QPlainTextEdit::textChanged, this, &MainWindow::onMDTextChanged);
+	//connect(mdEditor, &QTextEdit::textChanged, this, &MainWindow::onMDTextChanged);
 
 	return docWidget;
 }
@@ -77,6 +79,7 @@ void MainWindow::addTab(const QString &title, const QString fullPath, const QStr
 	QSplitter *splitter = getCurTabSplitter();
 	if( splitter == nullptr ) return;
 	QPlainTextEdit *mdEditor = (QPlainTextEdit*)splitter->widget(0);
+	//QTextEdit *mdEditor = (QTextEdit*)splitter->widget(0);
 	if( !txt.isEmpty() )
 		mdEditor->setPlainText(txt);
 	mdEditor->setFocus();
@@ -161,10 +164,11 @@ void MainWindow::updatePreview() {
 	else
 		previewer->setPlainText(m_htmlText);
 }
-void MainWindow::onPlainTextChanged() {
-	//qDebug() << "MainWindow::onPlainTextChanged()";
+void MainWindow::onMDTextChanged() {
+	//qDebug() << "MainWindow::onMDTextChanged()";
 
 	QPlainTextEdit *mdEditor = (QPlainTextEdit *)sender();
+	//QTextEdit *mdEditor = (QTextEdit *)sender();
 	m_plainText = mdEditor->toPlainText();
 	m_htmlComvertor.setMarkdownText(m_plainText);
 	m_htmlText = m_htmlComvertor.convert();

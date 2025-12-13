@@ -1,6 +1,5 @@
 # viMarkdown マークダウン仕様
 
-
 viMarkdown で実装済み・予定 Markdown 仕様
 
 [CommonMark](https://commonmark.org/) をベースに
