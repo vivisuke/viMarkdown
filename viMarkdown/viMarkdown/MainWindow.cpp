@@ -35,6 +35,8 @@ void MainWindow::setup_connections() {
 	connect(ui->action_Open, &QAction::triggered, this, &MainWindow::onAction_Open);
 	connect(ui->action_Save, &QAction::triggered, this, &MainWindow::onAction_Save);
 	connect(ui->action_Close, &QAction::triggered, this, &MainWindow::onAction_Close);
+	connect(ui->action_Bold, &QAction::triggered, this, &MainWindow::onAction_Bold);
+	connect(ui->action_Italic, &QAction::triggered, this, &MainWindow::onAction_Italic);
 	connect(ui->action_HTML, &QAction::toggled, this, &MainWindow::onAction_HTML);
 	connect(ui->action_Source, &QAction::toggled, this, &MainWindow::onAction_Source);
 }
@@ -152,6 +154,27 @@ void MainWindow::onAction_Close() {
 	int ix = ui->tabWidget->currentIndex();
 	if( ix >= 0 )
 		ui->tabWidget->removeTab(ix);
+}
+void MainWindow::insertInline(const QString& delimiter) {
+	QSplitter *splitter = getCurTabSplitter();
+	if( splitter == nullptr ) return;
+	QPlainTextEdit *textEdit = (QPlainTextEdit*)splitter->widget(0);
+
+	QTextCursor cursor = textEdit->textCursor();
+	if (cursor.hasSelection()) {
+		QString newText = delimiter + cursor.selectedText() + delimiter;
+		cursor.insertText(newText);
+	} else {
+		cursor.insertText(delimiter + delimiter);
+		cursor.movePosition(QTextCursor::Left, QTextCursor::MoveAnchor, delimiter.length());
+	}
+	textEdit->setTextCursor(cursor);
+}
+void MainWindow::onAction_Bold() {
+	insertInline("**");
+}
+void MainWindow::onAction_Italic() {
+	insertInline("*");
 }
 void MainWindow::onAction_HTML(bool checked) {
 	//if( m_htmlMode ) return;

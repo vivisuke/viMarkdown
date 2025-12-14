@@ -64,7 +64,18 @@
     <addaction name="action_HTML"/>
     <addaction name="action_Source"/>
    </widget>
+   <widget class="QMenu" name="menu_Edit">
+    <property name="title">
+     <string>&amp;Edit</string>
+    </property>
+    <addaction name="action_Undo"/>
+    <addaction name="action_Redo"/>
+    <addaction name="action_Bold"/>
+    <addaction name="action_Italic"/>
+    <addaction name="separator"/>
+   </widget>
    <addaction name="menu_File"/>
+   <addaction name="menu_Edit"/>
    <addaction name="menu_View"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
@@ -78,6 +89,11 @@
    <addaction name="action_Open"/>
    <addaction name="action_Save"/>
    <addaction name="action_Close"/>
+   <addaction name="separator"/>
+   <addaction name="action_Undo"/>
+   <addaction name="action_Redo"/>
+   <addaction name="action_Bold"/>
+   <addaction name="action_Italic"/>
    <addaction name="separator"/>
    <addaction name="action_HTML"/>
    <addaction name="action_Source"/>
@@ -154,6 +170,42 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="action_Bold">
+   <property name="icon">
+    <iconset>
+     <normaloff>images/format_bold_48.png</normaloff>images/format_bold_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Bold</string>
+   </property>
+  </action>
+  <action name="action_Italic">
+   <property name="icon">
+    <iconset>
+     <normaloff>images/format_italic_48.png</normaloff>images/format_italic_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Italic</string>
+   </property>
+  </action>
+  <action name="action_Undo">
+   <property name="icon">
+    <iconset>
+     <normaloff>images/undo_48.png</normaloff>images/undo_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Undo</string>
+   </property>
+  </action>
+  <action name="action_Redo">
+   <property name="icon">
+    <iconset>
+     <normaloff>images/redo_48.png</normaloff>images/redo_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Redo</string>
    </property>
   </action>
  </widget>

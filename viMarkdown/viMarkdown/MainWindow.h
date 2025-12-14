@@ -27,11 +27,14 @@ protected:
     void	addTab(const QString& title, const QString fullPath = "", const QString txt = "");
     void	updateHTMLModeCheck();
     void	updatePreview();
+    void	insertInline(const QString&);
 
     void	onAction_New();
     void	onAction_Open();
     void	onAction_Save();
     void	onAction_Close();
+    void	onAction_Bold();
+    void	onAction_Italic();
     void	onAction_HTML(bool);
     void	onAction_Source(bool);
 
