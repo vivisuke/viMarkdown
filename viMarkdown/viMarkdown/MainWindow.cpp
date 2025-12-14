@@ -81,9 +81,9 @@ void MainWindow::onAction_New() {
 	addTab(QString("無題-%1").arg(++m_tab_number));
 }
 void MainWindow::addTab(const QString &title, const QString fullPath, const QString txt) {
-	auto ptr = newTabWidget(title, fullPath);
-	int ix = ui->tabWidget->addTab(ptr, title);
-	ui->tabWidget->setCurrentIndex(ix);
+	auto ptr = newTabWidget(title, fullPath);		//	新規タブ生成
+	int ix = ui->tabWidget->addTab(ptr, title);		//	新規タブを追加
+	ui->tabWidget->setCurrentIndex(ix);				//	新規タブをカレントに
 
 	QSplitter *splitter = getCurTabSplitter();
 	if( splitter == nullptr ) return;
@@ -93,6 +93,16 @@ void MainWindow::addTab(const QString &title, const QString fullPath, const QStr
 		mdEditor->setPlainText(txt);
 	mdEditor->setFocus();
 
+	addTopItemToTreeWidget(title, fullPath);
+}
+void MainWindow::addTopItemToTreeWidget(const QString &title, const QString fullPath) {
+	QTreeWidgetItem *item = new QTreeWidgetItem();
+	item->setText(0, title);
+	item->setData(0, Qt::UserRole, fullPath);
+	ui->treeWidget->addTopLevelItem(item);
+	QTreeWidgetItem *item2 = new QTreeWidgetItem();
+	item2->setText(0, "見出し");
+	item->addChild(item2);
 }
 void MainWindow::onAction_Open() {
 	QString fullPath = QFileDialog::getOpenFileName(

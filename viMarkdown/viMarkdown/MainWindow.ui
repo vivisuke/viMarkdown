@@ -68,11 +68,28 @@
     <property name="title">
      <string>&amp;Edit</string>
     </property>
+    <widget class="QMenu" name="menuinline">
+     <property name="title">
+      <string>inline</string>
+     </property>
+     <addaction name="separator"/>
+     <addaction name="action_Bold"/>
+     <addaction name="action_Italic"/>
+    </widget>
+    <widget class="QMenu" name="menublock">
+     <property name="title">
+      <string>block</string>
+     </property>
+     <addaction name="action_List"/>
+     <addaction name="action_NumList"/>
+    </widget>
     <addaction name="action_Undo"/>
     <addaction name="action_Redo"/>
-    <addaction name="action_Bold"/>
-    <addaction name="action_Italic"/>
     <addaction name="separator"/>
+    <addaction name="menublock"/>
+    <addaction name="menuinline"/>
+    <addaction name="action_Indent"/>
+    <addaction name="action_UnIndent"/>
    </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_Edit"/>
@@ -92,6 +109,11 @@
    <addaction name="separator"/>
    <addaction name="action_Undo"/>
    <addaction name="action_Redo"/>
+   <addaction name="action_Indent"/>
+   <addaction name="action_UnIndent"/>
+   <addaction name="separator"/>
+   <addaction name="action_List"/>
+   <addaction name="action_NumList"/>
    <addaction name="action_Bold"/>
    <addaction name="action_Italic"/>
    <addaction name="separator"/>
@@ -103,7 +125,34 @@
    <attribute name="dockWidgetArea">
     <number>1</number>
    </attribute>
-   <widget class="QWidget" name="dockWidgetContents"/>
+   <widget class="QWidget" name="dockWidgetContents">
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="QTreeWidget" name="treeWidget">
+       <property name="headerHidden">
+        <bool>true</bool>
+       </property>
+       <column>
+        <property name="text">
+         <string notr="true">1</string>
+        </property>
+       </column>
+      </widget>
+     </item>
+    </layout>
+   </widget>
   </widget>
   <action name="action_New">
    <property name="icon">
@@ -206,6 +255,45 @@
    </property>
    <property name="text">
     <string>&amp;Redo</string>
+   </property>
+  </action>
+  <action name="action_List">
+   <property name="icon">
+    <iconset>
+     <normaloff>images/format_list_bulleted_48.png</normaloff>images/format_list_bulleted_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;List</string>
+   </property>
+  </action>
+  <action name="action_NumList">
+   <property name="icon">
+    <iconset>
+     <normaloff>images/format_list_numbered_48.png</normaloff>images/format_list_numbered_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;NumList</string>
+   </property>
+  </action>
+  <action name="action_Indent">
+   <property name="icon">
+    <iconset>
+     <normaloff>images/format_indent_increase_48.png</normaloff>images/format_indent_increase_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Indent</string>
+   </property>
+  </action>
+  <action name="action_UnIndent">
+   <property name="icon">
+    <iconset>
+     <normaloff>images/format_indent_decrease_48.png</normaloff>images/format_indent_decrease_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>u&amp;nIndent</string>
+   </property>
+   <property name="shortcut">
+    <string>Backtab</string>
    </property>
   </action>
  </widget>

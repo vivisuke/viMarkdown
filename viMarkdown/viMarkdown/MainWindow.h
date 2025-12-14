@@ -25,6 +25,7 @@ protected:
     void	onMDTextChanged();
     QSplitter	*getCurTabSplitter();
     void	addTab(const QString& title, const QString fullPath = "", const QString txt = "");
+    void	addTopItemToTreeWidget(const QString& title, const QString fullPath);
     void	updateHTMLModeCheck();
     void	updatePreview();
     void	insertInline(const QString&);
