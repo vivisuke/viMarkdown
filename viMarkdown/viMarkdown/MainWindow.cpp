@@ -6,6 +6,7 @@
 #include <QMessageBox>
 #include <QScrollBar>
 #include <QSettings>
+#include <QTextBlock>
 #include "MainWindow.h"
 #include "DocWidget.h"
 
@@ -162,6 +163,14 @@ void MainWindow::insertInline(const QString& delimiter) {
 
 	QTextCursor cursor = textEdit->textCursor();
 	if (cursor.hasSelection()) {
+		// 2. 複数行にまたがっているかチェック
+	    QTextDocument *doc = textEdit->document();
+	    // 選択範囲の「開始位置」と「終了位置」が属するブロック（行）を取得
+	    QTextBlock startBlock = doc->findBlock(cursor.selectionStart());
+	    QTextBlock endBlock   = doc->findBlock(cursor.selectionEnd());
+	    // ブロック番号が異なる場合＝複数行選択されている場合は無視
+	    if (startBlock.blockNumber() != endBlock.blockNumber())
+	        return;
 		QString newText = delimiter + cursor.selectedText() + delimiter;
 		cursor.insertText(newText);
 	} else {
