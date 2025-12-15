@@ -13,6 +13,7 @@ public:
 	const QString&	getMarkdownText() const { return m_markdownText; }
 	const QString&	getHtmlText() const { return m_htmlText; }
     const QString&	convert();
+    const QStringList&	getHeadings() const { return m_headingList; }
 
 private:
     void	do_heading(const QString&);
@@ -30,6 +31,7 @@ private:
 private:
 	QString		m_markdownText;
 	QString		m_htmlText;
+	QStringList	m_headingList;		//	見出しレベル（1～9）＋見出し文字列
 	bool		m_isParagraphOpen = true;
 	bool		m_isInsideUl = false;
 	bool		m_isInsideOl = false;

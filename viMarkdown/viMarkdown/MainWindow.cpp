@@ -1,4 +1,5 @@
-﻿#include <qsplitter.h>
+﻿#include <vector>
+#include <qsplitter.h>
 #include <qplaintextedit>
 #include <qtextedit>
 #include <QFileDialog>
@@ -9,6 +10,8 @@
 #include <QTextBlock>
 #include "MainWindow.h"
 #include "DocWidget.h"
+
+using namespace std;
 
 MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent)
@@ -48,12 +51,12 @@ void MainWindow::updateHTMLModeCheck() {
 
 DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPath) {
 	//auto containerWidget = new QWidget;
-	auto docWidget = new DocWidget(title, fullPath);
+	auto *docWidget = new DocWidget(title, fullPath);
 	QSplitter *splitter = new QSplitter(Qt::Horizontal, docWidget);
-	QPlainTextEdit *mdEditor = new QPlainTextEdit(splitter);
+	QPlainTextEdit *mdEditor = docWidget->m_mdEditor = new QPlainTextEdit(splitter);
 	//QTextEdit *mdEditor = new QTextEdit(splitter);
-	mdEditor->setPlaceholderText("ここにMarkdownを入力...");
-	QTextEdit *previewer = new QTextEdit(splitter);
+	mdEditor->setPlaceholderText("ここにMarkdownを入力\n# タイトル\n## 大見出し\n本文...");
+	QTextEdit *previewer = docWidget->m_previewer = new QTextEdit(splitter);
 	previewer->setReadOnly(true); // プレビューなので読み取り専用にする
 	previewer->setPlaceholderText("プレビュー画面");
 	splitter->addWidget(mdEditor);
@@ -74,6 +77,9 @@ QSplitter *MainWindow::getCurTabSplitter() {
 	if( docWidget == nullptr ) return nullptr;
 	return docWidget->findChild<QSplitter*>();
 }
+DocWidget *MainWindow::getCurDocWidget() {
+	return (DocWidget*)ui->tabWidget->currentWidget();
+}
 
 void MainWindow::onAction_New() {
 	qDebug() << "MainWindow::onAction_New()";
@@ -85,10 +91,10 @@ void MainWindow::addTab(const QString &title, const QString fullPath, const QStr
 	int ix = ui->tabWidget->addTab(ptr, title);		//	新規タブを追加
 	ui->tabWidget->setCurrentIndex(ix);				//	新規タブをカレントに
 
-	QSplitter *splitter = getCurTabSplitter();
-	if( splitter == nullptr ) return;
-	QPlainTextEdit *mdEditor = (QPlainTextEdit*)splitter->widget(0);
-	//QTextEdit *mdEditor = (QTextEdit*)splitter->widget(0);
+	//QSplitter *splitter = getCurTabSplitter();
+	//if( splitter == nullptr ) return;
+	//QPlainTextEdit *mdEditor = (QPlainTextEdit*)splitter->widget(0);
+	QPlainTextEdit *mdEditor = getCurDocWidget()->m_mdEditor;
 	if( !txt.isEmpty() )
 		mdEditor->setPlainText(txt);
 	mdEditor->setFocus();
@@ -100,9 +106,6 @@ void MainWindow::addTopItemToTreeWidget(const QString &title, const QString full
 	item->setText(0, title);
 	item->setData(0, Qt::UserRole, fullPath);
 	ui->treeWidget->addTopLevelItem(item);
-	QTreeWidgetItem *item2 = new QTreeWidgetItem();
-	item2->setText(0, "見出し");
-	item->addChild(item2);
 }
 void MainWindow::onAction_Open() {
 	QString fullPath = QFileDialog::getOpenFileName(
@@ -124,6 +127,7 @@ void MainWindow::onAction_Open() {
 		QString content = file.readAll();
 		QFileInfo fileInfo(fullPath);
 		addTab(fileInfo.fileName(), fullPath, content);
+		updateOutlineTree();
 		QDir::setCurrent(fileInfo.path());
 		m_opening_file = false;
 
@@ -147,9 +151,10 @@ void MainWindow::onAction_Save() {
 	QFile file(fullPath);
 	if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
 		QTextStream out(&file);
-		QSplitter *splitter = getCurTabSplitter();
-		if( splitter == nullptr ) return;
-		QPlainTextEdit *mdEditor = (QPlainTextEdit*)splitter->widget(0);
+		//QSplitter *splitter = getCurTabSplitter();
+		//if( splitter == nullptr ) return;
+		//QPlainTextEdit *mdEditor = (QPlainTextEdit*)splitter->widget(0);
+		QPlainTextEdit *mdEditor = getCurDocWidget()->m_mdEditor;
 		out << mdEditor->toPlainText();
 		file.close();
 		//QMessageBox::information(nullptr, "成功", "ファイルが保存されました:\n" + fullPath);
@@ -207,9 +212,7 @@ void MainWindow::onAction_Source(bool checked) {
 	updatePreview();
 }
 void MainWindow::updatePreview() {
-	QSplitter *splitter = getCurTabSplitter();
-	if( splitter == nullptr ) return;
-	QTextEdit *textEdit = (QTextEdit*)splitter->widget(1);
+	QTextEdit* textEdit = getCurDocWidget()->m_previewer;
 	QScrollBar *vScrollBar = textEdit->verticalScrollBar();
 	int currentPos = vScrollBar->value();
 	if( m_htmlMode )
@@ -218,17 +221,62 @@ void MainWindow::updatePreview() {
 		textEdit->setPlainText(m_htmlText);
 	vScrollBar->setValue(currentPos);
 }
+QTreeWidgetItem* MainWindow::findTopLevelItemByFullPath(const QString& title, const QString fullPath) {
+	QTreeWidget *treeWidget = ui->treeWidget;
+	int topCount = treeWidget->topLevelItemCount();
+    for (int i = 0; i < topCount; ++i) {
+        QTreeWidgetItem* item = treeWidget->topLevelItem(i);
+        QString itemPath = item->data(0, Qt::UserRole).toString();
+        if( itemPath.isEmpty() ) {
+        	if( item->text(0) == title )
+        		return item;
+        } else if( itemPath == fullPath )
+        	return item;
+    }
+    return nullptr;
+}
+void expandAllChildren(QTreeWidgetItem *item) {
+    if (!item) return;
+    item->setExpanded(true);  // まず自身を展開
+    for (int i = 0; i < item->childCount(); ++i) {
+        QTreeWidgetItem *child = item->child(i);
+        expandAllChildren(child);  // 子に対して再帰呼び出し
+    }
+}
+void MainWindow::updateOutlineTree() {
+	DocWidget *docWidget = getCurDocWidget();
+	QTreeWidgetItem* item0 = findTopLevelItemByFullPath(docWidget->m_title, docWidget->m_fullPath);
+	if( item0 == nullptr ) return;
+	qDeleteAll(item0->takeChildren());
+	vector<QTreeWidgetItem*> parents(10, nullptr);
+	parents[0] = item0;
+	const QStringList &lst = m_htmlComvertor.getHeadings();
+	for(int i = 0; i != lst.size(); ++i) {
+		QTreeWidgetItem *item2 = new QTreeWidgetItem();
+		//bool ok;
+		//int val = lst[i].toInt(&ok, 10);
+		int val = lst[i][0].unicode() - '0';
+		item2->setText(0, lst[i].mid(2));
+		int k = val - 1;
+		while( parents[k] == nullptr ) --k;
+		parents[k]->addChild(item2);
+		parents[val] = item2;
+		while( ++val < 10 ) parents[val] = nullptr;
+	}
+	//item0->setExpanded(true);
+	expandAllChildren(item0);
+}
 void MainWindow::onMDTextChanged() {
 	//qDebug() << "MainWindow::onMDTextChanged()";
 
-	QPlainTextEdit *mdEditor = (QPlainTextEdit *)sender();
-	//QTextEdit *mdEditor = (QTextEdit *)sender();
+	QPlainTextEdit *mdEditor = getCurDocWidget()->m_mdEditor;
 	m_plainText = mdEditor->toPlainText();
 	m_htmlComvertor.setMarkdownText(m_plainText);
 	m_htmlText = m_htmlComvertor.convert();
 	updatePreview();
+	updateOutlineTree();
 	if( !m_opening_file ) {
-		DocWidget *docWidget = (DocWidget*)ui->tabWidget->currentWidget();
+		DocWidget *docWidget = getCurDocWidget();
 		if( docWidget == nullptr ) return;
 		docWidget->m_modified = true;
 		ui->tabWidget->setTabText(ui->tabWidget->currentIndex(), docWidget->m_title + " *");

@@ -1,5 +1,9 @@
 ﻿#pragma once
 #include "C:\Qt\6.10.0\msvc2022_64\include\QtWidgets\qwidget.h"
+
+class QPlainTextEdit;
+class QTextEdit;
+
 class DocWidget : public QWidget
 {
 public:
@@ -9,5 +13,7 @@ public:
 	bool	m_modified = false;		//	編集＆未保存状態
 	QString	m_title;				//	タブタイトル
 	QString	m_fullPath;
+	QPlainTextEdit	*m_mdEditor = nullptr;			//	マークダウンエディタへのポインタ
+	QTextEdit		*m_previewer = nullptr;			//	マークダウンプレビューワへのポインタ
 };
 

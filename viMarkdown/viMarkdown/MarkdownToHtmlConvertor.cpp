@@ -5,6 +5,7 @@
 
 const QString& MarkdownToHtmlConvertor::convert() {
 	m_htmlText.clear();
+	m_headingList.clear();
 	m_isParagraphOpen = true;
 	m_curUlLevel = 0;
 	m_curOlLevel = 0;
@@ -122,6 +123,7 @@ void MarkdownToHtmlConvertor::do_heading(const QString& line) {
 	while( i < line.size() && line[i] == ' ' ) ++i;
 	QString t = line.mid(i);
 	m_htmlText += QString("<h%1>").arg(h) + t + QString("</h%1>\n").arg(h);
+	m_headingList.push_back(QString("%1 ").arg(i) + t);
 	m_isParagraphOpen = true;
 }
 void MarkdownToHtmlConvertor::do_list(const QString& line) {

@@ -24,11 +24,14 @@ protected:
     DocWidget	*newTabWidget(const QString& title, const QString& fullPath);
     void	onMDTextChanged();
     QSplitter	*getCurTabSplitter();
+    DocWidget	*getCurDocWidget();
     void	addTab(const QString& title, const QString fullPath = "", const QString txt = "");
     void	addTopItemToTreeWidget(const QString& title, const QString fullPath);
     void	updateHTMLModeCheck();
     void	updatePreview();
+    void	updateOutlineTree();
     void	insertInline(const QString&);
+    QTreeWidgetItem* findTopLevelItemByFullPath(const QString& title, const QString fullPath);
 
     void	onAction_New();
     void	onAction_Open();
