@@ -52,10 +52,17 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
+    <widget class="QMenu" name="menu_RecentFiles">
+     <property name="title">
+      <string>&amp;RecentFiles</string>
+     </property>
+     <addaction name="actiondummy"/>
+    </widget>
     <addaction name="action_New"/>
     <addaction name="action_Open"/>
     <addaction name="action_Save"/>
     <addaction name="action_Close"/>
+    <addaction name="menu_RecentFiles"/>
    </widget>
    <widget class="QMenu" name="menu_View">
     <property name="title">
@@ -307,6 +314,11 @@
    </property>
    <property name="text">
     <string>&amp;OutlineBar</string>
+   </property>
+  </action>
+  <action name="actiondummy">
+   <property name="text">
+    <string>dummy</string>
    </property>
   </action>
  </widget>

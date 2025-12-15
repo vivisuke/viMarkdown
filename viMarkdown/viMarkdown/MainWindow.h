@@ -47,6 +47,8 @@ protected:
     void	onAction_Source(bool);
     void	onAction_OutlineBar(bool);
 
+    void	onAboutToShow_RecentFiles();
+
 private:
     bool	m_opening_file = false;
     bool	m_htmlMode = true;

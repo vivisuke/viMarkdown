@@ -37,6 +37,7 @@ MainWindow::~MainWindow()
 }
 
 void MainWindow::setup_connections() {
+	connect(ui->menu_RecentFiles, &QMenu::aboutToShow, this, &MainWindow::onAboutToShow_RecentFiles);
 	connect(ui->action_New, &QAction::triggered, this, &MainWindow::onAction_New);
 	connect(ui->action_Open, &QAction::triggered, this, &MainWindow::onAction_Open);
 	connect(ui->action_Save, &QAction::triggered, this, &MainWindow::onAction_Save);
@@ -85,6 +86,15 @@ QSplitter *MainWindow::getCurTabSplitter() {
 }
 DocWidget *MainWindow::getCurDocWidget() {
 	return (DocWidget*)ui->tabWidget->currentWidget();
+}
+
+void MainWindow::onAboutToShow_RecentFiles() {
+	qDebug() << "MainWindow::onAboutToShow_RecentFiles()";
+
+	ui->menu_RecentFiles->clear();
+	QSettings settings;
+	QString recentFilePath = settings.value("recentFilePath").toString();
+	ui->menu_RecentFiles->addAction(recentFilePath);
 }
 
 void MainWindow::onAction_New() {
@@ -177,11 +187,12 @@ void MainWindow::onAction_Close() {
 	if( ix >= 0 )
 		ui->tabWidget->removeTab(ix);
 }
-bool isListBlock(const QTextBlock& block) {		//	空白+ "- " で始まるか？
+int isListBlock(const QTextBlock& block) {		//	空白+ "- " で始まるか？ return 0 for not List, 1以上 for 文字数
 	const QString txt = block.text();
 	int i = 0;
 	while( i < txt.size() && txt[i] == ' ' ) ++i;
-	return txt.mid(i).startsWith("- ");
+	if( !txt.mid(i).startsWith("- ") ) return 0;
+	return i + 2;
 }
 void MainWindow::onAction_List() {
 	qDebug() << "MainWindow::onAction_List()";
@@ -196,15 +207,17 @@ void MainWindow::onAction_List() {
 		QTextBlock currentBlock = doc->findBlock(startPos);
 		QTextBlock endBlock = doc->findBlock(endPos);
 		//bool remove_list = currentBlock.text().startsWith("- ");
-		bool remove_list = isListBlock(currentBlock);
+		bool remove_list = isListBlock(currentBlock) != 0;
 		if (endPos > startPos && endPos == endBlock.position())
 			endBlock = endBlock.previous();		//	最終ブロック修正
 		while (currentBlock.isValid() && currentBlock.blockNumber() <= endBlock.blockNumber()) {
-		    cursor.setPosition(currentBlock.position());
+		    cursor.setPosition(currentBlock.position());	//	行頭位置
+	    	//cursor.movePosition(QTextCursor::StartOfBlock);			//	行頭移動　←　何故かうまく動作しない？？？
 		    if( remove_list ) {
-		    	if( isListBlock(currentBlock) ) {
-			    	cursor.deleteChar();
-			    	cursor.deleteChar();
+		    	int n = isListBlock(currentBlock);
+		    	if( n != 0 ) {
+		    		cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, n);
+		    		cursor.removeSelectedText();
 		    	}
 		    } else {
 		    	if( !isListBlock(currentBlock) )
@@ -214,12 +227,13 @@ void MainWindow::onAction_List() {
 		}
 		cursor.endEditBlock();
 	} else {
-    	cursor.movePosition(QTextCursor::StartOfBlock);
+    	cursor.movePosition(QTextCursor::StartOfBlock);			//	行頭移動
 	    QTextBlock block = doc->findBlock(cursor.position());
 	    const QString txt = block.text();
-	    if( txt.startsWith("- ") ) {
-	    	cursor.deleteChar();
-	    	cursor.deleteChar();
+	    int n = isListBlock(block);
+	    if( n != 0 ) {
+    		cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, n);
+    		cursor.removeSelectedText();
 	    } else {
 	    	cursor.insertText("- ");
 	    }
