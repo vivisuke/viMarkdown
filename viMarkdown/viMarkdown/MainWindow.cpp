@@ -61,7 +61,7 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	QSplitter *splitter = new QSplitter(Qt::Horizontal, docWidget);
 	QPlainTextEdit *mdEditor = docWidget->m_mdEditor = new QPlainTextEdit(splitter);
 	//QTextEdit *mdEditor = new QTextEdit(splitter);
-	mdEditor->setPlaceholderText("ここにMarkdownを入力\n# タイトル\n## 大見出し\n本文...");
+	mdEditor->setPlaceholderText("ここにMarkdownを入力\n# タイトル\n## 大見出し\n- リスト\n1. 連番\n本文...");
 	QTextEdit *previewer = docWidget->m_previewer = new QTextEdit(splitter);
 	previewer->setReadOnly(true); // プレビューなので読み取り専用にする
 	previewer->setPlaceholderText("プレビュー画面");
@@ -177,6 +177,12 @@ void MainWindow::onAction_Close() {
 	if( ix >= 0 )
 		ui->tabWidget->removeTab(ix);
 }
+bool isListBlock(const QTextBlock& block) {		//	空白+ "- " で始まるか？
+	const QString txt = block.text();
+	int i = 0;
+	while( i < txt.size() && txt[i] == ' ' ) ++i;
+	return txt.mid(i).startsWith("- ");
+}
 void MainWindow::onAction_List() {
 	qDebug() << "MainWindow::onAction_List()";
 	QPlainTextEdit *mdEditor = getCurDocWidget()->m_mdEditor;
@@ -189,18 +195,19 @@ void MainWindow::onAction_List() {
 		// 範囲に含まれる最初のブロックと最後のブロックを取得
 		QTextBlock currentBlock = doc->findBlock(startPos);
 		QTextBlock endBlock = doc->findBlock(endPos);
-		bool remove_list = currentBlock.text().startsWith("- ");
+		//bool remove_list = currentBlock.text().startsWith("- ");
+		bool remove_list = isListBlock(currentBlock);
 		if (endPos > startPos && endPos == endBlock.position())
 			endBlock = endBlock.previous();		//	最終ブロック修正
 		while (currentBlock.isValid() && currentBlock.blockNumber() <= endBlock.blockNumber()) {
 		    cursor.setPosition(currentBlock.position());
 		    if( remove_list ) {
-		    	if( currentBlock.text().startsWith("- ") ) {
+		    	if( isListBlock(currentBlock) ) {
 			    	cursor.deleteChar();
 			    	cursor.deleteChar();
 		    	}
 		    } else {
-		    	if( !currentBlock.text().startsWith("- ") )
+		    	if( !isListBlock(currentBlock) )
 				    cursor.insertText("- ");
 		    }
 		    currentBlock = currentBlock.next();	    // 次のブロックへ
