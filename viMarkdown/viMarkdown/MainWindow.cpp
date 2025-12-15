@@ -41,6 +41,8 @@ void MainWindow::setup_connections() {
 	connect(ui->action_Open, &QAction::triggered, this, &MainWindow::onAction_Open);
 	connect(ui->action_Save, &QAction::triggered, this, &MainWindow::onAction_Save);
 	connect(ui->action_Close, &QAction::triggered, this, &MainWindow::onAction_Close);
+	connect(ui->action_List, &QAction::triggered, this, &MainWindow::onAction_List);
+	connect(ui->action_NumList, &QAction::triggered, this, &MainWindow::onAction_NumList);
 	connect(ui->action_Bold, &QAction::triggered, this, &MainWindow::onAction_Bold);
 	connect(ui->action_Italic, &QAction::triggered, this, &MainWindow::onAction_Italic);
 	connect(ui->action_HTML, &QAction::toggled, this, &MainWindow::onAction_HTML);
@@ -175,15 +177,49 @@ void MainWindow::onAction_Close() {
 	if( ix >= 0 )
 		ui->tabWidget->removeTab(ix);
 }
+void MainWindow::onAction_List() {
+	qDebug() << "MainWindow::onAction_List()";
+	QPlainTextEdit *mdEditor = getCurDocWidget()->m_mdEditor;
+	QTextCursor cursor = mdEditor->textCursor();
+    QTextDocument *doc = mdEditor->document();
+	if (cursor.hasSelection()) {
+		cursor.beginEditBlock();
+		int startPos = cursor.selectionStart();
+		int endPos = cursor.selectionEnd();
+		// 範囲に含まれる最初のブロックと最後のブロックを取得
+		QTextBlock currentBlock = doc->findBlock(startPos);
+		QTextBlock endBlock = doc->findBlock(endPos);
+		if (endPos > startPos && endPos == endBlock.position())
+			endBlock = endBlock.previous();		//	最終ブロック修正
+		while (currentBlock.isValid() && currentBlock.blockNumber() <= endBlock.blockNumber()) {
+		    // 一時的なカーソルを作成（自動的にブロック先頭に配置される）
+		    cursor.setPosition(currentBlock.position());
+		    cursor.insertText("- ");
+		    currentBlock = currentBlock.next();	    // 次のブロックへ
+		}
+		cursor.endEditBlock();
+	} else {
+    	cursor.movePosition(QTextCursor::StartOfBlock);
+	    QTextBlock block = doc->findBlock(cursor.position());
+	    const QString txt = block.text();
+	    if( txt.startsWith("- ") ) {
+	    	cursor.deleteChar();
+	    	cursor.deleteChar();
+	    } else {
+	    	cursor.insertText("- ");
+	    }
+	}
+	mdEditor->setTextCursor(cursor);
+}
+void MainWindow::onAction_NumList() {
+	qDebug() << "MainWindow::onAction_NumList()";
+}
 void MainWindow::insertInline(const QString& delimiter) {
-	QSplitter *splitter = getCurTabSplitter();
-	if( splitter == nullptr ) return;
-	QPlainTextEdit *textEdit = (QPlainTextEdit*)splitter->widget(0);
-
-	QTextCursor cursor = textEdit->textCursor();
+	QPlainTextEdit *mdEditor = getCurDocWidget()->m_mdEditor;
+	QTextCursor cursor = mdEditor->textCursor();
 	if (cursor.hasSelection()) {
 		// 2. 複数行にまたがっているかチェック
-	    QTextDocument *doc = textEdit->document();
+	    QTextDocument *doc = mdEditor->document();
 	    // 選択範囲の「開始位置」と「終了位置」が属するブロック（行）を取得
 	    QTextBlock startBlock = doc->findBlock(cursor.selectionStart());
 	    QTextBlock endBlock   = doc->findBlock(cursor.selectionEnd());
@@ -196,7 +232,7 @@ void MainWindow::insertInline(const QString& delimiter) {
 		cursor.insertText(delimiter + delimiter);
 		cursor.movePosition(QTextCursor::Left, QTextCursor::MoveAnchor, delimiter.length());
 	}
-	textEdit->setTextCursor(cursor);
+	mdEditor->setTextCursor(cursor);
 }
 void MainWindow::onAction_Bold() {
 	insertInline("**");
