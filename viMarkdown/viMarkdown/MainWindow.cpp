@@ -20,6 +20,7 @@ MainWindow::MainWindow(QWidget *parent)
 	setWindowTitle("viMarkdown ver 0.001");
 	ui->setupUi(this);
 	updateHTMLModeCheck();
+	ui->action_OutlineBar->setChecked(true);	//	暫定的
 
 	setup_connections();
 	onAction_New();
@@ -43,6 +44,7 @@ void MainWindow::setup_connections() {
 	connect(ui->action_Italic, &QAction::triggered, this, &MainWindow::onAction_Italic);
 	connect(ui->action_HTML, &QAction::toggled, this, &MainWindow::onAction_HTML);
 	connect(ui->action_Source, &QAction::toggled, this, &MainWindow::onAction_Source);
+	connect(ui->action_OutlineBar, &QAction::toggled, this, &MainWindow::onAction_OutlineBar);
 }
 void MainWindow::updateHTMLModeCheck() {
 	ui->action_HTML->setChecked(m_htmlMode);
@@ -210,6 +212,9 @@ void MainWindow::onAction_Source(bool checked) {
 	m_htmlMode = !checked;
 	updateHTMLModeCheck();
 	updatePreview();
+}
+void MainWindow::onAction_OutlineBar(bool checked) {
+	ui->outlineBar->setVisible(checked);
 }
 void MainWindow::updatePreview() {
 	QTextEdit* textEdit = getCurDocWidget()->m_previewer;

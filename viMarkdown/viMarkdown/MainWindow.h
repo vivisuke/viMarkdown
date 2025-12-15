@@ -41,6 +41,7 @@ protected:
     void	onAction_Italic();
     void	onAction_HTML(bool);
     void	onAction_Source(bool);
+    void	onAction_OutlineBar(bool);
 
 private:
     bool	m_opening_file = false;
