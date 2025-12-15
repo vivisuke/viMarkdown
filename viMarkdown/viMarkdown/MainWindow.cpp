@@ -189,12 +189,20 @@ void MainWindow::onAction_List() {
 		// 範囲に含まれる最初のブロックと最後のブロックを取得
 		QTextBlock currentBlock = doc->findBlock(startPos);
 		QTextBlock endBlock = doc->findBlock(endPos);
+		bool remove_list = currentBlock.text().startsWith("- ");
 		if (endPos > startPos && endPos == endBlock.position())
 			endBlock = endBlock.previous();		//	最終ブロック修正
 		while (currentBlock.isValid() && currentBlock.blockNumber() <= endBlock.blockNumber()) {
-		    // 一時的なカーソルを作成（自動的にブロック先頭に配置される）
 		    cursor.setPosition(currentBlock.position());
-		    cursor.insertText("- ");
+		    if( remove_list ) {
+		    	if( currentBlock.text().startsWith("- ") ) {
+			    	cursor.deleteChar();
+			    	cursor.deleteChar();
+		    	}
+		    } else {
+		    	if( !currentBlock.text().startsWith("- ") )
+				    cursor.insertText("- ");
+		    }
 		    currentBlock = currentBlock.next();	    // 次のブロックへ
 		}
 		cursor.endEditBlock();
