@@ -122,6 +122,9 @@
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <widget class="QDockWidget" name="dockWidget">
+   <property name="windowTitle">
+    <string>OutlineBar</string>
+   </property>
    <attribute name="dockWidgetArea">
     <number>1</number>
    </attribute>
