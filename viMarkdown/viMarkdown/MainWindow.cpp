@@ -8,6 +8,7 @@
 #include <QScrollBar>
 #include <QSettings>
 #include <QTextBlock>
+#include <QDockWidget>
 #include "MainWindow.h"
 #include "DocWidget.h"
 
@@ -45,6 +46,7 @@ void MainWindow::setup_connections() {
 	connect(ui->action_HTML, &QAction::toggled, this, &MainWindow::onAction_HTML);
 	connect(ui->action_Source, &QAction::toggled, this, &MainWindow::onAction_Source);
 	connect(ui->action_OutlineBar, &QAction::toggled, this, &MainWindow::onAction_OutlineBar);
+	connect(ui->outlineBar, &QDockWidget::visibilityChanged, this, &MainWindow::onOutlineBarVisibilityChanged);
 }
 void MainWindow::updateHTMLModeCheck() {
 	ui->action_HTML->setChecked(m_htmlMode);
@@ -215,6 +217,9 @@ void MainWindow::onAction_Source(bool checked) {
 }
 void MainWindow::onAction_OutlineBar(bool checked) {
 	ui->outlineBar->setVisible(checked);
+}
+void MainWindow::onOutlineBarVisibilityChanged(bool v) {
+	ui->action_OutlineBar->setChecked(v);
 }
 void MainWindow::updatePreview() {
 	QTextEdit* textEdit = getCurDocWidget()->m_previewer;
