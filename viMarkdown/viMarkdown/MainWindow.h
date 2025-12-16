@@ -50,6 +50,10 @@ protected:
 
     void	onAboutToShow_RecentFiles();
 
+protected:
+    void dragEnterEvent(QDragEnterEvent *event) override;
+    void dropEvent(QDropEvent *event) override;
+
 private:
     bool	m_opening_file = false;
     bool	m_htmlMode = true;

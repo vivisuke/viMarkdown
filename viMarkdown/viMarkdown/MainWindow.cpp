@@ -9,6 +9,10 @@
 #include <QSettings>
 #include <QTextBlock>
 #include <QDockWidget>
+#include <QDragEnterEvent>
+#include <QDropEvent>
+#include <QMimeData>
+#include <QUrl>
 #include "MainWindow.h"
 #include "DocWidget.h"
 
@@ -23,6 +27,7 @@ MainWindow::MainWindow(QWidget *parent)
 	updateHTMLModeCheck();
 	ui->action_OutlineBar->setChecked(true);	//	暫定的
 
+	setAcceptDrops(true);		//	ファイルドロップ可
 	setup_connections();
 	onAction_New();
 
@@ -78,12 +83,31 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 
 	return docWidget;
 }
-
+void MainWindow::dragEnterEvent(QDragEnterEvent *event)
+{
+    // ドラッグされているデータがファイル（URL）を含んでいるかチェック
+    if (event->mimeData()->hasUrls()) {
+        // 受け入れる（カーソルが「コピー」や「リンク」の形に変わる）
+        event->acceptProposedAction();
+    }
+}
+void MainWindow::dropEvent(QDropEvent *event)
+{
+    const QList<QUrl> urls = event->mimeData()->urls();    // ドロップされたデータのURLリストを取得
+    //if (urls.isEmpty()) return;
+    for(const QUrl &url : urls ) {
+    	QString fullPath = url.toLocalFile();
+    	qDebug() << "dropped fullPath = " << fullPath;
+    	do_open(fullPath);
+    }
+}
+#if 0
 QSplitter *MainWindow::getCurTabSplitter() {
 	auto docWidget = ui->tabWidget->currentWidget();
 	if( docWidget == nullptr ) return nullptr;
 	return docWidget->findChild<QSplitter*>();
 }
+#endif
 DocWidget *MainWindow::getCurDocWidget() {
 	return (DocWidget*)ui->tabWidget->currentWidget();
 }
@@ -94,13 +118,7 @@ void MainWindow::onAboutToShow_RecentFiles() {
 	ui->menu_RecentFiles->clear();
 	QSettings settings;
 	QStringList recentFilePaths = settings.value("recentFilePaths").toStringList();
-	//ui->menu_RecentFiles->addAction(recentFilePath);
-	//for(int i = 0; i < recentFilePaths.size(); ++i) {
-	//	ui->menu_RecentFiles->addAction(recentFilePaths[i]);
-	//}
 	for(const QString &fullPath : recentFilePaths) {
-		//QAction *act = new QAction(fullPath);
-		//ui->menu_RecentFiles->addAction(act);
 		QAction *act = ui->menu_RecentFiles->addAction(fullPath);
 		connect(act, &QAction::triggered, this, [this, fullPath]() {
 			QString pathArg = fullPath;
@@ -119,9 +137,6 @@ void MainWindow::addTab(const QString &title, const QString fullPath, const QStr
 	int ix = ui->tabWidget->addTab(ptr, title);		//	新規タブを追加
 	ui->tabWidget->setCurrentIndex(ix);				//	新規タブをカレントに
 
-	//QSplitter *splitter = getCurTabSplitter();
-	//if( splitter == nullptr ) return;
-	//QPlainTextEdit *mdEditor = (QPlainTextEdit*)splitter->widget(0);
 	QPlainTextEdit *mdEditor = getCurDocWidget()->m_mdEditor;
 	if( !txt.isEmpty() )
 		mdEditor->setPlainText(txt);
@@ -188,9 +203,6 @@ void MainWindow::onAction_Save() {
 	QFile file(fullPath);
 	if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
 		QTextStream out(&file);
-		//QSplitter *splitter = getCurTabSplitter();
-		//if( splitter == nullptr ) return;
-		//QPlainTextEdit *mdEditor = (QPlainTextEdit*)splitter->widget(0);
 		QPlainTextEdit *mdEditor = getCurDocWidget()->m_mdEditor;
 		out << mdEditor->toPlainText();
 		file.close();
