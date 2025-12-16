@@ -95,8 +95,17 @@ void MainWindow::onAboutToShow_RecentFiles() {
 	QSettings settings;
 	QStringList recentFilePaths = settings.value("recentFilePaths").toStringList();
 	//ui->menu_RecentFiles->addAction(recentFilePath);
-	for(int i = 0; i < recentFilePaths.size(); ++i) {
-		ui->menu_RecentFiles->addAction(recentFilePaths[i]);
+	//for(int i = 0; i < recentFilePaths.size(); ++i) {
+	//	ui->menu_RecentFiles->addAction(recentFilePaths[i]);
+	//}
+	for(const QString &fullPath : recentFilePaths) {
+		//QAction *act = new QAction(fullPath);
+		//ui->menu_RecentFiles->addAction(act);
+		QAction *act = ui->menu_RecentFiles->addAction(fullPath);
+		connect(act, &QAction::triggered, this, [this, fullPath]() {
+			QString pathArg = fullPath;
+	        do_open(pathArg); 
+		});
 	}
 }
 
@@ -136,29 +145,32 @@ void MainWindow::onAction_Open() {
 
 	if (!fullPath.isEmpty()) {
 		qDebug() << "path = " << fullPath;
-		m_opening_file = true;
-		QFile file(fullPath);
-		if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-			QMessageBox::warning(this, tr("エラー"), tr("ファイルが開けません:\n%1").arg(fullPath));
-			return;
-		}
-
-		QString content = file.readAll();
-		QFileInfo fileInfo(fullPath);
-		addTab(fileInfo.fileName(), fullPath, content);
-		updateOutlineTree();
-		QDir::setCurrent(fileInfo.path());
-		m_opening_file = false;
-
-		QSettings settings;
-		QStringList recentFilePaths = settings.value("recentFilePaths").toStringList();
-		int ix;
-		while( (ix = recentFilePaths.indexOf(fullPath)) >= 0 )
-			recentFilePaths.removeAt(ix);
-		recentFilePaths.push_front(fullPath);
-		while( recentFilePaths.size() > 10 ) recentFilePaths.pop_back();
-		settings.setValue("recentFilePaths", recentFilePaths);
+		do_open(fullPath);
 	}
+}
+void MainWindow::do_open(const QString& fullPath) {
+	m_opening_file = true;
+	QFile file(fullPath);
+	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+		QMessageBox::warning(this, tr("エラー"), tr("ファイルが開けません:\n%1").arg(fullPath));
+		return;
+	}
+
+	QString content = file.readAll();
+	QFileInfo fileInfo(fullPath);
+	addTab(fileInfo.fileName(), fullPath, content);
+	updateOutlineTree();
+	QDir::setCurrent(fileInfo.path());
+	m_opening_file = false;
+
+	QSettings settings;
+	QStringList recentFilePaths = settings.value("recentFilePaths").toStringList();
+	int ix;
+	while( (ix = recentFilePaths.indexOf(fullPath)) >= 0 )
+		recentFilePaths.removeAt(ix);
+	recentFilePaths.push_front(fullPath);
+	while( recentFilePaths.size() > 10 ) recentFilePaths.pop_back();
+	settings.setValue("recentFilePaths", recentFilePaths);
 }
 void MainWindow::onAction_Save() {
 	int ix = ui->tabWidget->currentIndex();

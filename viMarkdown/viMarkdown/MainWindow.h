@@ -32,6 +32,7 @@ protected:
     void	updateOutlineTree();
     void	insertInline(const QString&);
     QTreeWidgetItem* findTopLevelItemByFullPath(const QString& title, const QString fullPath);
+    void	do_open(const QString&);
 
     void	onOutlineBarVisibilityChanged(bool visible);
 
