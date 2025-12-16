@@ -232,6 +232,12 @@ void MainWindow::onAction_Save() {
 void MainWindow::onAction_Close() {
 	qDebug() << "MainWindow::onAction_Close()";
 
+	DocWidget *docWidget = getCurDocWidget();
+	QTreeWidgetItem *top = findTopLevelItemByFullPath(docWidget->m_title, docWidget->m_fullPath);
+	if( top != nullptr ) {
+		//ui->treeWidget->removeItemWidget(top);
+		delete top;			//	TreeWidget から top アイテム以下をすべて削除
+	}
 	int ix = ui->tabWidget->currentIndex();
 	if( ix >= 0 )
 		ui->tabWidget->removeTab(ix);
