@@ -243,6 +243,14 @@ int isListBlock(const QTextBlock& block) {		//	空白+ "- " で始まるか？ r
 	if( !txt.mid(i).startsWith("- ") ) return 0;
 	return i + 2;
 }
+int isNumListBlock(const QTextBlock& block) {		//	空白+ "数字. " で始まるか？ return 0 for not NumList, 1以上 for 文字数
+	const QString txt = block.text();
+	int i = 0;
+	while( i < txt.size() && txt[i] == ' ' ) ++i;
+	if( i >= txt.size() || !txt[i].isNumber() ) return 0;
+	if( !txt.mid(i+1).startsWith(". ") ) return 0;
+	return i + 3;
+}
 void MainWindow::onAction_Indent() {
 	QPlainTextEdit *mdEditor = getCurDocWidget()->m_mdEditor;
 	QTextCursor cursor = mdEditor->textCursor();
@@ -291,51 +299,62 @@ void MainWindow::onAction_List() {
 	QPlainTextEdit *mdEditor = getCurDocWidget()->m_mdEditor;
 	QTextCursor cursor = mdEditor->textCursor();
     QTextDocument *doc = mdEditor->document();
-	//if (cursor.hasSelection()) {
-		cursor.beginEditBlock();
-		int startPos = cursor.selectionStart();
-		int endPos = cursor.selectionEnd();
-		// 範囲に含まれる最初のブロックと最後のブロックを取得
-		QTextBlock currentBlock = doc->findBlock(startPos);
-		QTextBlock endBlock = doc->findBlock(endPos);
-		//bool remove_list = currentBlock.text().startsWith("- ");
-		bool remove_list = isListBlock(currentBlock) != 0;
-		if (endPos > startPos && endPos == endBlock.position())
-			endBlock = endBlock.previous();		//	最終ブロック修正
-		while (currentBlock.isValid() && currentBlock.blockNumber() <= endBlock.blockNumber()) {
-		    cursor.setPosition(currentBlock.position());	//	行頭位置
-	    	//cursor.movePosition(QTextCursor::StartOfBlock);			//	行頭移動　←　何故かうまく動作しない？？？
-		    if( remove_list ) {
-		    	int n = isListBlock(currentBlock);
-		    	if( n != 0 ) {
-		    		cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, n);
-		    		cursor.removeSelectedText();
-		    	}
-		    } else {
-		    	if( !isListBlock(currentBlock) )
-				    cursor.insertText("- ");
-		    }
-		    currentBlock = currentBlock.next();	    // 次のブロックへ
-		}
-		cursor.endEditBlock();
-#if 0
-	} else {
-    	cursor.movePosition(QTextCursor::StartOfBlock);			//	行頭移動
-	    QTextBlock block = doc->findBlock(cursor.position());
-	    const QString txt = block.text();
-	    int n = isListBlock(block);
-	    if( n != 0 ) {
-    		cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, n);
-    		cursor.removeSelectedText();
+	cursor.beginEditBlock();
+	int startPos = cursor.selectionStart();
+	int endPos = cursor.selectionEnd();
+	QTextBlock currentBlock = doc->findBlock(startPos);		// 範囲に含まれる最初のブロックと最後のブロックを取得
+	QTextBlock endBlock = doc->findBlock(endPos);
+	bool remove_list = isListBlock(currentBlock) != 0;
+	if (endPos > startPos && endPos == endBlock.position())
+		endBlock = endBlock.previous();		//	最終ブロック修正
+	while (currentBlock.isValid() && currentBlock.blockNumber() <= endBlock.blockNumber()) {
+	    cursor.setPosition(currentBlock.position());	//	行頭位置
+    	//cursor.movePosition(QTextCursor::StartOfBlock);			//	行頭移動　←　何故かうまく動作しない？？？
+	    if( remove_list ) {
+	    	int n = isListBlock(currentBlock);
+	    	if( n != 0 ) {
+	    		cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, n);
+	    		cursor.removeSelectedText();
+	    	}
 	    } else {
-	    	cursor.insertText("- ");
+	    	if( !isListBlock(currentBlock) )
+			    cursor.insertText("- ");
 	    }
+	    currentBlock = currentBlock.next();	    // 次のブロックへ
 	}
-#endif
+	cursor.endEditBlock();
 	mdEditor->setTextCursor(cursor);
 }
 void MainWindow::onAction_NumList() {
 	qDebug() << "MainWindow::onAction_NumList()";
+	QPlainTextEdit *mdEditor = getCurDocWidget()->m_mdEditor;
+	QTextCursor cursor = mdEditor->textCursor();
+    QTextDocument *doc = mdEditor->document();
+	cursor.beginEditBlock();
+	int startPos = cursor.selectionStart();
+	int endPos = cursor.selectionEnd();
+	QTextBlock currentBlock = doc->findBlock(startPos);		// 範囲に含まれる最初のブロックと最後のブロックを取得
+	QTextBlock endBlock = doc->findBlock(endPos);
+	bool remove_list = isNumListBlock(currentBlock) != 0;
+	if (endPos > startPos && endPos == endBlock.position())
+		endBlock = endBlock.previous();		//	最終ブロック修正
+	while (currentBlock.isValid() && currentBlock.blockNumber() <= endBlock.blockNumber()) {
+	    cursor.setPosition(currentBlock.position());	//	行頭位置
+    	//cursor.movePosition(QTextCursor::StartOfBlock);			//	行頭移動　←　何故かうまく動作しない？？？
+	    if( remove_list ) {
+	    	int n = isNumListBlock(currentBlock);
+	    	if( n != 0 ) {
+	    		cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, n);
+	    		cursor.removeSelectedText();
+	    	}
+	    } else {
+	    	if( !isNumListBlock(currentBlock) )
+			    cursor.insertText("1. ");
+	    }
+	    currentBlock = currentBlock.next();	    // 次のブロックへ
+	}
+	cursor.endEditBlock();
+	mdEditor->setTextCursor(cursor);
 }
 void MainWindow::insertInline(const QString& delimiter) {
 	QPlainTextEdit *mdEditor = getCurDocWidget()->m_mdEditor;

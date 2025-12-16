@@ -78,5 +78,15 @@
 0076 ◎ C 12/16 12/16 0.001│ToDo│Indent, UnIndent 機能
 0077 ◎ C 12/16 12/16 0.001│ToDo│すでに開いているファイルオープン：そのタブをアクティブにするだけ
 0078 ◎ C 12/16 12/16 0.001│ToDo│OutlineBar：アクティブなアイテムのファイルをTab前面表示
-0079 ● C 12/16            │ToDo│
-0080 ● C 12/16            │ToDo│
+0079 ● C 12/16            │ToDo│About Dialog
+0080 ● C 12/17            │問題│文書を閉じても、対応する TreeWidgetItem が削除されない
+0081 ● C 12/17            │ToDo│![大体テキスト](画像URL) 対応
+0082 ◎ C 12/17 12/17 0.001│ToDo│Edit > block > NumList：行頭に "1. " 挿入・削除
+0083 ● C 12/17            │ToDo│Edit > block > List, NumList：変更後、範囲を選択状態に
+0084 ● C 12/17            │ToDo│
+0085 ● C 12/17            │ToDo│
+0086 ● C 12/17            │ToDo│
+0087 ● C 12/17            │ToDo│
+0088 ● C 12/17            │ToDo│
+0089 ● C 12/17            │ToDo│
+0090 ● C 12/17            │ToDo│

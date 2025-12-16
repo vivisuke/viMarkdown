@@ -2,5 +2,5 @@
 visual Markdown editor
 
 - hoge
-xyzz
+- xyzz
 - fuga
