@@ -1,5 +1,5 @@
 # viMarkdown
-visual Markdown editor
+-- visual Markdown editor --
 
 **viMarkdown** is a lightweight, high-performance Markdown editor built with **Qt6** and **C++**.  
 It is designed for developers and writers who love efficiency.
