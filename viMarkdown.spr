@@ -82,8 +82,8 @@
 0080 ● C 12/17            │問題│文書を閉じても、対応する TreeWidgetItem が削除されない
 0081 ● C 12/17            │ToDo│![大体テキスト](画像URL) 対応
 0082 ◎ C 12/17 12/17 0.001│ToDo│Edit > block > NumList：行頭に "1. " 挿入・削除
-0083 ● C 12/17            │ToDo│Edit > block > List, NumList：変更後、範囲を選択状態に
-0084 ● C 12/17            │ToDo│
+0083 ◎ C 12/17 12/17 0.001│ToDo│Edit > block > List, NumList：変更後、範囲を選択状態に
+0084 ● C 12/17            │ToDo│Edit > block > List：連番行の場合は、連番部分を削除
 0085 ● C 12/17            │ToDo│
 0086 ● C 12/17            │ToDo│
 0087 ● C 12/17            │ToDo│

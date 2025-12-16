@@ -302,7 +302,8 @@ void MainWindow::onAction_List() {
 	cursor.beginEditBlock();
 	int startPos = cursor.selectionStart();
 	int endPos = cursor.selectionEnd();
-	QTextBlock currentBlock = doc->findBlock(startPos);		// 範囲に含まれる最初のブロックと最後のブロックを取得
+	QTextBlock startBlock = doc->findBlock(startPos);		// 範囲に含まれる最初のブロックと最後のブロックを取得
+	QTextBlock currentBlock = startBlock;
 	QTextBlock endBlock = doc->findBlock(endPos);
 	bool remove_list = isListBlock(currentBlock) != 0;
 	if (endPos > startPos && endPos == endBlock.position())
@@ -322,6 +323,8 @@ void MainWindow::onAction_List() {
 	    }
 	    currentBlock = currentBlock.next();	    // 次のブロックへ
 	}
+	cursor.setPosition(startBlock.position());	//	行頭位置
+	cursor.setPosition(endBlock.next().position(), QTextCursor::KeepAnchor);	//	行頭位置
 	cursor.endEditBlock();
 	mdEditor->setTextCursor(cursor);
 }
@@ -333,7 +336,8 @@ void MainWindow::onAction_NumList() {
 	cursor.beginEditBlock();
 	int startPos = cursor.selectionStart();
 	int endPos = cursor.selectionEnd();
-	QTextBlock currentBlock = doc->findBlock(startPos);		// 範囲に含まれる最初のブロックと最後のブロックを取得
+	QTextBlock startBlock = doc->findBlock(startPos);		// 範囲に含まれる最初のブロックと最後のブロックを取得
+	QTextBlock currentBlock = startBlock;
 	QTextBlock endBlock = doc->findBlock(endPos);
 	bool remove_list = isNumListBlock(currentBlock) != 0;
 	if (endPos > startPos && endPos == endBlock.position())
@@ -353,6 +357,8 @@ void MainWindow::onAction_NumList() {
 	    }
 	    currentBlock = currentBlock.next();	    // 次のブロックへ
 	}
+	cursor.setPosition(startBlock.position());	//	行頭位置
+	cursor.setPosition(endBlock.next().position(), QTextCursor::KeepAnchor);	//	行頭位置
 	cursor.endEditBlock();
 	mdEditor->setTextCursor(cursor);
 }
