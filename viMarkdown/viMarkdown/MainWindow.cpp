@@ -318,8 +318,14 @@ void MainWindow::onAction_List() {
 	    		cursor.removeSelectedText();
 	    	}
 	    } else {
-	    	if( !isListBlock(currentBlock) )
+	    	if( !isListBlock(currentBlock) ) {
+			    int n = isNumListBlock(currentBlock);	//	空白+ "数字. "
+			    if( n > 0 ) {
+			    	cursor.setPosition(currentBlock.position() + n - 3);		//	3 for "数字. ".length()
+			    	cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, 3);
+			    }
 			    cursor.insertText("- ");
+	    	}
 	    }
 	    currentBlock = currentBlock.next();	    // 次のブロックへ
 	}
@@ -352,8 +358,9 @@ void MainWindow::onAction_NumList() {
 	    		cursor.removeSelectedText();
 	    	}
 	    } else {
-	    	if( !isNumListBlock(currentBlock) )
+	    	if( !isNumListBlock(currentBlock) ) {
 			    cursor.insertText("1. ");
+	    	}
 	    }
 	    currentBlock = currentBlock.next();	    // 次のブロックへ
 	}
