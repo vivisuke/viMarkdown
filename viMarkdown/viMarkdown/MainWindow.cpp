@@ -26,7 +26,7 @@ MainWindow::MainWindow(QWidget *parent)
 	ui->setupUi(this);
 	updateHTMLModeCheck();
 	ui->action_OutlineBar->setChecked(true);	//	暫定的
-	setWindowTitle("viMarkdown ver 0.00.01"); 
+	setWindowTitle("viMarkdown ver 0.0.001 Dev"); 
 
 	setAcceptDrops(true);		//	ファイルドロップ可
 	setup_connections();
@@ -59,6 +59,7 @@ void MainWindow::setup_connections() {
 	connect(ui->action_OutlineBar, &QAction::toggled, this, &MainWindow::onAction_OutlineBar);
 	connect(ui->outlineBar, &QDockWidget::visibilityChanged, this, &MainWindow::onOutlineBarVisibilityChanged);
 	connect(ui->treeWidget, &QTreeWidget::currentItemChanged, this, &MainWindow::onTreeSelectionChanged);
+	connect(ui->action_AboutViMarkdown, &QAction::triggered, this, &MainWindow::onAction_About);
 }
 void MainWindow::updateHTMLModeCheck() {
 	ui->action_HTML->setChecked(m_htmlMode);
@@ -505,4 +506,15 @@ void MainWindow::onMDTextChanged() {
 		ui->tabWidget->setTabText(ui->tabWidget->currentIndex(), docWidget->m_title + " *");
 	}
 }
+void MainWindow::onAction_About() {
+	qDebug() << "MainWindow::onAction_About()";
 
+	QMessageBox::about(this, 
+        "About viMarkdown", // タイトルバー
+        
+        "<p><b>viMarkdown</b> version 0.0.001 Dev</p>"
+        "<p>The efficient Markdown editor.</p>"
+        "<p>Copyright (C) 2025 by N.Tsuda</p>"
+        "<p>Powered by Qt 6 and C++.</p>"
+    );
+}

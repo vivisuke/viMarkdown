@@ -100,9 +100,16 @@
     <addaction name="action_Indent"/>
     <addaction name="action_UnIndent"/>
    </widget>
+   <widget class="QMenu" name="menu_Help">
+    <property name="title">
+     <string>&amp;Help</string>
+    </property>
+    <addaction name="action_AboutViMarkdown"/>
+   </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_Edit"/>
    <addaction name="menu_View"/>
+   <addaction name="menu_Help"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
    <attribute name="toolBarArea">
@@ -319,6 +326,15 @@
   <action name="actiondummy">
    <property name="text">
     <string>dummy</string>
+   </property>
+  </action>
+  <action name="action_AboutViMarkdown">
+   <property name="icon">
+    <iconset>
+     <normaloff>images/info_48.png</normaloff>images/info_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;About viMarkdown</string>
    </property>
   </action>
  </widget>
