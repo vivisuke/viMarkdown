@@ -26,6 +26,7 @@ MainWindow::MainWindow(QWidget *parent)
 	ui->setupUi(this);
 	updateHTMLModeCheck();
 	ui->action_OutlineBar->setChecked(true);	//	暫定的
+	setWindowTitle("viMarkdown ver 0.00.01"); 
 
 	setAcceptDrops(true);		//	ファイルドロップ可
 	setup_connections();
