@@ -57,6 +57,7 @@ void MainWindow::setup_connections() {
 	connect(ui->action_Source, &QAction::toggled, this, &MainWindow::onAction_Source);
 	connect(ui->action_OutlineBar, &QAction::toggled, this, &MainWindow::onAction_OutlineBar);
 	connect(ui->outlineBar, &QDockWidget::visibilityChanged, this, &MainWindow::onOutlineBarVisibilityChanged);
+	connect(ui->treeWidget, &QTreeWidget::currentItemChanged, this, &MainWindow::onTreeSelectionChanged);
 }
 void MainWindow::updateHTMLModeCheck() {
 	ui->action_HTML->setChecked(m_htmlMode);
@@ -378,6 +379,16 @@ void MainWindow::onAction_OutlineBar(bool checked) {
 }
 void MainWindow::onOutlineBarVisibilityChanged(bool v) {
 	ui->action_OutlineBar->setChecked(v);
+}
+void MainWindow::onTreeSelectionChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous) {
+	auto top = current;
+	while( top->parent() != nullptr ) top = top->parent();
+	QString fullPath = top->data(0, Qt::UserRole).toString();
+	if( !fullPath.isEmpty() ) {
+		int tix = tabIndexOf(fullPath);
+		if( tix >= 0 )
+			ui->tabWidget->setCurrentIndex(tix);
+	}
 }
 void MainWindow::updatePreview() {
 	QTextEdit* textEdit = getCurDocWidget()->m_previewer;

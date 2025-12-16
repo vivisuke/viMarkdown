@@ -36,6 +36,7 @@ protected:
     int		tabIndexOf(const QString& fullPath);
 
     void	onOutlineBarVisibilityChanged(bool visible);
+    void	onTreeSelectionChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous);
 
     void	onAction_New();
     void	onAction_Open();
