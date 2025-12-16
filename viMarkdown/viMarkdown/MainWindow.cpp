@@ -199,7 +199,7 @@ void MainWindow::onAction_List() {
 	QPlainTextEdit *mdEditor = getCurDocWidget()->m_mdEditor;
 	QTextCursor cursor = mdEditor->textCursor();
     QTextDocument *doc = mdEditor->document();
-	if (cursor.hasSelection()) {
+	//if (cursor.hasSelection()) {
 		cursor.beginEditBlock();
 		int startPos = cursor.selectionStart();
 		int endPos = cursor.selectionEnd();
@@ -226,6 +226,7 @@ void MainWindow::onAction_List() {
 		    currentBlock = currentBlock.next();	    // 次のブロックへ
 		}
 		cursor.endEditBlock();
+#if 0
 	} else {
     	cursor.movePosition(QTextCursor::StartOfBlock);			//	行頭移動
 	    QTextBlock block = doc->findBlock(cursor.position());
@@ -238,6 +239,7 @@ void MainWindow::onAction_List() {
 	    	cursor.insertText("- ");
 	    }
 	}
+#endif
 	mdEditor->setTextCursor(cursor);
 }
 void MainWindow::onAction_NumList() {
