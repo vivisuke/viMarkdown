@@ -26,9 +26,9 @@ MainWindow::MainWindow(QWidget *parent)
 	setup_connections();
 	onAction_New();
 
-	QSettings settings;
-	QString recentFilePath = settings.value("recentFilePath").toString();
-	qDebug() << "recentFilePath = " << recentFilePath;
+	//QSettings settings;
+	//QString recentFilePath = settings.value("recentFilePath").toString();
+	//qDebug() << "recentFilePath = " << recentFilePath;
 }
 
 MainWindow::~MainWindow()
@@ -93,8 +93,11 @@ void MainWindow::onAboutToShow_RecentFiles() {
 
 	ui->menu_RecentFiles->clear();
 	QSettings settings;
-	QString recentFilePath = settings.value("recentFilePath").toString();
-	ui->menu_RecentFiles->addAction(recentFilePath);
+	QStringList recentFilePaths = settings.value("recentFilePaths").toStringList();
+	//ui->menu_RecentFiles->addAction(recentFilePath);
+	for(int i = 0; i < recentFilePaths.size(); ++i) {
+		ui->menu_RecentFiles->addAction(recentFilePaths[i]);
+	}
 }
 
 void MainWindow::onAction_New() {
@@ -148,7 +151,13 @@ void MainWindow::onAction_Open() {
 		m_opening_file = false;
 
 		QSettings settings;
-		settings.setValue("recentFilePath", fullPath);
+		QStringList recentFilePaths = settings.value("recentFilePaths").toStringList();
+		int ix;
+		while( (ix = recentFilePaths.indexOf(fullPath)) >= 0 )
+			recentFilePaths.removeAt(ix);
+		recentFilePaths.push_front(fullPath);
+		while( recentFilePaths.size() > 10 ) recentFilePaths.pop_back();
+		settings.setValue("recentFilePaths", recentFilePaths);
 	}
 }
 void MainWindow::onAction_Save() {
