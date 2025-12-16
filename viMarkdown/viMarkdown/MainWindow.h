@@ -33,7 +33,7 @@ protected:
     void	insertInline(const QString&);
     QTreeWidgetItem* findTopLevelItemByFullPath(const QString& title, const QString fullPath);
     void	do_open(const QString&);
-    int		indexOf(const QString& fullPath);
+    int		tabIndexOf(const QString& fullPath);
 
     void	onOutlineBarVisibilityChanged(bool visible);
 

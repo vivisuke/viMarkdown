@@ -165,7 +165,20 @@ void MainWindow::onAction_Open() {
 		do_open(fullPath);
 	}
 }
+int MainWindow::tabIndexOf(const QString& fullPath) {
+	for(int ix = 0; ix < ui->tabWidget->count(); ++ix) {
+		DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(ix);
+		if( docWidget->m_fullPath == fullPath )
+			return ix;
+	}
+	return -1;
+}
 void MainWindow::do_open(const QString& fullPath) {
+	int tix = tabIndexOf(fullPath);
+	if( tix >= 0 ) {		//	すでにオープン済み
+		ui->tabWidget->setCurrentIndex(tix);
+		return;
+	}
 	m_opening_file = true;
 	QFile file(fullPath);
 	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
