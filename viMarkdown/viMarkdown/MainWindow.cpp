@@ -49,6 +49,8 @@ void MainWindow::setup_connections() {
 	connect(ui->action_Close, &QAction::triggered, this, &MainWindow::onAction_Close);
 	connect(ui->action_List, &QAction::triggered, this, &MainWindow::onAction_List);
 	connect(ui->action_NumList, &QAction::triggered, this, &MainWindow::onAction_NumList);
+	connect(ui->action_Indent, &QAction::triggered, this, &MainWindow::onAction_Indent);
+	connect(ui->action_UnIndent, &QAction::triggered, this, &MainWindow::onAction_UnIndent);
 	connect(ui->action_Bold, &QAction::triggered, this, &MainWindow::onAction_Bold);
 	connect(ui->action_Italic, &QAction::triggered, this, &MainWindow::onAction_Italic);
 	connect(ui->action_HTML, &QAction::toggled, this, &MainWindow::onAction_HTML);
@@ -133,8 +135,8 @@ void MainWindow::onAction_New() {
 	addTab(QString("無題-%1").arg(++m_tab_number));
 }
 void MainWindow::addTab(const QString &title, const QString fullPath, const QString txt) {
-	auto ptr = newTabWidget(title, fullPath);		//	新規タブ生成
-	int ix = ui->tabWidget->addTab(ptr, title);		//	新規タブを追加
+	auto docWidget = newTabWidget(title, fullPath);		//	新規タブ生成
+	int ix = ui->tabWidget->addTab(docWidget, title);		//	新規タブを追加
 	ui->tabWidget->setCurrentIndex(ix);				//	新規タブをカレントに
 
 	QPlainTextEdit *mdEditor = getCurDocWidget()->m_mdEditor;
@@ -226,6 +228,49 @@ int isListBlock(const QTextBlock& block) {		//	空白+ "- " で始まるか？ r
 	while( i < txt.size() && txt[i] == ' ' ) ++i;
 	if( !txt.mid(i).startsWith("- ") ) return 0;
 	return i + 2;
+}
+void MainWindow::onAction_Indent() {
+	QPlainTextEdit *mdEditor = getCurDocWidget()->m_mdEditor;
+	QTextCursor cursor = mdEditor->textCursor();
+    QTextDocument *doc = mdEditor->document();
+	cursor.beginEditBlock();
+	int startPos = cursor.selectionStart();
+	int endPos = cursor.selectionEnd();
+	// 範囲に含まれる最初のブロックと最後のブロックを取得
+	QTextBlock currentBlock = doc->findBlock(startPos);
+	QTextBlock endBlock = doc->findBlock(endPos);
+	if (endPos > startPos && endPos == endBlock.position())
+		endBlock = endBlock.previous();		//	最終ブロック修正
+	while (currentBlock.isValid() && currentBlock.blockNumber() <= endBlock.blockNumber()) {
+	    cursor.setPosition(currentBlock.position());	//	行頭位置
+	    cursor.insertText("  ");
+	    currentBlock = currentBlock.next();	    // 次のブロックへ
+	}
+	cursor.endEditBlock();
+	mdEditor->setTextCursor(cursor);
+}
+void MainWindow::onAction_UnIndent() {
+	QPlainTextEdit *mdEditor = getCurDocWidget()->m_mdEditor;
+	QTextCursor cursor = mdEditor->textCursor();
+    QTextDocument *doc = mdEditor->document();
+	cursor.beginEditBlock();
+	int startPos = cursor.selectionStart();
+	int endPos = cursor.selectionEnd();
+	// 範囲に含まれる最初のブロックと最後のブロックを取得
+	QTextBlock currentBlock = doc->findBlock(startPos);
+	QTextBlock endBlock = doc->findBlock(endPos);
+	if (endPos > startPos && endPos == endBlock.position())
+		endBlock = endBlock.previous();		//	最終ブロック修正
+	while (currentBlock.isValid() && currentBlock.blockNumber() <= endBlock.blockNumber()) {
+	    cursor.setPosition(currentBlock.position());	//	行頭位置
+	    if( currentBlock.text().startsWith("  ") ) {
+    		cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, 2);
+    		cursor.removeSelectedText();
+	    }
+	    currentBlock = currentBlock.next();	    // 次のブロックへ
+	}
+	cursor.endEditBlock();
+	mdEditor->setTextCursor(cursor);
 }
 void MainWindow::onAction_List() {
 	qDebug() << "MainWindow::onAction_List()";

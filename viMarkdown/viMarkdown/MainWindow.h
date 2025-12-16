@@ -33,6 +33,7 @@ protected:
     void	insertInline(const QString&);
     QTreeWidgetItem* findTopLevelItemByFullPath(const QString& title, const QString fullPath);
     void	do_open(const QString&);
+    int		indexOf(const QString& fullPath);
 
     void	onOutlineBarVisibilityChanged(bool visible);
 
@@ -43,6 +44,8 @@ protected:
     void	onAction_Bold();
     void	onAction_List();
     void	onAction_NumList();
+    void	onAction_Indent();
+    void	onAction_UnIndent();
     void	onAction_Italic();
     void	onAction_HTML(bool);
     void	onAction_Source(bool);
