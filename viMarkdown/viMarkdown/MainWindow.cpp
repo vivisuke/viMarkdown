@@ -359,6 +359,11 @@ void MainWindow::onAction_NumList() {
 	    	}
 	    } else {
 	    	if( !isNumListBlock(currentBlock) ) {
+			    int n = isListBlock(currentBlock);	//	空白+ "- "
+			    if( n > 0 ) {
+			    	cursor.setPosition(currentBlock.position() + n - 2);		//	2 for "- ".length()
+			    	cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, 2);
+			    }
 			    cursor.insertText("1. ");
 	    	}
 	    }
