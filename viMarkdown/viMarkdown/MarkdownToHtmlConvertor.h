@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <QString>
+#include <vector>
 
 class MarkdownToHtmlConvertor
 {
@@ -38,5 +39,6 @@ private:
 	int			m_curUlLevel = 0;
 	int			m_curOlLevel = 0;
 	int			m_nSpace = 0;
+	std::vector<char>	m_blockType;	//	' ': body text, '#': headings
 };
 

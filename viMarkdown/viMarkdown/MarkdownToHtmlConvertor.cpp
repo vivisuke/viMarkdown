@@ -3,6 +3,8 @@
 #include <QRegularExpressionMatch>
 #include "markdowntohtmlconvertor.h"
 
+using namespace std;
+
 const QString& MarkdownToHtmlConvertor::convert() {
 	m_htmlText.clear();
 	m_headingList.clear();
@@ -10,14 +12,17 @@ const QString& MarkdownToHtmlConvertor::convert() {
 	m_curUlLevel = 0;
 	m_curOlLevel = 0;
 	auto lst = m_markdownText.split('\n');
-	for(int i = 0; i != lst.size(); ++i) {
-		auto line = lst[i];
+	m_blockType.resize(lst.size());
+	for(int ln = 0; ln != lst.size(); ++ln) {
+		auto line = lst[ln];
 		m_nSpace = 0;
+		m_blockType[ln] = ' ';
 	  	while( m_nSpace < line.size() && line[m_nSpace] == ' ' ) ++m_nSpace;
 	  	if( m_nSpace != 0 ) line = line.mid(m_nSpace);
 		if( line.isEmpty() ) {
 			m_isParagraphOpen = true;
         } else if( line.startsWith('#') ) {
+			m_blockType[ln] = ' ';
 			do_heading(line);
 		} else if( line.startsWith("- ") ) {
 			do_list(line);
