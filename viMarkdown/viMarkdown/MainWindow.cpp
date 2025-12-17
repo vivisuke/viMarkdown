@@ -122,8 +122,10 @@ void MainWindow::onAboutToShow_RecentFiles() {
 	ui->menu_RecentFiles->clear();
 	QSettings settings;
 	QStringList recentFilePaths = settings.value("recentFilePaths").toStringList();
+	int k = 0;
 	for(const QString &fullPath : recentFilePaths) {
-		QAction *act = ui->menu_RecentFiles->addAction(fullPath);
+		auto key = QString::number(k = (k+1) % 10);
+		QAction *act = ui->menu_RecentFiles->addAction("&" + key + " " + fullPath);
 		connect(act, &QAction::triggered, this, [this, fullPath]() {
 			QString pathArg = fullPath;
 	        do_open(pathArg); 
