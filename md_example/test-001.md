@@ -1,1 +1,1 @@
-hoge
+abc~~XXXX~~zzz

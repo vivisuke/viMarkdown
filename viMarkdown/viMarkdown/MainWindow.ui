@@ -84,6 +84,7 @@
      <addaction name="separator"/>
      <addaction name="action_Bold"/>
      <addaction name="action_Italic"/>
+     <addaction name="action_Strikethrough"/>
     </widget>
     <widget class="QMenu" name="menublock">
      <property name="title">
@@ -132,6 +133,7 @@
    <addaction name="action_NumList"/>
    <addaction name="action_Bold"/>
    <addaction name="action_Italic"/>
+   <addaction name="action_Strikethrough"/>
    <addaction name="separator"/>
    <addaction name="action_HTML"/>
    <addaction name="action_Source"/>
@@ -335,6 +337,18 @@
    </property>
    <property name="text">
     <string>&amp;About viMarkdown</string>
+   </property>
+  </action>
+  <action name="action_Strikethrough">
+   <property name="icon">
+    <iconset>
+     <normaloff>images/strikethrough_s_48.png</normaloff>images/strikethrough_s_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Strikethrough</string>
+   </property>
+   <property name="toolTip">
+    <string>Strikethrough</string>
    </property>
   </action>
  </widget>

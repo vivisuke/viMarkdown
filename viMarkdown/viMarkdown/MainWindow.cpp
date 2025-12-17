@@ -50,6 +50,7 @@ void MainWindow::setup_connections() {
 	connect(ui->action_UnIndent, &QAction::triggered, this, &MainWindow::onAction_UnIndent);
 	connect(ui->action_Bold, &QAction::triggered, this, &MainWindow::onAction_Bold);
 	connect(ui->action_Italic, &QAction::triggered, this, &MainWindow::onAction_Italic);
+	connect(ui->action_Strikethrough, &QAction::triggered, this, &MainWindow::onAction_Strikethrough);
 	connect(ui->action_HTML, &QAction::toggled, this, &MainWindow::onAction_HTML);
 	connect(ui->action_Source, &QAction::toggled, this, &MainWindow::onAction_Source);
 	connect(ui->action_OutlineBar, &QAction::toggled, this, &MainWindow::onAction_OutlineBar);
@@ -414,6 +415,9 @@ void MainWindow::onAction_Bold() {
 }
 void MainWindow::onAction_Italic() {
 	insertInline("*");
+}
+void MainWindow::onAction_Strikethrough() {
+	insertInline("~~");
 }
 void MainWindow::onAction_HTML(bool checked) {
 	//if( m_htmlMode ) return;

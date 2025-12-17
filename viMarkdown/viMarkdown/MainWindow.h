@@ -44,11 +44,12 @@ protected:
     void	onAction_Save();
     void	onAction_Close();
     void	onAction_Bold();
+    void	onAction_Italic();
+    void	onAction_Strikethrough();
     void	onAction_List();
     void	onAction_NumList();
     void	onAction_Indent();
     void	onAction_UnIndent();
-    void	onAction_Italic();
     void	onAction_HTML(bool);
     void	onAction_Source(bool);
     void	onAction_OutlineBar(bool);
