@@ -114,6 +114,8 @@ QSplitter *MainWindow::getCurTabSplitter() {
 }
 #endif
 DocWidget *MainWindow::getCurDocWidget() {
+	//int ix = ui->tabWidget->currentIndex();
+	//auto ptr = (DocWidget*)ui->tabWidget->widget(ix);
 	return (DocWidget*)ui->tabWidget->currentWidget();
 }
 
@@ -240,14 +242,14 @@ void MainWindow::onAction_Close() {
 	qDebug() << "MainWindow::onAction_Close()";
 
 	DocWidget *docWidget = getCurDocWidget();
+	int ix = ui->tabWidget->currentIndex();
+	if (ix >= 0)
+		ui->tabWidget->removeTab(ix);
 	QTreeWidgetItem *top = findTopLevelItemByFullPath(docWidget->m_title, docWidget->m_fullPath);
 	if( top != nullptr ) {
 		//ui->treeWidget->removeItemWidget(top);
 		delete top;			//	TreeWidget から top アイテム以下をすべて削除
 	}
-	int ix = ui->tabWidget->currentIndex();
-	if( ix >= 0 )
-		ui->tabWidget->removeTab(ix);
 }
 int isListBlock(const QTextBlock& block) {		//	空白+ "- " で始まるか？ return 0 for not List, 1以上 for 文字数
 	const QString txt = block.text();
