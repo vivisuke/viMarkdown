@@ -34,6 +34,7 @@ protected:
     QTreeWidgetItem* findTopLevelItemByFullPath(const QString& title, const QString fullPath);
     void	do_open(const QString&);
     int		tabIndexOf(const QString& title, const QString& fullPath);
+    void	addToRecentFiles(const QString& fullPath);
 
     void	onOutlineBarVisibilityChanged(bool visible);
     void	onTreeSelectionChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous);

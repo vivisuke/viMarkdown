@@ -31,10 +31,6 @@ MainWindow::MainWindow(QWidget *parent)
 	setAcceptDrops(true);		//	ファイルドロップ可
 	setup_connections();
 	onAction_New();
-
-	//QSettings settings;
-	//QString recentFilePath = settings.value("recentFilePath").toString();
-	//qDebug() << "recentFilePath = " << recentFilePath;
 }
 
 MainWindow::~MainWindow()
@@ -183,6 +179,16 @@ int MainWindow::tabIndexOf(const QString& title, const QString& fullPath) {
 	}
 	return -1;
 }
+void MainWindow::addToRecentFiles(const QString& fullPath) {
+	QSettings settings;
+	QStringList recentFilePaths = settings.value("recentFilePaths").toStringList();
+	int ix;
+	while( (ix = recentFilePaths.indexOf(fullPath)) >= 0 )
+		recentFilePaths.removeAt(ix);
+	recentFilePaths.push_front(fullPath);
+	while( recentFilePaths.size() > 10 ) recentFilePaths.pop_back();
+	settings.setValue("recentFilePaths", recentFilePaths);
+}
 void MainWindow::do_open(const QString& fullPath) {
 	int tix = tabIndexOf("", fullPath);
 	if( tix >= 0 ) {		//	すでにオープン済み
@@ -203,14 +209,7 @@ void MainWindow::do_open(const QString& fullPath) {
 	QDir::setCurrent(fileInfo.path());
 	m_opening_file = false;
 
-	QSettings settings;
-	QStringList recentFilePaths = settings.value("recentFilePaths").toStringList();
-	int ix;
-	while( (ix = recentFilePaths.indexOf(fullPath)) >= 0 )
-		recentFilePaths.removeAt(ix);
-	recentFilePaths.push_front(fullPath);
-	while( recentFilePaths.size() > 10 ) recentFilePaths.pop_back();
-	settings.setValue("recentFilePaths", recentFilePaths);
+	addToRecentFiles(fullPath);
 }
 void MainWindow::onAction_Save() {
 	int ix = ui->tabWidget->currentIndex();
@@ -225,6 +224,7 @@ void MainWindow::onAction_Save() {
 						"markdown (*.md)"  // ファイルフィルタ
 					);
 	if( fullPath.isEmpty() ) return;
+	addToRecentFiles(fullPath);
 	QFile file(fullPath);
 	if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
 		QTextStream out(&file);
