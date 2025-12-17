@@ -66,6 +66,7 @@ void MainWindow::updateHTMLModeCheck() {
 DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPath) {
 	//auto containerWidget = new QWidget;
 	auto *docWidget = new DocWidget(title, fullPath);
+	docWidget->setStyleSheet("font-size: 12pt; line-height: 200%;");
 	QSplitter *splitter = new QSplitter(Qt::Horizontal, docWidget);
 	QPlainTextEdit *mdEditor = docWidget->m_mdEditor = new QPlainTextEdit(splitter);
 	//QTextEdit *mdEditor = new QTextEdit(splitter);

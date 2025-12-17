@@ -79,7 +79,7 @@
     </property>
     <widget class="QMenu" name="menuinline">
      <property name="title">
-      <string>inline</string>
+      <string>&amp;Inline</string>
      </property>
      <addaction name="separator"/>
      <addaction name="action_Bold"/>
@@ -88,7 +88,7 @@
     </widget>
     <widget class="QMenu" name="menublock">
      <property name="title">
-      <string>block</string>
+      <string>&amp;Block</string>
      </property>
      <addaction name="action_List"/>
      <addaction name="action_NumList"/>
@@ -302,7 +302,7 @@
      <normaloff>images/format_indent_increase_48.png</normaloff>images/format_indent_increase_48.png</iconset>
    </property>
    <property name="text">
-    <string>&amp;Indent</string>
+    <string>Inden&amp;t</string>
    </property>
   </action>
   <action name="action_UnIndent">
