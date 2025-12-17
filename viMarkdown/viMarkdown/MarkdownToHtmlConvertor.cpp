@@ -72,6 +72,7 @@ QString MarkdownToHtmlConvertor::parceInline(const QString& line) {
 		if( !match.hasMatch() ) break;
         int e = match.capturedStart();  // ２番目のマッチ位置 
 		result = result.left(s) + "<b>" + result.mid(s+2, e - s - 2) + "</b>" + result.mid(e+2);
+		match = re_bold.match(result);
 	}
     static QRegularExpression re_italic(R"((?<![\\])(\*|_))");  // 直前が \ でない * or _ とマッチ
 	match = re_italic.match(result);
@@ -82,12 +83,14 @@ QString MarkdownToHtmlConvertor::parceInline(const QString& line) {
         int e = match.capturedStart();  // ２番目のマッチ位置 
         if( e == s + 1 ) break;
 		result = result.left(s) + "<i>" + result.mid(s+1, e - s - 1) + "</i>" + result.mid(e+1);
+		match = re_italic.match(result);
 	}
     static QRegularExpression re_check(R"((?<![\\])(\[ \]))");  // 直前が \ でない [ ] とマッチ
 	match = re_check.match(result);
 	while (match.hasMatch()) {
         int s = match.capturedStart();  // 最初のマッチ位置 
 		result = result.left(s) + " □ " + result.mid(s+3);
+		match = re_check.match(result);
 		match = re_check.match(result);
 	}
     static QRegularExpression re_checked(R"((?<![\\])(\[[xX]\]))");  // 直前が \ でない [x] [X]とマッチ
