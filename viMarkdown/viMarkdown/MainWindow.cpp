@@ -168,16 +168,21 @@ void MainWindow::onAction_Open() {
 		do_open(fullPath);
 	}
 }
-int MainWindow::tabIndexOf(const QString& fullPath) {
+int MainWindow::tabIndexOf(const QString& title, const QString& fullPath) {
 	for(int ix = 0; ix < ui->tabWidget->count(); ++ix) {
 		DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(ix);
-		if( docWidget->m_fullPath == fullPath )
-			return ix;
+		if( fullPath.isEmpty() ) {
+			if( docWidget->m_title == title )
+				return ix;
+		} else {
+			if( docWidget->m_fullPath == fullPath )
+				return ix;
+		}
 	}
 	return -1;
 }
 void MainWindow::do_open(const QString& fullPath) {
-	int tix = tabIndexOf(fullPath);
+	int tix = tabIndexOf("", fullPath);
 	if( tix >= 0 ) {		//	すでにオープン済み
 		ui->tabWidget->setCurrentIndex(tix);
 		return;
@@ -429,11 +434,11 @@ void MainWindow::onTreeSelectionChanged(QTreeWidgetItem *current, QTreeWidgetIte
 	auto top = current;
 	while( top->parent() != nullptr ) top = top->parent();
 	QString fullPath = top->data(0, Qt::UserRole).toString();
-	if( !fullPath.isEmpty() ) {
-		int tix = tabIndexOf(fullPath);
+	//if( !fullPath.isEmpty() ) {
+		int tix = tabIndexOf(current->text(0), fullPath);
 		if( tix >= 0 )
 			ui->tabWidget->setCurrentIndex(tix);
-	}
+	//}
 }
 void MainWindow::updatePreview() {
 	QTextEdit* textEdit = getCurDocWidget()->m_previewer;
