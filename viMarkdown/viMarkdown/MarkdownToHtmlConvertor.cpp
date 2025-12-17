@@ -65,50 +65,48 @@ QString MarkdownToHtmlConvertor::parceInline(const QString& line) {
 	//result.replace(italicRe, "<em>\\1</em>");
 
     static QRegularExpression re_bold(R"((?<![\\])(\*\*|__))");  // 直前が \ でない ** or __ とマッチ
-	QRegularExpressionMatch match = re_bold.match(result);
-	while (match.hasMatch()) {
+	QRegularExpressionMatch match;
+	while ((match = re_bold.match(result)).hasMatch()) {
         int s = match.capturedStart();  // 最初のマッチ位置
         match = re_bold.match(result, s+2);
 		if( !match.hasMatch() ) break;
         int e = match.capturedStart();  // ２番目のマッチ位置 
 		result = result.left(s) + "<b>" + result.mid(s+2, e - s - 2) + "</b>" + result.mid(e+2);
-		match = re_bold.match(result);
 	}
     static QRegularExpression re_italic(R"((?<![\\])(\*|_))");  // 直前が \ でない * or _ とマッチ
-	match = re_italic.match(result);
-	while (match.hasMatch()) {
+	while ((match = re_italic.match(result)).hasMatch()) {
         int s = match.capturedStart();  // 最初のマッチ位置 
 		match = re_italic.match(result, s+1);
 		if( !match.hasMatch() ) break;
         int e = match.capturedStart();  // ２番目のマッチ位置 
         if( e == s + 1 ) break;
 		result = result.left(s) + "<i>" + result.mid(s+1, e - s - 1) + "</i>" + result.mid(e+1);
-		match = re_italic.match(result);
+	}
+    static QRegularExpression re_del(R"((?<![\\])~~)");  // 直前が \ でない ~~ とマッチ
+	while ((match = re_del.match(result)).hasMatch()) {
+        int s = match.capturedStart();  // 最初のマッチ位置
+        match = re_del.match(result, s+2);
+		if( !match.hasMatch() ) break;
+        int e = match.capturedStart();  // ２番目のマッチ位置 
+		result = result.left(s) + "<s>" + result.mid(s+2, e - s - 2) + "</s>" + result.mid(e+2);
 	}
     static QRegularExpression re_check(R"((?<![\\])(\[ \]))");  // 直前が \ でない [ ] とマッチ
-	match = re_check.match(result);
-	while (match.hasMatch()) {
+	while ((match = re_check.match(result)).hasMatch()) {
         int s = match.capturedStart();  // 最初のマッチ位置 
 		result = result.left(s) + " □ " + result.mid(s+3);
-		match = re_check.match(result);
-		match = re_check.match(result);
 	}
     static QRegularExpression re_checked(R"((?<![\\])(\[[xX]\]))");  // 直前が \ でない [x] [X]とマッチ
-	match = re_checked.match(result);
-	while (match.hasMatch()) {
+	while ((match = re_checked.match(result)).hasMatch()) {
         int s = match.capturedStart();  // 最初のマッチ位置 
 		result = result.left(s) + " ☑ " + result.mid(s+3);
-		match = re_checked.match(result);
 	}
 	static QRegularExpression re_link(R"((?<!!)\[([^\]]*)\]\(([^)]*)\))");
-	match = re_link.match(result);
-	while (match.hasMatch()) {
+	while ((match = re_link.match(result)).hasMatch()) {
         int s = match.capturedStart();  // 最初のマッチ位置 
         int length = match.capturedLength();	//	マッチ長
         QString title = match.captured(1); // グループ1: タイトル
         QString url   = match.captured(2); // グループ2: URL
         result = result.left(s) + "<a href=\"" + url + "\">" + title + "</a>" + result.mid(s+length);
-		match = re_link.match(result);
 	}
 
     result.replace("\\*", "*");
