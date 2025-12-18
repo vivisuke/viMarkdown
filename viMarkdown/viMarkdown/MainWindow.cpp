@@ -254,6 +254,7 @@ void MainWindow::onAction_Close() {
 	qDebug() << "MainWindow::onAction_Close()";
 
 	DocWidget *docWidget = getCurDocWidget();
+	if (docWidget == nullptr) return;
 	int ix = ui->tabWidget->currentIndex();
 	if (ix >= 0)
 		ui->tabWidget->removeTab(ix);
@@ -448,6 +449,7 @@ void MainWindow::onOutlineBarVisibilityChanged(bool v) {
 	ui->action_OutlineBar->setChecked(v);
 }
 void MainWindow::onTreeSelectionChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous) {
+	if( current == nullptr ) return;
 	auto top = current;
 	while( top->parent() != nullptr ) top = top->parent();
 	QString fullPath = top->data(0, Qt::UserRole).toString();
