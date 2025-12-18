@@ -58,6 +58,26 @@ void MainWindow::setup_connections() {
 	connect(ui->treeWidget, &QTreeWidget::currentItemChanged, this, &MainWindow::onTreeSelectionChanged);
 	connect(ui->action_AboutViMarkdown, &QAction::triggered, this, &MainWindow::onAction_About);
 }
+void MainWindow::closeEvent(QCloseEvent *event) {
+	for(int ix = 0; ix < ui->tabWidget->count(); ++ix) {
+		DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(ix);
+		if( docWidget->m_modified ) {
+			ui->tabWidget->setCurrentIndex(ix);
+			QMessageBox::StandardButton reply = QMessageBox::question(this,
+                                  "Confirm save",                // タイトル
+                                  "The document has been modified.\nDo you want to save your changes?", // 本文
+                                  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel); // ボタンの種類
+
+		    if (reply == QMessageBox::Yes) {
+				onAction_Save();
+		    } else if (reply == QMessageBox::Cancel) {
+				event->ignore();
+			    return;
+		    }
+		}
+	}
+	event->accept();
+}
 void MainWindow::updateHTMLModeCheck() {
 	ui->action_HTML->setChecked(m_htmlMode);
 	ui->action_Source->setChecked(!m_htmlMode);
