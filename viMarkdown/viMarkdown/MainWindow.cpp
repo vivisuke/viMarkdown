@@ -255,6 +255,18 @@ void MainWindow::onAction_Close() {
 
 	DocWidget *docWidget = getCurDocWidget();
 	if (docWidget == nullptr) return;
+	if( docWidget->m_modified ) {
+		QMessageBox::StandardButton reply = QMessageBox::question(this,
+                                  "Confirm save",                // タイトル
+                                  "The document has been modified.\nDo you want to save your changes?", // 本文
+                                  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel); // ボタンの種類
+
+	    if (reply == QMessageBox::Yes) {
+			onAction_Save();
+	    } else if (reply == QMessageBox::Cancel) {
+		    return;
+	    }
+	}
 	int ix = ui->tabWidget->currentIndex();
 	if (ix >= 0)
 		ui->tabWidget->removeTab(ix);
@@ -493,6 +505,7 @@ void expandAllChildren(QTreeWidgetItem *item) {
 }
 void MainWindow::updateOutlineTree() {
 	DocWidget *docWidget = getCurDocWidget();
+	if( docWidget == nullptr ) return;
 	QTreeWidgetItem* item0 = findTopLevelItemByFullPath(docWidget->m_title, docWidget->m_fullPath);
 	if( item0 == nullptr ) return;
 	qDeleteAll(item0->takeChildren());
