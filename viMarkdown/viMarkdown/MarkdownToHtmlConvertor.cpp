@@ -115,14 +115,15 @@ QString MarkdownToHtmlConvertor::parceInline(const QString& line) {
         QString url   = match.captured(2); // グループ2: URL
         result = result.left(s) + "<a href=\"" + url + "\">" + title + "</a>" + result.mid(s+length);
 	}
-	int s = -1;
-	while( (s = result.indexOf('\\')) >= 0 && s+1 < result.size() ) {
+	int s = 0;
+	while( (s = result.indexOf('\\', s)) >= 0 && s+1 < result.size() ) {
         QString ch = result[s+1];
         if( ch == "<" )
         	ch = "&lt;";
         else if( ch == ">" )
         	ch = "&gt;";
         result = result.left(s) + ch + result.mid(s+2);
+        s += 1;
 	}
 #if 0
 	static QRegularExpression re_esc("\\");		//
