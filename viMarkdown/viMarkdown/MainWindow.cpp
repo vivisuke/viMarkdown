@@ -218,16 +218,24 @@ void MainWindow::do_open(const QString& fullPath) {
 void MainWindow::onAction_Save() {
 	int ix = ui->tabWidget->currentIndex();
 	if( ix < 0 ) return;
-	DocWidget *doc = (DocWidget*)ui->tabWidget->widget(ix);
-	QString fullPath = doc->m_fullPath;
-	if( fullPath.isEmpty() )
+	DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(ix);
+	QString fullPath = docWidget->m_fullPath;
+	if( fullPath.isEmpty() ) {		//	フルパスを持っていない場合
+		QString oldTitle = docWidget->m_title;
 		fullPath = QFileDialog::getSaveFileName(
 						this,				   // 親ウィジェット（メインウィンドウがあれば this）
 						"Save File",		 // ダイアログのタイトル
 						QDir::currentPath(),		  // 初期ディレクトリ
 						"markdown (*.md)"  // ファイルフィルタ
 					);
-	if( fullPath.isEmpty() ) return;
+		if( fullPath.isEmpty() ) return;
+		docWidget->m_fullPath = fullPath;
+		QFileInfo fileInfo(fullPath);
+		docWidget->m_title = fileInfo.fileName();
+		ui->tabWidget->setTabText(ix, docWidget->m_title);
+		QTreeWidgetItem *top = findTopLevelItemByFullPath(oldTitle, "");
+		top->setText(0, docWidget->m_title);
+	}
 	addToRecentFiles(fullPath);
 	QFile file(fullPath);
 	if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
@@ -236,8 +244,8 @@ void MainWindow::onAction_Save() {
 		out << mdEditor->toPlainText();
 		file.close();
 		//QMessageBox::information(nullptr, "成功", "ファイルが保存されました:\n" + fullPath);
-		doc->m_modified = false;		//	保存済み
-		ui->tabWidget->setTabText(ix, doc->m_title);
+		docWidget->m_modified = false;		//	保存済み
+		ui->tabWidget->setTabText(ix, docWidget->m_title);
 	} else {
 		//QMessageBox::warning(nullptr, "エラー", "ファイルを開けませんでした。");
 	}
@@ -507,10 +515,28 @@ void MainWindow::updateOutlineTree() {
 void MainWindow::onMDTextChanged() {
 	//qDebug() << "MainWindow::onMDTextChanged()";
 
+	if( m_ignore_changed ) return;
+	m_ignore_changed = true;
 	QPlainTextEdit *mdEditor = getCurDocWidget()->m_mdEditor;
 	m_plainText = mdEditor->toPlainText();
 	m_htmlComvertor.setMarkdownText(m_plainText);
 	m_htmlText = m_htmlComvertor.convert();
+	const vector<char>& blockType = m_htmlComvertor.getBlockType();
+	QTextCursor cursor(mdEditor->document()); 
+	QTextCharFormat fmt_darkred, fmt_black;
+    fmt_darkred.setForeground(QColor("darkred"));
+    fmt_black.setForeground(QColor("black"));
+	QTextBlock block = mdEditor->document()->firstBlock();
+	for(int ln = 0; block.isValid() && ln < blockType.size(); ++ln) {
+		cursor.setPosition(block.position());
+		cursor.select(QTextCursor::BlockUnderCursor);
+		if( blockType[ln] == '#' ) {
+			cursor.mergeCharFormat(fmt_darkred);
+		} else {
+			cursor.mergeCharFormat(fmt_black);
+		}
+		block = block.next();
+	}
 	updatePreview();
 	updateOutlineTree();
 	if( !m_opening_file ) {
@@ -519,6 +545,7 @@ void MainWindow::onMDTextChanged() {
 		docWidget->m_modified = true;
 		ui->tabWidget->setTabText(ui->tabWidget->currentIndex(), docWidget->m_title + " *");
 	}
+	m_ignore_changed = false;
 }
 void MainWindow::onAction_About() {
 	qDebug() << "MainWindow::onAction_About()";

@@ -22,7 +22,7 @@ const QString& MarkdownToHtmlConvertor::convert() {
 		if( line.isEmpty() ) {
 			m_isParagraphOpen = true;
         } else if( line.startsWith('#') ) {
-			m_blockType[ln] = ' ';
+			m_blockType[ln] = '#';
 			do_heading(line);
 		} else if( line.startsWith("- ") ) {
 			do_list(line);

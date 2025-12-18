@@ -15,6 +15,7 @@ public:
 	const QString&	getHtmlText() const { return m_htmlText; }
     const QString&	convert();
     const QStringList&	getHeadings() const { return m_headingList; }
+    const std::vector<char>	getBlockType() const { return m_blockType; }
 
 private:
     void	do_heading(const QString&);
