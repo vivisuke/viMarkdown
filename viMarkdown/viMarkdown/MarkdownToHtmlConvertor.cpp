@@ -7,6 +7,7 @@ using namespace std;
 
 const QString& MarkdownToHtmlConvertor::convert() {
 	m_htmlText.clear();
+	m_htmlText += "<body>\n";
 	m_headingList.clear();
 	m_isParagraphOpen = true;
 	m_curUlLevel = 0;
@@ -37,6 +38,7 @@ const QString& MarkdownToHtmlConvertor::convert() {
 	}
 	close_ul();
 	close_ol();
+	m_htmlText += "</body>\n";
 	return m_htmlText;
 }
 void MarkdownToHtmlConvertor::open_ul(int lvl) {
@@ -128,7 +130,10 @@ void MarkdownToHtmlConvertor::do_heading(const QString& line) {
 	int h = i;
 	while( i < line.size() && line[i] == ' ' ) ++i;
 	QString t = line.mid(i);
-	m_htmlText += QString("<h%1>").arg(h) + t + QString("</h%1>\n").arg(h);
+	if( h == 1 )
+		m_htmlText += QString("<h1 align=center>") + t + "</h1>\n";
+	else
+		m_htmlText += QString("<h%1>").arg(h) + t + QString("</h%1>\n").arg(h);
 	m_headingList.push_back(QString("%1 ").arg(i) + t);
 	m_isParagraphOpen = true;
 }
