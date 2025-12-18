@@ -107,7 +107,7 @@ QString MarkdownToHtmlConvertor::parceInline(const QString& line) {
         int s = match.capturedStart();  // 最初のマッチ位置 
 		result = result.left(s) + " ☑ " + result.mid(s+3);
 	}
-	static QRegularExpression re_link(R"((?<!!)\[([^\]]*)\]\(([^)]*)\))");
+	static QRegularExpression re_link(R"((?<!!)\[([^\]]*)\]\(([^)]*)\))");		//	[title](URL)
 	while ((match = re_link.match(result)).hasMatch()) {
         int s = match.capturedStart();  // 最初のマッチ位置 
         int length = match.capturedLength();	//	マッチ長
@@ -115,6 +115,28 @@ QString MarkdownToHtmlConvertor::parceInline(const QString& line) {
         QString url   = match.captured(2); // グループ2: URL
         result = result.left(s) + "<a href=\"" + url + "\">" + title + "</a>" + result.mid(s+length);
 	}
+	int s = -1;
+	while( (s = result.indexOf('\\')) >= 0 && s+1 < result.size() ) {
+        QString ch = result[s+1];
+        if( ch == "<" )
+        	ch = "&lt;";
+        else if( ch == ">" )
+        	ch = "&gt;";
+        result = result.left(s) + ch + result.mid(s+2);
+	}
+#if 0
+	static QRegularExpression re_esc("\\");		//
+	while ((match = re_esc.match(result)).hasMatch()) {
+        int s = match.capturedStart();  // 最初のマッチ位置 
+        //QString ch = match.captured(1); // エスケープされた文字
+        QString ch = result[s+1];
+        if( ch == "<" )
+        	ch = "&lt;";
+        else if( ch == ">" )
+        	ch = "&gt;";
+        result = result.left(s) + ch + result.mid(s+2);
+	}
+#endif
 
     result.replace("\\*", "*");
     result.replace("\\_", "_");
