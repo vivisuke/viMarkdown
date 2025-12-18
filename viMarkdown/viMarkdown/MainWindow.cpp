@@ -48,6 +48,8 @@ void MainWindow::setup_connections() {
 	connect(ui->action_NumList, &QAction::triggered, this, &MainWindow::onAction_NumList);
 	connect(ui->action_Indent, &QAction::triggered, this, &MainWindow::onAction_Indent);
 	connect(ui->action_UnIndent, &QAction::triggered, this, &MainWindow::onAction_UnIndent);
+	//connect(ui->action_Undo, &QAction::triggered, this, &MainWindow::onAction_Undo);
+	//connect(ui->action_Redo, &QAction::triggered, this, &MainWindow::onAction_Redo);
 	connect(ui->action_Bold, &QAction::triggered, this, &MainWindow::onAction_Bold);
 	connect(ui->action_Italic, &QAction::triggered, this, &MainWindow::onAction_Italic);
 	connect(ui->action_Strikethrough, &QAction::triggered, this, &MainWindow::onAction_Strikethrough);
@@ -63,9 +65,10 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 		DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(ix);
 		if( docWidget->m_modified ) {
 			ui->tabWidget->setCurrentIndex(ix);
+			QString mess = QString("The document '%1' has been modified.\nDo you want to save your changes ?").arg(docWidget->m_title);
 			QMessageBox::StandardButton reply = QMessageBox::question(this,
-                                  "Confirm save",                // タイトル
-                                  "The document has been modified.\nDo you want to save your changes?", // 本文
+                                  "Confirm save",
+                                  mess,
                                   QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel); // ボタンの種類
 
 		    if (reply == QMessageBox::Yes) {
@@ -454,6 +457,13 @@ void MainWindow::insertInline(const QString& delimiter) {
 	}
 	mdEditor->setTextCursor(cursor);
 }
+void MainWindow::onAction_Undo() {
+	DocWidget *docWidget = getCurDocWidget();
+	if( docWidget == nullptr ) return;
+	docWidget->m_mdEditor->undo();
+}
+void MainWindow::onAction_Redo() {
+}
 void MainWindow::onAction_Bold() {
 	insertInline("**");
 }
@@ -588,9 +598,9 @@ void MainWindow::onAction_About() {
 	QMessageBox::about(this, 
         "About viMarkdown", // タイトルバー
         
-        "<p><b>viMarkdown</b> version 0.0.001 Dev</p>"
-        "<p>The efficient Markdown editor.</p>"
-        "<p>Copyright (C) 2025 by N.Tsuda</p>"
-        "<p>Powered by Qt 6 and C++.</p>"
+        "<p><big><b>viMarkdown</b></big> version 0.0.001 Dev</p>"
+        "<p>The efficient Markdown editor."
+        "<br>Copyright (C) 2025 by N.Tsuda"
+        "<br>Powered by Qt 6 and C++.</p>"
     );
 }

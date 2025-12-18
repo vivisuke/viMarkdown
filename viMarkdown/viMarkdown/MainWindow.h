@@ -43,6 +43,8 @@ protected:
     void	onAction_Open();
     void	onAction_Save();
     void	onAction_Close();
+    void	onAction_Undo();
+    void	onAction_Redo();
     void	onAction_Bold();
     void	onAction_Italic();
     void	onAction_Strikethrough();
