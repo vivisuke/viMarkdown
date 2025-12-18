@@ -105,6 +105,9 @@
     <ClInclude Include="MarkdownToHtmlConvertor.h" />
     <ClInclude Include="ver.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="app_icon.rc" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">
     <Import Project="$(QtMsBuild)\qt.targets" />

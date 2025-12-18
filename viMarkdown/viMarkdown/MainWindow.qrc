@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/MainWindow">
         <file>images/viMarkdown.png</file>
+        <file>images/viMarkdown.ico</file>
     </qresource>
 </RCC>
