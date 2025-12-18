@@ -63,6 +63,8 @@
     <addaction name="action_Save"/>
     <addaction name="action_Close"/>
     <addaction name="menu_RecentFiles"/>
+    <addaction name="separator"/>
+    <addaction name="action_Exit"/>
    </widget>
    <widget class="QMenu" name="menu_View">
     <property name="title">
@@ -177,8 +179,8 @@
   </widget>
   <action name="action_New">
    <property name="icon">
-    <iconset>
-     <normaloff>images/add_notes_48.png</normaloff>images/add_notes_48.png</iconset>
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/add_notes_48.png</normaloff>:/MainWindow/images/add_notes_48.png</iconset>
    </property>
    <property name="text">
     <string>&amp;New</string>
@@ -189,8 +191,8 @@
   </action>
   <action name="action_Close">
    <property name="icon">
-    <iconset>
-     <normaloff>images/tab_close_48.png</normaloff>images/tab_close_48.png</iconset>
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/tab_close_48.png</normaloff>:/MainWindow/images/tab_close_48.png</iconset>
    </property>
    <property name="text">
     <string>&amp;Close</string>
@@ -220,8 +222,8 @@
   </action>
   <action name="action_Open">
    <property name="icon">
-    <iconset>
-     <normaloff>images/file_open_48.png</normaloff>images/file_open_48.png</iconset>
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/file_open_48.png</normaloff>:/MainWindow/images/file_open_48.png</iconset>
    </property>
    <property name="text">
     <string>&amp;Open</string>
@@ -232,8 +234,8 @@
   </action>
   <action name="action_Save">
    <property name="icon">
-    <iconset>
-     <normaloff>images/save_48.png</normaloff>images/save_48.png</iconset>
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/save_48.png</normaloff>:/MainWindow/images/save_48.png</iconset>
    </property>
    <property name="text">
     <string>&amp;Save</string>
@@ -244,8 +246,8 @@
   </action>
   <action name="action_Bold">
    <property name="icon">
-    <iconset>
-     <normaloff>images/format_bold_48.png</normaloff>images/format_bold_48.png</iconset>
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/format_bold_48.png</normaloff>:/MainWindow/images/format_bold_48.png</iconset>
    </property>
    <property name="text">
     <string>&amp;Bold</string>
@@ -253,8 +255,8 @@
   </action>
   <action name="action_Italic">
    <property name="icon">
-    <iconset>
-     <normaloff>images/format_italic_48.png</normaloff>images/format_italic_48.png</iconset>
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/format_italic_48.png</normaloff>:/MainWindow/images/format_italic_48.png</iconset>
    </property>
    <property name="text">
     <string>&amp;Italic</string>
@@ -262,8 +264,8 @@
   </action>
   <action name="action_Undo">
    <property name="icon">
-    <iconset>
-     <normaloff>images/undo_48.png</normaloff>images/undo_48.png</iconset>
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/undo_48.png</normaloff>:/MainWindow/images/undo_48.png</iconset>
    </property>
    <property name="text">
     <string>&amp;Undo</string>
@@ -272,7 +274,8 @@
   <action name="action_Redo">
    <property name="icon">
     <iconset>
-     <normaloff>images/redo_48.png</normaloff>images/redo_48.png</iconset>
+     <normaloff>images/redo_48.png</normaloff>
+     <normalon>:/MainWindow/images/redo_48.png</normalon>images/redo_48.png</iconset>
    </property>
    <property name="text">
     <string>&amp;Redo</string>
@@ -281,7 +284,8 @@
   <action name="action_List">
    <property name="icon">
     <iconset>
-     <normaloff>images/format_list_bulleted_48.png</normaloff>images/format_list_bulleted_48.png</iconset>
+     <normaloff>images/format_list_bulleted_48.png</normaloff>
+     <normalon>:/MainWindow/images/format_list_bulleted_48.png</normalon>images/format_list_bulleted_48.png</iconset>
    </property>
    <property name="text">
     <string>&amp;List</string>
@@ -290,7 +294,8 @@
   <action name="action_NumList">
    <property name="icon">
     <iconset>
-     <normaloff>images/format_list_numbered_48.png</normaloff>images/format_list_numbered_48.png</iconset>
+     <normaloff>images/format_list_numbered_48.png</normaloff>
+     <normalon>:/MainWindow/images/format_list_numbered_48.png</normalon>images/format_list_numbered_48.png</iconset>
    </property>
    <property name="text">
     <string>&amp;NumList</string>
@@ -299,7 +304,8 @@
   <action name="action_Indent">
    <property name="icon">
     <iconset>
-     <normaloff>images/format_indent_increase_48.png</normaloff>images/format_indent_increase_48.png</iconset>
+     <normaloff>images/format_indent_increase_48.png</normaloff>
+     <normalon>:/MainWindow/images/format_indent_increase_48.png</normalon>images/format_indent_increase_48.png</iconset>
    </property>
    <property name="text">
     <string>Inden&amp;t</string>
@@ -308,7 +314,8 @@
   <action name="action_UnIndent">
    <property name="icon">
     <iconset>
-     <normaloff>images/format_indent_decrease_48.png</normaloff>images/format_indent_decrease_48.png</iconset>
+     <normaloff>images/format_indent_decrease_48.png</normaloff>
+     <normalon>:/MainWindow/images/format_indent_decrease_48.png</normalon>images/format_indent_decrease_48.png</iconset>
    </property>
    <property name="text">
     <string>u&amp;nIndent</string>
@@ -333,7 +340,8 @@
   <action name="action_AboutViMarkdown">
    <property name="icon">
     <iconset>
-     <normaloff>images/info_48.png</normaloff>images/info_48.png</iconset>
+     <normaloff>images/info_48.png</normaloff>
+     <normalon>:/MainWindow/images/info_48.png</normalon>images/info_48.png</iconset>
    </property>
    <property name="text">
     <string>&amp;About viMarkdown</string>
@@ -342,13 +350,26 @@
   <action name="action_Strikethrough">
    <property name="icon">
     <iconset>
-     <normaloff>images/strikethrough_s_48.png</normaloff>images/strikethrough_s_48.png</iconset>
+     <normaloff>images/strikethrough_s_48.png</normaloff>
+     <normalon>:/MainWindow/images/strikethrough_s_48.png</normalon>images/strikethrough_s_48.png</iconset>
    </property>
    <property name="text">
     <string>&amp;Strikethrough</string>
    </property>
    <property name="toolTip">
     <string>Strikethrough</string>
+   </property>
+  </action>
+  <action name="action_Exit">
+   <property name="icon">
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/exit_to_app_48.png</normaloff>:/MainWindow/images/exit_to_app_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>e&amp;Xit</string>
+   </property>
+   <property name="toolTip">
+    <string>exit to App</string>
    </property>
   </action>
  </widget>

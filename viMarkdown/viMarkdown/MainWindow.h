@@ -56,6 +56,7 @@ protected:
     void	onAction_Source(bool);
     void	onAction_OutlineBar(bool);
     void	onAction_About();
+    void	onAction_Exit();
 
     void	onAboutToShow_RecentFiles();
 

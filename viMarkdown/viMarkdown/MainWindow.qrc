@@ -2,5 +2,21 @@
     <qresource prefix="/MainWindow">
         <file>images/viMarkdown.png</file>
         <file>images/viMarkdown.ico</file>
+        <file>images/add_notes_48.png</file>
+        <file>images/file_open_48.png</file>
+        <file>images/format_bold_48.png</file>
+        <file>images/format_indent_decrease_48.png</file>
+        <file>images/format_indent_increase_48.png</file>
+        <file>images/format_italic_48.png</file>
+        <file>images/format_list_bulleted_48.png</file>
+        <file>images/format_list_numbered_48.png</file>
+        <file>images/format_underlined_48.png</file>
+        <file>images/info_48.png</file>
+        <file>images/redo_48.png</file>
+        <file>images/save_48.png</file>
+        <file>images/strikethrough_s_48.png</file>
+        <file>images/tab_close_48.png</file>
+        <file>images/undo_48.png</file>
+        <file>images/exit_to_app_48.png</file>
     </qresource>
 </RCC>
