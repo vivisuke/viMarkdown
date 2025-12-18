@@ -54,5 +54,8 @@
     <ClInclude Include="DocWidget.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

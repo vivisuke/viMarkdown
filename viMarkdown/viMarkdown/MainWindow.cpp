@@ -13,6 +13,7 @@
 #include <QDropEvent>
 #include <QMimeData>
 #include <QUrl>
+#include "ver.h"
 #include "MainWindow.h"
 #include "DocWidget.h"
 
@@ -26,7 +27,7 @@ MainWindow::MainWindow(QWidget *parent)
 	ui->setupUi(this);
 	updateHTMLModeCheck();
 	ui->action_OutlineBar->setChecked(true);	//	暫定的
-	setWindowTitle("viMarkdown ver 0.0.001 Dev"); 
+	setWindowTitle(QString("viMarkdown ") + VER_STR); 
 
 	setAcceptDrops(true);		//	ファイルドロップ可
 	setup_connections();
@@ -598,7 +599,7 @@ void MainWindow::onAction_About() {
 	QMessageBox::about(this, 
         "About viMarkdown", // タイトルバー
         
-        "<p><big><b>viMarkdown</b></big> version 0.0.001 Dev</p>"
+        "<p><big><b>viMarkdown</b></big> " + VER_STR + "</p>"
         "<p>The efficient Markdown editor."
         "<br>Copyright (C) 2025 by N.Tsuda"
         "<br>Powered by Qt 6 and C++.</p>"
