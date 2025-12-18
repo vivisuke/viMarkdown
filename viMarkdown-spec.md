@@ -1,1 +1,0 @@
-# viMarkdown spec
