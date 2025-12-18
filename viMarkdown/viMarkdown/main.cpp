@@ -4,7 +4,7 @@
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
-    app.setWindowIcon(QIcon("./images/viMarkdown.png"));
+    app.setWindowIcon(QIcon(":/MainWindow/images/viMarkdown.png"));
     QCoreApplication::setOrganizationName("VisualSoftLab");
     QCoreApplication::setApplicationName("viMarkdown");
     MainWindow window;
