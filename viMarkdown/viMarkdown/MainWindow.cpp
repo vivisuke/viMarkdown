@@ -617,8 +617,8 @@ void MainWindow::onAction_About() {
         "About viMarkdown", // タイトルバー
         
         "<p><big><b>viMarkdown</b></big> " + VER_STR + "</p>"
-        "<p>The efficient Markdown editor."
+        "<p>The efficient visual Markdown editor"
         "<br>Copyright (C) 2025 by N.Tsuda"
-        "<br>Powered by Qt 6 and C++.</p>"
+        "<br>Powered by Qt 6 and C++</p>"
     );
 }

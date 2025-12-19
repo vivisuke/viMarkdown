@@ -18,10 +18,10 @@ It is designed for developers and writers who love efficiency.
 ## How to build
 
 ### Windows (Recommended)
-The project is currently developed and tested on **Windows 11** using **Visual Studio** with **Qt VS Tools**.
+The project is currently developed and tested on **Windows 11** using **Visual Studio 2026** with **Qt VS Tools**.
 
 **Prerequisites:**
-- **Visual Studio 2022** or later (Tested on VS 2026 Preview)
+- **Visual Studio 2026** or later
 - **Qt VS Tools** extension
 - **Qt 6 SDK** (MSVC build)
 
