@@ -552,7 +552,7 @@ void MainWindow::updateOutlineTree() {
 		//bool ok;
 		//int val = lst[i].toInt(&ok, 10);
 		int val = lst[i][0].unicode() - '0';
-		item2->setIcon(0, QIcon(":/MainWindow/images/small_dot_48.png"));
+		item2->setIcon(0, QIcon(":/MainWindow/images/small_square_48.png"));
 		item2->setText(0, lst[i].mid(2));
 		int k = val - 1;
 		while( parents[k] == nullptr ) --k;

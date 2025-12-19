@@ -40,6 +40,7 @@ private:
 	int			m_curUlLevel = 0;
 	int			m_curOlLevel = 0;
 	int			m_nSpace = 0;
+	std::vector<int>	m_headingLine;
 	std::vector<char>	m_blockType;	//	' ': body text, '#': headings
 };
 
