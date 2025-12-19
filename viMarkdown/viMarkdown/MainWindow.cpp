@@ -500,11 +500,21 @@ void MainWindow::onTreeSelectionChanged(QTreeWidgetItem *current, QTreeWidgetIte
 	auto top = current;
 	while( top->parent() != nullptr ) top = top->parent();
 	QString fullPath = top->data(0, Qt::UserRole).toString();
-	//if( !fullPath.isEmpty() ) {
-		int tix = tabIndexOf(current->text(0), fullPath);
-		if( tix >= 0 )
-			ui->tabWidget->setCurrentIndex(tix);
-	//}
+	int tix = tabIndexOf(current->text(0), fullPath);
+	if( tix >= 0 ) {
+		ui->tabWidget->setCurrentIndex(tix);
+		if( current->parent() != nullptr ) {	//	見出しアイテムの場合
+			DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(tix);
+			QPlainTextEdit *mdEditor = docWidget->m_mdEditor;
+			int ln = current->data(0, Qt::UserRole).toInt();			//	行番号　0 org.
+			//QTextBlock block = mdEditor->document()->findBlockByLineNumber(ln);
+			QTextBlock block = mdEditor->document()->findBlockByNumber(ln);
+			QTextCursor cursor = mdEditor->textCursor();
+		    cursor.setPosition(block.position());
+		    mdEditor->setTextCursor(cursor);
+		    mdEditor->ensureCursorVisible();
+		}
+	}
 }
 void MainWindow::updatePreview() {
 	QTextEdit* textEdit = getCurDocWidget()->m_previewer;
@@ -547,6 +557,7 @@ void MainWindow::updateOutlineTree() {
 	vector<QTreeWidgetItem*> parents(10, nullptr);
 	parents[0] = item0;
 	const QStringList &lst = m_htmlComvertor.getHeadings();
+	const vector<int>& hLineNum = m_htmlComvertor.getHeadingsLineNum();
 	for(int i = 0; i != lst.size(); ++i) {
 		QTreeWidgetItem *item2 = new QTreeWidgetItem();
 		//bool ok;
@@ -554,6 +565,7 @@ void MainWindow::updateOutlineTree() {
 		int val = lst[i][0].unicode() - '0';
 		item2->setIcon(0, QIcon(":/MainWindow/images/small_square_48.png"));
 		item2->setText(0, lst[i].mid(2));
+		item2->setData(0, Qt::UserRole, hLineNum[i]);
 		int k = val - 1;
 		while( parents[k] == nullptr ) --k;
 		parents[k]->addChild(item2);

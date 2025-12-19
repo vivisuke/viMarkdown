@@ -16,9 +16,10 @@ public:
     const QString&	convert();
     const QStringList&	getHeadings() const { return m_headingList; }
     const std::vector<char>	getBlockType() const { return m_blockType; }
+    const std::vector<int>&	getHeadingsLineNum() const { return m_headingLineNum; }
 
 private:
-    void	do_heading(const QString&);
+    void	do_heading(const QString&, int lineNum);
     void	do_list(const QString&);
     void	do_olist(const QString&);
     void	do_paragraph(const QString&);
@@ -40,7 +41,7 @@ private:
 	int			m_curUlLevel = 0;
 	int			m_curOlLevel = 0;
 	int			m_nSpace = 0;
-	std::vector<int>	m_headingLine;
-	std::vector<char>	m_blockType;	//	' ': body text, '#': headings
+	std::vector<int>	m_headingLineNum;	//	各見出し行 行番号（0 org.）
+	std::vector<char>	m_blockType;		//	' ': body text, '#': headings
 };
 

@@ -9,6 +9,7 @@ const QString& MarkdownToHtmlConvertor::convert() {
 	m_htmlText.clear();
 	m_htmlText += "<body>\n";
 	m_headingList.clear();
+	m_headingLineNum.clear();
 	m_isParagraphOpen = true;
 	m_curUlLevel = 0;
 	m_curOlLevel = 0;
@@ -24,7 +25,7 @@ const QString& MarkdownToHtmlConvertor::convert() {
 			m_isParagraphOpen = true;
         } else if( line.startsWith('#') ) {
 			m_blockType[ln] = '#';
-			do_heading(line);
+			do_heading(line, ln);
 		} else if( line.startsWith("- ") ) {
 			do_list(line);
 		} else if( line.startsWith("1. ") ) {
@@ -145,7 +146,7 @@ QString MarkdownToHtmlConvertor::parceInline(const QString& line) {
 
 	return result;
 }
-void MarkdownToHtmlConvertor::do_heading(const QString& line) {
+void MarkdownToHtmlConvertor::do_heading(const QString& line, int lineNum) {
 	close_ul();
 	close_ol();
 	int i = 1;
@@ -158,6 +159,7 @@ void MarkdownToHtmlConvertor::do_heading(const QString& line) {
 	else
 		m_htmlText += QString("<h%1>").arg(h) + t + QString("</h%1>\n").arg(h);
 	m_headingList.push_back(QString("%1 ").arg(i) + t);
+	m_headingLineNum.push_back(lineNum);
 	m_isParagraphOpen = true;
 }
 void MarkdownToHtmlConvertor::do_list(const QString& line) {
