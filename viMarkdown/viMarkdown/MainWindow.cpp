@@ -96,6 +96,7 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	docWidget->setStyleSheet("font-size: 12pt; line-height: 200%;");
 	QSplitter *splitter = new QSplitter(Qt::Horizontal, docWidget);
 	MarkdownEditor *mdEditor = docWidget->m_mdEditor = new MarkdownEditor(splitter);
+	connect(mdEditor, &MarkdownEditor::cursorPositionChanged, this, &MainWindow::onMdEditCurPosChanged);
 	//QTextEdit *mdEditor = new QTextEdit(splitter);
 	mdEditor->setPlaceholderText("ここにMarkdownを入力\n# タイトル\n## 大見出し\n- リスト\n1. 連番\n本文...");
 	QTextEdit *previewer = docWidget->m_previewer = new QTextEdit(splitter);
@@ -664,6 +665,14 @@ void MainWindow::onMDTextChanged() {
 		ui->tabWidget->setTabText(ui->tabWidget->currentIndex(), docWidget->m_title + " *");
 	}
 	m_ignore_changed = false;
+}
+void MainWindow::onMdEditCurPosChanged() {
+	MarkdownEditor *mdEditor = (MarkdownEditor*)sender();
+	QTextCursor cursor = mdEditor->textCursor();
+	int bnum = cursor.blockNumber();
+	QString mess = QString("cursor.blockNumber() = %1").arg(bnum);
+	//mess += QString(", preview.blockNumber() = %1").arg(cursor.blockNumber());
+	statusBar()->showMessage(mess);
 }
 void MainWindow::onAction_About() {
 	qDebug() << "MainWindow::onAction_About()";

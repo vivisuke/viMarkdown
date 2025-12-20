@@ -10,13 +10,16 @@ const QString& MarkdownToHtmlConvertor::convert() {
 	m_htmlText += "<body>\n";
 	m_headingList.clear();
 	m_headingLineNum.clear();
+	m_blockNumTohtmlLineNum.clear();
 	m_isParagraphOpen = true;
 	m_curUlLevel = 0;
 	m_curOlLevel = 0;
 	auto lst = m_markdownText.split('\n');
 	m_blockType.resize(lst.size());
+	int htmlLn = 0;
 	for(int ln = 0; ln != lst.size(); ++ln) {
 		auto lnStr = lst[ln];
+		m_blockNumTohtmlLineNum.push_back(htmlLn);
 		m_nSpace = 0;
 		m_blockType[ln] = ' ';
 	  	while( m_nSpace < lnStr.size() && lnStr[m_nSpace] == ' ' ) ++m_nSpace;
@@ -101,12 +104,24 @@ QString MarkdownToHtmlConvertor::parceInline(const QString& lnStr) {
     static QRegularExpression re_check(R"((?<![\\])(\[ \]))");  // 直前が \ でない [ ] とマッチ
 	while ((match = re_check.match(result)).hasMatch()) {
         int s = match.capturedStart();  // 最初のマッチ位置 
-		result = result.left(s) + " □ " + result.mid(s+3);
+        QString left = result.left(s);
+        QString nbsp;
+        if( left.isEmpty() && m_nSpace != 0 ) {
+	        for(int i = 0; i < m_nSpace; ++i)
+	        	nbsp += "&nbsp;";
+        }
+		result = left + nbsp + " □ " + result.mid(s+3);
 	}
     static QRegularExpression re_checked(R"((?<![\\])(\[[xX]\]))");  // 直前が \ でない [x] [X]とマッチ
 	while ((match = re_checked.match(result)).hasMatch()) {
         int s = match.capturedStart();  // 最初のマッチ位置 
-		result = result.left(s) + " ☑ " + result.mid(s+3);
+        QString left = result.left(s);
+        QString nbsp;
+        if( left.isEmpty() && m_nSpace != 0 ) {
+	        for(int i = 0; i < m_nSpace; ++i)
+	        	nbsp += "&nbsp;";
+        }
+		result = left + nbsp + " ☑ " + result.mid(s+3);
 	}
 	static QRegularExpression re_link(R"((?<!!)\[([^\]]*)\]\(([^)]*)\))");		//	[title](URL)
 	while ((match = re_link.match(result)).hasMatch()) {
