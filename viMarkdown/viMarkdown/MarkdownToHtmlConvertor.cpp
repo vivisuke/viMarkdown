@@ -199,5 +199,9 @@ void MarkdownToHtmlConvertor::do_paragraph(const QString& lnStr) {
 		m_htmlText += "<p>";
 		m_isParagraphOpen = false;
 	}
-	m_htmlText += parceInline(lnStr) + "\n";
+	m_htmlText += parceInline(lnStr);
+	if( lnStr.endsWith("  ") )
+		m_htmlText += "<br/>\n";
+	else
+		m_htmlText += "\n";
 }
