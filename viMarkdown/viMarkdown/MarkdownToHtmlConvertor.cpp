@@ -16,25 +16,25 @@ const QString& MarkdownToHtmlConvertor::convert() {
 	auto lst = m_markdownText.split('\n');
 	m_blockType.resize(lst.size());
 	for(int ln = 0; ln != lst.size(); ++ln) {
-		auto line = lst[ln];
+		auto lnStr = lst[ln];
 		m_nSpace = 0;
 		m_blockType[ln] = ' ';
-	  	while( m_nSpace < line.size() && line[m_nSpace] == ' ' ) ++m_nSpace;
-	  	if( m_nSpace != 0 ) line = line.mid(m_nSpace);
-		if( line.isEmpty() ) {
+	  	while( m_nSpace < lnStr.size() && lnStr[m_nSpace] == ' ' ) ++m_nSpace;
+	  	if( m_nSpace != 0 ) lnStr = lnStr.mid(m_nSpace);
+		if( lnStr.isEmpty() ) {
 			m_isParagraphOpen = true;
-        } else if( line.startsWith('#') ) {
+        } else if( lnStr.startsWith('#') ) {
 			m_blockType[ln] = '#';
-			do_heading(line, ln);
-		} else if( line.startsWith("- ") ) {
-			do_list(line);
-		} else if( line.startsWith("1. ") ) {
-			do_olist(line);
-		} else if( line == "---" ) {
+			do_heading(lnStr, ln);
+		} else if( lnStr.startsWith("- ") ) {
+			do_list(lnStr);
+		} else if( lnStr.startsWith("1. ") ) {
+			do_olist(lnStr);
+		} else if( lnStr == "---" ) {
 			m_htmlText += "<hr>\n";
 			m_isParagraphOpen = true;
 		} else {
-			do_paragraph(line);
+			do_paragraph(lnStr);
 		}
 	}
 	close_ul();
@@ -66,8 +66,8 @@ void MarkdownToHtmlConvertor::close_ol(int lvl) {
 		--m_curOlLevel;
 	}
 }
-QString MarkdownToHtmlConvertor::parceInline(const QString& line) {
-	QString result = line;
+QString MarkdownToHtmlConvertor::parceInline(const QString& lnStr) {
+	QString result = lnStr;
 
 	//QRegularExpression italicRe("\\*(.+?)\\*");
 	//result.replace(italicRe, "<em>\\1</em>");
@@ -146,14 +146,14 @@ QString MarkdownToHtmlConvertor::parceInline(const QString& line) {
 
 	return result;
 }
-void MarkdownToHtmlConvertor::do_heading(const QString& line, int lineNum) {
+void MarkdownToHtmlConvertor::do_heading(const QString& lnStr, int lineNum) {
 	close_ul();
 	close_ol();
 	int i = 1;
-	while( i < line.size() && line[i] == '#' ) ++i;
+	while( i < lnStr.size() && lnStr[i] == '#' ) ++i;
 	int h = i;
-	while( i < line.size() && line[i] == ' ' ) ++i;
-	QString t = line.mid(i);
+	while( i < lnStr.size() && lnStr[i] == ' ' ) ++i;
+	QString t = lnStr.mid(i);
 	if( h == 1 )
 		m_htmlText += QString("<h1 align=center>") + t + "</h1>\n";
 	else
@@ -162,7 +162,7 @@ void MarkdownToHtmlConvertor::do_heading(const QString& line, int lineNum) {
 	m_headingLineNum.push_back(lineNum);
 	m_isParagraphOpen = true;
 }
-void MarkdownToHtmlConvertor::do_list(const QString& line) {
+void MarkdownToHtmlConvertor::do_list(const QString& lnStr) {
     if( !m_isInsideUl ) {
 	    if( m_curUlLevel > 0 )
 	    	close_ol();
@@ -174,9 +174,9 @@ void MarkdownToHtmlConvertor::do_list(const QString& line) {
 	    close_ul(lvl);
     else
 	    open_ul(lvl);
-	m_htmlText += "<li>" + parceInline(line.mid(2)) + "\n";
+	m_htmlText += "<li>" + parceInline(lnStr.mid(2)) + "\n";
 }
-void MarkdownToHtmlConvertor::do_olist(const QString& line) {
+void MarkdownToHtmlConvertor::do_olist(const QString& lnStr) {
     if( !m_isInsideOl ) {
 	    if( m_curOlLevel > 0 )
 	    	close_ul();
@@ -188,9 +188,9 @@ void MarkdownToHtmlConvertor::do_olist(const QString& line) {
 	    close_ol(lvl);
     else
 	    open_ol(lvl);
-	m_htmlText += "<li>" + parceInline(line.mid(2)) + "\n";
+	m_htmlText += "<li>" + parceInline(lnStr.mid(2)) + "\n";
 }
-void MarkdownToHtmlConvertor::do_paragraph(const QString& line) {
+void MarkdownToHtmlConvertor::do_paragraph(const QString& lnStr) {
 	close_ul();
 	close_ol();
     m_isInsideUl = false;
@@ -199,5 +199,5 @@ void MarkdownToHtmlConvertor::do_paragraph(const QString& line) {
 		m_htmlText += "<p>";
 		m_isParagraphOpen = false;
 	}
-	m_htmlText += parceInline(line) + "\n";
+	m_htmlText += parceInline(lnStr) + "\n";
 }

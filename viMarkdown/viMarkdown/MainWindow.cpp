@@ -329,7 +329,8 @@ void MainWindow::onAction_Indent() {
 	int startPos = cursor.selectionStart();
 	int endPos = cursor.selectionEnd();
 	// 範囲に含まれる最初のブロックと最後のブロックを取得
-	QTextBlock currentBlock = doc->findBlock(startPos);
+	QTextBlock startBlock = doc->findBlock(startPos);
+	QTextBlock currentBlock = startBlock;
 	QTextBlock endBlock = doc->findBlock(endPos);
 	if (endPos > startPos && endPos == endBlock.position())
 		endBlock = endBlock.previous();		//	最終ブロック修正
@@ -338,8 +339,20 @@ void MainWindow::onAction_Indent() {
 	    cursor.insertText("  ");
 	    currentBlock = currentBlock.next();	    // 次のブロックへ
 	}
-	cursor.endEditBlock();
+	if( startBlock < endBlock ) {
+		cursor.setPosition(startBlock.position());	//	行頭位置
+		if( endBlock.next().isValid() ) {
+			cursor.setPosition(endBlock.next().position(), QTextCursor::KeepAnchor);	//	行頭位置
+		} else {
+			cursor.setPosition(endBlock.position(), QTextCursor::KeepAnchor);
+	        cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
+		}
+	} else {
+		cursor.setPosition(startBlock.position());
+		cursor.movePosition(QTextCursor::EndOfBlock);
+	}
 	mdEditor->setTextCursor(cursor);
+	cursor.endEditBlock();
 }
 void MainWindow::onAction_UnIndent() {
 	MarkdownEditor *mdEditor = getCurDocWidget()->m_mdEditor;
@@ -349,7 +362,8 @@ void MainWindow::onAction_UnIndent() {
 	int startPos = cursor.selectionStart();
 	int endPos = cursor.selectionEnd();
 	// 範囲に含まれる最初のブロックと最後のブロックを取得
-	QTextBlock currentBlock = doc->findBlock(startPos);
+	QTextBlock startBlock = doc->findBlock(startPos);
+	QTextBlock currentBlock = startBlock;
 	QTextBlock endBlock = doc->findBlock(endPos);
 	if (endPos > startPos && endPos == endBlock.position())
 		endBlock = endBlock.previous();		//	最終ブロック修正
@@ -361,8 +375,20 @@ void MainWindow::onAction_UnIndent() {
 	    }
 	    currentBlock = currentBlock.next();	    // 次のブロックへ
 	}
-	cursor.endEditBlock();
+	if( startBlock < endBlock ) {
+		cursor.setPosition(startBlock.position());	//	行頭位置
+		if( endBlock.next().isValid() ) {
+			cursor.setPosition(endBlock.next().position(), QTextCursor::KeepAnchor);	//	行頭位置
+		} else {
+			cursor.setPosition(endBlock.position(), QTextCursor::KeepAnchor);
+	        cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
+		}
+	} else {
+		cursor.setPosition(startBlock.position());
+		cursor.movePosition(QTextCursor::EndOfBlock);
+	}
 	mdEditor->setTextCursor(cursor);
+	cursor.endEditBlock();
 }
 void MainWindow::onAction_List() {
 	qDebug() << "MainWindow::onAction_List()";
@@ -400,7 +426,12 @@ void MainWindow::onAction_List() {
 	    currentBlock = currentBlock.next();	    // 次のブロックへ
 	}
 	cursor.setPosition(startBlock.position());	//	行頭位置
-	cursor.setPosition(endBlock.next().position(), QTextCursor::KeepAnchor);	//	行頭位置
+	if( endBlock.next().isValid() ) {
+		cursor.setPosition(endBlock.next().position(), QTextCursor::KeepAnchor);	//	行頭位置
+	} else {
+		cursor.setPosition(endBlock.position(), QTextCursor::KeepAnchor);
+        cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
+	}
 	cursor.endEditBlock();
 	mdEditor->setTextCursor(cursor);
 }
@@ -440,7 +471,12 @@ void MainWindow::onAction_NumList() {
 	    currentBlock = currentBlock.next();	    // 次のブロックへ
 	}
 	cursor.setPosition(startBlock.position());	//	行頭位置
-	cursor.setPosition(endBlock.next().position(), QTextCursor::KeepAnchor);	//	行頭位置
+	if( endBlock.next().isValid() ) {
+		cursor.setPosition(endBlock.next().position(), QTextCursor::KeepAnchor);	//	行頭位置
+	} else {
+		cursor.setPosition(endBlock.position(), QTextCursor::KeepAnchor);
+        cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
+	}
 	cursor.endEditBlock();
 	mdEditor->setTextCursor(cursor);
 }
