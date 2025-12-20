@@ -28,7 +28,7 @@ const QString& MarkdownToHtmlConvertor::convert() {
 			do_heading(lnStr, ln);
 		} else if( lnStr.startsWith("- ") ) {
 			do_list(lnStr);
-		} else if( lnStr.startsWith("1. ") ) {
+		} else if( lnStr[0].isNumber() && lnStr.mid(1).startsWith(". ") ) {
 			do_olist(lnStr);
 		} else if( lnStr == "---" ) {
 			m_htmlText += "<hr>\n";
