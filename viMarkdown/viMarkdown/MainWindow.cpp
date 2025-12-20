@@ -558,7 +558,8 @@ void MainWindow::onTreeSelectionChanged(QTreeWidgetItem *current, QTreeWidgetIte
 			QTextCursor cursor = mdEditor->textCursor();
 		    cursor.setPosition(block.position());
 		    mdEditor->setTextCursor(cursor);
-		    mdEditor->ensureCursorVisible();
+		    //mdEditor->ensureCursorVisible();
+		    mdEditor->scrollToTop(cursor);
 		}
 	}
 }
