@@ -60,6 +60,7 @@ void MainWindow::setup_connections() {
 	connect(ui->action_OutlineBar, &QAction::toggled, this, &MainWindow::onAction_OutlineBar);
 	connect(ui->outlineBar, &QDockWidget::visibilityChanged, this, &MainWindow::onOutlineBarVisibilityChanged);
 	connect(ui->treeWidget, &QTreeWidget::currentItemChanged, this, &MainWindow::onTreeSelectionChanged);
+	connect(ui->treeWidget, &QTreeWidget::itemDoubleClicked, this, &MainWindow::onTreeItemDoubleClicked);
 	connect(ui->action_AboutViMarkdown, &QAction::triggered, this, &MainWindow::onAction_About);
 }
 void MainWindow::closeEvent(QCloseEvent *event) {
@@ -495,12 +496,20 @@ void MainWindow::onAction_OutlineBar(bool checked) {
 void MainWindow::onOutlineBarVisibilityChanged(bool v) {
 	ui->action_OutlineBar->setChecked(v);
 }
-void MainWindow::onTreeSelectionChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous) {
-	if( current == nullptr ) return;
+int MainWindow::treeItemToTabIndex(QTreeWidgetItem *current) {
+	if( current == nullptr ) -1;
 	auto top = current;
-	while( top->parent() != nullptr ) top = top->parent();
+	while( top->parent() != nullptr ) top = top->parent();		//	親のトップレベルアイテムまで移動
 	QString fullPath = top->data(0, Qt::UserRole).toString();
-	int tix = tabIndexOf(current->text(0), fullPath);
+	return tabIndexOf(current->text(0), fullPath);
+}
+void MainWindow::onTreeSelectionChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous) {
+	//if( current == nullptr ) return;
+	//auto top = current;
+	//while( top->parent() != nullptr ) top = top->parent();		//	親のトップレベルアイテムまで移動
+	//QString fullPath = top->data(0, Qt::UserRole).toString();
+	//int tix = tabIndexOf(current->text(0), fullPath);
+	int tix = treeItemToTabIndex(current);
 	if( tix >= 0 ) {
 		ui->tabWidget->setCurrentIndex(tix);
 		if( current->parent() != nullptr ) {	//	見出しアイテムの場合
@@ -515,6 +524,14 @@ void MainWindow::onTreeSelectionChanged(QTreeWidgetItem *current, QTreeWidgetIte
 		    mdEditor->ensureCursorVisible();
 		}
 	}
+}
+void MainWindow::onTreeItemDoubleClicked(QTreeWidgetItem *current, int) {
+	qDebug() << "MainWindow::onTreeItemDoubleClicked(QTreeWidgetItem *current, int)";
+	int tix = treeItemToTabIndex(current);
+	if( tix < 0 ) return;
+	DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(tix);
+	QPlainTextEdit *mdEditor = docWidget->m_mdEditor;
+	mdEditor->setFocus();
 }
 void MainWindow::updatePreview() {
 	QTextEdit* textEdit = getCurDocWidget()->m_previewer;
