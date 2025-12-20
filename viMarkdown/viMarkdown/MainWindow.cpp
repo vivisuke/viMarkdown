@@ -16,6 +16,7 @@
 #include "ver.h"
 #include "MainWindow.h"
 #include "DocWidget.h"
+#include "MarkdownEditor.h"
 
 using namespace std;
 
@@ -94,7 +95,7 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	auto *docWidget = new DocWidget(title, fullPath);
 	docWidget->setStyleSheet("font-size: 12pt; line-height: 200%;");
 	QSplitter *splitter = new QSplitter(Qt::Horizontal, docWidget);
-	QPlainTextEdit *mdEditor = docWidget->m_mdEditor = new QPlainTextEdit(splitter);
+	MarkdownEditor *mdEditor = docWidget->m_mdEditor = new MarkdownEditor(splitter);
 	//QTextEdit *mdEditor = new QTextEdit(splitter);
 	mdEditor->setPlaceholderText("ここにMarkdownを入力\n# タイトル\n## 大見出し\n- リスト\n1. 連番\n本文...");
 	QTextEdit *previewer = docWidget->m_previewer = new QTextEdit(splitter);
@@ -107,7 +108,7 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	layout->addWidget(splitter);
 	layout->setContentsMargins(0, 0, 0, 0); // 余白をなくして端まで広げる
 
-	connect(mdEditor, &QPlainTextEdit::textChanged, this, &MainWindow::onMDTextChanged);
+	connect(mdEditor, &MarkdownEditor::textChanged, this, &MainWindow::onMDTextChanged);
 	//connect(mdEditor, &QTextEdit::textChanged, this, &MainWindow::onMDTextChanged);
 
 	return docWidget;
@@ -172,7 +173,7 @@ void MainWindow::addTab(const QString &title, const QString fullPath, const QStr
 	int ix = ui->tabWidget->addTab(docWidget, title);		//	新規タブを追加
 	ui->tabWidget->setCurrentIndex(ix);				//	新規タブをカレントに
 
-	QPlainTextEdit *mdEditor = getCurDocWidget()->m_mdEditor;
+	MarkdownEditor *mdEditor = getCurDocWidget()->m_mdEditor;
 	if( !txt.isEmpty() )
 		mdEditor->setPlainText(txt);
 	mdEditor->setFocus();
@@ -269,7 +270,7 @@ void MainWindow::onAction_Save() {
 	QFile file(fullPath);
 	if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
 		QTextStream out(&file);
-		QPlainTextEdit *mdEditor = getCurDocWidget()->m_mdEditor;
+		MarkdownEditor *mdEditor = getCurDocWidget()->m_mdEditor;
 		out << mdEditor->toPlainText();
 		file.close();
 		//QMessageBox::information(nullptr, "成功", "ファイルが保存されました:\n" + fullPath);
@@ -321,7 +322,7 @@ int isNumListBlock(const QTextBlock& block) {		//	空白+ "数字. " で始ま�
 	return i + 3;
 }
 void MainWindow::onAction_Indent() {
-	QPlainTextEdit *mdEditor = getCurDocWidget()->m_mdEditor;
+	MarkdownEditor *mdEditor = getCurDocWidget()->m_mdEditor;
 	QTextCursor cursor = mdEditor->textCursor();
     QTextDocument *doc = mdEditor->document();
 	cursor.beginEditBlock();
@@ -341,7 +342,7 @@ void MainWindow::onAction_Indent() {
 	mdEditor->setTextCursor(cursor);
 }
 void MainWindow::onAction_UnIndent() {
-	QPlainTextEdit *mdEditor = getCurDocWidget()->m_mdEditor;
+	MarkdownEditor *mdEditor = getCurDocWidget()->m_mdEditor;
 	QTextCursor cursor = mdEditor->textCursor();
     QTextDocument *doc = mdEditor->document();
 	cursor.beginEditBlock();
@@ -365,7 +366,7 @@ void MainWindow::onAction_UnIndent() {
 }
 void MainWindow::onAction_List() {
 	qDebug() << "MainWindow::onAction_List()";
-	QPlainTextEdit *mdEditor = getCurDocWidget()->m_mdEditor;
+	MarkdownEditor *mdEditor = getCurDocWidget()->m_mdEditor;
 	QTextCursor cursor = mdEditor->textCursor();
     QTextDocument *doc = mdEditor->document();
 	cursor.beginEditBlock();
@@ -405,7 +406,7 @@ void MainWindow::onAction_List() {
 }
 void MainWindow::onAction_NumList() {
 	qDebug() << "MainWindow::onAction_NumList()";
-	QPlainTextEdit *mdEditor = getCurDocWidget()->m_mdEditor;
+	MarkdownEditor *mdEditor = getCurDocWidget()->m_mdEditor;
 	QTextCursor cursor = mdEditor->textCursor();
     QTextDocument *doc = mdEditor->document();
 	cursor.beginEditBlock();
@@ -444,7 +445,7 @@ void MainWindow::onAction_NumList() {
 	mdEditor->setTextCursor(cursor);
 }
 void MainWindow::insertInline(const QString& delimiter) {
-	QPlainTextEdit *mdEditor = getCurDocWidget()->m_mdEditor;
+	MarkdownEditor *mdEditor = getCurDocWidget()->m_mdEditor;
 	QTextCursor cursor = mdEditor->textCursor();
 	if (cursor.hasSelection()) {
 		// 2. 複数行にまたがっているかチェック
@@ -514,7 +515,7 @@ void MainWindow::onTreeSelectionChanged(QTreeWidgetItem *current, QTreeWidgetIte
 		ui->tabWidget->setCurrentIndex(tix);
 		if( current->parent() != nullptr ) {	//	見出しアイテムの場合
 			DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(tix);
-			QPlainTextEdit *mdEditor = docWidget->m_mdEditor;
+			MarkdownEditor *mdEditor = docWidget->m_mdEditor;
 			int ln = current->data(0, Qt::UserRole).toInt();			//	行番号　0 org.
 			//QTextBlock block = mdEditor->document()->findBlockByLineNumber(ln);
 			QTextBlock block = mdEditor->document()->findBlockByNumber(ln);
@@ -530,7 +531,7 @@ void MainWindow::onTreeItemDoubleClicked(QTreeWidgetItem *current, int) {
 	int tix = treeItemToTabIndex(current);
 	if( tix < 0 ) return;
 	DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(tix);
-	QPlainTextEdit *mdEditor = docWidget->m_mdEditor;
+	MarkdownEditor *mdEditor = docWidget->m_mdEditor;
 	mdEditor->setFocus();
 }
 void MainWindow::updatePreview() {
@@ -597,7 +598,7 @@ void MainWindow::onMDTextChanged() {
 
 	if( m_ignore_changed ) return;
 	m_ignore_changed = true;
-	QPlainTextEdit *mdEditor = getCurDocWidget()->m_mdEditor;
+	MarkdownEditor *mdEditor = getCurDocWidget()->m_mdEditor;
 	m_plainText = mdEditor->toPlainText();
 	m_htmlComvertor.setMarkdownText(m_plainText);
 	m_htmlText = m_htmlComvertor.convert();

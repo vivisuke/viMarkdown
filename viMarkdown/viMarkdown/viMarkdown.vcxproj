@@ -93,6 +93,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="DocWidget.cpp" />
+    <ClCompile Include="MarkdownEditor.cpp" />
     <ClCompile Include="MarkdownToHtmlConvertor.cpp" />
     <QtRcc Include="MainWindow.qrc" />
     <QtUic Include="MainWindow.ui" />
@@ -102,6 +103,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DocWidget.h" />
+    <ClInclude Include="MarkdownEditor.h" />
     <ClInclude Include="MarkdownToHtmlConvertor.h" />
     <ClInclude Include="ver.h" />
   </ItemGroup>
