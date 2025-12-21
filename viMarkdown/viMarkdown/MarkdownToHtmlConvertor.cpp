@@ -5,7 +5,8 @@
 
 using namespace std;
 
-const QString& MarkdownToHtmlConvertor::convert() {
+const QString& MarkdownToHtmlConvertor::convert(const QString& markdownText) {
+	m_markdownText = markdownText;
 	m_htmlText.clear();
 	m_htmlText += "<html>\n";
 	m_htmlText += "<head>\n";

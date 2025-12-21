@@ -13,7 +13,7 @@ public:
     void	setMarkdownText(const QString& txt) { m_markdownText = txt; }
 	const QString&	getMarkdownText() const { return m_markdownText; }
 	const QString&	getHtmlText() const { return m_htmlText; }
-    const QString&	convert();
+    const QString&	convert(const QString&);
     const QStringList&	getHeadings() const { return m_headingList; }
     const std::vector<char>	getBlockType() const { return m_blockType; }
     const std::vector<int>&	getHeadingsLineNum() const { return m_headingLineNum; }

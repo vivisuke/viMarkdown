@@ -75,7 +75,7 @@ private:
     bool	m_htmlMode = true;
     int		m_tab_number = 0;
     QString	m_plainText;
-    QString	m_htmlText;
+    //QString	m_htmlText;
     //MarkdownToHtmlConvertor	m_htmlComvertor;
 
     Ui::MainWindowClass *ui;

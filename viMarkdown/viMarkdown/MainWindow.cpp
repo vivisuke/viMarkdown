@@ -576,13 +576,16 @@ void MainWindow::onTreeItemDoubleClicked(QTreeWidgetItem *current, int) {
 	mdEditor->setFocus();
 }
 void MainWindow::updatePreview() {
-	QTextEdit* textEdit = getCurDocWidget()->m_previewer;
+	DocWidget *docWidget = getCurDocWidget();
+	qDebug() << "docWidget = " << docWidget;
+	QTextEdit* textEdit = docWidget->m_previewer;
 	QScrollBar *vScrollBar = textEdit->verticalScrollBar();
 	int currentPos = vScrollBar->value();
+	const QString &htmlText = docWidget->m_htmlComvertor.getHtmlText();
 	if( m_htmlMode )
-		textEdit->setHtml(m_htmlText);
+		textEdit->setHtml(htmlText);
 	else
-		textEdit->setPlainText(m_htmlText);
+		textEdit->setPlainText(htmlText);
 	vScrollBar->setValue(currentPos);
 }
 QTreeWidgetItem* MainWindow::findTopLevelItemByFullPath(const QString& title, const QString fullPath) {
@@ -641,11 +644,11 @@ void MainWindow::onMDTextChanged() {
 	if( m_ignore_changed ) return;
 	m_ignore_changed = true;
 	DocWidget *docWidget = getCurDocWidget();
+	qDebug() << "docWidget = " << docWidget;
 	MarkdownEditor *mdEditor = docWidget->m_mdEditor;
 	m_plainText = mdEditor->toPlainText();
-	auto htmlComvertor = docWidget->m_htmlComvertor;
-	htmlComvertor.setMarkdownText(m_plainText);
-	m_htmlText = htmlComvertor.convert();
+	auto &htmlComvertor = docWidget->m_htmlComvertor;
+	htmlComvertor.convert(m_plainText);
 	const vector<char>& blockType = htmlComvertor.getBlockType();
 	QTextCursor cursor(mdEditor->document()); 
 	QTextCharFormat fmt_darkred, fmt_black;
@@ -676,7 +679,7 @@ void MainWindow::onMdEditCurPosChanged() {
 	MarkdownEditor *mdEditor = (MarkdownEditor*)sender();
 	QTextCursor cursor = mdEditor->textCursor();
 	int bnum = cursor.blockNumber();
-	QString mess = QString("cursor.blockNumber() = %1").arg(bnum);
+	QString mess = QString("cursor.blockNumber = %1").arg(bnum);
 	//mess += QString(", preview.blockNumber() = %1").arg(cursor.blockNumber());
 	statusBar()->showMessage(mess);
 }
