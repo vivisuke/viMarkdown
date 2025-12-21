@@ -108,7 +108,7 @@ QString MarkdownToHtmlConvertor::parceInline(const QString& lnStr) {
         QString nbsp;
         if( left.isEmpty() && m_nSpace != 0 ) {
 	        for(int i = 0; i < m_nSpace; ++i)
-	        	nbsp += "&nbsp;";
+	        	nbsp += "&nbsp;&nbsp;";
         }
 		result = left + nbsp + " □ " + result.mid(s+3);
 	}
@@ -119,7 +119,7 @@ QString MarkdownToHtmlConvertor::parceInline(const QString& lnStr) {
         QString nbsp;
         if( left.isEmpty() && m_nSpace != 0 ) {
 	        for(int i = 0; i < m_nSpace; ++i)
-	        	nbsp += "&nbsp;";
+	        	nbsp += "&nbsp;&nbsp;";
         }
 		result = left + nbsp + " ☑ " + result.mid(s+3);
 	}
@@ -177,7 +177,19 @@ void MarkdownToHtmlConvertor::do_heading(const QString& lnStr, int lineNum) {
 	m_headingLineNum.push_back(lineNum);
 	m_isParagraphOpen = true;
 }
+bool isCheckboxLine(const QString& lnStr) {		//	"- [ ]" or "- [x]" or "- [X]" か？
+	return lnStr[2] == '[' && lnStr[4] == ']' && (lnStr[3] == ' ' || lnStr[3] == 'x' || lnStr[3] == 'X');
+}
 void MarkdownToHtmlConvertor::do_list(const QString& lnStr) {
+	if( isCheckboxLine(lnStr) ) {
+		if( m_isParagraphOpen ) {
+			m_htmlText += "<p>\n";
+			m_isParagraphOpen = false;
+		}
+		m_nSpace += 2;
+		m_htmlText += parceInline(lnStr.mid(2)) + "<br/>\n";
+		return;
+	}
     if( !m_isInsideUl ) {
 	    if( m_curUlLevel > 0 )
 	    	close_ol();
