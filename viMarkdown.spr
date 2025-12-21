@@ -129,16 +129,16 @@
 0127 ◎ C 12/21 12/21 0.0002│ToDo│Edit > inline > CheckBox をメニュー・ツールバーに追加
 0128 ◎ C 12/21 12/21 0.0002│ToDo│MarkdownEditor::scrollToTop(int lineNum)
 0129 ◎ C 12/21 12/21 0.0002│ToDo│アウトラインバーで目次選択→MdEditor でその目次が最上行に表示されるように
-0130 ● C 12/21             │ToDo│m_htmlComvertor を DocWidget に移動
+0130 ◎ C 12/21 12/22 0.0002│ToDo│m_htmlComvertor を DocWidget に移動
 0131 ◎ C 12/21 12/21 0.0002│ToDo│- [ ]：の場合はリストと解釈しない？
 0132 ◎ A 12/21 12/21 0.0002│問題│- を入力するとクラッシュ
 0133 ◎ C 12/21 12/21 0.0002│ToDo│オートテキスト：チェックボックス対応
 0134 ◎ C 12/21 12/21 0.0002│問題│"- " 行の先頭で改行入力すると "- " が入力されてしまう
-0135 ● C 12/21             │ToDo│Edit > inline > CheckBox 処理
+0135 ◎ C 12/21 12/22 0.0002│ToDo│Edit > inline > CheckBox 処理
 0136 ◎ C 12/21 12/21 0.0002│ToDo│行頭 "> " で引用ブロック
 0137 ◎ C 12/21 12/21 0.0002│ToDo│HTML：ヘッダも出力
 0138 ◎ C 12/21 12/22 0.0002│問題│アウトラインバーに見出しアイテムが追加されない
-0139 ● C 12/21             │ToDo│MainWindow::m_plainText, m_htmlText：削除 or DocWidget に移動
+0139 ◎ C 12/21 12/22 0.0002│ToDo│MainWindow::m_plainText, m_htmlText：削除 or DocWidget に移動
 0140 ◎ C 12/22 12/22 0.0002│ToDo│MarkdownToHtmlConvertor::convert()：引数でマークダウンテキストを指定可能に
 0141 ◎ C 12/22 12/22 0.0002│問題│プレビューにフォーマットされた文章が表示されない
 0142 ● C 12/22             │ToDo│
