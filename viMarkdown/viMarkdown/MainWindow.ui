@@ -99,6 +99,10 @@
     <addaction name="action_Undo"/>
     <addaction name="action_Redo"/>
     <addaction name="separator"/>
+    <addaction name="action_Cut"/>
+    <addaction name="action_Copy"/>
+    <addaction name="action_Paste"/>
+    <addaction name="separator"/>
     <addaction name="menublock"/>
     <addaction name="menuinline"/>
     <addaction name="action_Indent"/>
@@ -381,6 +385,33 @@
    </property>
    <property name="text">
     <string>&amp;Checkbox</string>
+   </property>
+  </action>
+  <action name="action_Cut">
+   <property name="icon">
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/content_cut_48.png</normaloff>:/MainWindow/images/content_cut_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>Cu&amp;t</string>
+   </property>
+  </action>
+  <action name="action_Copy">
+   <property name="icon">
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/content_copy_48.png</normaloff>:/MainWindow/images/content_copy_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Copy</string>
+   </property>
+  </action>
+  <action name="action_Paste">
+   <property name="icon">
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/content_paste_48.png</normaloff>:/MainWindow/images/content_paste_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Paste</string>
    </property>
   </action>
  </widget>

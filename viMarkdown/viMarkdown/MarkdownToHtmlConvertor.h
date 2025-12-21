@@ -22,6 +22,7 @@ private:
     void	do_heading(const QString&, int lineNum);
     void	do_list(const QString&);
     void	do_olist(const QString&);
+    void	do_quote(const QString&);
     void	do_paragraph(const QString&);
 
     QString	parceInline(const QString&);
@@ -30,6 +31,7 @@ private:
     void	close_ul(int lvl=0);
     void	open_ol(int lvl);
     void	close_ol(int lvl=0);
+    void	close_quote();
 
 private:
 	QString		m_markdownText;
@@ -38,6 +40,7 @@ private:
 	bool		m_isParagraphOpen = true;
 	bool		m_isInsideUl = false;
 	bool		m_isInsideOl = false;
+	bool		m_isInsideQuote = false;
 	int			m_curUlLevel = 0;
 	int			m_curOlLevel = 0;
 	int			m_nSpace = 0;

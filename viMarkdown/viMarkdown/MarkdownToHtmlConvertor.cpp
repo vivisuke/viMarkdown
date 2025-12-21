@@ -33,6 +33,8 @@ const QString& MarkdownToHtmlConvertor::convert() {
 			do_list(lnStr);
 		} else if( lnStr[0].isNumber() && lnStr.mid(1).startsWith(". ") ) {
 			do_olist(lnStr);
+		} else if( lnStr.startsWith("> ") ) {
+			do_quote(lnStr);
 		} else if( lnStr == "---" ) {
 			m_htmlText += "<hr>\n";
 			m_isParagraphOpen = true;
@@ -40,6 +42,7 @@ const QString& MarkdownToHtmlConvertor::convert() {
 			do_paragraph(lnStr);
 		}
 	}
+	close_quote();
 	close_ul();
 	close_ol();
 	m_htmlText += "</body>\n";
@@ -67,6 +70,12 @@ void MarkdownToHtmlConvertor::close_ol(int lvl) {
 	while( m_curOlLevel > lvl) {
 		m_htmlText += "</ol>\n";
 		--m_curOlLevel;
+	}
+}
+void MarkdownToHtmlConvertor::close_quote() {
+	if( m_isInsideQuote ) {
+		m_htmlText += "</blockquote>\n";
+		m_isInsideQuote = false;
 	}
 }
 QString MarkdownToHtmlConvertor::parceInline(const QString& lnStr) {
@@ -218,7 +227,16 @@ void MarkdownToHtmlConvertor::do_olist(const QString& lnStr) {
 	    open_ol(lvl);
 	m_htmlText += "<li>" + parceInline(lnStr.mid(2)) + "\n";
 }
+void MarkdownToHtmlConvertor::do_quote(const QString& lnStr) {
+	if( !m_isInsideQuote ) {
+		m_isInsideQuote = true;
+		m_htmlText += "<blockquote>\n";
+	}
+	m_htmlText += parceInline(lnStr.mid(2)) + "<br/>\n";
+
+}
 void MarkdownToHtmlConvertor::do_paragraph(const QString& lnStr) {
+	close_quote();
 	close_ul();
 	close_ol();
     m_isInsideUl = false;
