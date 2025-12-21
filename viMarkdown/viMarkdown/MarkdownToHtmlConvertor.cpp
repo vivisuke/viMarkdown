@@ -178,7 +178,8 @@ void MarkdownToHtmlConvertor::do_heading(const QString& lnStr, int lineNum) {
 	m_isParagraphOpen = true;
 }
 bool isCheckboxLine(const QString& lnStr) {		//	"- [ ]" or "- [x]" or "- [X]" か？
-	return lnStr.size() >= 5 && lnStr[2] == '[' && lnStr[4] == ']' && (lnStr[3] == ' ' || lnStr[3] == 'x' || lnStr[3] == 'X');
+	return lnStr.size() >= 6 && lnStr[2] == '[' && lnStr[4] == ']' && lnStr[5] == ' ' &&
+			(lnStr[3] == ' ' || lnStr[3] == 'x' || lnStr[3] == 'X');
 }
 void MarkdownToHtmlConvertor::do_list(const QString& lnStr) {
 	if( isCheckboxLine(lnStr) ) {

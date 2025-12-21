@@ -11,7 +11,11 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
         int n = 0;
         while( n < text.length() && text[n].isSpace() ) ++n;
         QString atxt = text.left(n);
-        if( text.mid(n).startsWith("- ") )
+        if( text.mid(n).startsWith("- [ ] ") )
+			atxt += "- [ ] ";
+        else if( text.mid(n).startsWith("- [x] ") || text.mid(n).startsWith("- [X] ") )
+			atxt += "- [x] ";
+        else if( text.mid(n).startsWith("- ") )
 			atxt += "- ";
         cursor.insertText("\n" + atxt);
         // カーソル位置を画面内に維持
