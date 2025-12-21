@@ -7,6 +7,18 @@ using namespace std;
 
 const QString& MarkdownToHtmlConvertor::convert() {
 	m_htmlText.clear();
+	m_htmlText += "<html>\n";
+	m_htmlText += "<head>\n";
+    m_htmlText += "<meta charset=\"UTF-8\">\n";
+	m_htmlText += "<style>\n";
+    m_htmlText += "    blockquote {\n";
+    m_htmlText += "        border-left: 10px solid blue;\n";
+    m_htmlText += "        background-color: #ffffe0;\n";
+    m_htmlText += "        padding: 20px;\n";
+    //m_htmlText += "        border-radius: 4px;\n";
+    m_htmlText += "    }\n";
+    m_htmlText += "</style>\n";
+	m_htmlText += "</head>\n";
 	m_htmlText += "<body>\n";
 	m_headingList.clear();
 	m_headingLineNum.clear();
@@ -46,6 +58,7 @@ const QString& MarkdownToHtmlConvertor::convert() {
 	close_ul();
 	close_ol();
 	m_htmlText += "</body>\n";
+	m_htmlText += "</html>\n";
 	return m_htmlText;
 }
 void MarkdownToHtmlConvertor::open_ul(int lvl) {
