@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "C:\Qt\6.10.0\msvc2022_64\include\QtWidgets\qwidget.h"
+#include "markdowntohtmlconvertor.h"
 
 //class QPlainTextEdit;
 class MarkdownEditor;
@@ -16,5 +17,6 @@ public:
 	QString	m_fullPath;
 	MarkdownEditor	*m_mdEditor = nullptr;			//	マークダウンエディタへのポインタ
 	QTextEdit		*m_previewer = nullptr;			//	マークダウンプレビューワへのポインタ
+    MarkdownToHtmlConvertor	m_htmlComvertor;
 };
 

@@ -612,8 +612,9 @@ void MainWindow::updateOutlineTree() {
 	qDeleteAll(item0->takeChildren());
 	vector<QTreeWidgetItem*> parents(10, nullptr);
 	parents[0] = item0;
-	const QStringList &lst = m_htmlComvertor.getHeadings();
-	const vector<int>& hLineNum = m_htmlComvertor.getHeadingsLineNum();
+	auto htmlComvertor = docWidget->m_htmlComvertor;
+	const QStringList &lst = htmlComvertor.getHeadings();
+	const vector<int>& hLineNum = htmlComvertor.getHeadingsLineNum();
 	for(int i = 0; i != lst.size(); ++i) {
 		QTreeWidgetItem *item2 = new QTreeWidgetItem();
 		//bool ok;
@@ -636,11 +637,13 @@ void MainWindow::onMDTextChanged() {
 
 	if( m_ignore_changed ) return;
 	m_ignore_changed = true;
-	MarkdownEditor *mdEditor = getCurDocWidget()->m_mdEditor;
+	DocWidget *docWidget = getCurDocWidget();
+	MarkdownEditor *mdEditor = docWidget->m_mdEditor;
 	m_plainText = mdEditor->toPlainText();
-	m_htmlComvertor.setMarkdownText(m_plainText);
-	m_htmlText = m_htmlComvertor.convert();
-	const vector<char>& blockType = m_htmlComvertor.getBlockType();
+	auto htmlComvertor = docWidget->m_htmlComvertor;
+	htmlComvertor.setMarkdownText(m_plainText);
+	m_htmlText = htmlComvertor.convert();
+	const vector<char>& blockType = htmlComvertor.getBlockType();
 	QTextCursor cursor(mdEditor->document()); 
 	QTextCharFormat fmt_darkred, fmt_black;
     fmt_darkred.setForeground(QColor("darkred"));

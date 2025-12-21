@@ -3,7 +3,7 @@
 #include <QtWidgets/QMainWindow>
 #include <qsplitter>
 #include "ui_MainWindow.h"
-#include "markdowntohtmlconvertor.h"
+//#include "markdowntohtmlconvertor.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindowClass; };
@@ -75,7 +75,7 @@ private:
     int		m_tab_number = 0;
     QString	m_plainText;
     QString	m_htmlText;
-    MarkdownToHtmlConvertor	m_htmlComvertor;
+    //MarkdownToHtmlConvertor	m_htmlComvertor;
 
     Ui::MainWindowClass *ui;
 };
