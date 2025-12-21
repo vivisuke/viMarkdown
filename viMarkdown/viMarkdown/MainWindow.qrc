@@ -22,5 +22,6 @@
         <file>images/adjust_48.png</file>
         <file>images/small_dot_48.png</file>
         <file>images/small_square_48.png</file>
+        <file>images/format_checkbox_48.png</file>
     </qresource>
 </RCC>

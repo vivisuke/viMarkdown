@@ -53,6 +53,7 @@ protected:
     void	onAction_Strikethrough();
     void	onAction_List();
     void	onAction_NumList();
+    void	onAction_Checkbox();
     void	onAction_Indent();
     void	onAction_UnIndent();
     void	onAction_HTML(bool);

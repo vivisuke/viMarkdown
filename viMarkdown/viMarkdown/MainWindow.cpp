@@ -49,6 +49,7 @@ void MainWindow::setup_connections() {
 	connect(ui->action_Close, &QAction::triggered, this, &MainWindow::onAction_Close);
 	connect(ui->action_List, &QAction::triggered, this, &MainWindow::onAction_List);
 	connect(ui->action_NumList, &QAction::triggered, this, &MainWindow::onAction_NumList);
+	connect(ui->action_Checkbox, &QAction::triggered, this, &MainWindow::onAction_Checkbox);
 	connect(ui->action_Indent, &QAction::triggered, this, &MainWindow::onAction_Indent);
 	connect(ui->action_UnIndent, &QAction::triggered, this, &MainWindow::onAction_UnIndent);
 	//connect(ui->action_Undo, &QAction::triggered, this, &MainWindow::onAction_Undo);
@@ -480,6 +481,8 @@ void MainWindow::onAction_NumList() {
 	}
 	cursor.endEditBlock();
 	mdEditor->setTextCursor(cursor);
+}
+void MainWindow::onAction_Checkbox() {
 }
 void MainWindow::insertInline(const QString& delimiter) {
 	MarkdownEditor *mdEditor = getCurDocWidget()->m_mdEditor;

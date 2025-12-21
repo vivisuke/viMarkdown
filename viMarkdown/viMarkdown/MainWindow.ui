@@ -94,6 +94,7 @@
      </property>
      <addaction name="action_List"/>
      <addaction name="action_NumList"/>
+     <addaction name="action_Checkbox"/>
     </widget>
     <addaction name="action_Undo"/>
     <addaction name="action_Redo"/>
@@ -133,6 +134,7 @@
    <addaction name="separator"/>
    <addaction name="action_List"/>
    <addaction name="action_NumList"/>
+   <addaction name="action_Checkbox"/>
    <addaction name="action_Bold"/>
    <addaction name="action_Italic"/>
    <addaction name="action_Strikethrough"/>
@@ -370,6 +372,15 @@
    </property>
    <property name="toolTip">
     <string>exit to App</string>
+   </property>
+  </action>
+  <action name="action_Checkbox">
+   <property name="icon">
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/format_checkbox_48.png</normaloff>:/MainWindow/images/format_checkbox_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Checkbox</string>
    </property>
   </action>
  </widget>

@@ -126,7 +126,7 @@
 0124 ◎ C 12/20 12/21 0.0002│ToDo│行末に空白が２つ以上ある場合は <br /> 出力
 0125 ◎ C 12/20 12/21 0.0002│ToDo│行頭 [ ] 直前空白は &nbsp; に変換？
 0126 ◎ C 12/20 12/21 0.0002│ToDo│オート改行：チェックボックス（[ ]）対応
-0127 ● C 12/20             │ToDo│Edit > inline > CheckBox
+0127 ◎ C 12/20 12/21 0.0002│ToDo│Edit > inline > CheckBox をメニュー・ツールバーに追加
 0128 ◎ C 12/20 12/21 0.0002│ToDo│MarkdownEditor::scrollToTop(int lineNum)
 0129 ◎ C 12/20 12/21 0.0002│ToDo│アウトラインバーで目次選択→MdEditor でその目次が最上行に表示されるように
 0130 ● C 12/20             │ToDo│m_htmlComvertor を DocWidget に移動
