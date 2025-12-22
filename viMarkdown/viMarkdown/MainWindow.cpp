@@ -236,14 +236,21 @@ void MainWindow::addToRecentFiles(const QString& fullPath) {
 void MainWindow::do_load(const QString& fullPath) {
 	int tix = tabIndexOf("", fullPath);
 	if( tix < 0 ) return;
+	DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(tix);
+	if( docWidget->m_saving ) return;		//	保存中はリロードしない
+	if( docWidget->m_hasSaved ) {
+		docWidget->m_hasSaved = false;		//	保存直後もリロードしない
+		return;
+	}
 	QFile file(fullPath);
 	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
 		QMessageBox::warning(this, tr("エラー"), tr("ファイルが開けません:\n%1").arg(fullPath));
 		return;
 	}
 	QString content = file.readAll();
-	DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(tix);
 	docWidget->m_mdEditor->setPlainText(content);
+	docWidget->m_modified = false;
+	ui->tabWidget->setTabText(tix, docWidget->m_title);
 }
 void MainWindow::do_open(const QString& fullPath) {
 	int tix = tabIndexOf("", fullPath);
@@ -290,6 +297,7 @@ void MainWindow::onAction_Save() {
 		top->setText(0, docWidget->m_title);
 	}
 	addToRecentFiles(fullPath);
+	docWidget->m_saving = true;
 	QFile file(fullPath);
 	if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
 		QTextStream out(&file);
@@ -300,9 +308,11 @@ void MainWindow::onAction_Save() {
 		docWidget->m_modified = false;		//	保存済み
 		ui->tabWidget->setTabText(ix, docWidget->m_title);
 		m_watcher->addPath(fullPath);
+		docWidget->m_hasSaved = true;		//	保存済み for 自動更新
 	} else {
 		//QMessageBox::warning(nullptr, "エラー", "ファイルを開けませんでした。");
 	}
+	docWidget->m_saving = false;
 }
 void MainWindow::onAction_Close() {
 	qDebug() << "MainWindow::onAction_Close()";

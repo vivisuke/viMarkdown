@@ -13,6 +13,8 @@ public:
 
 public:
 	bool	m_modified = false;		//	編集＆未保存状態
+	bool	m_saving = false;
+	bool	m_hasSaved = false;		//	保存直後
 	QString	m_title;				//	タブタイトル
 	QString	m_fullPath;
 	MarkdownEditor	*m_mdEditor = nullptr;			//	マークダウンエディタへのポインタ
