@@ -34,6 +34,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 	setAcceptDrops(true);		//	ファイルドロップ可
 	setup_connections();
+	read_settings();
 	onAction_New();
 }
 MainWindow::~MainWindow()
@@ -66,6 +67,21 @@ void MainWindow::setup_connections() {
 	connect(ui->treeWidget, &QTreeWidget::itemDoubleClicked, this, &MainWindow::onTreeItemDoubleClicked);
 	connect(ui->action_AboutViMarkdown, &QAction::triggered, this, &MainWindow::onAction_About);
 }
+void MainWindow::read_settings() {
+	QSettings settings;
+    settings.beginGroup("MainWindow");
+    
+    // 保存されていた値があれば復元、なければ何もしない
+    const QByteArray geometry = settings.value("geometry").toByteArray();
+    if (!geometry.isEmpty()) {
+        restoreGeometry(geometry);
+    }
+    const QByteArray windowState = settings.value("windowState").toByteArray();
+    if (!windowState.isEmpty()) {
+        restoreState(windowState);
+    }
+    settings.endGroup();
+}
 void MainWindow::closeEvent(QCloseEvent *event) {
 	for(int ix = 0; ix < ui->tabWidget->count(); ++ix) {
 		DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(ix);
@@ -85,6 +101,12 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 			}
 		}
 	}
+	QSettings settings;
+    settings.beginGroup("MainWindow");
+    settings.setValue("geometry", saveGeometry()); // 位置・サイズ
+    settings.setValue("windowState", saveState()); // ツールバー・ドックの状態
+    settings.endGroup();
+    //
 	event->accept();
 }
 void MainWindow::onFileChanged(const QString& fullPath) {
