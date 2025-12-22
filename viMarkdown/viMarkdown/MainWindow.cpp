@@ -89,6 +89,22 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 }
 void MainWindow::onFileChanged(const QString& fullPath) {
 	statusBar()->showMessage("file changed: " + fullPath, 3000);
+	int tix = tabIndexOf("", fullPath);
+	if( tix < 0 ) return;
+	DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(tix);
+	if( docWidget->m_modified ) {
+		QMessageBox msgBox(this);
+		msgBox.setWindowTitle("外部変更の検知");
+		msgBox.setText("未保存文書のファイルが外部で変更されました。");
+		msgBox.setInformativeText("最新の状態を読み込みますか？");
+
+		// ボタンの設定 (Yes, No, Ignore を配置)
+		msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+		msgBox.setDefaultButton(QMessageBox::Yes);
+
+		int ret = msgBox.exec();
+		if( ret == QMessageBox::No ) return;
+	}
 	do_load(fullPath);
 }
 void MainWindow::updateHTMLModeCheck() {
@@ -298,6 +314,7 @@ void MainWindow::onAction_Save() {
 	}
 	addToRecentFiles(fullPath);
 	docWidget->m_saving = true;
+	m_watcher->removePath(fullPath);		//	一旦ウォッチリストから外す
 	QFile file(fullPath);
 	if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
 		QTextStream out(&file);
@@ -313,6 +330,7 @@ void MainWindow::onAction_Save() {
 		//QMessageBox::warning(nullptr, "エラー", "ファイルを開けませんでした。");
 	}
 	docWidget->m_saving = false;
+	m_watcher->addPath(fullPath);
 }
 void MainWindow::onAction_Close() {
 	qDebug() << "MainWindow::onAction_Close()";
