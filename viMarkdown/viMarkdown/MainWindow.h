@@ -42,7 +42,7 @@ protected:
 
     void	onOutlineBarVisibilityChanged(bool visible);
     void	onTreeSelectionChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous);
-    void	onTreeItemDoubleClicked(QTreeWidgetItem *current, int);
+    void	onTreeItemActivated(QTreeWidgetItem *current, int);
     void	onMdEditCurPosChanged();
     void	onFileChanged(const QString&);
 

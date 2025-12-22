@@ -64,7 +64,8 @@ void MainWindow::setup_connections() {
 	connect(ui->action_OutlineBar, &QAction::toggled, this, &MainWindow::onAction_OutlineBar);
 	connect(ui->outlineBar, &QDockWidget::visibilityChanged, this, &MainWindow::onOutlineBarVisibilityChanged);
 	connect(ui->treeWidget, &QTreeWidget::currentItemChanged, this, &MainWindow::onTreeSelectionChanged);
-	connect(ui->treeWidget, &QTreeWidget::itemDoubleClicked, this, &MainWindow::onTreeItemDoubleClicked);
+	//connect(ui->treeWidget, &QTreeWidget::itemDoubleClicked, this, &MainWindow::onTreeItemDoubleClicked);
+	connect(ui->treeWidget, &QTreeWidget::itemActivated, this, &MainWindow::onTreeItemActivated);				//	ダブルクリック or Enter 押下
 	connect(ui->action_AboutViMarkdown, &QAction::triggered, this, &MainWindow::onAction_About);
 }
 void MainWindow::read_settings() {
@@ -685,8 +686,8 @@ void MainWindow::onTreeSelectionChanged(QTreeWidgetItem *current, QTreeWidgetIte
 		}
 	}
 }
-void MainWindow::onTreeItemDoubleClicked(QTreeWidgetItem *current, int) {
-	qDebug() << "MainWindow::onTreeItemDoubleClicked(QTreeWidgetItem *current, int)";
+void MainWindow::onTreeItemActivated(QTreeWidgetItem *current, int) {
+	qDebug() << "MainWindow::onTreeItemActivated(QTreeWidgetItem *current, int)";
 	int tix = treeItemToTabIndex(current);
 	if( tix < 0 ) return;
 	DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(tix);
