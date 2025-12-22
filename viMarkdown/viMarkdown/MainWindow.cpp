@@ -299,6 +299,7 @@ void MainWindow::onAction_Save() {
 		//QMessageBox::information(nullptr, "成功", "ファイルが保存されました:\n" + fullPath);
 		docWidget->m_modified = false;		//	保存済み
 		ui->tabWidget->setTabText(ix, docWidget->m_title);
+		m_watcher->addPath(fullPath);
 	} else {
 		//QMessageBox::warning(nullptr, "エラー", "ファイルを開けませんでした。");
 	}

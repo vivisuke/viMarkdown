@@ -1,3 +1,2 @@
-test
-
 hoge
+fuga
