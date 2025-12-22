@@ -5,6 +5,7 @@ viMarkdown で実装済み・予定 Markdown 仕様
 [CommonMark](https://commonmark.org/) をベースに
 GitHub Flavored Markdown (GFM) の拡張をサポートする。
 
+
 ## 概要
 
 本稿では、viMarkdownでサポート済み、および今後サポート予定のマークダウン書式を「ブロック要素」と「インライン要素」に分類して示します。

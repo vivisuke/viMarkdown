@@ -13,6 +13,7 @@
 #include <QDropEvent>
 #include <QMimeData>
 #include <QUrl>
+#include <QFileSystemWatcher>
 #include "ver.h"
 #include "MainWindow.h"
 #include "DocWidget.h"
@@ -29,19 +30,19 @@ MainWindow::MainWindow(QWidget *parent)
 	updateHTMLModeCheck();
 	ui->action_OutlineBar->setChecked(true);	//	暫定的
 	setWindowTitle(QString("viMarkdown ") + VER_STR); 
+	m_watcher = new QFileSystemWatcher(this);			//	外部アプリによる文書変更監視オブジェクト
 
 	setAcceptDrops(true);		//	ファイルドロップ可
 	setup_connections();
 	onAction_New();
 }
-
 MainWindow::~MainWindow()
 {
 	delete ui;
 }
-
 void MainWindow::setup_connections() {
 	connect(ui->menu_RecentFiles, &QMenu::aboutToShow, this, &MainWindow::onAboutToShow_RecentFiles);
+	connect(m_watcher, &QFileSystemWatcher::fileChanged, this, &MainWindow::onFileChanged);
 	connect(ui->action_Exit, &QAction::triggered, this, &MainWindow::onAction_Exit);
 	connect(ui->action_New, &QAction::triggered, this, &MainWindow::onAction_New);
 	connect(ui->action_Open, &QAction::triggered, this, &MainWindow::onAction_Open);
@@ -86,11 +87,14 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 	}
 	event->accept();
 }
+void MainWindow::onFileChanged(const QString& fullPath) {
+	statusBar()->showMessage("file changed: " + fullPath, 3000);
+	do_load(fullPath);
+}
 void MainWindow::updateHTMLModeCheck() {
 	ui->action_HTML->setChecked(m_htmlMode);
 	ui->action_Source->setChecked(!m_htmlMode);
 }
-
 DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPath) {
 	//auto containerWidget = new QWidget;
 	auto *docWidget = new DocWidget(title, fullPath);
@@ -145,6 +149,10 @@ DocWidget *MainWindow::getCurDocWidget() {
 	//auto ptr = (DocWidget*)ui->tabWidget->widget(ix);
 	return (DocWidget*)ui->tabWidget->currentWidget();
 }
+//DocWidget *MainWindow::findDocWidget(const QString& fullPath) {
+//	for(int ix = 0; ix < ui->tabWidget->count(); ++ix) {
+//	}
+//}
 
 void MainWindow::onAboutToShow_RecentFiles() {
 	qDebug() << "MainWindow::onAboutToShow_RecentFiles()";
@@ -225,6 +233,18 @@ void MainWindow::addToRecentFiles(const QString& fullPath) {
 	while( recentFilePaths.size() > 10 ) recentFilePaths.pop_back();
 	settings.setValue("recentFilePaths", recentFilePaths);
 }
+void MainWindow::do_load(const QString& fullPath) {
+	int tix = tabIndexOf("", fullPath);
+	if( tix < 0 ) return;
+	QFile file(fullPath);
+	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+		QMessageBox::warning(this, tr("エラー"), tr("ファイルが開けません:\n%1").arg(fullPath));
+		return;
+	}
+	QString content = file.readAll();
+	DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(tix);
+	docWidget->m_mdEditor->setPlainText(content);
+}
 void MainWindow::do_open(const QString& fullPath) {
 	int tix = tabIndexOf("", fullPath);
 	if( tix >= 0 ) {		//	すでにオープン済み
@@ -243,6 +263,7 @@ void MainWindow::do_open(const QString& fullPath) {
 	addTab(fileInfo.fileName(), fullPath, content);
 	updateOutlineTree();
 	QDir::setCurrent(fileInfo.path());
+	m_watcher->addPath(fullPath);
 	m_opening_file = false;
 
 	addToRecentFiles(fullPath);

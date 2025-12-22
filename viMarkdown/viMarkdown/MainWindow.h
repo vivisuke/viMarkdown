@@ -25,6 +25,8 @@ protected:
     void	onMDTextChanged();
     QSplitter	*getCurTabSplitter();
     DocWidget	*getCurDocWidget();
+    //DocWidget	*findDocWidget(const QString& fullPath);
+    int		tabIndexOf(const QString& title, const QString& fullPath);
     void	addTab(const QString& title, const QString fullPath = "", const QString txt = "");
     void	addTopItemToTreeWidget(const QString& title, const QString fullPath);
     void	updateHTMLModeCheck();
@@ -33,7 +35,7 @@ protected:
     void	insertInline(const QString&);
     QTreeWidgetItem* findTopLevelItemByFullPath(const QString& title, const QString fullPath);
     void	do_open(const QString&);
-    int		tabIndexOf(const QString& title, const QString& fullPath);
+    void	do_load(const QString&);
     int		treeItemToTabIndex(QTreeWidgetItem *current);
     void	addToRecentFiles(const QString& fullPath);
 
@@ -41,6 +43,7 @@ protected:
     void	onTreeSelectionChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous);
     void	onTreeItemDoubleClicked(QTreeWidgetItem *current, int);
     void	onMdEditCurPosChanged();
+    void	onFileChanged(const QString&);
 
     void	onAction_New();
     void	onAction_Open();
@@ -77,6 +80,7 @@ private:
     QString	m_plainText;
     //QString	m_htmlText;
     //MarkdownToHtmlConvertor	m_htmlComvertor;
+    class QFileSystemWatcher	*m_watcher;
 
     Ui::MainWindowClass *ui;
 };
