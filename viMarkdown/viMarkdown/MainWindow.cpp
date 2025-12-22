@@ -72,16 +72,16 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 			ui->tabWidget->setCurrentIndex(ix);
 			QString mess = QString("The document '%1' has been modified.\nDo you want to save your changes ?").arg(docWidget->m_title);
 			QMessageBox::StandardButton reply = QMessageBox::question(this,
-                                  "Confirm save",
-                                  mess,
-                                  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel); // ボタンの種類
+								  "Confirm save",
+								  mess,
+								  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel); // ボタンの種類
 
-		    if (reply == QMessageBox::Yes) {
+			if (reply == QMessageBox::Yes) {
 				onAction_Save();
-		    } else if (reply == QMessageBox::Cancel) {
+			} else if (reply == QMessageBox::Cancel) {
 				event->ignore();
-			    return;
-		    }
+				return;
+			}
 		}
 	}
 	event->accept();
@@ -117,21 +117,21 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 }
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
 {
-    // ドラッグされているデータがファイル（URL）を含んでいるかチェック
-    if (event->mimeData()->hasUrls()) {
-        // 受け入れる（カーソルが「コピー」や「リンク」の形に変わる）
-        event->acceptProposedAction();
-    }
+	// ドラッグされているデータがファイル（URL）を含んでいるかチェック
+	if (event->mimeData()->hasUrls()) {
+		// 受け入れる（カーソルが「コピー」や「リンク」の形に変わる）
+		event->acceptProposedAction();
+	}
 }
 void MainWindow::dropEvent(QDropEvent *event)
 {
-    const QList<QUrl> urls = event->mimeData()->urls();    // ドロップされたデータのURLリストを取得
-    //if (urls.isEmpty()) return;
-    for(const QUrl &url : urls ) {
-    	QString fullPath = url.toLocalFile();
-    	qDebug() << "dropped fullPath = " << fullPath;
-    	do_open(fullPath);
-    }
+	const QList<QUrl> urls = event->mimeData()->urls();    // ドロップされたデータのURLリストを取得
+	//if (urls.isEmpty()) return;
+	for(const QUrl &url : urls ) {
+		QString fullPath = url.toLocalFile();
+		qDebug() << "dropped fullPath = " << fullPath;
+		do_open(fullPath);
+	}
 }
 #if 0
 QSplitter *MainWindow::getCurTabSplitter() {
@@ -158,7 +158,7 @@ void MainWindow::onAboutToShow_RecentFiles() {
 		QAction *act = ui->menu_RecentFiles->addAction("&" + key + " " + fullPath);
 		connect(act, &QAction::triggered, this, [this, fullPath]() {
 			QString pathArg = fullPath;
-	        do_open(pathArg); 
+			do_open(pathArg); 
 		});
 	}
 }
@@ -289,15 +289,15 @@ void MainWindow::onAction_Close() {
 	if (docWidget == nullptr) return;
 	if( docWidget->m_modified ) {
 		QMessageBox::StandardButton reply = QMessageBox::question(this,
-                                  "Confirm save",                // タイトル
-                                  "The document has been modified.\nDo you want to save your changes?", // 本文
-                                  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel); // ボタンの種類
+								  "Confirm save",				 // タイトル
+								  "The document has been modified.\nDo you want to save your changes?", // 本文
+								  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel); // ボタンの種類
 
-	    if (reply == QMessageBox::Yes) {
+		if (reply == QMessageBox::Yes) {
 			onAction_Save();
-	    } else if (reply == QMessageBox::Cancel) {
-		    return;
-	    }
+		} else if (reply == QMessageBox::Cancel) {
+			return;
+		}
 	}
 	int ix = ui->tabWidget->currentIndex();
 	if (ix >= 0)
@@ -307,6 +307,17 @@ void MainWindow::onAction_Close() {
 		//ui->treeWidget->removeItemWidget(top);
 		delete top;			//	TreeWidget から top アイテム以下をすべて削除
 	}
+}
+bool isCheckbox(const QString txt, int s) {
+	return txt[s] == '[' && (txt[s+1] == ' ' || txt[s+1] == 'x' || txt[s+1] == 'X') && txt[s+2] == ']' && txt[s+3] == ' ';
+}
+int isCheckboxBlock(const QTextBlock& block) {		//	空白+ "- [{ xX}] " で始まるか？ return 0 for not List, 1以上 for 文字数
+	const QString txt = block.text();
+	int i = 0;
+	while( i < txt.size() && txt[i] == ' ' ) ++i;
+	if( !txt.mid(i).startsWith("- ") || txt.size() < 6) return 0;
+	if( !isCheckbox(txt, 2) ) return 0;
+	return i + 6;
 }
 int isListBlock(const QTextBlock& block) {		//	空白+ "- " で始まるか？ return 0 for not List, 1以上 for 文字数
 	const QString txt = block.text();
@@ -326,7 +337,7 @@ int isNumListBlock(const QTextBlock& block) {		//	空白+ "数字. " で始ま�
 void MainWindow::onAction_Indent() {
 	MarkdownEditor *mdEditor = getCurDocWidget()->m_mdEditor;
 	QTextCursor cursor = mdEditor->textCursor();
-    QTextDocument *doc = mdEditor->document();
+	QTextDocument *doc = mdEditor->document();
 	cursor.beginEditBlock();
 	int startPos = cursor.selectionStart();
 	int endPos = cursor.selectionEnd();
@@ -337,9 +348,9 @@ void MainWindow::onAction_Indent() {
 	if (endPos > startPos && endPos == endBlock.position())
 		endBlock = endBlock.previous();		//	最終ブロック修正
 	while (currentBlock.isValid() && currentBlock.blockNumber() <= endBlock.blockNumber()) {
-	    cursor.setPosition(currentBlock.position());	//	行頭位置
-	    cursor.insertText("  ");
-	    currentBlock = currentBlock.next();	    // 次のブロックへ
+		cursor.setPosition(currentBlock.position());	//	行頭位置
+		cursor.insertText("  ");
+		currentBlock = currentBlock.next();		// 次のブロックへ
 	}
 	if( startBlock < endBlock ) {
 		cursor.setPosition(startBlock.position());	//	行頭位置
@@ -347,7 +358,7 @@ void MainWindow::onAction_Indent() {
 			cursor.setPosition(endBlock.next().position(), QTextCursor::KeepAnchor);	//	行頭位置
 		} else {
 			cursor.setPosition(endBlock.position(), QTextCursor::KeepAnchor);
-	        cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
+			cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
 		}
 	} else {
 		cursor.setPosition(startBlock.position());
@@ -359,7 +370,7 @@ void MainWindow::onAction_Indent() {
 void MainWindow::onAction_UnIndent() {
 	MarkdownEditor *mdEditor = getCurDocWidget()->m_mdEditor;
 	QTextCursor cursor = mdEditor->textCursor();
-    QTextDocument *doc = mdEditor->document();
+	QTextDocument *doc = mdEditor->document();
 	cursor.beginEditBlock();
 	int startPos = cursor.selectionStart();
 	int endPos = cursor.selectionEnd();
@@ -370,12 +381,12 @@ void MainWindow::onAction_UnIndent() {
 	if (endPos > startPos && endPos == endBlock.position())
 		endBlock = endBlock.previous();		//	最終ブロック修正
 	while (currentBlock.isValid() && currentBlock.blockNumber() <= endBlock.blockNumber()) {
-	    cursor.setPosition(currentBlock.position());	//	行頭位置
-	    if( currentBlock.text().startsWith("  ") ) {
-    		cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, 2);
-    		cursor.removeSelectedText();
-	    }
-	    currentBlock = currentBlock.next();	    // 次のブロックへ
+		cursor.setPosition(currentBlock.position());	//	行頭位置
+		if( currentBlock.text().startsWith("  ") ) {
+			cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, 2);
+			cursor.removeSelectedText();
+		}
+		currentBlock = currentBlock.next();		// 次のブロックへ
 	}
 	if( startBlock < endBlock ) {
 		cursor.setPosition(startBlock.position());	//	行頭位置
@@ -383,7 +394,7 @@ void MainWindow::onAction_UnIndent() {
 			cursor.setPosition(endBlock.next().position(), QTextCursor::KeepAnchor);	//	行頭位置
 		} else {
 			cursor.setPosition(endBlock.position(), QTextCursor::KeepAnchor);
-	        cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
+			cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
 		}
 	} else {
 		cursor.setPosition(startBlock.position());
@@ -392,11 +403,49 @@ void MainWindow::onAction_UnIndent() {
 	mdEditor->setTextCursor(cursor);
 	cursor.endEditBlock();
 }
+void MainWindow::onAction_Checkbox() {
+	MarkdownEditor *mdEditor = getCurDocWidget()->m_mdEditor;
+	QTextCursor cursor = mdEditor->textCursor();
+	QTextDocument *doc = mdEditor->document();
+	cursor.beginEditBlock();
+	int startPos = cursor.selectionStart();
+	int endPos = cursor.selectionEnd();
+	QTextBlock startBlock = doc->findBlock(startPos);		// 範囲に含まれる最初のブロックと最後のブロックを取得
+	QTextBlock currentBlock = startBlock;
+	QTextBlock endBlock = doc->findBlock(endPos);
+	bool remove_checkbox = isCheckboxBlock(currentBlock) != 0;
+	if (endPos > startPos && endPos == endBlock.position())
+		endBlock = endBlock.previous();		//	最終ブロック修正
+	while (currentBlock.isValid() && currentBlock.blockNumber() <= endBlock.blockNumber()) {
+		cursor.setPosition(currentBlock.position());	//	行頭位置
+		if( remove_checkbox ) {
+			int n = isCheckboxBlock(currentBlock);
+			if( n != 0 ) {
+				cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, n);
+				cursor.removeSelectedText();
+			}
+		} else {
+			if( !isCheckboxBlock(currentBlock) ) {
+				cursor.insertText("- [ ] ");
+			}
+		}
+		currentBlock = currentBlock.next();		// 次のブロックへ
+	}
+	cursor.setPosition(startBlock.position());	//	行頭位置
+	if( endBlock.next().isValid() ) {
+		cursor.setPosition(endBlock.next().position(), QTextCursor::KeepAnchor);	//	行頭位置
+	} else {
+		cursor.setPosition(endBlock.position(), QTextCursor::KeepAnchor);
+		cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
+	}
+	cursor.endEditBlock();
+	mdEditor->setTextCursor(cursor);
+}
 void MainWindow::onAction_List() {
 	qDebug() << "MainWindow::onAction_List()";
 	MarkdownEditor *mdEditor = getCurDocWidget()->m_mdEditor;
 	QTextCursor cursor = mdEditor->textCursor();
-    QTextDocument *doc = mdEditor->document();
+	QTextDocument *doc = mdEditor->document();
 	cursor.beginEditBlock();
 	int startPos = cursor.selectionStart();
 	int endPos = cursor.selectionEnd();
@@ -407,32 +456,31 @@ void MainWindow::onAction_List() {
 	if (endPos > startPos && endPos == endBlock.position())
 		endBlock = endBlock.previous();		//	最終ブロック修正
 	while (currentBlock.isValid() && currentBlock.blockNumber() <= endBlock.blockNumber()) {
-	    cursor.setPosition(currentBlock.position());	//	行頭位置
-    	//cursor.movePosition(QTextCursor::StartOfBlock);			//	行頭移動　←　何故かうまく動作しない？？？
-	    if( remove_list ) {
-	    	int n = isListBlock(currentBlock);
-	    	if( n != 0 ) {
-	    		cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, n);
-	    		cursor.removeSelectedText();
-	    	}
-	    } else {
-	    	if( !isListBlock(currentBlock) ) {
-			    int n = isNumListBlock(currentBlock);	//	空白+ "数字. "
-			    if( n > 0 ) {
-			    	cursor.setPosition(currentBlock.position() + n - 3);		//	3 for "数字. ".length()
-			    	cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, 3);
-			    }
-			    cursor.insertText("- ");
-	    	}
-	    }
-	    currentBlock = currentBlock.next();	    // 次のブロックへ
+		cursor.setPosition(currentBlock.position());	//	行頭位置
+		if( remove_list ) {
+			int n = isListBlock(currentBlock);
+			if( n != 0 ) {
+				cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, n);
+				cursor.removeSelectedText();
+			}
+		} else {
+			if( !isListBlock(currentBlock) ) {
+				int n = isNumListBlock(currentBlock);	//	空白+ "数字. "
+				if( n > 0 ) {
+					cursor.setPosition(currentBlock.position() + n - 3);		//	3 for "数字. ".length()
+					cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, 3);
+				}
+				cursor.insertText("- ");
+			}
+		}
+		currentBlock = currentBlock.next();		// 次のブロックへ
 	}
 	cursor.setPosition(startBlock.position());	//	行頭位置
 	if( endBlock.next().isValid() ) {
 		cursor.setPosition(endBlock.next().position(), QTextCursor::KeepAnchor);	//	行頭位置
 	} else {
 		cursor.setPosition(endBlock.position(), QTextCursor::KeepAnchor);
-        cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
+		cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
 	}
 	cursor.endEditBlock();
 	mdEditor->setTextCursor(cursor);
@@ -441,7 +489,7 @@ void MainWindow::onAction_NumList() {
 	qDebug() << "MainWindow::onAction_NumList()";
 	MarkdownEditor *mdEditor = getCurDocWidget()->m_mdEditor;
 	QTextCursor cursor = mdEditor->textCursor();
-    QTextDocument *doc = mdEditor->document();
+	QTextDocument *doc = mdEditor->document();
 	cursor.beginEditBlock();
 	int startPos = cursor.selectionStart();
 	int endPos = cursor.selectionEnd();
@@ -452,50 +500,48 @@ void MainWindow::onAction_NumList() {
 	if (endPos > startPos && endPos == endBlock.position())
 		endBlock = endBlock.previous();		//	最終ブロック修正
 	while (currentBlock.isValid() && currentBlock.blockNumber() <= endBlock.blockNumber()) {
-	    cursor.setPosition(currentBlock.position());	//	行頭位置
-    	//cursor.movePosition(QTextCursor::StartOfBlock);			//	行頭移動　←　何故かうまく動作しない？？？
-	    if( remove_list ) {
-	    	int n = isNumListBlock(currentBlock);
-	    	if( n != 0 ) {
-	    		cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, n);
-	    		cursor.removeSelectedText();
-	    	}
-	    } else {
-	    	if( !isNumListBlock(currentBlock) ) {
-			    int n = isListBlock(currentBlock);	//	空白+ "- "
-			    if( n > 0 ) {
-			    	cursor.setPosition(currentBlock.position() + n - 2);		//	2 for "- ".length()
-			    	cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, 2);
-			    }
-			    cursor.insertText("1. ");
-	    	}
-	    }
-	    currentBlock = currentBlock.next();	    // 次のブロックへ
+		cursor.setPosition(currentBlock.position());	//	行頭位置
+		//cursor.movePosition(QTextCursor::StartOfBlock);			//	行頭移動　←　何故かうまく動作しない？？？
+		if( remove_list ) {
+			int n = isNumListBlock(currentBlock);
+			if( n != 0 ) {
+				cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, n);
+				cursor.removeSelectedText();
+			}
+		} else {
+			if( !isNumListBlock(currentBlock) ) {
+				int n = isListBlock(currentBlock);	//	空白+ "- "
+				if( n > 0 ) {
+					cursor.setPosition(currentBlock.position() + n - 2);		//	2 for "- ".length()
+					cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, 2);
+				}
+				cursor.insertText("1. ");
+			}
+		}
+		currentBlock = currentBlock.next();		// 次のブロックへ
 	}
 	cursor.setPosition(startBlock.position());	//	行頭位置
 	if( endBlock.next().isValid() ) {
 		cursor.setPosition(endBlock.next().position(), QTextCursor::KeepAnchor);	//	行頭位置
 	} else {
 		cursor.setPosition(endBlock.position(), QTextCursor::KeepAnchor);
-        cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
+		cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
 	}
 	cursor.endEditBlock();
 	mdEditor->setTextCursor(cursor);
-}
-void MainWindow::onAction_Checkbox() {
 }
 void MainWindow::insertInline(const QString& delimiter) {
 	MarkdownEditor *mdEditor = getCurDocWidget()->m_mdEditor;
 	QTextCursor cursor = mdEditor->textCursor();
 	if (cursor.hasSelection()) {
 		// 2. 複数行にまたがっているかチェック
-	    QTextDocument *doc = mdEditor->document();
-	    // 選択範囲の「開始位置」と「終了位置」が属するブロック（行）を取得
-	    QTextBlock startBlock = doc->findBlock(cursor.selectionStart());
-	    QTextBlock endBlock   = doc->findBlock(cursor.selectionEnd());
-	    // ブロック番号が異なる場合＝複数行選択されている場合は無視
-	    if (startBlock.blockNumber() != endBlock.blockNumber())
-	        return;
+		QTextDocument *doc = mdEditor->document();
+		// 選択範囲の「開始位置」と「終了位置」が属するブロック（行）を取得
+		QTextBlock startBlock = doc->findBlock(cursor.selectionStart());
+		QTextBlock endBlock   = doc->findBlock(cursor.selectionEnd());
+		// ブロック番号が異なる場合＝複数行選択されている場合は無視
+		if (startBlock.blockNumber() != endBlock.blockNumber())
+			return;
 		QString newText = delimiter + cursor.selectedText() + delimiter;
 		cursor.insertText(newText);
 	} else {
@@ -560,10 +606,10 @@ void MainWindow::onTreeSelectionChanged(QTreeWidgetItem *current, QTreeWidgetIte
 			//QTextBlock block = mdEditor->document()->findBlockByLineNumber(ln);
 			QTextBlock block = mdEditor->document()->findBlockByNumber(ln);
 			QTextCursor cursor = mdEditor->textCursor();
-		    cursor.setPosition(block.position());
-		    mdEditor->setTextCursor(cursor);
-		    //mdEditor->ensureCursorVisible();
-		    mdEditor->scrollToTop(cursor);
+			cursor.setPosition(block.position());
+			mdEditor->setTextCursor(cursor);
+			//mdEditor->ensureCursorVisible();
+			mdEditor->scrollToTop(cursor);
 		}
 	}
 }
@@ -591,24 +637,24 @@ void MainWindow::updatePreview() {
 QTreeWidgetItem* MainWindow::findTopLevelItemByFullPath(const QString& title, const QString fullPath) {
 	QTreeWidget *treeWidget = ui->treeWidget;
 	int topCount = treeWidget->topLevelItemCount();
-    for (int i = 0; i < topCount; ++i) {
-        QTreeWidgetItem* item = treeWidget->topLevelItem(i);
-        QString itemPath = item->data(0, Qt::UserRole).toString();
-        if( itemPath.isEmpty() ) {
-        	if( item->text(0) == title )
-        		return item;
-        } else if( itemPath == fullPath )
-        	return item;
-    }
-    return nullptr;
+	for (int i = 0; i < topCount; ++i) {
+		QTreeWidgetItem* item = treeWidget->topLevelItem(i);
+		QString itemPath = item->data(0, Qt::UserRole).toString();
+		if( itemPath.isEmpty() ) {
+			if( item->text(0) == title )
+				return item;
+		} else if( itemPath == fullPath )
+			return item;
+	}
+	return nullptr;
 }
 void expandAllChildren(QTreeWidgetItem *item) {
-    if (!item) return;
-    item->setExpanded(true);  // まず自身を展開
-    for (int i = 0; i < item->childCount(); ++i) {
-        QTreeWidgetItem *child = item->child(i);
-        expandAllChildren(child);  // 子に対して再帰呼び出し
-    }
+	if (!item) return;
+	item->setExpanded(true);  // まず自身を展開
+	for (int i = 0; i < item->childCount(); ++i) {
+		QTreeWidgetItem *child = item->child(i);
+		expandAllChildren(child);  // 子に対して再帰呼び出し
+	}
 }
 void MainWindow::updateOutlineTree() {
 	DocWidget *docWidget = getCurDocWidget();
@@ -652,8 +698,8 @@ void MainWindow::onMDTextChanged() {
 	const vector<char>& blockType = htmlComvertor.getBlockType();
 	QTextCursor cursor(mdEditor->document()); 
 	QTextCharFormat fmt_darkred, fmt_black;
-    fmt_darkred.setForeground(QColor("darkred"));
-    fmt_black.setForeground(QColor("black"));
+	fmt_darkred.setForeground(QColor("darkred"));
+	fmt_black.setForeground(QColor("black"));
 	QTextBlock block = mdEditor->document()->firstBlock();
 	for(int ln = 0; block.isValid() && ln < blockType.size(); ++ln) {
 		cursor.setPosition(block.position());
@@ -687,11 +733,11 @@ void MainWindow::onAction_About() {
 	qDebug() << "MainWindow::onAction_About()";
 
 	QMessageBox::about(this, 
-        "About viMarkdown", // タイトルバー
-        
-        "<p><big><b>viMarkdown</b></big> " + VER_STR + "</p>"
-        "<p>The efficient visual Markdown editor"
-        "<br>Copyright (C) 2025 by N.Tsuda"
-        "<br>Powered by Qt 6 and C++</p>"
-    );
+		"About viMarkdown", // タイトルバー
+		
+		"<p><big><b>viMarkdown</b></big> " + VER_STR + "</p>"
+		"<p>The efficient visual Markdown editor"
+		"<br>Copyright (C) 2025 by N.Tsuda"
+		"<br>Powered by Qt 6 and C++</p>"
+	);
 }

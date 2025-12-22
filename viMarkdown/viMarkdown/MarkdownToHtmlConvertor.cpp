@@ -134,6 +134,7 @@ QString MarkdownToHtmlConvertor::parceInline(const QString& lnStr) {
 	        	nbsp += "&nbsp;&nbsp;";
         }
 		result = left + nbsp + " □ " + result.mid(s+3);
+		//result = left + nbsp + " <input disabled=\"\" type=\"checkbox\"> " + result.mid(s+3);
 	}
     static QRegularExpression re_checked(R"((?<![\\])(\[[xX]\]))");  // 直前が \ でない [x] [X]とマッチ
 	while ((match = re_checked.match(result)).hasMatch()) {

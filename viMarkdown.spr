@@ -141,9 +141,9 @@
 0139 ◎ C 12/21 12/22 0.0002│ToDo│MainWindow::m_plainText, m_htmlText：削除 or DocWidget に移動
 0140 ◎ C 12/22 12/22 0.0002│ToDo│MarkdownToHtmlConvertor::convert()：引数でマークダウンテキストを指定可能に
 0141 ◎ C 12/22 12/22 0.0002│問題│プレビューにフォーマットされた文章が表示されない
-0142 ● C 12/22             │ToDo│
-0143 ● C 12/22             │ToDo│
-0144 ● C 12/22             │ToDo│
+0142 ● C 12/22             │ToDo│QTextDocument::setMarkdown(const QString &markdown, ...) を試してみる
+0143 ◎ C 12/22 12/22 0.0002│ToDo│チェックボックス：<input disabled="" type="checkbox"> を出力？→ 表示されないので却下
+0144 ◎ C 12/22 12/23 0.0002│ToDo│Edit > inline > CheckBox 処理
 0145 ● C 12/22             │ToDo│
 0146 ● C 12/22             │ToDo│
 0147 ● C 12/22             │ToDo│
