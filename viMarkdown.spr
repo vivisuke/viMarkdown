@@ -154,7 +154,7 @@
 0152 ◎ C 12/23 12/23 0.0003│ToDo│View > FocusOutline：フォーカスをアウトラインに移す
 0153 ◎ C 12/23 12/23 0.0003│問題│View > FocusOutline：アクティブ文書のアウトラインアイテムが選択されない
 0154 ● C 12/23             │ToDo│View > FocusOutline：現カーソル位置見出しアウトラインアイテム選択
-0155 ● C 12/23             │ToDo│MdEditor > 見出し行強調：QSyntaxHighlighter を使用するよう修正
+0155 ◎ C 12/23 12/23 0.0003│ToDo│MdEditor > 見出し行強調：QSyntaxHighlighter を使用するよう修正
 0156 ● C 12/23             │ToDo│
 0157 ● C 12/23             │ToDo│
 0158 ● C 12/23             │ToDo│

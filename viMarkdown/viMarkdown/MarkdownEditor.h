@@ -5,9 +5,7 @@
 class MarkdownEditor : public QPlainTextEdit
 {
 public:
-	MarkdownEditor(QWidget *parent = nullptr) : QPlainTextEdit(parent)
-	{
-	}
+	MarkdownEditor(QWidget *parent = nullptr);
 public:
 	void	scrollToTop(int lineNum) {		//	lineNum: 0 org.
 		verticalScrollBar()->setValue(lineNum);
@@ -19,5 +17,8 @@ public:
 	int getVisualLineNumber(const QTextCursor &cursor) const;
 protected:
     void keyPressEvent(QKeyEvent *e) override;
+
+private:
+    class MarkdownHighlighter *m_highlighter;
 };
 

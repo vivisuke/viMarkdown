@@ -1,8 +1,30 @@
 ﻿#include <QPlainTextEdit>
 #include <QTextCursor>
 #include <QTextBlock>
+#include <QSyntaxHighlighter>
 #include "MarkdownEditor.h"
 
+class MarkdownHighlighter : public QSyntaxHighlighter {
+public:
+    MarkdownHighlighter(QTextDocument *parent) : QSyntaxHighlighter(parent) {}
+
+protected:
+    void highlightBlock(const QString &text) override {
+        if (text.startsWith("#")) {
+            QTextCharFormat fmt_darkred;
+            fmt_darkred.setForeground(QColor("darkred"));
+            setFormat(0, text.length(), fmt_darkred);
+        } else {
+            // デフォルトの色（黒）
+            setFormat(0, text.length(), QColor("black"));
+        }
+    }
+};
+//----------------------------------------------------------------------
+MarkdownEditor::MarkdownEditor(QWidget *parent) : QPlainTextEdit(parent)
+{
+	m_highlighter = new MarkdownHighlighter(this->document());
+}
 void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 	if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) {
 		QTextCursor cursor = this->textCursor();
