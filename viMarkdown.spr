@@ -158,7 +158,7 @@
 0156 ● C 12/23             │ToDo│undo を実行し、ファイル保存済み状態まで戻しても modified フラグがリセットされない
 0157 ◎ C 12/23 12/23 0.0004│ToDo│modified フラグを廃止し、setModified(), isModified() 利用
 0158 ◎ C 12/23 12/23 0.0004│ToDo│modificationChanged(bool) シグナルでタイトル末尾 * 表示・非表示
-0159 ● C 12/23             │ToDo│Undo, Redo メニュー：ショートカットキー表示
+0159 ◎ C 12/23 12/23 0.0004│ToDo│Undo, Redo メニュー：ショートカットキー表示
 0160 ● C 12/23             │ToDo│
 0161 ● C 12/23             │ToDo│
 0162 ● C 12/23             │ToDo│

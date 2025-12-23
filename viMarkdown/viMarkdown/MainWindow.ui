@@ -285,6 +285,9 @@
    <property name="text">
     <string>&amp;Undo</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Z</string>
+   </property>
   </action>
   <action name="action_Redo">
    <property name="icon">
@@ -294,6 +297,9 @@
    </property>
    <property name="text">
     <string>&amp;Redo</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Y</string>
    </property>
   </action>
   <action name="action_List">
