@@ -655,8 +655,13 @@ void MainWindow::onAction_OutlineBar(bool checked) {
 	ui->outlineBar->setVisible(checked);
 }
 void MainWindow::onAction_FocusOutline() {
+	DocWidget *docWidget = getCurDocWidget();
+	if( docWidget == nullptr ) return;
 	ui->outlineBar->setVisible(true);
 	ui->treeWidget->setFocus();
+	QTreeWidgetItem* item = findTopLevelItemByFullPath(docWidget->m_title, docWidget->m_fullPath);
+	if( item != nullptr )
+		ui->treeWidget->setCurrentItem(item);
 }
 void MainWindow::onOutlineBarVisibilityChanged(bool v) {
 	ui->action_OutlineBar->setChecked(v);
