@@ -154,9 +154,9 @@
 0152 ◎ C 12/23 12/23 0.0003│ToDo│View > FocusOutline：フォーカスをアウトラインに移す
 0153 ◎ C 12/23 12/23 0.0003│問題│View > FocusOutline：アクティブ文書のアウトラインアイテムが選択されない
 0154 ● C 12/23             │ToDo│View > FocusOutline：現カーソル位置見出しアウトラインアイテム選択
-0155 ◎ C 12/23 12/23 0.0003│ToDo│MdEditor > 見出し行強調：QSyntaxHighlighter を使用するよう修正
-0156 ● C 12/23             │ToDo│
-0157 ● C 12/23             │ToDo│
-0158 ● C 12/23             │ToDo│
+0155 ◎ C 12/23 12/23 0.0004│ToDo│MdEditor > 見出し行強調：QSyntaxHighlighter を使用するよう修正
+0156 ● C 12/23             │ToDo│undo を実行し、ファイル保存済み状態まで戻しても modified フラグがリセットされない
+0157 ◎ C 12/23 12/23 0.0004│ToDo│modified フラグを廃止し、setModified(), isModified() 利用
+0158 ● C 12/23             │ToDo│modificationChanged(bool) シグナルでタイトル末尾 * 表示・非表示
 0159 ● C 12/23             │ToDo│
 0160 ● C 12/23             │ToDo│

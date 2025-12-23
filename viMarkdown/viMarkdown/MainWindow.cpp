@@ -87,7 +87,7 @@ void MainWindow::read_settings() {
 void MainWindow::closeEvent(QCloseEvent *event) {
 	for(int ix = 0; ix < ui->tabWidget->count(); ++ix) {
 		DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(ix);
-		if( docWidget->m_modified ) {
+		if( docWidget->isModified() ) {
 			ui->tabWidget->setCurrentIndex(ix);
 			QString mess = QString("The document '%1' has been modified.\nDo you want to save your changes ?").arg(docWidget->m_title);
 			QMessageBox::StandardButton reply = QMessageBox::question(this,
@@ -116,7 +116,7 @@ void MainWindow::onFileChanged(const QString& fullPath) {
 	int tix = tabIndexOf("", fullPath);
 	if( tix < 0 ) return;
 	DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(tix);
-	if( docWidget->m_modified ) {
+	if( docWidget->isModified() ) {
 		QMessageBox msgBox(this);
 		msgBox.setWindowTitle("外部変更の検知");
 		msgBox.setText("未保存文書のファイルが外部で変更されました。");
@@ -290,7 +290,7 @@ void MainWindow::do_load(const QString& fullPath) {
 	}
 	QString content = file.readAll();
 	docWidget->m_mdEditor->setPlainText(content);
-	docWidget->m_modified = false;
+	docWidget->setModified(false);
 	ui->tabWidget->setTabText(tix, docWidget->m_title);
 }
 void MainWindow::do_open(const QString& fullPath) {
@@ -347,7 +347,7 @@ void MainWindow::onAction_Save() {
 		out << mdEditor->toPlainText();
 		file.close();
 		//QMessageBox::information(nullptr, "成功", "ファイルが保存されました:\n" + fullPath);
-		docWidget->m_modified = false;		//	保存済み
+		docWidget->setModified(false);		//	保存済み
 		ui->tabWidget->setTabText(ix, docWidget->m_title);
 		m_watcher->addPath(fullPath);
 		docWidget->m_hasSaved = true;		//	保存済み for 自動更新
@@ -362,7 +362,7 @@ void MainWindow::onAction_Close() {
 
 	DocWidget *docWidget = getCurDocWidget();
 	if (docWidget == nullptr) return;
-	if( docWidget->m_modified ) {
+	if( docWidget->isModified() ) {
 		QMessageBox::StandardButton reply = QMessageBox::question(this,
 								  "Confirm save",				 // タイトル
 								  "The document has been modified.\nDo you want to save your changes?", // 本文
@@ -802,7 +802,7 @@ void MainWindow::onMDTextChanged() {
 	if( !m_opening_file ) {
 		DocWidget *docWidget = getCurDocWidget();
 		if( docWidget == nullptr ) return;
-		docWidget->m_modified = true;
+		docWidget->setModified(true);
 		ui->tabWidget->setTabText(ui->tabWidget->currentIndex(), docWidget->m_title + " *");
 	}
 	m_ignore_changed = false;
