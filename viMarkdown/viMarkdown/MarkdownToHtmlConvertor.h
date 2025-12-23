@@ -27,6 +27,7 @@ private:
     void	do_paragraph(const QString&);
 
     QString	parceInline(const QString&);
+    QString	escape(const QString&);
 
     void	open_ul(int lvl);
     void	close_ul(int lvl=0);

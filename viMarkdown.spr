@@ -166,7 +166,7 @@
 0164 ● C 12/23             │ToDo│MarkdownToHtmlConvertor.convert()：マークダウンテキストではなく、QTextDocument を受け取る？
 0165 ● C 12/24             │ToDo│MarkdownToHtmlConvertor.convert() > list 処理："- " が続くかぎり関数内で処理
 0166 ◎ C 12/24 12/24 0.0004│ToDo│code ブロックをとりあえずサポート
-0167 ● C 12/24             │問題│code ブロック中の < は &lt; に変換
+0167 ◎ C 12/24 12/24 0.0004│問題│code ブロック中の < は &lt; に変換
 0168 ● C 12/24             │ToDo│
 0169 ● C 12/24             │ToDo│
 0170 ● C 12/24             │ToDo│

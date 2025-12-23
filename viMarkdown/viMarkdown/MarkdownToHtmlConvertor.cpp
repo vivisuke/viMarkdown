@@ -167,6 +167,7 @@ QString MarkdownToHtmlConvertor::parceInline(const QString& lnStr) {
         QString url   = match.captured(2); // グループ2: URL
         result = result.left(s) + "<a href=\"" + url + "\">" + title + "</a>" + result.mid(s+length);
 	}
+	//result = escape(result);
 	int s = 0;
 	while( (s = result.indexOf('\\', s)) >= 0 && s+1 < result.size() ) {
         QString ch = result[s+1];
@@ -195,6 +196,20 @@ QString MarkdownToHtmlConvertor::parceInline(const QString& lnStr) {
     result.replace("\\_", "_");
     //##result.replace("--", "-");		//	この変換は拡張仕様？
 
+	return result;
+}
+QString MarkdownToHtmlConvertor::escape(const QString& txt) {
+	QString result = txt;
+	int s = 0;
+	while( (s = result.indexOf('\\', s)) >= 0 && s+1 < result.size() ) {
+        QString ch = result[s+1];
+        if( ch == "<" )
+        	ch = "&lt;";
+        else if( ch == ">" )
+        	ch = "&gt;";
+        result = result.left(s) + ch + result.mid(s+2);
+        s += 1;
+	}
 	return result;
 }
 void MarkdownToHtmlConvertor::do_heading(const QString& lnStr, int lineNum) {
@@ -269,9 +284,10 @@ void MarkdownToHtmlConvertor::do_quote(const QString& lnStr) {
 void MarkdownToHtmlConvertor::do_code(const QString& lnStr) {
 	m_htmlText += "<code><pre>";
 	while( ++m_ln < m_lst.size() ) {
-		const QString& lnStr = m_lst[m_ln];
+		QString lnStr = m_lst[m_ln];
 		m_blockType[m_ln] = ' ';
 		if( lnStr == "```" ) break;
+		lnStr.replace("<", "&lt;");
 		m_htmlText += lnStr + "\n";
 	}
 	m_htmlText += "</pre></code>\n";
