@@ -54,7 +54,7 @@ void MainWindow::setup_connections() {
 	connect(ui->action_Checkbox, &QAction::triggered, this, &MainWindow::onAction_Checkbox);
 	connect(ui->action_Indent, &QAction::triggered, this, &MainWindow::onAction_Indent);
 	connect(ui->action_UnIndent, &QAction::triggered, this, &MainWindow::onAction_UnIndent);
-	//connect(ui->action_Undo, &QAction::triggered, this, &MainWindow::onAction_Undo);
+	connect(ui->action_Undo, &QAction::triggered, this, &MainWindow::onAction_Undo);
 	//connect(ui->action_Redo, &QAction::triggered, this, &MainWindow::onAction_Redo);
 	connect(ui->action_Bold, &QAction::triggered, this, &MainWindow::onAction_Bold);
 	connect(ui->action_Italic, &QAction::triggered, this, &MainWindow::onAction_Italic);
@@ -141,6 +141,7 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	docWidget->setStyleSheet("font-size: 12pt; line-height: 200%;");
 	QSplitter *splitter = new QSplitter(Qt::Horizontal, docWidget);
 	MarkdownEditor *mdEditor = docWidget->m_mdEditor = new MarkdownEditor(splitter);
+	mdEditor->setUndoRedoEnabled(true);
 	connect(mdEditor, &MarkdownEditor::cursorPositionChanged, this, &MainWindow::onMdEditCurPosChanged);
 	//QTextEdit *mdEditor = new QTextEdit(splitter);
 	mdEditor->setPlaceholderText("ここにMarkdownを入力\n# タイトル\n## 大見出し\n- リスト\n1. 連番\n本文...");
@@ -778,6 +779,7 @@ void MainWindow::onMDTextChanged() {
 	m_plainText = mdEditor->toPlainText();
 	auto &htmlComvertor = docWidget->m_htmlComvertor;
 	htmlComvertor.convert(m_plainText);
+#if 0
 	const vector<char>& blockType = htmlComvertor.getBlockType();
 	QTextCursor cursor(mdEditor->document()); 
 	QTextCharFormat fmt_darkred, fmt_black;
@@ -794,6 +796,7 @@ void MainWindow::onMDTextChanged() {
 		}
 		block = block.next();
 	}
+#endif
 	updatePreview();
 	updateOutlineTree();
 	if( !m_opening_file ) {
