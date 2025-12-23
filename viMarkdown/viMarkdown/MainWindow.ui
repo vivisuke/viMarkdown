@@ -74,6 +74,7 @@
     <addaction name="action_Source"/>
     <addaction name="separator"/>
     <addaction name="action_OutlineBar"/>
+    <addaction name="action_FocusOutline"/>
    </widget>
    <widget class="QMenu" name="menu_Edit">
     <property name="title">
@@ -420,6 +421,17 @@
    </property>
    <property name="text">
     <string>&amp;Paste</string>
+   </property>
+  </action>
+  <action name="action_FocusOutline">
+   <property name="text">
+    <string>&amp;Focus Outline</string>
+   </property>
+   <property name="toolTip">
+    <string>Focus to OutlineBar</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Q</string>
    </property>
   </action>
  </widget>

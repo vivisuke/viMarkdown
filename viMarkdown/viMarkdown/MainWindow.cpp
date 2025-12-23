@@ -62,6 +62,7 @@ void MainWindow::setup_connections() {
 	connect(ui->action_HTML, &QAction::toggled, this, &MainWindow::onAction_HTML);
 	connect(ui->action_Source, &QAction::toggled, this, &MainWindow::onAction_Source);
 	connect(ui->action_OutlineBar, &QAction::toggled, this, &MainWindow::onAction_OutlineBar);
+	connect(ui->action_FocusOutline, &QAction::triggered, this, &MainWindow::onAction_FocusOutline);
 	connect(ui->outlineBar, &QDockWidget::visibilityChanged, this, &MainWindow::onOutlineBarVisibilityChanged);
 	connect(ui->treeWidget, &QTreeWidget::currentItemChanged, this, &MainWindow::onTreeSelectionChanged);
 	//connect(ui->treeWidget, &QTreeWidget::itemDoubleClicked, this, &MainWindow::onTreeItemDoubleClicked);
@@ -652,6 +653,10 @@ void MainWindow::onAction_Source(bool checked) {
 }
 void MainWindow::onAction_OutlineBar(bool checked) {
 	ui->outlineBar->setVisible(checked);
+}
+void MainWindow::onAction_FocusOutline() {
+	ui->outlineBar->setVisible(true);
+	ui->treeWidget->setFocus();
 }
 void MainWindow::onOutlineBarVisibilityChanged(bool v) {
 	ui->action_OutlineBar->setChecked(v);
