@@ -108,6 +108,8 @@
     <addaction name="menuinline"/>
     <addaction name="action_Indent"/>
     <addaction name="action_UnIndent"/>
+    <addaction name="action_Find"/>
+    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menu_Help">
     <property name="title">
@@ -447,6 +449,18 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Q</string>
+   </property>
+  </action>
+  <action name="action_Find">
+   <property name="icon">
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/search_48.png</normaloff>:/MainWindow/images/search_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Find</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+F</string>
    </property>
   </action>
  </widget>

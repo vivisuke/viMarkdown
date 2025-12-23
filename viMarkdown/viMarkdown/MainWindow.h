@@ -63,6 +63,7 @@ protected:
     void	onAction_Checkbox();
     void	onAction_Indent();
     void	onAction_UnIndent();
+    void	onAction_Find();
     void	onAction_HTML(bool);
     void	onAction_Source(bool);
     void	onAction_OutlineBar(bool);
