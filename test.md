@@ -1,5 +1,4 @@
 hoge
-xyz
 xxx
 yyyy
 zzzz

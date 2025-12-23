@@ -143,6 +143,7 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	MarkdownEditor *mdEditor = docWidget->m_mdEditor = new MarkdownEditor(splitter);
 	mdEditor->setUndoRedoEnabled(true);
 	connect(mdEditor, &MarkdownEditor::cursorPositionChanged, this, &MainWindow::onMdEditCurPosChanged);
+	connect(mdEditor->document(), &QTextDocument::modificationChanged, this, &MainWindow::onModificationChanged);
 	//QTextEdit *mdEditor = new QTextEdit(splitter);
 	mdEditor->setPlaceholderText("ここにMarkdownを入力\n# タイトル\n## 大見出し\n- リスト\n1. 連番\n本文...");
 	QTextEdit *previewer = docWidget->m_previewer = new QTextEdit(splitter);
@@ -768,6 +769,12 @@ void MainWindow::updateOutlineTree() {
 	//item0->setExpanded(true);
 	expandAllChildren(item0);
 }
+void MainWindow::onModificationChanged(bool b) {
+	DocWidget *docWidget = getCurDocWidget();
+	QString title = docWidget->m_title;
+	if( b ) title += " *";
+	ui->tabWidget->setTabText(ui->tabWidget->currentIndex(), title);
+}
 void MainWindow::onMDTextChanged() {
 	//qDebug() << "MainWindow::onMDTextChanged()";
 
@@ -799,12 +806,14 @@ void MainWindow::onMDTextChanged() {
 #endif
 	updatePreview();
 	updateOutlineTree();
+#if 0
 	if( !m_opening_file ) {
 		DocWidget *docWidget = getCurDocWidget();
 		if( docWidget == nullptr ) return;
 		docWidget->setModified(true);
 		ui->tabWidget->setTabText(ui->tabWidget->currentIndex(), docWidget->m_title + " *");
 	}
+#endif
 	m_ignore_changed = false;
 }
 void MainWindow::onMdEditCurPosChanged() {

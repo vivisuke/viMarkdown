@@ -45,6 +45,7 @@ protected:
     void	onTreeItemActivated(QTreeWidgetItem *current, int);
     void	onMdEditCurPosChanged();
     void	onFileChanged(const QString&);
+    void	onModificationChanged(bool);
 
     void	onAction_New();
     void	onAction_Open();
