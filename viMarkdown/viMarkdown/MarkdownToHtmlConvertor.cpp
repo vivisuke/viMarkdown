@@ -30,18 +30,21 @@ const QString& MarkdownToHtmlConvertor::convert(const QString& markdownText) {
 	auto lst = m_markdownText.split('\n');
 	m_blockType.resize(lst.size());
 	int htmlLn = 0;
-	for(int ln = 0; ln != lst.size(); ++ln) {
-		auto lnStr = lst[ln];
+	m_ln = 0;
+	//for(int ln = 0; ln != lst.size(); ++ln) {
+	while(  m_ln < lst.size() ) {
+		auto lnStr = lst[m_ln];
 		m_blockNumTohtmlLineNum.push_back(htmlLn);
 		m_nSpace = 0;
-		m_blockType[ln] = ' ';
+		m_blockType[m_ln] = ' ';
 	  	while( m_nSpace < lnStr.size() && lnStr[m_nSpace] == ' ' ) ++m_nSpace;
 	  	if( m_nSpace != 0 ) lnStr = lnStr.mid(m_nSpace);
 		if( lnStr.isEmpty() ) {
 			m_isParagraphOpen = true;
+			++m_ln;
         } else if( lnStr.startsWith('#') ) {
-			m_blockType[ln] = '#';
-			do_heading(lnStr, ln);
+			m_blockType[m_ln] = '#';
+			do_heading(lnStr, m_ln);
 		} else if( lnStr.startsWith("- ") ) {
 			do_list(lnStr);
 		} else if( lnStr[0].isNumber() && lnStr.mid(1).startsWith(". ") ) {
@@ -51,6 +54,7 @@ const QString& MarkdownToHtmlConvertor::convert(const QString& markdownText) {
 		} else if( lnStr == "---" ) {
 			m_htmlText += "<hr>\n";
 			m_isParagraphOpen = true;
+			++m_ln;
 		} else {
 			do_paragraph(lnStr);
 		}
@@ -200,6 +204,7 @@ void MarkdownToHtmlConvertor::do_heading(const QString& lnStr, int lineNum) {
 	m_headingList.push_back(QString("%1 ").arg(i) + t);
 	m_headingLineNum.push_back(lineNum);
 	m_isParagraphOpen = true;
+	++m_ln;
 }
 bool isCheckboxLine(const QString& lnStr) {		//	"- [ ]" or "- [x]" or "- [X]" か？
 	return lnStr.size() >= 6 && lnStr[2] == '[' && lnStr[4] == ']' && lnStr[5] == ' ' &&
@@ -213,6 +218,7 @@ void MarkdownToHtmlConvertor::do_list(const QString& lnStr) {
 		}
 		m_nSpace += 2;
 		m_htmlText += parceInline(lnStr.mid(2)) + "<br/>\n";
+		++m_ln;
 		return;
 	}
     if( !m_isInsideUl ) {
@@ -227,6 +233,7 @@ void MarkdownToHtmlConvertor::do_list(const QString& lnStr) {
     else
 	    open_ul(lvl);
 	m_htmlText += "<li>" + parceInline(lnStr.mid(2)) + "\n";
+	++m_ln;
 }
 void MarkdownToHtmlConvertor::do_olist(const QString& lnStr) {
     if( !m_isInsideOl ) {
@@ -241,6 +248,7 @@ void MarkdownToHtmlConvertor::do_olist(const QString& lnStr) {
     else
 	    open_ol(lvl);
 	m_htmlText += "<li>" + parceInline(lnStr.mid(2)) + "\n";
+	++m_ln;
 }
 void MarkdownToHtmlConvertor::do_quote(const QString& lnStr) {
 	if( !m_isInsideQuote ) {
@@ -248,7 +256,7 @@ void MarkdownToHtmlConvertor::do_quote(const QString& lnStr) {
 		m_htmlText += "<blockquote>\n";
 	}
 	m_htmlText += parceInline(lnStr.mid(2)) + "<br/>\n";
-
+	++m_ln;
 }
 void MarkdownToHtmlConvertor::do_paragraph(const QString& lnStr) {
 	close_quote();
@@ -265,4 +273,5 @@ void MarkdownToHtmlConvertor::do_paragraph(const QString& lnStr) {
 		m_htmlText += "<br/>\n";
 	else
 		m_htmlText += "\n";
+	++m_ln;
 }

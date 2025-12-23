@@ -160,7 +160,7 @@
 0158 ◎ C 12/23 12/23 0.0004│ToDo│modificationChanged(bool) シグナルでタイトル末尾 * 表示・非表示
 0159 ◎ C 12/23 12/23 0.0004│ToDo│Undo, Redo メニュー：ショートカットキー表示
 0160 ◎ C 12/23 12/23 0.0004│ToDo│Cut, Copy, Paste：ショートカットキー表示
-0161 ● C 12/23             │ToDo│
+0161 ◎ C 12/23 12/23 0.0004│ToDo│MarkdownToHtmlConvertor::convert()：複数行パースを可能に
 0162 ● C 12/23             │ToDo│
 0163 ● C 12/23             │ToDo│
 0164 ● C 12/23             │ToDo│

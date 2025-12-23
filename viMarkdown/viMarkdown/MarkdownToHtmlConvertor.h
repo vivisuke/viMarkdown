@@ -34,6 +34,7 @@ private:
     void	close_quote();
 
 private:
+	int			m_ln;				//	パース中 or 次行番号, 0 org
 	QString		m_markdownText;
 	QString		m_htmlText;
 	QStringList	m_headingList;		//	見出しレベル（1～9）＋見出し文字列
