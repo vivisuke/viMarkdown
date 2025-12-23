@@ -5,21 +5,27 @@
 
 using namespace std;
 
+const QString hdrtxt =
+"<html>\n"
+"<head>\n"
+"<meta charset=\"UTF-8\">\n"
+"<style>\n"
+"    blockquote {\n"
+"        border-left: 10px solid blue;\n"
+"        background-color: #ffffe0;\n"
+"        padding: 20px;\n"
+"    }\n"
+"    pre {\n"
+"        background-color: lightgray;\n"
+"        padding: 20px;\n"
+"    }\n"
+"</style>\n"
+"</head>\n";
+
 const QString& MarkdownToHtmlConvertor::convert(const QString& markdownText) {
 	m_markdownText = markdownText;
 	m_htmlText.clear();
-	m_htmlText += "<html>\n";
-	m_htmlText += "<head>\n";
-    m_htmlText += "<meta charset=\"UTF-8\">\n";
-	m_htmlText += "<style>\n";
-    m_htmlText += "    blockquote {\n";
-    m_htmlText += "        border-left: 10px solid blue;\n";
-    m_htmlText += "        background-color: #ffffe0;\n";
-    m_htmlText += "        padding: 20px;\n";
-    //m_htmlText += "        border-radius: 4px;\n";
-    m_htmlText += "    }\n";
-    m_htmlText += "</style>\n";
-	m_htmlText += "</head>\n";
+	m_htmlText += hdrtxt;
 	m_htmlText += "<body>\n";
 	m_headingList.clear();
 	m_headingLineNum.clear();
@@ -27,13 +33,13 @@ const QString& MarkdownToHtmlConvertor::convert(const QString& markdownText) {
 	m_isParagraphOpen = true;
 	m_curUlLevel = 0;
 	m_curOlLevel = 0;
-	auto lst = m_markdownText.split('\n');
-	m_blockType.resize(lst.size());
+	m_lst = m_markdownText.split('\n');
+	m_blockType.resize(m_lst.size());
 	int htmlLn = 0;
 	m_ln = 0;
-	//for(int ln = 0; ln != lst.size(); ++ln) {
-	while(  m_ln < lst.size() ) {
-		auto lnStr = lst[m_ln];
+	//for(int ln = 0; ln != m_lst.size(); ++ln) {
+	while(  m_ln < m_lst.size() ) {
+		auto lnStr = m_lst[m_ln];
 		m_blockNumTohtmlLineNum.push_back(htmlLn);
 		m_nSpace = 0;
 		m_blockType[m_ln] = ' ';
@@ -55,6 +61,8 @@ const QString& MarkdownToHtmlConvertor::convert(const QString& markdownText) {
 			m_htmlText += "<hr>\n";
 			m_isParagraphOpen = true;
 			++m_ln;
+		} else if( lnStr.startsWith("```") ) {
+			do_code(lnStr);
 		} else {
 			do_paragraph(lnStr);
 		}
@@ -211,7 +219,7 @@ bool isCheckboxLine(const QString& lnStr) {		//	"- [ ]" or "- [x]" or "- [X]" �
 			(lnStr[3] == ' ' || lnStr[3] == 'x' || lnStr[3] == 'X');
 }
 void MarkdownToHtmlConvertor::do_list(const QString& lnStr) {
-	if( isCheckboxLine(lnStr) ) {
+	if( isCheckboxLine(lnStr) ) {	//	「- [{ xX}] 」の場合
 		if( m_isParagraphOpen ) {
 			m_htmlText += "<p>\n";
 			m_isParagraphOpen = false;
@@ -256,6 +264,17 @@ void MarkdownToHtmlConvertor::do_quote(const QString& lnStr) {
 		m_htmlText += "<blockquote>\n";
 	}
 	m_htmlText += parceInline(lnStr.mid(2)) + "<br/>\n";
+	++m_ln;
+}
+void MarkdownToHtmlConvertor::do_code(const QString& lnStr) {
+	m_htmlText += "<code><pre>";
+	while( ++m_ln < m_lst.size() ) {
+		const QString& lnStr = m_lst[m_ln];
+		m_blockType[m_ln] = ' ';
+		if( lnStr == "```" ) break;
+		m_htmlText += lnStr + "\n";
+	}
+	m_htmlText += "</pre></code>\n";
 	++m_ln;
 }
 void MarkdownToHtmlConvertor::do_paragraph(const QString& lnStr) {

@@ -41,7 +41,7 @@ protected:
     void	addToRecentFiles(const QString& fullPath);
 
     void	onOutlineBarVisibilityChanged(bool visible);
-    void	onTreeSelectionChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous);
+    void	onTreeCurrentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous);
     void	onTreeItemActivated(QTreeWidgetItem *current, int);
     void	onMdEditCurPosChanged();
     void	onFileChanged(const QString&);

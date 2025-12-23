@@ -23,6 +23,7 @@ private:
     void	do_list(const QString&);
     void	do_olist(const QString&);
     void	do_quote(const QString&);
+    void	do_code(const QString&);
     void	do_paragraph(const QString&);
 
     QString	parceInline(const QString&);
@@ -37,6 +38,7 @@ private:
 	int			m_ln;				//	パース中 or 次行番号, 0 org
 	QString		m_markdownText;
 	QString		m_htmlText;
+	QStringList	m_lst;				//	行分割されたマークダウンテキスト
 	QStringList	m_headingList;		//	見出しレベル（1～9）＋見出し文字列
 	bool		m_isParagraphOpen = true;
 	bool		m_isInsideUl = false;

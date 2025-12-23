@@ -161,12 +161,12 @@
 0159 ◎ C 12/23 12/23 0.0004│ToDo│Undo, Redo メニュー：ショートカットキー表示
 0160 ◎ C 12/23 12/23 0.0004│ToDo│Cut, Copy, Paste：ショートカットキー表示
 0161 ◎ C 12/23 12/23 0.0004│ToDo│MarkdownToHtmlConvertor::convert()：複数行パースを可能に
-0162 ● C 12/23             │ToDo│
-0163 ● C 12/23             │ToDo│
-0164 ● C 12/23             │ToDo│
-0165 ● C 12/23             │ToDo│
-0166 ● C 12/23             │ToDo│
-0167 ● C 12/23             │ToDo│
-0168 ● C 12/23             │ToDo│
-0169 ● C 12/23             │ToDo│
-0170 ● C 12/23             │ToDo│
+0162 ● C 12/23             │ToDo│ステータスバーに MdEditor 内のカーソル位置表示
+0163 ● C 12/23             │ToDo│Edit > SelectAll アクション追加
+0164 ● C 12/23             │ToDo│MarkdownToHtmlConvertor.convert()：マークダウンテキストではなく、QTextDocument を受け取る？
+0165 ● C 12/24             │ToDo│MarkdownToHtmlConvertor.convert() > list 処理："- " が続くかぎり関数内で処理
+0166 ◎ C 12/24 12/24 0.0004│ToDo│code ブロックをとりあえずサポート
+0167 ● C 12/24             │問題│code ブロック中の < は &lt; に変換
+0168 ● C 12/24             │ToDo│
+0169 ● C 12/24             │ToDo│
+0170 ● C 12/24             │ToDo│

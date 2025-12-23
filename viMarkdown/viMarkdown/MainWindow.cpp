@@ -64,7 +64,7 @@ void MainWindow::setup_connections() {
 	connect(ui->action_OutlineBar, &QAction::toggled, this, &MainWindow::onAction_OutlineBar);
 	connect(ui->action_FocusOutline, &QAction::triggered, this, &MainWindow::onAction_FocusOutline);
 	connect(ui->outlineBar, &QDockWidget::visibilityChanged, this, &MainWindow::onOutlineBarVisibilityChanged);
-	connect(ui->treeWidget, &QTreeWidget::currentItemChanged, this, &MainWindow::onTreeSelectionChanged);
+	connect(ui->treeWidget, &QTreeWidget::currentItemChanged, this, &MainWindow::onTreeCurrentItemChanged);
 	//connect(ui->treeWidget, &QTreeWidget::itemDoubleClicked, this, &MainWindow::onTreeItemDoubleClicked);
 	connect(ui->treeWidget, &QTreeWidget::itemActivated, this, &MainWindow::onTreeItemActivated);				//	ダブルクリック or Enter 押下
 	connect(ui->action_AboutViMarkdown, &QAction::triggered, this, &MainWindow::onAction_About);
@@ -675,7 +675,7 @@ int MainWindow::treeItemToTabIndex(QTreeWidgetItem *current) {
 	QString fullPath = top->data(0, Qt::UserRole).toString();
 	return tabIndexOf(current->text(0), fullPath);
 }
-void MainWindow::onTreeSelectionChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous) {
+void MainWindow::onTreeCurrentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous) {
 	//if( current == nullptr ) return;
 	//auto top = current;
 	//while( top->parent() != nullptr ) top = top->parent();		//	親のトップレベルアイテムまで移動
@@ -684,8 +684,10 @@ void MainWindow::onTreeSelectionChanged(QTreeWidgetItem *current, QTreeWidgetIte
 	int tix = treeItemToTabIndex(current);
 	if( tix >= 0 ) {
 		ui->tabWidget->setCurrentIndex(tix);
-		if( current->parent() != nullptr ) {	//	見出しアイテムの場合
-			DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(tix);
+		DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(tix);
+		if( current->parent() == nullptr ) {	//	トップレベルアイテムの場合
+			statusBar()->showMessage(docWidget->m_fullPath, 5000);
+		} else {	//	見出しアイテムの場合
 			MarkdownEditor *mdEditor = docWidget->m_mdEditor;
 			int ln = current->data(0, Qt::UserRole).toInt();			//	行番号　0 org.
 			//QTextBlock block = mdEditor->document()->findBlockByLineNumber(ln);
@@ -822,7 +824,7 @@ void MainWindow::onMdEditCurPosChanged() {
 	int bnum = cursor.blockNumber();
 	QString mess = QString("cursor.blockNumber = %1").arg(bnum);
 	//mess += QString(", preview.blockNumber() = %1").arg(cursor.blockNumber());
-	statusBar()->showMessage(mess);
+	//statusBar()->showMessage(mess);
 }
 void MainWindow::onAction_About() {
 	qDebug() << "MainWindow::onAction_About()";
