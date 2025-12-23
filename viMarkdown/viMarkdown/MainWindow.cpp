@@ -45,16 +45,27 @@ MainWindow::~MainWindow()
 }
 void MainWindow::insertSearchComboBox() {
 	m_searchCB = new QComboBox;
-	m_searchCB->setEditable(true);                   // 入力可能にする
-	m_searchCB->setMinimumWidth(160);               // 幅を少し広げる
+	m_searchCB->setEditable(true);					 // 入力可能にする
+	m_searchCB->setMinimumWidth(160);				// 幅を少し広げる
 	m_searchCB->setPlaceholderText(tr("search text")); // プレースホルダー表示
 	//m_searchCB->setInsertPolicy(QComboBox::InsertAtTop); // 検索履歴を一番上に追加する設定
 	ui->mainToolBar->insertWidget(ui->action_List, m_searchCB);
 	connect(m_searchCB, &QComboBox::activated, this, &MainWindow::onSearchCBActivated);
 }
 void MainWindow::onSearchCBActivated() {
-	QString txt = m_searchCB->currentText();
-	qDebug() << "srcText = " << txt;
+	QString srcText = m_searchCB->currentText();
+	qDebug() << "srcText = " << srcText;
+	if( srcText.isEmpty() ) return;
+	DocWidget *docWidget = getCurDocWidget();
+	if( docWidget == nullptr ) return;
+	MarkdownEditor *mdEditor = docWidget->m_mdEditor;
+	bool found = mdEditor->find(srcText);
+	//if (found) {
+	//	mdEditor->setFocus();
+	//} else {
+		qDebug() << "not found";
+	//}
+	mdEditor->setFocus();
 }
 void MainWindow::setup_connections() {
 	connect(ui->menu_RecentFiles, &QMenu::aboutToShow, this, &MainWindow::onAboutToShow_RecentFiles);
@@ -87,18 +98,18 @@ void MainWindow::setup_connections() {
 }
 void MainWindow::read_settings() {
 	QSettings settings;
-    settings.beginGroup("MainWindow");
-    
-    // 保存されていた値があれば復元、なければ何もしない
-    const QByteArray geometry = settings.value("geometry").toByteArray();
-    if (!geometry.isEmpty()) {
-        restoreGeometry(geometry);
-    }
-    const QByteArray windowState = settings.value("windowState").toByteArray();
-    if (!windowState.isEmpty()) {
-        restoreState(windowState);
-    }
-    settings.endGroup();
+	settings.beginGroup("MainWindow");
+	
+	// 保存されていた値があれば復元、なければ何もしない
+	const QByteArray geometry = settings.value("geometry").toByteArray();
+	if (!geometry.isEmpty()) {
+		restoreGeometry(geometry);
+	}
+	const QByteArray windowState = settings.value("windowState").toByteArray();
+	if (!windowState.isEmpty()) {
+		restoreState(windowState);
+	}
+	settings.endGroup();
 }
 void MainWindow::closeEvent(QCloseEvent *event) {
 	for(int ix = 0; ix < ui->tabWidget->count(); ++ix) {
@@ -120,11 +131,11 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 		}
 	}
 	QSettings settings;
-    settings.beginGroup("MainWindow");
-    settings.setValue("geometry", saveGeometry()); // 位置・サイズ
-    settings.setValue("windowState", saveState()); // ツールバー・ドックの状態
-    settings.endGroup();
-    //
+	settings.beginGroup("MainWindow");
+	settings.setValue("geometry", saveGeometry()); // 位置・サイズ
+	settings.setValue("windowState", saveState()); // ツールバー・ドックの状態
+	settings.endGroup();
+	//
 	event->accept();
 }
 void MainWindow::onFileChanged(const QString& fullPath) {
