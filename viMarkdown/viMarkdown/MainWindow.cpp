@@ -8,6 +8,7 @@
 #include <QScrollBar>
 #include <QSettings>
 #include <QTextBlock>
+#include <QComboBox>
 #include <QDockWidget>
 #include <QDragEnterEvent>
 #include <QDropEvent>
@@ -27,7 +28,8 @@ MainWindow::MainWindow(QWidget *parent)
 {
 	setWindowTitle("viMarkdown ver 0.001");
 	ui->setupUi(this);
-	updateHTMLModeCheck();
+	insertSearchComboBox();
+	updateHTMLModeCheck();		//	HTML or Source チェック状態に
 	ui->action_OutlineBar->setChecked(true);	//	暫定的
 	setWindowTitle(QString("viMarkdown ") + VER_STR); 
 	m_watcher = new QFileSystemWatcher(this);			//	外部アプリによる文書変更監視オブジェクト
@@ -40,6 +42,19 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
 	delete ui;
+}
+void MainWindow::insertSearchComboBox() {
+	m_searchCB = new QComboBox;
+	m_searchCB->setEditable(true);                   // 入力可能にする
+	m_searchCB->setMinimumWidth(160);               // 幅を少し広げる
+	m_searchCB->setPlaceholderText(tr("search text")); // プレースホルダー表示
+	//m_searchCB->setInsertPolicy(QComboBox::InsertAtTop); // 検索履歴を一番上に追加する設定
+	ui->mainToolBar->insertWidget(ui->action_List, m_searchCB);
+	connect(m_searchCB, &QComboBox::activated, this, &MainWindow::onSearchCBActivated);
+}
+void MainWindow::onSearchCBActivated() {
+	QString txt = m_searchCB->currentText();
+	qDebug() << "srcText = " << txt;
 }
 void MainWindow::setup_connections() {
 	connect(ui->menu_RecentFiles, &QMenu::aboutToShow, this, &MainWindow::onAboutToShow_RecentFiles);

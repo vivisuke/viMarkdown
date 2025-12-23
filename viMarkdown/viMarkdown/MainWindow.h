@@ -39,6 +39,7 @@ protected:
     void	do_load(const QString&);
     int		treeItemToTabIndex(QTreeWidgetItem *current);
     void	addToRecentFiles(const QString& fullPath);
+    void	insertSearchComboBox();
 
     void	onOutlineBarVisibilityChanged(bool visible);
     void	onTreeCurrentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous);
@@ -46,6 +47,7 @@ protected:
     void	onMdEditCurPosChanged();
     void	onFileChanged(const QString&);
     void	onModificationChanged(bool);
+    void	onSearchCBActivated();
 
     void	onAction_New();
     void	onAction_Open();
@@ -83,6 +85,7 @@ private:
     QString	m_plainText;
     //QString	m_htmlText;
     //MarkdownToHtmlConvertor	m_htmlComvertor;
+    class QComboBox				*m_searchCB = nullptr;
     class QFileSystemWatcher	*m_watcher;
 
     Ui::MainWindowClass *ui;
