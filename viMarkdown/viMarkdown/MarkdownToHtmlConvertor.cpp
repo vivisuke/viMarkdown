@@ -35,6 +35,7 @@ const QString& MarkdownToHtmlConvertor::convert(const QString& markdownText) {
 	m_curOlLevel = 0;
 	m_lst = m_markdownText.split('\n');
 	m_blockType.resize(m_lst.size());
+	for(auto& v: m_blockType) v = ' ';
 	int htmlLn = 0;
 	m_ln = 0;
 	//for(int ln = 0; ln != m_lst.size(); ++ln) {
@@ -42,7 +43,7 @@ const QString& MarkdownToHtmlConvertor::convert(const QString& markdownText) {
 		auto lnStr = m_lst[m_ln];
 		m_blockNumTohtmlLineNum.push_back(htmlLn);
 		m_nSpace = 0;
-		m_blockType[m_ln] = ' ';
+		//m_blockType[m_ln] = ' ';
 	  	while( m_nSpace < lnStr.size() && lnStr[m_nSpace] == ' ' ) ++m_nSpace;
 	  	if( m_nSpace != 0 ) lnStr = lnStr.mid(m_nSpace);
 		if( lnStr.isEmpty() ) {
@@ -99,10 +100,10 @@ void MarkdownToHtmlConvertor::close_ol(int lvl) {
 	}
 }
 void MarkdownToHtmlConvertor::close_quote() {
-	if( m_isInsideQuote ) {
-		m_htmlText += "</blockquote>\n";
-		m_isInsideQuote = false;
-	}
+	//if( m_isInsideQuote ) {
+	//	m_htmlText += "</blockquote>\n";
+	//	m_isInsideQuote = false;
+	//}
 }
 QString MarkdownToHtmlConvertor::parceInline(const QString& lnStr) {
 	QString result = lnStr;
@@ -273,19 +274,32 @@ void MarkdownToHtmlConvertor::do_olist(const QString& lnStr) {
 	m_htmlText += "<li>" + parceInline(lnStr.mid(2)) + "\n";
 	++m_ln;
 }
-void MarkdownToHtmlConvertor::do_quote(const QString& lnStr) {
+void MarkdownToHtmlConvertor::do_quote(QString lnStr) {
+	m_htmlText += "<blockquote>";
+	//while( ++m_ln < m_lst.size() ) {
+	for(;;) {
+		lnStr = lnStr.mid(2);			//	remove "> "
+		lnStr.replace("<", "&lt;");
+		m_htmlText += parceInline(lnStr) + "\n";
+		if( ++m_ln >= m_lst.size() ) break;
+		lnStr = m_lst[m_ln];
+		if( !lnStr.startsWith("> ") ) break;
+		m_htmlText += "<br/>";
+	}
+	m_htmlText += "</blockquote>\n";
+#if 0
 	if( !m_isInsideQuote ) {
 		m_isInsideQuote = true;
 		m_htmlText += "<blockquote>\n";
 	}
 	m_htmlText += parceInline(lnStr.mid(2)) + "<br/>\n";
 	++m_ln;
+#endif
 }
 void MarkdownToHtmlConvertor::do_code(const QString& lnStr) {
 	m_htmlText += "<code><pre>";
 	while( ++m_ln < m_lst.size() ) {
 		QString lnStr = m_lst[m_ln];
-		m_blockType[m_ln] = ' ';
 		if( lnStr == "```" ) break;
 		lnStr.replace("<", "&lt;");
 		m_htmlText += lnStr + "\n";

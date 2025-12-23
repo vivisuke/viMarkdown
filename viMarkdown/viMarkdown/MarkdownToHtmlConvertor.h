@@ -22,7 +22,7 @@ private:
     void	do_heading(const QString&, int lineNum);
     void	do_list(const QString&);
     void	do_olist(const QString&);
-    void	do_quote(const QString&);
+    void	do_quote(QString);
     void	do_code(const QString&);
     void	do_paragraph(const QString&);
 
@@ -44,7 +44,7 @@ private:
 	bool		m_isParagraphOpen = true;
 	bool		m_isInsideUl = false;
 	bool		m_isInsideOl = false;
-	bool		m_isInsideQuote = false;
+	//bool		m_isInsideQuote = false;
 	int			m_curUlLevel = 0;
 	int			m_curOlLevel = 0;
 	int			m_nSpace = 0;
