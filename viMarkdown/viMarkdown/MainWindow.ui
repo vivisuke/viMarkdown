@@ -109,9 +109,6 @@
     <addaction name="action_Indent"/>
     <addaction name="action_UnIndent"/>
     <addaction name="separator"/>
-    <addaction name="action_Find"/>
-    <addaction name="action_ForwardAgain"/>
-    <addaction name="action_BackwardAgain"/>
    </widget>
    <widget class="QMenu" name="menu_Help">
     <property name="title">
@@ -119,8 +116,18 @@
     </property>
     <addaction name="action_AboutViMarkdown"/>
    </widget>
+   <widget class="QMenu" name="menu_Search">
+    <property name="title">
+     <string>&amp;Search</string>
+    </property>
+    <addaction name="action_Find"/>
+    <addaction name="action_ForwardAgain"/>
+    <addaction name="action_BackwardAgain"/>
+    <addaction name="action_FindWord"/>
+   </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_Edit"/>
+   <addaction name="menu_Search"/>
    <addaction name="menu_View"/>
    <addaction name="menu_Help"/>
   </widget>
@@ -493,6 +500,18 @@
    </property>
    <property name="shortcut">
     <string>Shift+F3</string>
+   </property>
+  </action>
+  <action name="action_FindWord">
+   <property name="icon">
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/search_word_48.png</normaloff>:/MainWindow/images/search_word_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>Find&amp;Word</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+F3</string>
    </property>
   </action>
  </widget>

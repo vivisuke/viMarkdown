@@ -67,6 +67,7 @@ protected:
     void	onAction_Find();
     void	onAction_ForwardAgain();
     void	onAction_BackwardAgain();
+    void	onAction_FindWord();
     void	onAction_HTML(bool);
     void	onAction_Source(bool);
     void	onAction_OutlineBar(bool);

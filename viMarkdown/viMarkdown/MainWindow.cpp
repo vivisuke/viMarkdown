@@ -45,6 +45,7 @@ MainWindow::~MainWindow()
 }
 void MainWindow::insertSearchComboBox() {
 	m_searchCB = new QComboBox;
+	m_searchCB->setMaxCount(20);			//	履歴最大数
 	m_searchCB->setEditable(true);					 // 入力可能にする
 	m_searchCB->setMinimumWidth(160);				// 幅を少し広げる
 	m_searchCB->setPlaceholderText(tr("search text")); // プレースホルダー表示
@@ -92,6 +93,19 @@ void MainWindow::onAction_ForwardAgain() {
 void MainWindow::onAction_BackwardAgain() {
 	do_find(true);
 }
+void MainWindow::onAction_FindWord() {
+	DocWidget *docWidget = getCurDocWidget();
+	if( docWidget == nullptr ) return;
+	MarkdownEditor *mdEditor = docWidget->m_mdEditor;
+	QTextCursor cursor = mdEditor->textCursor();
+	if( !cursor.hasSelection() ) {
+		cursor.movePosition(QTextCursor::StartOfWord, QTextCursor::MoveAnchor);
+		cursor.movePosition(QTextCursor::EndOfWord, QTextCursor::KeepAnchor);
+		mdEditor->setTextCursor(cursor);
+	}
+	m_searchCB->setCurrentText(cursor.selectedText());
+	do_find();
+}
 void MainWindow::setup_connections() {
 	connect(ui->menu_RecentFiles, &QMenu::aboutToShow, this, &MainWindow::onAboutToShow_RecentFiles);
 	connect(m_watcher, &QFileSystemWatcher::fileChanged, this, &MainWindow::onFileChanged);
@@ -113,6 +127,7 @@ void MainWindow::setup_connections() {
 	connect(ui->action_Find, &QAction::triggered, this, &MainWindow::onAction_Find);
 	connect(ui->action_ForwardAgain, &QAction::triggered, this, &MainWindow::onAction_ForwardAgain);
 	connect(ui->action_BackwardAgain, &QAction::triggered, this, &MainWindow::onAction_BackwardAgain);
+	connect(ui->action_FindWord, &QAction::triggered, this, &MainWindow::onAction_FindWord);
 	connect(ui->action_HTML, &QAction::toggled, this, &MainWindow::onAction_HTML);
 	connect(ui->action_Source, &QAction::toggled, this, &MainWindow::onAction_Source);
 	connect(ui->action_OutlineBar, &QAction::toggled, this, &MainWindow::onAction_OutlineBar);
