@@ -66,11 +66,16 @@ void MainWindow::do_find(bool backward) {
 		if( backward )
 			flags |= QTextDocument::FindBackward;
 		bool found = mdEditor->find(srcText, flags);
-		//if (found) {
-		//	mdEditor->setFocus();
-		//} else {
+		if (!found) {
+	        if( !backward )
+				mdEditor->moveCursor(QTextCursor::Start);
+	        else
+				mdEditor->moveCursor(QTextCursor::End);
+	        found = mdEditor->find(srcText, flags);
+	    }
+		if (!found) {
 			qDebug() << "not found";
-		//}
+		}
 	}
 	mdEditor->setFocus();
 }
