@@ -108,8 +108,10 @@
     <addaction name="menuinline"/>
     <addaction name="action_Indent"/>
     <addaction name="action_UnIndent"/>
-    <addaction name="action_Find"/>
     <addaction name="separator"/>
+    <addaction name="action_Find"/>
+    <addaction name="action_ForwardAgain"/>
+    <addaction name="action_BackwardAgain"/>
    </widget>
    <widget class="QMenu" name="menu_Help">
     <property name="title">
@@ -461,6 +463,36 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+F</string>
+   </property>
+  </action>
+  <action name="action_ForwardAgain">
+   <property name="icon">
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/search_forward_48.png</normaloff>:/MainWindow/images/search_forward_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>ForwardAgain</string>
+   </property>
+   <property name="toolTip">
+    <string>Forward Search Again</string>
+   </property>
+   <property name="shortcut">
+    <string>F3</string>
+   </property>
+  </action>
+  <action name="action_BackwardAgain">
+   <property name="icon">
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/search_backard_48.png</normaloff>:/MainWindow/images/search_backard_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>BackwardAgain</string>
+   </property>
+   <property name="toolTip">
+    <string>Backward Search Again</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+F3</string>
    </property>
   </action>
  </widget>

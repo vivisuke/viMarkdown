@@ -52,20 +52,36 @@ void MainWindow::insertSearchComboBox() {
 	ui->mainToolBar->insertWidget(ui->action_List, m_searchCB);
 	connect(m_searchCB, &QComboBox::activated, this, &MainWindow::onSearchCBActivated);
 }
-void MainWindow::onSearchCBActivated() {
+void MainWindow::onAction_Find() {
+	m_searchCB->setFocus();
+}
+void MainWindow::do_find(bool backward) {
 	QString srcText = m_searchCB->currentText();
-	qDebug() << "srcText = " << srcText;
-	if( srcText.isEmpty() ) return;
+	//qDebug() << "srcText = " << srcText;
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
 	MarkdownEditor *mdEditor = docWidget->m_mdEditor;
-	bool found = mdEditor->find(srcText);
-	//if (found) {
-	//	mdEditor->setFocus();
-	//} else {
-		qDebug() << "not found";
-	//}
+	if( !srcText.isEmpty() ) {
+		QTextDocument::FindFlags flags;
+		if( backward )
+			flags |= QTextDocument::FindBackward;
+		bool found = mdEditor->find(srcText, flags);
+		//if (found) {
+		//	mdEditor->setFocus();
+		//} else {
+			qDebug() << "not found";
+		//}
+	}
 	mdEditor->setFocus();
+}
+void MainWindow::onSearchCBActivated() {
+	do_find();
+}
+void MainWindow::onAction_ForwardAgain() {
+	do_find();
+}
+void MainWindow::onAction_BackwardAgain() {
+	do_find(true);
 }
 void MainWindow::setup_connections() {
 	connect(ui->menu_RecentFiles, &QMenu::aboutToShow, this, &MainWindow::onAboutToShow_RecentFiles);
@@ -86,6 +102,8 @@ void MainWindow::setup_connections() {
 	connect(ui->action_Italic, &QAction::triggered, this, &MainWindow::onAction_Italic);
 	connect(ui->action_Strikethrough, &QAction::triggered, this, &MainWindow::onAction_Strikethrough);
 	connect(ui->action_Find, &QAction::triggered, this, &MainWindow::onAction_Find);
+	connect(ui->action_ForwardAgain, &QAction::triggered, this, &MainWindow::onAction_ForwardAgain);
+	connect(ui->action_BackwardAgain, &QAction::triggered, this, &MainWindow::onAction_BackwardAgain);
 	connect(ui->action_HTML, &QAction::toggled, this, &MainWindow::onAction_HTML);
 	connect(ui->action_Source, &QAction::toggled, this, &MainWindow::onAction_Source);
 	connect(ui->action_OutlineBar, &QAction::toggled, this, &MainWindow::onAction_OutlineBar);
@@ -668,9 +686,6 @@ void MainWindow::onAction_Italic() {
 }
 void MainWindow::onAction_Strikethrough() {
 	insertInline("~~");
-}
-void MainWindow::onAction_Find() {
-	m_searchCB->setFocus();
 }
 void MainWindow::onAction_HTML(bool checked) {
 	//if( m_htmlMode ) return;

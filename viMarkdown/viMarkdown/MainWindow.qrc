@@ -27,5 +27,7 @@
         <file>images/content_cut_48.png</file>
         <file>images/content_paste_48.png</file>
         <file>images/search_48.png</file>
+        <file>images/search_backard_48.png</file>
+        <file>images/search_forward_48.png</file>
     </qresource>
 </RCC>

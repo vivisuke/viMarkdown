@@ -40,6 +40,7 @@ protected:
     int		treeItemToTabIndex(QTreeWidgetItem *current);
     void	addToRecentFiles(const QString& fullPath);
     void	insertSearchComboBox();
+    void	do_find(bool backward=false);
 
     void	onOutlineBarVisibilityChanged(bool visible);
     void	onTreeCurrentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous);
@@ -64,6 +65,8 @@ protected:
     void	onAction_Indent();
     void	onAction_UnIndent();
     void	onAction_Find();
+    void	onAction_ForwardAgain();
+    void	onAction_BackwardAgain();
     void	onAction_HTML(bool);
     void	onAction_Source(bool);
     void	onAction_OutlineBar(bool);
