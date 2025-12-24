@@ -61,6 +61,7 @@
     <addaction name="action_New"/>
     <addaction name="action_Open"/>
     <addaction name="action_Save"/>
+    <addaction name="action_SaveAs"/>
     <addaction name="action_Close"/>
     <addaction name="menu_RecentFiles"/>
     <addaction name="separator"/>
@@ -512,6 +513,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+F3</string>
+   </property>
+  </action>
+  <action name="action_SaveAs">
+   <property name="text">
+    <string>Save&amp;As</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+S</string>
    </property>
   </action>
  </widget>

@@ -113,6 +113,7 @@ void MainWindow::setup_connections() {
 	connect(ui->action_New, &QAction::triggered, this, &MainWindow::onAction_New);
 	connect(ui->action_Open, &QAction::triggered, this, &MainWindow::onAction_Open);
 	connect(ui->action_Save, &QAction::triggered, this, &MainWindow::onAction_Save);
+	connect(ui->action_SaveAs, &QAction::triggered, this, &MainWindow::onAction_SaveAs);
 	connect(ui->action_Close, &QAction::triggered, this, &MainWindow::onAction_Close);
 	connect(ui->action_List, &QAction::triggered, this, &MainWindow::onAction_List);
 	connect(ui->action_NumList, &QAction::triggered, this, &MainWindow::onAction_NumList);
@@ -392,11 +393,18 @@ void MainWindow::do_open(const QString& fullPath) {
 	addToRecentFiles(fullPath);
 }
 void MainWindow::onAction_Save() {
+	do_save();
+}
+void MainWindow::onAction_SaveAs() {
+	do_save(true);
+}
+void MainWindow::do_save(bool fDialog) {
 	int ix = ui->tabWidget->currentIndex();
 	if( ix < 0 ) return;
 	DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(ix);
 	QString fullPath = docWidget->m_fullPath;
-	if( fullPath.isEmpty() ) {		//	フルパスを持っていない場合
+	if( fDialog || fullPath.isEmpty() ) {		//	強制ダイアログ || フルパスを持っていない場合
+		QString oldFullPath = fullPath;
 		QString oldTitle = docWidget->m_title;
 		fullPath = QFileDialog::getSaveFileName(
 						this,				   // 親ウィジェット（メインウィンドウがあれば this）
@@ -409,8 +417,10 @@ void MainWindow::onAction_Save() {
 		QFileInfo fileInfo(fullPath);
 		docWidget->m_title = fileInfo.fileName();
 		ui->tabWidget->setTabText(ix, docWidget->m_title);
-		QTreeWidgetItem *top = findTopLevelItemByFullPath(oldTitle, "");
+		QTreeWidgetItem *top = findTopLevelItemByFullPath(oldTitle, oldFullPath);
 		top->setText(0, docWidget->m_title);
+		if( !oldFullPath.isEmpty() && oldFullPath != fullPath )		//	ファイル名変更
+			m_watcher->removePath(oldFullPath);
 	}
 	addToRecentFiles(fullPath);
 	docWidget->m_saving = true;

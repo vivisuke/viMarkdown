@@ -37,6 +37,7 @@ protected:
     QTreeWidgetItem* findTopLevelItemByFullPath(const QString& title, const QString fullPath);
     void	do_open(const QString&);
     void	do_load(const QString&);
+    void	do_save(bool fDialog = false);
     int		treeItemToTabIndex(QTreeWidgetItem *current);
     void	addToRecentFiles(const QString& fullPath);
     void	insertSearchComboBox();
@@ -53,6 +54,7 @@ protected:
     void	onAction_New();
     void	onAction_Open();
     void	onAction_Save();
+    void	onAction_SaveAs();
     void	onAction_Close();
     void	onAction_Undo();
     void	onAction_Redo();
