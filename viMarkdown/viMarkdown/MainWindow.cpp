@@ -51,6 +51,10 @@ void MainWindow::insertSearchComboBox() {
 	//m_searchCB->setInsertPolicy(QComboBox::InsertAtTop); // 検索履歴を一番上に追加する設定
 	ui->mainToolBar->insertWidget(ui->action_List, m_searchCB);
 	connect(m_searchCB, &QComboBox::activated, this, &MainWindow::onSearchCBActivated);
+	QSettings settings;
+	QStringList history = settings.value("search/history").toStringList();
+    m_searchCB->clear();
+    m_searchCB->addItems(history);
 }
 void MainWindow::onAction_Find() {
 	m_searchCB->setFocus();
@@ -154,6 +158,11 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 		}
 	}
 	QSettings settings;
+	QStringList history;
+    for (int i = 0; i < m_searchCB->count(); ++i) {
+        history << m_searchCB->itemText(i);
+    }
+    settings.setValue("search/history", history);
 	settings.beginGroup("MainWindow");
 	settings.setValue("geometry", saveGeometry()); // 位置・サイズ
 	settings.setValue("windowState", saveState()); // ツールバー・ドックの状態
