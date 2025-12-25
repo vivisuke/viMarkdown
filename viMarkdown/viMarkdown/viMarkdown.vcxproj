@@ -104,8 +104,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DocWidget.h" />
-    <ClInclude Include="HtmlViewer.h" />
-    <ClInclude Include="MarkdownEditor.h" />
+    <QtMoc Include="HtmlViewer.h" />
+    <QtMoc Include="MarkdownEditor.h" />
     <ClInclude Include="MarkdownToHtmlConvertor.h" />
     <ClInclude Include="ver.h" />
   </ItemGroup>

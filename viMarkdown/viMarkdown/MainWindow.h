@@ -50,6 +50,7 @@ protected:
     void	onFileChanged(const QString&);
     void	onModificationChanged(bool);
     void	onSearchCBActivated();
+    void	onHtmlViewerLineClicked(int);
 
     void	onAction_New();
     void	onAction_Open();

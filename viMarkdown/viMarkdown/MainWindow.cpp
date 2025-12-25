@@ -231,6 +231,7 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	HtmlViewer *previewer = docWidget->m_previewer = new HtmlViewer(splitter);
 	previewer->setReadOnly(true); // プレビューなので読み取り専用にする
 	previewer->setPlaceholderText("プレビュー画面");
+	connect(previewer, &HtmlViewer::lineClicked, this, &MainWindow::onHtmlViewerLineClicked);
 	splitter->addWidget(mdEditor);
 	splitter->addWidget(previewer);
 	splitter->setSizes(QList<int>() << 500 << 500);
@@ -242,6 +243,9 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	//connect(mdEditor, &HtmlViewer::textChanged, this, &MainWindow::onMDTextChanged);
 
 	return docWidget;
+}
+void MainWindow::onHtmlViewerLineClicked(int bln) {
+	qDebug() << "MainWindow::onHtmlViewerLineClicked(" << bln << ")";
 }
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
 {

@@ -4,6 +4,7 @@
 
 class MarkdownEditor : public QPlainTextEdit
 {
+	Q_OBJECT
 public:
 	MarkdownEditor(QWidget *parent = nullptr);
 public:
