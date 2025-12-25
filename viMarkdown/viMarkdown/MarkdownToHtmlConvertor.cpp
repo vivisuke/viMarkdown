@@ -1,4 +1,5 @@
-﻿#include <QList>
+﻿#include <QTextDocument>
+#include <QList>
 #include <QRegularExpression>
 #include <QRegularExpressionMatch>
 #include "markdowntohtmlconvertor.h"
@@ -22,8 +23,8 @@ const QString hdrtxt =
 "</style>\n"
 "</head>\n";
 
-const QString& MarkdownToHtmlConvertor::convert(const QString& markdownText) {
-	m_markdownText = markdownText;
+const QString& MarkdownToHtmlConvertor::convert(const QTextDocument* doc) {
+	m_markdownText = doc->toPlainText();
 	m_htmlText.clear();
 	m_htmlText += hdrtxt;
 	m_htmlText += "<body>\n";

@@ -875,9 +875,9 @@ void MainWindow::onMDTextChanged() {
 	DocWidget *docWidget = getCurDocWidget();
 	qDebug() << "docWidget = " << docWidget;
 	MarkdownEditor *mdEditor = docWidget->m_mdEditor;
-	m_plainText = mdEditor->toPlainText();
+	//m_plainText = mdEditor->toPlainText();
 	auto &htmlComvertor = docWidget->m_htmlComvertor;
-	htmlComvertor.convert(m_plainText);
+	htmlComvertor.convert(mdEditor->document());
 #if 0
 	const vector<char>& blockType = htmlComvertor.getBlockType();
 	QTextCursor cursor(mdEditor->document()); 

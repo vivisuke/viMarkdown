@@ -89,7 +89,7 @@ private:
     bool	m_ignore_changed = false;
     bool	m_htmlMode = true;
     int		m_tab_number = 0;
-    QString	m_plainText;
+    //QString	m_plainText;
     //QString	m_htmlText;
     //MarkdownToHtmlConvertor	m_htmlComvertor;
     class QLabel		*m_lcLabel;		//	行カラムラベル
