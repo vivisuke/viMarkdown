@@ -92,6 +92,7 @@ private:
     QString	m_plainText;
     //QString	m_htmlText;
     //MarkdownToHtmlConvertor	m_htmlComvertor;
+    class QLabel		*m_lcLabel;		//	行カラムラベル
     class QComboBox				*m_searchCB = nullptr;
     class QFileSystemWatcher	*m_watcher;
 

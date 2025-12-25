@@ -9,6 +9,6 @@
 
 #pragma once
 
-#define		VER_STR			QString("ver 0.0.005 dev")
+#define		VER_STR			QString("ver 0.0.006 dev")
 
 

@@ -9,6 +9,7 @@
 #include <QSettings>
 #include <QTextBlock>
 #include <QComboBox>
+#include <qlabel.h>
 #include <QDockWidget>
 #include <QDragEnterEvent>
 #include <QDropEvent>
@@ -33,7 +34,8 @@ MainWindow::MainWindow(QWidget *parent)
 	ui->action_OutlineBar->setChecked(true);	//	暫定的
 	setWindowTitle(QString("viMarkdown ") + VER_STR); 
 	m_watcher = new QFileSystemWatcher(this);			//	外部アプリによる文書変更監視オブジェクト
-
+	(m_lcLabel = new QLabel("0:0", this))->setMinimumWidth(50);
+	ui->statusBar->addPermanentWidget(m_lcLabel);		//	ステータスバーに QLabel 設置
 	setAcceptDrops(true);		//	ファイルドロップ可
 	setup_connections();
 	read_settings();
@@ -906,9 +908,10 @@ void MainWindow::onMdEditCurPosChanged() {
 	MarkdownEditor *mdEditor = (MarkdownEditor*)sender();
 	QTextCursor cursor = mdEditor->textCursor();
 	int bnum = cursor.blockNumber();
-	QString mess = QString("cursor.blockNumber = %1").arg(bnum);
+	//QString mess = QString("cursor.blockNumber = %1").arg(bnum);
 	//mess += QString(", preview.blockNumber() = %1").arg(cursor.blockNumber());
 	//statusBar()->showMessage(mess);
+	m_lcLabel->setText(QString("%1:%2").arg(bnum+1).arg(cursor.columnNumber()+1));
 }
 void MainWindow::onAction_About() {
 	qDebug() << "MainWindow::onAction_About()";

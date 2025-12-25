@@ -161,7 +161,7 @@
 0159 ◎ C 12/23 12/23 0.0004│ToDo│Undo, Redo メニュー：ショートカットキー表示
 0160 ◎ C 12/23 12/23 0.0004│ToDo│Cut, Copy, Paste：ショートカットキー表示
 0161 ◎ C 12/23 12/23 0.0004│ToDo│MarkdownToHtmlConvertor::convert()：複数行パースを可能に
-0162 ● C 12/23             │ToDo│ステータスバーに MdEditor 内のカーソル位置表示
+0162 ◎ C 12/23 12/25 0.0006│ToDo│ステータスバーに MdEditor 内のカーソル位置表示
 0163 ● C 12/23             │ToDo│Edit > SelectAll アクション追加
 0164 ● C 12/23             │ToDo│MarkdownToHtmlConvertor.convert()：マークダウンテキストではなく、QTextDocument を受け取る？
 0165 ● C 12/24             │ToDo│MarkdownToHtmlConvertor.convert() > list 処理："- " が続くかぎり関数内で処理
@@ -176,7 +176,17 @@
 0174 ◎ C 12/24 12/25 0.0005│ToDo│検索文字列リスト最大数を20に設定
 0175 ◎ C 12/24 12/25 0.0005│ToDo│Ctrl + F3: 選択文字列検索
 0176 ◎ C 12/25 12/25 0.0005│ToDo│File > SaveAs
-0177 ● C 12/25             │ToDo│
-0178 ● C 12/25             │ToDo│
-0179 ● C 12/25             │ToDo│
+0177 ● C 12/25             │ToDo│<!-- コメント -->
+0178 ● C 12/25             │ToDo│"* ", "+ " もリストと認識？
+0179 ● C 12/25             │ToDo│"数字) " も連番と認識
+0180 ● C 12/25             │ToDo│罫線モード？
+0180 ● C 12/25             │ToDo│
+0180 ● C 12/25             │ToDo│
+0180 ● C 12/25             │ToDo│
+0180 ● C 12/25             │ToDo│
+0180 ● C 12/25             │ToDo│
+0180 ● C 12/25             │ToDo│
+0180 ● C 12/25             │ToDo│
+0180 ● C 12/25             │ToDo│
+0180 ● C 12/25             │ToDo│
 0180 ● C 12/25             │ToDo│
