@@ -17,6 +17,7 @@ public:
     const QStringList&	getHeadings() const { return m_headingList; }
     const std::vector<char>	getBlockType() const { return m_blockType; }
     const std::vector<int>&	getHeadingsLineNum() const { return m_headingLineNum; }
+    const std::vector<int>&	getBlockNumTohtmlLineNum() const { return m_blockNumTohtmlLineNum; }
 
 private:
     void	do_heading(const QString&, int lineNum);
@@ -37,6 +38,7 @@ private:
 
 private:
 	int			m_ln;				//	パース中 or 次行番号, 0 org
+	int			m_htmlLn;			//	出力 HTML 行番号、0 org
 	QString		m_markdownText;
 	QString		m_htmlText;
 	QStringList	m_lst;				//	行分割されたマークダウンテキスト

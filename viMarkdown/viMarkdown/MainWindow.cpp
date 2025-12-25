@@ -917,6 +917,13 @@ void MainWindow::onMdEditCurPosChanged() {
 	//statusBar()->showMessage(mess);
 	int clmn = cursor.position() - cursor.block().position();
 	m_lcLabel->setText(QString("%1:%2").arg(cursor.blockNumber()+1).arg(clmn+1));
+	DocWidget *docWidget = getCurDocWidget();
+	const auto v = docWidget->m_htmlComvertor.getBlockNumTohtmlLineNum();
+	if( cursor.blockNumber() < v.size() ) {
+		QString mess = QString("html line = %1").arg(v[cursor.blockNumber()]);
+		statusBar()->showMessage(mess);
+	}
+
 }
 void MainWindow::onAction_About() {
 	qDebug() << "MainWindow::onAction_About()";
