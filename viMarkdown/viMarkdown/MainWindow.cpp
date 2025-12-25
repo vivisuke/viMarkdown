@@ -907,11 +907,12 @@ void MainWindow::onMDTextChanged() {
 void MainWindow::onMdEditCurPosChanged() {
 	MarkdownEditor *mdEditor = (MarkdownEditor*)sender();
 	QTextCursor cursor = mdEditor->textCursor();
-	int bnum = cursor.blockNumber();
+	//int bnum = cursor.blockNumber();
 	//QString mess = QString("cursor.blockNumber = %1").arg(bnum);
 	//mess += QString(", preview.blockNumber() = %1").arg(cursor.blockNumber());
 	//statusBar()->showMessage(mess);
-	m_lcLabel->setText(QString("%1:%2").arg(bnum+1).arg(cursor.columnNumber()+1));
+	int clmn = cursor.position() - cursor.block().position();
+	m_lcLabel->setText(QString("%1:%2").arg(cursor.blockNumber()+1).arg(clmn+1));
 }
 void MainWindow::onAction_About() {
 	qDebug() << "MainWindow::onAction_About()";
