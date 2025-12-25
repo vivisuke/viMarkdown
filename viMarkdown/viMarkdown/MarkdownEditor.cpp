@@ -2,6 +2,7 @@
 #include <QTextCursor>
 #include <QTextBlock>
 #include <QSyntaxHighlighter>
+#include <QRegularExpression>
 #include "MarkdownEditor.h"
 
 class MarkdownHighlighter : public QSyntaxHighlighter {
@@ -26,6 +27,7 @@ MarkdownEditor::MarkdownEditor(QWidget *parent) : QPlainTextEdit(parent)
 	m_highlighter = new MarkdownHighlighter(this->document());
 }
 void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
+	static QRegularExpression re(R"(^\d\. )");
 	if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) {
 		QTextCursor cursor = this->textCursor();
         QTextBlock currentBlock = cursor.block();
@@ -34,12 +36,15 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 	        int n = 0;
 	        while( n < text.length() && text[n].isSpace() ) ++n;
 	        QString atxt = text.left(n);
-	        if( text.mid(n).startsWith("- [ ] ") )
+	        const QString mtxt = text.mid(n);
+	        if( mtxt.startsWith("- [ ] ") )
 				atxt += "- [ ] ";
-	        else if( text.mid(n).startsWith("- [x] ") || text.mid(n).startsWith("- [X] ") )
+	        else if( mtxt.startsWith("- [x] ") || mtxt.startsWith("- [X] ") )
 				atxt += "- [x] ";
-	        else if( text.mid(n).startsWith("- ") )
+	        else if( mtxt.startsWith("- ") )
 				atxt += "- ";
+	        else if( re.match(mtxt).hasMatch())
+				atxt += "1. ";
 	        cursor.insertText("\n" + atxt);
 	        // カーソル位置を画面内に維持
 	        this->ensureCursorVisible();
