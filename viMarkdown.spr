@@ -188,5 +188,15 @@
 0186 ◎ C 12/25 12/25 0.0006│ToDo│convert() 引数を const QTextDocument* に変更
 0187 ◎ C 12/26 12/26 0.0006│問題│起動直後に hoge と入力しようとしたらクラッシュした
 0188 ◎ C 12/26 12/26 0.0006│ToDo│inline の [ ] はチェックボックスと認識しないように
-0189 ● C 12/26             │ToDo│
+0189 ◎ C 12/26 12/26 0.0006│ToDo│QTextEdit をサブクラス化：HTMLView
+0190 ● C 12/26             │ToDo│HTMLView::lineClicked(blockNum) シグナル発行
+0190 ● C 12/26             │ToDo│
+0190 ● C 12/26             │ToDo│
+0190 ● C 12/26             │ToDo│
+0190 ● C 12/26             │ToDo│
+0190 ● C 12/26             │ToDo│
+0190 ● C 12/26             │ToDo│
+0190 ● C 12/26             │ToDo│
+0190 ● C 12/26             │ToDo│
+0190 ● C 12/26             │ToDo│
 0190 ● C 12/26             │ToDo│

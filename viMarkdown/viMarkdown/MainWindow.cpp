@@ -20,6 +20,7 @@
 #include "MainWindow.h"
 #include "DocWidget.h"
 #include "MarkdownEditor.h"
+#include "HtmlViewer.h"
 
 using namespace std;
 
@@ -227,7 +228,7 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	connect(mdEditor->document(), &QTextDocument::modificationChanged, this, &MainWindow::onModificationChanged);
 	//QTextEdit *mdEditor = new QTextEdit(splitter);
 	mdEditor->setPlaceholderText("ここにMarkdownを入力\n# タイトル\n## 大見出し\n- リスト\n1. 連番\n本文...");
-	QTextEdit *previewer = docWidget->m_previewer = new QTextEdit(splitter);
+	HtmlViewer *previewer = docWidget->m_previewer = new HtmlViewer(splitter);
 	previewer->setReadOnly(true); // プレビューなので読み取り専用にする
 	previewer->setPlaceholderText("プレビュー画面");
 	splitter->addWidget(mdEditor);
@@ -238,7 +239,7 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	layout->setContentsMargins(0, 0, 0, 0); // 余白をなくして端まで広げる
 
 	connect(mdEditor, &MarkdownEditor::textChanged, this, &MainWindow::onMDTextChanged);
-	//connect(mdEditor, &QTextEdit::textChanged, this, &MainWindow::onMDTextChanged);
+	//connect(mdEditor, &HtmlViewer::textChanged, this, &MainWindow::onMDTextChanged);
 
 	return docWidget;
 }
@@ -801,7 +802,7 @@ void MainWindow::onTreeItemActivated(QTreeWidgetItem *current, int) {
 void MainWindow::updatePreview() {
 	DocWidget *docWidget = getCurDocWidget();
 	qDebug() << "docWidget = " << docWidget;
-	QTextEdit* textEdit = docWidget->m_previewer;
+	HtmlViewer* textEdit = docWidget->m_previewer;
 	QScrollBar *vScrollBar = textEdit->verticalScrollBar();
 	int currentPos = vScrollBar->value();
 	const QString &htmlText = docWidget->m_htmlComvertor.getHtmlText();

@@ -5,6 +5,7 @@
 //class QPlainTextEdit;
 class MarkdownEditor;
 class QTextEdit;
+class HtmlViewer;
 
 class DocWidget : public QWidget
 {
@@ -21,7 +22,7 @@ public:
 	QString	m_title;				//	タブタイトル
 	QString	m_fullPath;
 	MarkdownEditor	*m_mdEditor = nullptr;			//	マークダウンエディタへのポインタ
-	QTextEdit		*m_previewer = nullptr;			//	マークダウンプレビューワへのポインタ
+	HtmlViewer		*m_previewer = nullptr;			//	HTMLプレビューワへのポインタ
     MarkdownToHtmlConvertor	m_htmlComvertor;
 };
 
