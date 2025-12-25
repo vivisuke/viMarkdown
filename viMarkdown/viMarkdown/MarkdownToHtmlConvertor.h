@@ -21,7 +21,7 @@ public:
 
 private:
     void	do_heading(const QString&, int lineNum);
-    void	do_list(const QString&);
+    void	do_list(QString);
     void	do_olist(const QString&);
     void	do_quote(QString);
     void	do_code(const QString&);

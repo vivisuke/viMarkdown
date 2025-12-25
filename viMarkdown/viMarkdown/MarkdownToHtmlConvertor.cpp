@@ -143,6 +143,7 @@ QString MarkdownToHtmlConvertor::parceInline(const QString& lnStr) {
         int e = match.capturedStart();  // ２番目のマッチ位置 
 		result = result.left(s) + "<s>" + result.mid(s+2, e - s - 2) + "</s>" + result.mid(e+2);
 	}
+#if 0
     static QRegularExpression re_check(R"((?<![\\])(\[ \]))");  // 直前が \ でない [ ] とマッチ
 	while ((match = re_check.match(result)).hasMatch()) {
         int s = match.capturedStart();  // 最初のマッチ位置 
@@ -166,6 +167,7 @@ QString MarkdownToHtmlConvertor::parceInline(const QString& lnStr) {
         }
 		result = left + nbsp + " ☑ " + result.mid(s+3);
 	}
+#endif
 	static QRegularExpression re_link(R"((?<!!)\[([^\]]*)\]\(([^)]*)\))");		//	[title](URL)
 	while ((match = re_link.match(result)).hasMatch()) {
         int s = match.capturedStart();  // 最初のマッチ位置 
@@ -242,7 +244,7 @@ bool isCheckboxLine(const QString& lnStr) {		//	"- [ ]" or "- [x]" or "- [X]" �
 	return lnStr.size() >= 6 && lnStr[2] == '[' && lnStr[4] == ']' && lnStr[5] == ' ' &&
 			(lnStr[3] == ' ' || lnStr[3] == 'x' || lnStr[3] == 'X');
 }
-void MarkdownToHtmlConvertor::do_list(const QString& lnStr) {
+void MarkdownToHtmlConvertor::do_list(QString lnStr) {
 	if( isCheckboxLine(lnStr) ) {	//	「- [{ xX}] 」の場合
 		if( m_isParagraphOpen ) {
 			m_htmlText += "<p>\n";
@@ -250,7 +252,15 @@ void MarkdownToHtmlConvertor::do_list(const QString& lnStr) {
 			m_isParagraphOpen = false;
 		}
 		m_nSpace += 2;
-		m_htmlText += parceInline(lnStr.mid(2)) + "<br/>\n";
+		lnStr = lnStr.mid(2);
+		if( lnStr.startsWith("[ ] ") ) {
+			m_htmlText += "□ ";
+			lnStr = lnStr.mid(4);
+		} else /*if( lnStr.startsWith("[x] ") || lnStr.startsWith("[x] ") )*/ {
+			m_htmlText += "☑ ";
+			lnStr = lnStr.mid(4);
+		}
+		m_htmlText += parceInline(lnStr) + "<br/>\n";
 		++m_htmlLn;
 		++m_ln;
 		return;
