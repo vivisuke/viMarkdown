@@ -67,6 +67,8 @@ const QString& MarkdownToHtmlConvertor::convert(const QTextDocument* doc) {
 			++m_ln;
 		} else if( lnStr.startsWith("```") ) {
 			do_code(lnStr);
+		} else if( isTableLine(lnStr) && m_ln+1 < m_lst.size() && isTableHyphenLine(m_lst[m_ln]) ) {
+			do_table();
 		} else {
 			do_paragraph(lnStr);
 		}
@@ -78,6 +80,38 @@ const QString& MarkdownToHtmlConvertor::convert(const QTextDocument* doc) {
 	m_htmlText += "</html>\n";
 	return m_htmlText;
 }
+bool MarkdownToHtmlConvertor::isTableLine(const QString& lnStr) {
+	QStringView sv(lnStr);
+	m_tableTokens.clear();
+	int ix = 0;
+	while( ix < sv.size() && sv[ix] == u' ' ) ++ix;		//	空白スキップ
+	if (ix < sv.size() && sv[ix] == u'|') ++ix;			//	先頭の '|' スキップ
+	while( ix < sv.size() ) {
+		int ix0 = ix;
+		while( ix < sv.size() && sv[ix] != u'|' ) {		//	'|' までループ
+			if( ix+1 < sv.size() && sv[ix] == u'\\' ) ix += 2;
+			else ++ix;
+		}
+		m_tableTokens.push_back(sv.mid(ix0, ix-ix0));
+		++ix;			//	'|' スキップ
+	}
+	return m_tableTokens.size() > 1;
+}
+bool MarkdownToHtmlConvertor::isTableHyphenLine(const QString& lnStr) {
+	QStringView sv(lnStr);
+	int ix = 0;
+	while( ix < sv.size() && sv[ix] == u' ' ) ++ix;		//	空白スキップ
+	if (ix < sv.size() && sv[ix] == u'|') ++ix;			//	先頭の '|' スキップ
+	while( ix < sv.size() ) {
+		while( ix < sv.size() && sv[ix] != u'|' ) {		//	'|' までループ
+			if( ix+1 < sv.size() && sv[ix] == u'\\' ) ix += 2;
+			else ++ix;
+		}
+		++ix;
+	}
+	return true;
+}
+
 void MarkdownToHtmlConvertor::open_ul(int lvl) {
 	while( m_curUlLevel < lvl ) {
 		m_htmlText += "<ul>\n";
@@ -339,6 +373,21 @@ void MarkdownToHtmlConvertor::do_code(const QString& lnStr) {
 bool isHeadingUnderline(const QString &txt) {
 	static QRegularExpression re(R"(^(=+|-+)$)");
 	return re.match(txt).hasMatch();
+}
+void MarkdownToHtmlConvertor::do_table() {
+	m_ln += 2;
+	m_htmlText += "<table>\n";
+	m_htmlText += "<tr>";
+	for(auto txt: m_tableTokens)
+		m_htmlText += "<th>" + txt + "</th>";
+	m_htmlText += "</tr>\n";
+	while( m_ln < m_lst.size() && isTableLine(m_lst[m_ln++]) ) {
+		m_htmlText += "<tr>";
+		for(auto txt: m_tableTokens)
+			m_htmlText += "<td>" + txt + "</td>";
+		m_htmlText += "</tr>\n";
+	}
+	m_htmlText += "</table>\n";
 }
 void MarkdownToHtmlConvertor::do_paragraph(const QString& lnStr) {
 	close_quote();

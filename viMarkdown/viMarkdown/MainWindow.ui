@@ -58,14 +58,26 @@
      </property>
      <addaction name="actiondummy"/>
     </widget>
+    <widget class="QMenu" name="menu_FavoriteFile">
+     <property name="title">
+      <string>&amp;FavoriteFile</string>
+     </property>
+     <addaction name="actionAddThis"/>
+    </widget>
+    <widget class="QMenu" name="menue_Xit">
+     <property name="title">
+      <string>e&amp;Xit</string>
+     </property>
+    </widget>
     <addaction name="action_New"/>
     <addaction name="action_Open"/>
     <addaction name="action_Save"/>
     <addaction name="action_SaveAs"/>
     <addaction name="action_Close"/>
     <addaction name="menu_RecentFiles"/>
+    <addaction name="menu_FavoriteFile"/>
     <addaction name="separator"/>
-    <addaction name="action_Exit"/>
+    <addaction name="menue_Xit"/>
    </widget>
    <widget class="QMenu" name="menu_View">
     <property name="title">
@@ -393,18 +405,6 @@
     <string>Strikethrough</string>
    </property>
   </action>
-  <action name="action_Exit">
-   <property name="icon">
-    <iconset resource="MainWindow.qrc">
-     <normaloff>:/MainWindow/images/exit_to_app_48.png</normaloff>:/MainWindow/images/exit_to_app_48.png</iconset>
-   </property>
-   <property name="text">
-    <string>e&amp;Xit</string>
-   </property>
-   <property name="toolTip">
-    <string>exit to App</string>
-   </property>
-  </action>
   <action name="action_Checkbox">
    <property name="icon">
     <iconset resource="MainWindow.qrc">
@@ -521,6 +521,16 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+S</string>
+   </property>
+  </action>
+  <action name="action_AddThis">
+   <property name="text">
+    <string>&amp;AddThis(&amp;@)</string>
+   </property>
+  </action>
+  <action name="actionAddThis">
+   <property name="text">
+    <string>AddThis(&amp;@)</string>
    </property>
   </action>
  </widget>

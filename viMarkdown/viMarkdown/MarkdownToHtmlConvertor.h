@@ -2,6 +2,9 @@
 
 #include <QString>
 #include <vector>
+#include <QStringTokenizer>
+#include <QStringView>
+#include <QList>
 
 class MarkdownToHtmlConvertor
 {
@@ -25,10 +28,13 @@ private:
     void	do_olist(const QString&);
     void	do_quote(QString);
     void	do_code(const QString&);
+    void	do_table();
     void	do_paragraph(const QString&);
 
     QString	parceInline(const QString&);
     QString	escape(const QString&);
+    bool	isTableLine(const QString&);
+    bool	isTableHyphenLine(const QString&);
 
     void	open_ul(int lvl);
     void	close_ul(int lvl=0);
@@ -51,6 +57,8 @@ private:
 	int			m_curUlLevel = 0;
 	int			m_curOlLevel = 0;
 	int			m_nSpace = 0;
+	//QStringTokenizer	m_tableTokens("", ',');
+	QList<QStringView>	m_tableTokens;
 	std::vector<int>	m_blockNumTohtmlLineNum;		//	マークダウン論理行番号→HTML論理行番号対応テーブル
 	std::vector<int>	m_headingLineNum;	//	各見出し行 行番号（0 org.）
 	std::vector<char>	m_blockType;		//	' ': body text, '#': headings
