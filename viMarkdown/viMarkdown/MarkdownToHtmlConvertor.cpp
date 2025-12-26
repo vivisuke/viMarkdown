@@ -20,6 +20,17 @@ const QString hdrtxt =
 "        background-color: lightgray;\n"
 "        padding: 20px;\n"
 "    }\n"
+"    table {\n"
+"            border-collapse: collapse;\n"
+"            width: 100%;\n"
+"    }\n"
+"    th, td {\n"
+"        border: 1px solid black;\n"
+"        padding: 8px;\n"
+"    }\n"
+"    th {\n"
+"        background-color: lightblue;\n"
+"    }\n"
 "</style>\n"
 "</head>\n";
 
@@ -381,8 +392,12 @@ void MarkdownToHtmlConvertor::do_table() {
 	for(auto txt: m_tableTokens)
 		m_htmlText += "<th>" + txt + "</th>";
 	m_htmlText += "</tr>\n";
+	bool even = true;
 	while( m_ln < m_lst.size() && isTableLine(m_lst[m_ln++]) ) {
-		m_htmlText += "<tr>";
+		if( (even = !even) )
+			m_htmlText += "<tr bgcolor=\"lightgray\">";
+		else
+			m_htmlText += "<tr bgcolor=\"lightyellow\">";
 		for(auto txt: m_tableTokens)
 			m_htmlText += "<td>" + txt + "</td>";
 		m_htmlText += "</tr>\n";
