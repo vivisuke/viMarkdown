@@ -191,7 +191,7 @@
 0189 ◎ C 12/26 12/26 0.0006│ToDo│QTextEdit をサブクラス化：HTMLView
 0190 ◎ C 12/26 12/26 0.0006│ToDo│HTMLView::lineClicked(blockNum) シグナル発行
 0191 ◎ C 12/26 12/26 0.0006│ToDo│====, ---- 見出し対応
-0192 ● C 12/26             │ToDo│
+0192 ◎ C 12/26 12/26 0.0006│ToDo│ver 0.0.x は dev でなく prototype に変更
 0193 ● C 12/26             │ToDo│
 0194 ● C 12/26             │ToDo│
 0195 ● C 12/26             │ToDo│
