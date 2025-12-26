@@ -46,6 +46,7 @@ private:
 	bool		m_isParagraphOpen = true;
 	bool		m_isInsideUl = false;
 	bool		m_isInsideOl = false;
+	bool		m_headingUnderline1 = false;
 	//bool		m_isInsideQuote = false;
 	int			m_curUlLevel = 0;
 	int			m_curOlLevel = 0;

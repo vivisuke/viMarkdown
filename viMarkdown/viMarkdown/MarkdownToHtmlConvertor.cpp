@@ -32,6 +32,7 @@ const QString& MarkdownToHtmlConvertor::convert(const QTextDocument* doc) {
 	m_headingLineNum.clear();
 	m_blockNumTohtmlLineNum.clear();
 	m_blockNumTohtmlLineNum.resize(doc->blockCount());
+	m_headingUnderline1 = false;
 	m_isParagraphOpen = true;
 	m_curUlLevel = 0;
 	m_curOlLevel = 0;
@@ -333,6 +334,10 @@ void MarkdownToHtmlConvertor::do_code(const QString& lnStr) {
 	++m_htmlLn;
 	++m_ln;
 }
+bool isHeadingUnderline(const QString &txt) {
+	static QRegularExpression re(R"(^(=+|-+)$)");
+	return re.match(txt).hasMatch();
+}
 void MarkdownToHtmlConvertor::do_paragraph(const QString& lnStr) {
 	close_quote();
 	close_ul();
@@ -343,11 +348,23 @@ void MarkdownToHtmlConvertor::do_paragraph(const QString& lnStr) {
 		m_htmlText += "<p>";
 		m_isParagraphOpen = false;
 	}
-	m_htmlText += parceInline(lnStr);
-	if( lnStr.endsWith("  ") )
-		m_htmlText += "<br/>\n";
-	else
-		m_htmlText += "\n";
+	if( !lnStr.isEmpty() && m_ln+1 < m_lst.size() && isHeadingUnderline(m_lst[m_ln+1]) ) {	//	見出し行
+		if( m_lst[m_ln+1][0] == '=' ) {
+			if( !m_headingUnderline1 ) {
+				m_htmlText += "<h1>" + parceInline(lnStr) + "</h1>\n";		//	最初の === は <h1> に変換
+				m_headingUnderline1 = true;
+			} else
+				m_htmlText += "<h2>" + parceInline(lnStr) + "</h2>\n";
+		} else
+			m_htmlText += "<h3>" + parceInline(lnStr) + "</h3>\n";
+		++m_ln;
+	} else {
+		m_htmlText += parceInline(lnStr);
+		if( lnStr.endsWith("  ") )
+			m_htmlText += "<br/>\n";
+		else
+			m_htmlText += "\n";
+	}
 	++m_htmlLn;
 	++m_ln;
 }
