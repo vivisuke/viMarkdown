@@ -246,6 +246,14 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 }
 void MainWindow::onHtmlViewerLineClicked(int bln) {
 	qDebug() << "MainWindow::onHtmlViewerLineClicked(" << bln << ")";
+	DocWidget *docWidget = getCurDocWidget();
+	if( docWidget == nullptr ) return;
+	auto table = docWidget->m_htmlComvertor.getBlockNumTohtmlLineNum();
+	for(int i = 0; i < table.size(); ++i) {
+		if( table[i] >= bln ) {
+			return;
+		}
+	}
 }
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
 {
@@ -806,13 +814,15 @@ void MainWindow::onTreeItemActivated(QTreeWidgetItem *current, int) {
 void MainWindow::updatePreview() {
 	DocWidget *docWidget = getCurDocWidget();
 	qDebug() << "docWidget = " << docWidget;
+	MarkdownEditor *mdEditor = docWidget->m_mdEditor;
 	HtmlViewer* textEdit = docWidget->m_previewer;
 	QScrollBar *vScrollBar = textEdit->verticalScrollBar();
 	int currentPos = vScrollBar->value();
 	const QString &htmlText = docWidget->m_htmlComvertor.getHtmlText();
-	if( m_htmlMode )
+	if( m_htmlMode ) {
 		textEdit->setHtml(htmlText);
-	else
+		//textEdit->setHtml(mdEditor->toPlainText());
+	} else
 		textEdit->setPlainText(htmlText);
 	vScrollBar->setValue(currentPos);
 }

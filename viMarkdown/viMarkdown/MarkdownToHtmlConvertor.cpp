@@ -54,7 +54,7 @@ const QString& MarkdownToHtmlConvertor::convert(const QTextDocument* doc) {
         } else if( lnStr.startsWith('#') ) {
 			m_blockType[m_ln] = '#';
 			do_heading(lnStr, m_ln);
-		} else if( lnStr.startsWith("- ") ) {
+		} else if( lnStr.startsWith("- ") || lnStr.startsWith("* ") || lnStr.startsWith("+ ")) {
 			do_list(lnStr);
 		} else if( lnStr[0].isNumber() && lnStr.mid(1).startsWith(". ") ) {
 			do_olist(lnStr);
