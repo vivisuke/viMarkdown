@@ -163,7 +163,7 @@
 0161 ◎ C 12/23 12/23 0.0004│ToDo│MarkdownToHtmlConvertor::convert()：複数行パースを可能に
 0162 ◎ C 12/23 12/25 0.0006│ToDo│ステータスバーに MdEditor 内のカーソル位置表示
 0163 ● C 12/23             │ToDo│Edit > SelectAll アクション追加
-0164 ● C 12/23             │ToDo│MarkdownToHtmlConvertor.convert()：マークダウンテキストではなく、QTextDocument を受け取る？
+0164 ◎ C 12/23 12/26 0.0006│ToDo│MarkdownToHtmlConvertor.convert()：マークダウンテキストではなく、QTextDocument を受け取る？
 0165 ● C 12/24             │ToDo│MarkdownToHtmlConvertor.convert() > list 処理："- " が続くかぎり関数内で処理
 0166 ◎ C 12/24 12/24 0.0004│ToDo│code ブロックをとりあえずサポート
 0167 ◎ C 12/24 12/24 0.0004│問題│code ブロック中の < は &lt; に変換
@@ -190,10 +190,10 @@
 0188 ◎ C 12/26 12/26 0.0006│ToDo│inline の [ ] はチェックボックスと認識しないように
 0189 ◎ C 12/26 12/26 0.0006│ToDo│QTextEdit をサブクラス化：HTMLView
 0190 ◎ C 12/26 12/26 0.0006│ToDo│HTMLView::lineClicked(blockNum) シグナル発行
-0191 ◎ C 12/26 12/26 0.0006│ToDo│====, ---- 見出し対応
+0191 ◎ C 12/26 12/26 0.0006│ToDo│====, ---- 下線見出し対応
 0192 ◎ C 12/26 12/26 0.0006│ToDo│ver 0.0.x は dev でなく prototype に変更
-0193 ● C 12/26             │ToDo│
-0194 ● C 12/26             │ToDo│
+0193 ◎ C 12/26 12/27 0.0007│問題│チェックボックスのインデントが効かない
+0194 ● C 12/26             │問題│====, ---- 下線見出し：アウトラインバーにアイテムが生成されない
 0195 ● C 12/26             │ToDo│
 0196 ● C 12/26             │ToDo│
 0197 ● C 12/26             │ToDo│

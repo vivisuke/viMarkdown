@@ -253,6 +253,8 @@ void MarkdownToHtmlConvertor::do_list(QString lnStr) {
 			m_isParagraphOpen = false;
 		}
 		m_nSpace += 2;
+        for(int i = 0; i < m_nSpace; ++i)
+			m_htmlText += "&nbsp;&nbsp;";
 		lnStr = lnStr.mid(2);
 		if( lnStr.startsWith("[ ] ") ) {
 			m_htmlText += "□ ";
@@ -349,6 +351,7 @@ void MarkdownToHtmlConvertor::do_paragraph(const QString& lnStr) {
 		m_isParagraphOpen = false;
 	}
 	if( !lnStr.isEmpty() && m_ln+1 < m_lst.size() && isHeadingUnderline(m_lst[m_ln+1]) ) {	//	見出し行
+		m_blockType[m_ln] = '#';
 		if( m_lst[m_ln+1][0] == '=' ) {
 			if( !m_headingUnderline1 ) {
 				m_htmlText += "<h1>" + parceInline(lnStr) + "</h1>\n";		//	最初の === は <h1> に変換
