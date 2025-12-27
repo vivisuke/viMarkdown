@@ -64,11 +64,6 @@
      </property>
      <addaction name="actionAddThis"/>
     </widget>
-    <widget class="QMenu" name="menue_Xit">
-     <property name="title">
-      <string>e&amp;Xit</string>
-     </property>
-    </widget>
     <addaction name="action_New"/>
     <addaction name="action_Open"/>
     <addaction name="action_Save"/>
@@ -77,7 +72,7 @@
     <addaction name="menu_RecentFiles"/>
     <addaction name="menu_FavoriteFile"/>
     <addaction name="separator"/>
-    <addaction name="menue_Xit"/>
+    <addaction name="action_Exit"/>
    </widget>
    <widget class="QMenu" name="menu_View">
     <property name="title">
@@ -531,6 +526,15 @@
   <action name="actionAddThis">
    <property name="text">
     <string>AddThis(&amp;@)</string>
+   </property>
+  </action>
+  <action name="action_Exit">
+   <property name="icon">
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/exit_to_app_48.png</normaloff>:/MainWindow/images/exit_to_app_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>e&amp;xit</string>
    </property>
   </action>
  </widget>
