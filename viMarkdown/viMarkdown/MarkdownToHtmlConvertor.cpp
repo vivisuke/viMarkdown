@@ -7,7 +7,7 @@
 using namespace std;
 
 enum {
-	ALIGHN_LEFT = 1, ALIGHN_RIGHT, ALIGHN_CENTER,
+	ALIGHN_LEFT = 1, ALIGHN_RIGHT = 2, ALIGHN_CENTER = ALIGHN_LEFT| ALIGHN_RIGHT,
 };
 
 const QString hdrtxt =
@@ -82,7 +82,7 @@ const QString& MarkdownToHtmlConvertor::convert(const QTextDocument* doc) {
 			++m_ln;
 		} else if( lnStr.startsWith("```") ) {
 			do_code(lnStr);
-		} else if( isTableLine(lnStr) && m_ln+1 < m_lst.size() && isTableHyphenLine(m_lst[m_ln]) ) {
+		} else if( isTableLine(lnStr) && m_ln+1 < m_lst.size() && isTableHyphenLine(m_lst[m_ln+1]) ) {
 			do_table();
 		} else {
 			do_paragraph(lnStr);
@@ -113,15 +113,24 @@ bool MarkdownToHtmlConvertor::isTableLine(const QString& lnStr) {
 	return m_tableTokens.size() > 1;
 }
 bool MarkdownToHtmlConvertor::isTableHyphenLine(const QString& lnStr) {
+	m_tableAlign.clear();
 	QStringView sv(lnStr);
 	int ix = 0;
 	while( ix < sv.size() && sv[ix] == u' ' ) ++ix;		//	空白スキップ
 	if (ix < sv.size() && sv[ix] == u'|') ++ix;			//	先頭の '|' スキップ
 	while( ix < sv.size() ) {
-		while( ix < sv.size() && sv[ix] != u'|' ) {		//	'|' までループ
+		char aln = 0;
+		while( ix < sv.size() && sv[ix] == u' ' ) ++ix;		//	空白スキップ
+		if( ix < sv.size() && sv[ix] == u':' ) aln = ALIGHN_LEFT;
+		while( ix < sv.size() && sv[ix] != u'|' ) {		//	次の'|' までループ
 			if( ix+1 < sv.size() && sv[ix] == u'\\' ) ix += 2;
 			else ++ix;
 		}
+		int i = ix - 1;
+		while( i >= 0 && sv[i] == u' ' ) --i;		//	空白スキップ
+		if( i >= 0 && sv[i] == u':' )
+			aln |= ALIGHN_RIGHT;
+		m_tableAlign.push_back(aln);
 		++ix;
 	}
 	return true;
@@ -403,8 +412,18 @@ void MarkdownToHtmlConvertor::do_table() {
 			//m_htmlText += "<tr bgcolor=\"#e0e0e0\">";
 		} else
 			m_htmlText += "<tr bgcolor=\"lightyellow\">";
-		for(auto txt: m_tableTokens)
-			m_htmlText += "<td>" + txt + "</td>";
+		int i = 0;
+		for(auto txt: m_tableTokens) {
+			const char aln = i < m_tableAlign.size() ? m_tableAlign[i] : 0;
+			if( aln == ALIGHN_RIGHT )
+				m_htmlText += "<td align=\"right\">";
+			else if( aln == ALIGHN_CENTER )
+				m_htmlText += "<td align=\"center\">";
+			else
+				m_htmlText += "<td>";
+			m_htmlText += txt + "</td>";
+			++i;
+		}
 		m_htmlText += "</tr>\n";
 	}
 	m_htmlText += "</table>\n";

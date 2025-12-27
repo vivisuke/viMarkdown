@@ -61,6 +61,7 @@ private:
 	QList<QStringView>	m_tableTokens;
 	std::vector<int>	m_blockNumTohtmlLineNum;		//	マークダウン論理行番号→HTML論理行番号対応テーブル
 	std::vector<int>	m_headingLineNum;	//	各見出し行 行番号（0 org.）
+	std::vector<char>	m_tableAlign;		//	各カラムの水平方向アライメント
 	std::vector<char>	m_blockType;		//	' ': body text, '#': headings
 };
 
