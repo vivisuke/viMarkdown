@@ -56,6 +56,7 @@ protected:
     void	onAction_Open();
     void	onAction_Save();
     void	onAction_SaveAs();
+    void	onAction_ExportAsPDF();
     void	onAction_Close();
     void	onAction_Undo();
     void	onAction_Redo();

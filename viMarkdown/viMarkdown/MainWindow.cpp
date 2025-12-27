@@ -16,6 +16,9 @@
 #include <QMimeData>
 #include <QUrl>
 #include <QFileSystemWatcher>
+#include <QPrinter>
+#include <QPrintDialog>
+
 #include "ver.h"
 #include "MainWindow.h"
 #include "DocWidget.h"
@@ -117,6 +120,7 @@ void MainWindow::setup_connections() {
 	connect(ui->action_Open, &QAction::triggered, this, &MainWindow::onAction_Open);
 	connect(ui->action_Save, &QAction::triggered, this, &MainWindow::onAction_Save);
 	connect(ui->action_SaveAs, &QAction::triggered, this, &MainWindow::onAction_SaveAs);
+	connect(ui->action_AsPDF, &QAction::triggered, this, &MainWindow::onAction_ExportAsPDF);
 	connect(ui->action_Close, &QAction::triggered, this, &MainWindow::onAction_Close);
 	connect(ui->action_List, &QAction::triggered, this, &MainWindow::onAction_List);
 	connect(ui->action_NumList, &QAction::triggered, this, &MainWindow::onAction_NumList);
@@ -460,6 +464,18 @@ void MainWindow::do_save(bool fDialog) {
 	}
 	docWidget->m_saving = false;
 	m_watcher->addPath(fullPath);
+}
+void MainWindow::onAction_ExportAsPDF() {
+	DocWidget *docWidget = getCurDocWidget();
+	if( docWidget == nullptr ) return;
+	QString fileName = QFileDialog::getSaveFileName(this, "export as PDF", "", "PDF Files (*.pdf)");
+    if (fileName.isEmpty()) return;
+
+    QPrinter printer(QPrinter::HighResolution);
+    printer.setOutputFormat(QPrinter::PdfFormat);
+    printer.setOutputFileName(fileName);
+
+    docWidget->m_previewer->print(&printer);
 }
 void MainWindow::onAction_Close() {
 	qDebug() << "MainWindow::onAction_Close()";
