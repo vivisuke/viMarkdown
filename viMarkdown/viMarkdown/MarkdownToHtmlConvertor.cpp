@@ -29,7 +29,7 @@ const QString hdrtxt =
 "            width: 100%;\n"
 "    }\n"
 "    th, td {\n"
-"        border: 1px solid black;\n"
+"        border: 1px solid gray;\n"
 "        padding: 8px;\n"
 "    }\n"
 "    th {\n"
