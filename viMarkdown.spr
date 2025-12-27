@@ -205,8 +205,8 @@
 0203 ◎ C 12/27 12/27 0.0007│ToDo│isTableHyphenLine()：左右中央揃え指定情報を保存
 0204 ● C 12/27             │ToDo│1行目が Setext 見出しの場合のみ <h1> とみなす
 0205 ● C 12/27             │ToDo│印刷機能
-0206 ● C 12/27             │ToDo│PDFファイル生成機能
-0207 ● C 12/27             │ToDo│
-0208 ● C 12/27             │ToDo│
-0209 ● C 12/27             │ToDo│
-0210 ● C 12/27             │ToDo│
+0206 ● C 12/28             │ToDo│File > export > PDF：PDFファイル生成
+0207 ● C 12/28             │ToDo│File > export > HTML
+0208 ● C 12/28             │ToDo│
+0209 ● C 12/28             │ToDo│
+0210 ● C 12/28             │ToDo│
