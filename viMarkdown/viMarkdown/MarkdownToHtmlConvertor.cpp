@@ -6,6 +6,10 @@
 
 using namespace std;
 
+enum {
+	ALIGHN_LEFT = 1, ALIGHN_RIGHT, ALIGHN_CENTER,
+};
+
 const QString hdrtxt =
 "<html>\n"
 "<head>\n"
@@ -17,7 +21,7 @@ const QString hdrtxt =
 "        padding: 20px;\n"
 "    }\n"
 "    pre {\n"
-"        background-color: lightgray;\n"
+"        background-color: #f0f0f0;\n"
 "        padding: 20px;\n"
 "    }\n"
 "    table {\n"
@@ -394,9 +398,10 @@ void MarkdownToHtmlConvertor::do_table() {
 	m_htmlText += "</tr>\n";
 	bool even = true;
 	while( m_ln < m_lst.size() && isTableLine(m_lst[m_ln++]) ) {
-		if( (even = !even) )
-			m_htmlText += "<tr bgcolor=\"lightgray\">";
-		else
+		if( (even = !even) ) {
+			m_htmlText += "<tr>";
+			//m_htmlText += "<tr bgcolor=\"#e0e0e0\">";
+		} else
 			m_htmlText += "<tr bgcolor=\"lightyellow\">";
 		for(auto txt: m_tableTokens)
 			m_htmlText += "<td>" + txt + "</td>";
