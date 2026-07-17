@@ -663,12 +663,12 @@ SPR# 状 P Open Close ver     Type  概要
 0659 ◎ C 07/16 07/16 03036│問題│EOF を '\n' にしているので、途中の空行と一致してしまう
 0660 ◎ C 07/16 07/16 03036│問題│extractLinesFromDocument() 各行に改行を付加しない方がよい
 0661 ● C 07/16            │問題│Tab 右ボタンメニュー > Close：アウトラインバーアイテムが消えない
-0662 ● C 07/17            │ToDo│MarkdownEditor：削除関数（do_deleteChar()）を用意
+0662 ◎ C 07/17 07/18 03037│ToDo│MarkdownEditor：削除関数 do_deleteText() を用意
 0663 ◎ C 07/17 07/17 03036│ToDo│IMEで文字が確定した場合も、do_insertText() をコール
 0664 ◎ C 07/17 07/17 03036│ToDo│IMEでも自覚提示：vi 挿入モードに自動遷移
-0665 ● C 07/17            │ToDo│
-0666 ● C 07/17            │ToDo│
-0667 ● C 07/17            │ToDo│
-0668 ● C 07/17            │ToDo│
-0669 ● C 07/17            │ToDo│
-0670 ● C 07/17            │ToDo│
+0665 ● C 07/18            │ToDo│
+0666 ● C 07/18            │ToDo│
+0667 ● C 07/18            │ToDo│
+0668 ● C 07/18            │ToDo│
+0669 ● C 07/18            │ToDo│
+0670 ● C 07/18            │ToDo│

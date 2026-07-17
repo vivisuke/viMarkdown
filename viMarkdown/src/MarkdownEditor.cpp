@@ -825,8 +825,9 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 		if( (e->modifiers() & Qt::ControlModifier) != 0) {
 			deleteWord();
 		} else {
-			cursor.deleteChar();
-			setTextCursor(cursor);
+			do_deleteText();
+			//cursor.deleteChar();
+			//setTextCursor(cursor);
 		}
 		return;
 	} else if (e->key() == Qt::Key_Backspace ) {
@@ -986,6 +987,14 @@ void MarkdownEditor::do_insertText(const QString &txt) {
 		cursor.insertText(txt);
 		setTextCursor(cursor);
 	}
+	if( m_diffMode ) {
+		((MainWindow*)m_mainWindow)->do_diff();
+	}
+}
+void MarkdownEditor::do_deleteText() {
+	QTextCursor cursor = textCursor();
+	cursor.deleteChar();
+	setTextCursor(cursor);
 	if( m_diffMode ) {
 		((MainWindow*)m_mainWindow)->do_diff();
 	}
