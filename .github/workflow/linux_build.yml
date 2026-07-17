@@ -27,7 +27,8 @@ jobs:
           target: 'desktop'
       - name: Build Desktop
         run: |
-          CMAKE_PREFIX_PATH=/qt/${QT_VERSION}/gcc_64 cmake -B build_desktop_x86
-          cmake --build build_desktop_x86
+          cd viMarkdown
+          CMAKE_PREFIX_PATH=/qt/${QT_VERSION}/gcc_64 cmake -B build_linux_x86
+          cmake --build build_linux_x86
       
           
