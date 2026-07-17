@@ -226,6 +226,7 @@ public:
     bool	dummyInserted() const { return m_dummyInserted; }
     void	setDummyInserted(bool b) { m_dummyInserted = b; }
     void	applyStyle(const QFont &font);
+	void	removeAllDummyLines();
 
 signals:
     void	tab_pressed();

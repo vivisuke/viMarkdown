@@ -2684,6 +2684,7 @@ void MainWindow::onMdEditEscPressed() {
 }
 void MainWindow::onMdEditCurPosChanged() {
 #if 1
+	//	ステータスバーにカーソル行・カラム位置表示
 	MarkdownEditor *editor = (MarkdownEditor*)sender();
 	QTextCursor cursor = editor->textCursor();
 	int clmn = cursor.position() - cursor.block().position();

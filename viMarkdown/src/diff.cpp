@@ -73,7 +73,8 @@ void setPhysicalLine(QTextBlock &block, int ln, bool changed) {
 }
 #endif
 //
-void removeAllDummyLines(QTextDocument *doc) {
+void MarkdownEditor::removeAllDummyLines() {
+    QTextDocument *doc = document();
     if (!doc) return;
 
     QTextCursor cursor(doc);
@@ -248,9 +249,9 @@ void MainWindow::onAction_DiffMode(bool checked) {
 			doc2->undo();
 #else
 		if( docWidget->m_editor->dummyInserted() )
-			removeAllDummyLines(doc1);
+            docWidget->m_editor->removeAllDummyLines();
 		if( docWidget->m_diffview->dummyInserted() )
-			removeAllDummyLines(doc2);
+            docWidget->m_diffview->removeAllDummyLines();
 #endif
 	    docWidget->m_editor->setDummyInserted(false);
 	    docWidget->m_diffview->setDummyInserted(false);
@@ -474,16 +475,25 @@ void MainWindow::do_diff() {
 	if (docWidget == nullptr || !docWidget->m_diffMode)
 		return;
 	++m_processing;
+	int pos1 = docWidget->m_editor->textCursor().position();
+    int pos2 = docWidget->m_diffview->textCursor().position();
 	//##disconnect(docWidget->m_editor, &MarkdownEditor::textChanged, this, &MainWindow::onMDTextChanged);
 	//##disconnect(docWidget->m_diffview, &MarkdownEditor::textChanged, this, &MainWindow::onMDTextChanged);
 	QTextDocument *doc1 = docWidget->m_editor->document();
 	QTextDocument *doc2 = docWidget->m_diffview->document();
 	bool modified1 = doc1->isModified();
 	bool modified2 = doc2->isModified();
+    QTextCursor cur1_sv = docWidget->m_editor->textCursor();
+    QTextCursor cur2_sv = docWidget->m_diffview->textCursor();
 	if( docWidget->m_editor->dummyInserted() )
-		removeAllDummyLines(doc1);
+        docWidget->m_editor->removeAllDummyLines();
 	if( docWidget->m_diffview->dummyInserted() )
-		removeAllDummyLines(doc2);
+        docWidget->m_diffview->removeAllDummyLines();
+	int activeLine1 = docWidget->m_editor->textCursor().blockNumber();
+    int activeCol1 = docWidget->m_editor->textCursor().positionInBlock();
+    do_output(QString("activeLine1: %1, activeCol1: %2").arg(activeLine1).arg(activeCol1));
+    int activeLine2 = docWidget->m_diffview->textCursor().blockNumber();
+    int activeCol2 = docWidget->m_diffview->textCursor().positionInBlock();
 	std::vector<QString> lines1 = extractLinesFromDocument(doc1);
     std::vector<QString> lines2 = extractLinesFromDocument(doc2);
 #if 0
@@ -508,6 +518,9 @@ void MainWindow::do_diff() {
     QTextBlock block2 = doc2->begin();
     QTextCursor cur1 = docWidget->m_editor->textCursor();
     QTextCursor cur2 = docWidget->m_diffview->textCursor();
+    //QTextCursor cur1_sv = cur1;
+    //QTextCursor cur2_sv = cur2;
+    //qDebug() << "cur1_sv.position(): " << cur1_sv.position();
     cur1.beginEditBlock();
     cur2.beginEditBlock();
     int ln1 = 0, ln2 = 0;
@@ -652,8 +665,8 @@ void MainWindow::do_diff() {
         }
     }
     flushPending(doc1->blockCount() + 1, doc2->blockCount() + 1);
-    docWidget->m_editor->setTextCursor(cur1);
-    docWidget->m_diffview->setTextCursor(cur2);
+    //docWidget->m_editor->setTextCursor(cur1);
+    //docWidget->m_diffview->setTextCursor(cur2);
     cur1.endEditBlock();
     cur2.endEditBlock();
     docWidget->m_editor->setDummyInserted(true);
@@ -672,5 +685,40 @@ void MainWindow::do_diff() {
     //
 	//##connect(docWidget->m_editor, &MarkdownEditor::textChanged, this, &MainWindow::onMDTextChanged);
 	//##connect(docWidget->m_diffview, &MarkdownEditor::textChanged, this, &MainWindow::onMDTextChanged);
+    //qDebug() << "cur1_sv.position(): " << cur1_sv.position();
+    //docWidget->m_editor->setTextCursor(cur1_sv);
+    //docWidget->m_diffview->setTextCursor(cur2_sv);
+    auto restoreCursor = [](MarkdownEditor* editor, int targetRealLine, int targetCol) {
+        QTextDocument* doc = editor->document();
+        QTextBlock block = doc->begin();
+        int realLineCount = 0;
+        
+        while (block.isValid()) {
+            // ダミー行ではない「本物のテキスト行」だけをカウントする
+            if (!isDummyLine(block)) {
+                if (realLineCount == targetRealLine) {
+                    break;
+                }
+                realLineCount++;
+            }
+            block = block.next();
+        }
+        
+        if (block.isValid()) {
+            QTextCursor cur(block);
+            // 行内の元の列位置に移動（行の長さを超えないようにガード）
+            int col = qMin(targetCol, block.text().length());
+            cur.setPosition(block.position() + col);
+            editor->setTextCursor(cur);
+        }
+    };
+
+    //restoreCursor(docWidget->m_editor, activeLine1, activeCol1);
+    //restoreCursor(docWidget->m_diffview, activeLine2, activeCol2);
+    cur1.setPosition(pos1);
+	docWidget->m_editor->setTextCursor(cur1);
+    cur2.setPosition(pos2);
+	docWidget->m_editor->setTextCursor(cur2);
+	do_output(QString("pos1 = %1, pos2 = %2").arg(pos1).arg(pos2));
 	--m_processing;
 }

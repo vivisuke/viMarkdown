@@ -834,8 +834,14 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 		if( (e->modifiers() & Qt::ControlModifier) != 0) {		//	Ctrl +
 			backSpaceWord();
 		} else {
-			cursor.deletePreviousChar();
-			setTextCursor(cursor);
+			//cursor.deletePreviousChar();
+			//setTextCursor(cursor);
+			if( !cursor.hasSelection() ) {
+				if( cursor.position() == 0 ) return;
+				cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor);
+				setTextCursor(cursor);
+				do_deleteText();
+			}
 		}
 		return;
 	} else if (e->key() == Qt::Key_F ) {
@@ -970,8 +976,8 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 		//document()->undo();		//	ダミー行削除
 		//m_dummyInserted = false;
 		//m_docWidget->removeDummyBlocks();
-		removeAllDummyLines(m_docWidget->m_editor->document());
-		removeAllDummyLines(m_docWidget->m_diffview->document());
+		m_docWidget->m_editor->removeAllDummyLines();
+		m_docWidget->m_diffview->removeAllDummyLines();
 	}
 	if( !txt.isEmpty() && (e->modifiers() & Qt::ControlModifier) == 0 ) {
 		do_insertText(txt);
@@ -2469,7 +2475,7 @@ void MarkdownEditor::onCursorPosChanged() {
 		if( m_docWidget->m_docType == DocType::Markdown )
 			syncPreviewCursorFromEditor();
 	} else {	//	diff モード
-		syncDiffViewCursorFromEditor();
+		//##syncDiffViewCursorFromEditor();
 	}
 #ifdef Q_OS_WIN
 	QRect r = cursorRect();
