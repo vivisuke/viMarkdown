@@ -262,7 +262,7 @@ void MainWindow::onAction_DiffMode(bool checked) {
 	docWidget->updatePanes();
 }
 void MainWindow::onDiffViewChanged() {
-	qDebug() << "MainWindow::onDiffViewChanged()";
+	//##qDebug() << "MainWindow::onDiffViewChanged()";
     if (m_processing!=0) return;
     ++m_processing;
     do_diff();
@@ -387,7 +387,7 @@ void calculateAndSetWordDiff(QTextBlock block1, QTextBlock block2, const QString
 //void calculateAndSetCharDiff(QTextBlock block1, QTextBlock block2, const std::vector<QChar>& text1, const std::vector<QChar>& text2) {
 void calculateAndSetCharDiff(QTextBlock block1, QTextBlock block2, const QString& text1, const QString& text2) {
     //QString t1(text1.data(), text1.size()), t2(text2.data(), text2.size());
-	qDebug() << "calculateAndSetCharDiff(" << text1 << ", " << text2 << ")";
+	//##qDebug() << "calculateAndSetCharDiff(" << text1 << ", " << text2 << ")";
 	std::vector<QChar> t1(text1.data(), text1.data() + text1.size());
 	std::vector<QChar> t2(text2.data(), text2.data() + text2.size());
 	auto b1 = block1, b2 = block2;
@@ -405,7 +405,7 @@ void calculateAndSetCharDiff(QTextBlock block1, QTextBlock block2, const QString
         if (deleteStart != -1) {
             if (!userData1) userData1 = new DiffBlockUserData();
             userData1->ranges.append({deleteStart, deleteLen});
-            qDebug() << "flushDeleteRange " << deleteStart << ", " << deleteLen;
+            //##qDebug() << "flushDeleteRange " << deleteStart << ", " << deleteLen;
             deleteStart = -1;
             deleteLen = 0;
         }
@@ -416,7 +416,7 @@ void calculateAndSetCharDiff(QTextBlock block1, QTextBlock block2, const QString
         if (addStart != -1) {
             if (!userData2) userData2 = new DiffBlockUserData();
             userData2->ranges.append({addStart, addLen});
-            qDebug() << "flushAddRange " << addStart << ", " << addLen;
+            //##qDebug() << "flushAddRange " << addStart << ", " << addLen;
             addStart = -1;
             addLen = 0;
         }

@@ -1202,7 +1202,7 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 			break;
 		case '.':
 			if( gvi.m_redoing || gvi.m_lastEditCommand.isEmpty() ) break;
-			qDebug() << "'.': gvi.m_lastEditCommand = " << gvi.m_lastEditCommand;
+			//##qDebug() << "'.': gvi.m_lastEditCommand = " << gvi.m_lastEditCommand;
 			gvi.m_redoing = true;
 			buf = gvi.m_lastEditCommand;
 			if( gvi.m_repeatCount != 0 ) {		//	<num>. の場合
@@ -1212,7 +1212,7 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 				buf = QString::number(gvi.m_repeatCount) + buf.mid(i);
 			}
 			//buf += gvi.m_insertedText;
-			qDebug() << "redo buf = " << buf;
+			//##qDebug() << "redo buf = " << buf;
 			for(QChar ch: buf) {
 				do_viCmd(ch, cursor);
 			}
@@ -1270,7 +1270,7 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 			docWidget->m_editor->viewport()->update();
 			docWidget->m_preview->viewport()->update();
 		}
-		qDebug() << "gvi.m_lastEditCommand = " << gvi.m_lastEditCommand;
+		//##qDebug() << "gvi.m_lastEditCommand = " << gvi.m_lastEditCommand;
 	}
 	if( gvi.m_currentMode == ViMode::Insert ) {
 		statusBar()->showMessage("-- INSERT --");
@@ -1517,8 +1517,8 @@ void MainWindow::do_global(const QString &text, int ix, QTextCursor& cursor, QTe
 	if( pat.isEmpty() ) pat = g.m_lastSearchedPat;
 	if( pat.isEmpty() ) return;
 	QString cmd = text.mid(i + 1).trimmed();
-	qDebug() << "pat = " << pat;
-	qDebug() << "cmd = " << cmd;
+	//##qDebug() << "pat = " << pat;
+	//##qDebug() << "cmd = " << cmd;
 	resetBlockGFlag(doc);
 	QRegularExpression::PatternOptions options = QRegularExpression::NoPatternOption;
     if (g.m_ignoreCase) { // 大文字小文字同一視オプションの反映
@@ -1526,7 +1526,7 @@ void MainWindow::do_global(const QString &text, int ix, QTextCursor& cursor, QTe
     }
     QRegularExpression re(pat, options);
     if (!re.isValid()) {
-        qDebug() << "Invalid regexp:" << re.errorString();
+        //##qDebug() << "Invalid regexp:" << re.errorString();
         return; // パターンが不正な場合は中断
     }
     int startIdx = qMax(0, gvi.m_rangeStart - 1);
@@ -1565,10 +1565,10 @@ void MainWindow::do_subst(const QString &text, int ix, QTextDocument* doc) {
 		statusBar()->showMessage(tr("Invalid substitute syntax."), 5000);
 		return;
 	}
-	qDebug() << "range = " << gvi.m_rangeStart << ", " << gvi.m_rangeEnd;
-	qDebug() << "pat = " << pat;
-	qDebug() << "after = " << after;
-	qDebug() << "global = " << global;
+	//##qDebug() << "range = " << gvi.m_rangeStart << ", " << gvi.m_rangeEnd;
+	//##qDebug() << "pat = " << pat;
+	//##qDebug() << "after = " << after;
+	//##qDebug() << "global = " << global;
 	QRegularExpression rx(pat);
 	if (!rx.isValid()) {
 		statusBar()->showMessage(tr("Invalid regular expression."), 5000);
@@ -1691,10 +1691,10 @@ void MainWindow::do_vi_search(const QString& text, QTextCursor& cursor, int rcnt
     statusBar()->showMessage(tr("Searched: %1").arg(pat), 3000);
 }
 void MainWindow::on_cmdLine_enter() {
-	qDebug() << "MainWindow::on_cmdLine_enter()";
+	//##qDebug() << "MainWindow::on_cmdLine_enter()";
 	m_cmdLine->hide();
 	QString text = m_cmdLine->text();
-	qDebug() << "cmdline text = " << text;
+	//##qDebug() << "cmdline text = " << text;
 	close_cmdLine();
     DocWidget *docWidget = getCurDocWidget();
     if( docWidget == nullptr ) return;
@@ -1727,7 +1727,7 @@ void MainWindow::do_exCmd(const QString &text, QTextCursor& cursor) {
 		int currentLine = cursor.block().blockNumber() + 1;
 		for(;;) {
 			gvi.m_rangeEnd = parseLineSpec(text, ix, currentLine, totalLines, doc);
-			qDebug() << "line = " << gvi.m_rangeEnd;
+			//##qDebug() << "line = " << gvi.m_rangeEnd;
 			if( ix == 1 ) {
 				gvi.m_rangeStart = gvi.m_rangeEnd = currentLine;
 				break;	//	行番号無し
@@ -1849,18 +1849,18 @@ void MainWindow::do_exCmd(const QString &text, int ix, /*QString cmd, QChar nch,
 	gvi.m_exhist_ix = 0;
 }
 void MainWindow::on_cmdLine_escape() {
-	qDebug() << "MainWindow::on_cmdLine_escape()";
+	//##qDebug() << "MainWindow::on_cmdLine_escape()";
 	close_cmdLine();
 }
 void MainWindow::on_cmdLine_up() {
-	qDebug() << "MainWindow::on_cmdLine_up()";
+	//##qDebug() << "MainWindow::on_cmdLine_up()";
 	if( gvi.m_exhist_ix + 1 < gvi.m_exhist.size() ) {
 		if( gvi.m_exhist_ix == 0 ) gvi.m_exhist[0] = m_cmdLine->text();
 		m_cmdLine->setText(gvi.m_exhist[++gvi.m_exhist_ix]);
 	}
 }
 void MainWindow::on_cmdLine_down() {
-	qDebug() << "MainWindow::on_cmdLine_down()";
+	//##qDebug() << "MainWindow::on_cmdLine_down()";
 	if( gvi.m_exhist_ix > 0 ) {
 		m_cmdLine->setText(gvi.m_exhist[--gvi.m_exhist_ix]);
 	}

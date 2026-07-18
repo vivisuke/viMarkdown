@@ -72,7 +72,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
 	load_settings();
 	QDir::setCurrent(g.m_defaultDir);
-	qDebug() << "setCurrent(" << g.m_defaultDir << ")";
+	//##qDebug() << "setCurrent(" << g.m_defaultDir << ")";
 	//static bool to_restore_win = true;
 	ui->setupUi(this);
 	bool isDarkMode = (qApp->palette().color(QPalette::Window).lightness() < 128);
@@ -289,7 +289,7 @@ void MainWindow::insertSearchComboBox() {
 	connect(m_searchCB->lineEdit(), &QLineEdit::returnPressed, this, [this]() {
 		QString text = m_searchCB->currentText();
 		if (text.isEmpty()) return;
-		qDebug() << "text = " << text;
+		//##qDebug() << "text = " << text;
 		do_find();
 		});
 	QSettings settings;
@@ -384,7 +384,7 @@ void MainWindow::onEncodingChanged(int ix) {
 	}
 	if( docWidget->m_withBOM )
 		mess += " with BOM";
-	qDebug() << "encoding = " << mess;
+	//##qDebug() << "encoding = " << mess;
 #endif
 }
 void MainWindow::toggleCursor() {
@@ -469,8 +469,8 @@ void MainWindow::onAction_Grep() {
 	if (dlg.exec() == QDialog::Accepted) {
 		const QString searchText = dlg.searchText();
 		const QString dirPath = dlg.dirText();
-		qDebug() << "searchText = " << dlg.searchText();
-		qDebug() << "dir = " << dlg.dirText();
+		//##qDebug() << "searchText = " << dlg.searchText();
+		//##qDebug() << "dir = " << dlg.dirText();
 		if( !searchText.isEmpty() ) {
 			save_settings();
 			if( g.m_clearOutput ) onAction_ClearOutput();
@@ -561,7 +561,7 @@ void MainWindow::do_replace_all(const QString srcText, const QString dstText) {
 	}
 }
 void MainWindow::do_search(const QString srcText, bool backward) {
-	qDebug() << "MainWindow::do_search()";
+	//##qDebug() << "MainWindow::do_search()";
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
 	MarkdownEditor *mdEditor = docWidget->m_editor;
@@ -586,7 +586,7 @@ void MainWindow::do_search(const QString srcText, bool backward) {
 	        found = mdEditor->find(srcText, flags);
 	    }
 		if (!found) {
-			qDebug() << "not found";
+			//##qDebug() << "not found";
 		} else
 			g.m_matchedPosition = mdEditor->textCursor().anchor();
 	}
@@ -794,7 +794,7 @@ void MainWindow::onCurrentTabChanged(int ix) {
 	if( docWidget == nullptr ) return;
 	if( m_processing != 0 ) return;		//	再入禁止
 	++m_processing;
-	qDebug() << "MainWindow::onCurrentTabChanged()";
+	//##qDebug() << "MainWindow::onCurrentTabChanged()";
 	ui->action_DiffMode->setChecked(docWidget->m_diffMode);
 	m_altFullPath = m_curFullPath;
 	m_altTitle = m_curTitle;
@@ -812,7 +812,7 @@ void MainWindow::onCurrentTabChanged(int ix) {
 		QFileInfo fi(docWidget->m_fullPath);
 		QString dirPath = fi.absolutePath();
 	    QDir::setCurrent(dirPath);
-		qDebug() << "setCurrent(" << dirPath << ")";
+		//##qDebug() << "setCurrent(" << dirPath << ")";
 	}
 #if 1
 	int data = docWidget->m_encoding*2 + (docWidget->m_withBOM ? 1 : 0);
@@ -855,9 +855,10 @@ void MainWindow::appendToDocLoc(const QString& title, const QString& fullPath, i
 }
 void MainWindow::printDocLocHist() const {
 #ifdef	_DEBUG
-	for(int i = 0; i < m_docLocHist.size(); ++i)
-		qDebug() << i << ": " << m_docLocHist[i].m_title << ", " << m_docLocHist[i].m_fullPath << ", " << m_docLocHist[i].m_position;
-	qDebug() << "m_docLocIX = " << m_docLocIX;
+	for(int i = 0; i < m_docLocHist.size(); ++i) {
+		//##qDebug() << i << ": " << m_docLocHist[i].m_title << ", " << m_docLocHist[i].m_fullPath << ", " << m_docLocHist[i].m_position; {
+	}
+	//##qDebug() << "m_docLocIX = " << m_docLocIX;
 #endif
 }
 void MainWindow::onFileChanged(const QString& fullPath) {
@@ -1095,7 +1096,7 @@ void MainWindow::onSrcPosContextChanged(const PosContext& context, const PosCont
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
 	docWidget->m_preview->setCursorByContext(context, acontext);
-	qDebug() << "preview cursor.position() = " << docWidget->m_preview->textCursor().position();
+	//##qDebug() << "preview cursor.position() = " << docWidget->m_preview->textCursor().position();
 }
 //	プレビュー → エディタ カーソル位置同期
 void MainWindow::onPrvPosContextChanged(const PosContext& context, const PosContext &acontext) {
@@ -1107,7 +1108,7 @@ void MainWindow::onPrvPosContextChanged(const PosContext& context, const PosCont
 //	ビューワ → エディタ カーソル位置同期
 void MainWindow::onPreviewCurPosChanged() {		//	MarkdownPreview でカーソルが移動した
 	if( m_processing != 0 ) return;		//	再入禁止
-	qDebug() << "MainWindow::onPreviewCurPosChanged()";
+	//##qDebug() << "MainWindow::onPreviewCurPosChanged()";
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
 	if( docWidget->m_preview->isProcessing() ) return;
@@ -1250,7 +1251,7 @@ void MainWindow::onMarkdownPreviewLineClicked(/*int nth,*/ bool checked) {
 #endif
 }
 void MainWindow::onTextInsertedAtPreview(QString txt) {
-	qDebug() << "MainWindow::onTextInsertedAtPreview(" << txt << ")";
+	//##qDebug() << "MainWindow::onTextInsertedAtPreview(" << txt << ")";
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
 	m_edittingInPreview = true;
@@ -1361,7 +1362,7 @@ void MainWindow::dropEvent(QDropEvent *event)
 	//if (urls.isEmpty()) return;
 	for(const QUrl &url : urls ) {
 		QString fullPath = url.toLocalFile();
-		qDebug() << "dropped fullPath = " << fullPath;
+		//##qDebug() << "dropped fullPath = " << fullPath;
 		if( isImageFile(fullPath) ) {
 			//
 		} else
@@ -1588,7 +1589,7 @@ COUNT  {n}{cmd} repeats n times.  {n}op{m}move multiplies (2d3w = 6 words).
 )" );
 }
 void MainWindow::onAction_Help() {
-	qDebug() << "appDir = " << QCoreApplication::applicationDirPath();
+	//##qDebug() << "appDir = " << QCoreApplication::applicationDirPath();
 	QDir dir = QCoreApplication::applicationDirPath();		//	viMarkdown/viMarkdown/x64/Debug or Release
 //#ifdef	_DEBUG
 #ifdef Q_OS_WIN
@@ -1601,7 +1602,7 @@ void MainWindow::onAction_Help() {
 #endif
 //#endif
 	dir.cd("docs/ja");
-	qDebug() << "helpdir = " << dir.path();
+	//##qDebug() << "helpdir = " << dir.path();
 	do_open("", dir.path() + "/help.md", QString(), true);
 }
 void MainWindow::onAction_Language() {
@@ -1635,7 +1636,7 @@ void MainWindow::onAction_Exit() {
 	this->close(); // メインウィンドウを閉じる
 }
 void MainWindow::onAction_New() {
-	qDebug() << "MainWindow::onAction_New()";
+	//##qDebug() << "MainWindow::onAction_New()";
 #if 1
 	static int nwin = 1;
 	MainWindow *newWin = new MainWindow();
@@ -1690,7 +1691,7 @@ void MainWindow::onAction_Open() {
 	);
 
 	if (!fullPath.isEmpty()) {
-		qDebug() << "path = " << fullPath;
+		//##qDebug() << "path = " << fullPath;
 		do_open("", fullPath);
 	}
 }
@@ -1772,7 +1773,7 @@ void MainWindow::do_open_pl(const QString fullPath, int ln) {		//	ln: 0 orgin
 	docWidget->m_editor->ensureCursorVisible();
 }
 bool MainWindow::do_open(const QString& title0, const QString& fullPath, const QString name, bool readOnly) {
-	qDebug() << "do_open(" << title0 << ", " << fullPath << ")";
+	//##qDebug() << "do_open(" << title0 << ", " << fullPath << ")";
 	if (fullPath.startsWith("http://") || fullPath.startsWith("https://")) {
         QDesktopServices::openUrl(QUrl(fullPath));
         return true;
@@ -1833,7 +1834,7 @@ bool MainWindow::do_open(const QString& title0, const QString& fullPath, const Q
 	addTab(title, fullPath, content, withBOM, encoding, readOnly);
 	updateOutlineTree();
 	QDir::setCurrent(fileInfo.path());
-	qDebug() << "setCurrent(" << fileInfo.path() << ")";
+	//##qDebug() << "setCurrent(" << fileInfo.path() << ")";
 	m_watcher->addPath(fullPath);
 	m_opening_file = false;
 
@@ -1929,7 +1930,7 @@ void MainWindow::onAction_ExportAsPDF() {
     statusBar()->showMessage(tr("PDF export completed."), 5000);
 }
 void MainWindow::onAction_Close() {
-	qDebug() << "MainWindow::onAction_Close()";
+	//##qDebug() << "MainWindow::onAction_Close()";
 	do_close();
 }
 void MainWindow::do_close(bool forced) {
@@ -2105,7 +2106,7 @@ void MainWindow::onAction_Checkbox() {
 	mdEditor->setFocus();
 }
 void MainWindow::onAction_List() {
-	qDebug() << "MainWindow::onAction_List()";
+	//##qDebug() << "MainWindow::onAction_List()";
 	MarkdownEditor *mdEditor = getCurDocWidget()->m_editor;
 	QTextCursor cursor = mdEditor->textCursor();
 	QTextDocument *doc = mdEditor->document();
@@ -2154,7 +2155,7 @@ void MainWindow::onAction_List() {
 	mdEditor->setFocus();
 }
 void MainWindow::onAction_NumList() {
-	qDebug() << "MainWindow::onAction_NumList()";
+	//##qDebug() << "MainWindow::onAction_NumList()";
 	MarkdownEditor *mdEditor = getCurDocWidget()->m_editor;
 	QTextCursor cursor = mdEditor->textCursor();
 	QTextDocument *doc = mdEditor->document();
@@ -2505,7 +2506,7 @@ void MainWindow::onTreeCurrentItemChanged(QTreeWidgetItem *current, QTreeWidgetI
 	}
 }
 void MainWindow::onTreeItemActivated(QTreeWidgetItem *current, int) {
-	qDebug() << "MainWindow::onTreeItemActivated(QTreeWidgetItem *current, int)";
+	//##qDebug() << "MainWindow::onTreeItemActivated(QTreeWidgetItem *current, int)";
 	int tix = treeItemToTabIndex(current);
 	if( tix < 0 ) return;
 	DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(tix);
@@ -2709,7 +2710,7 @@ void MainWindow::onMdEditCurPosChanged() {
 #endif
 }
 void MainWindow::onAction_About() {
-	qDebug() << "MainWindow::onAction_About()";
+	//##qDebug() << "MainWindow::onAction_About()";
 
 	QMessageBox::about(this, 
 		"About viMarkdown", // タイトルバー
@@ -2724,7 +2725,7 @@ void MainWindow::onAction_About() {
 }
 //---------------------------------------------------------------------
 void MainWindow::onAction_SlideShow() {
-	qDebug() << "MainWindow::onAction_SlideShow()";
+	//##qDebug() << "MainWindow::onAction_SlideShow()";
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
 	QStringList lst;

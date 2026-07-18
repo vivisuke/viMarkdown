@@ -43,7 +43,7 @@ void printCharFlags(QTextBlock block) {
 	QString txt;
 	for(int i = 0; i < data->m_charFlags.size(); ++i)
 		txt += QString::number((int)data->m_charFlags[i]) + u' ';
-	qDebug() << bn << block.text() << "\t" << txt;
+	//##qDebug() << bn << block.text() << "\t" << txt;
 #endif
 }
 bool parseCsvLine(QStringList &fields, QByteArray& ba, const QString &line, bool inQuotes, bool &inComment, bool &commented, BlockData* data) {
@@ -51,7 +51,7 @@ bool parseCsvLine(QStringList &fields, QByteArray& ba, const QString &line, bool
 	if( data != nullptr ) {
 		assert( line.size() == data->m_charFlags.size() );
 		data->m_charFlags.fill(0);
-		qDebug() << "data != nullptr";
+		//##qDebug() << "data != nullptr";
 	}
 	commented = false;
 	int i = 0;
@@ -325,7 +325,7 @@ void updateCharFlags(QTextBlock srcBlock) {
 		modified = true;
 	if( modified ) {
 		srcBlock.setUserData(data);
-		qDebug() << "updateCharFlags(srcBlock)";
+		//##qDebug() << "updateCharFlags(srcBlock)";
 		printCharFlags(srcBlock);
 	}
 }

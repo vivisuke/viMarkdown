@@ -126,7 +126,7 @@ void MarkdownPreview::onContentsChanged(int position, int charsRemoved, int char
 			emit textInserted(m_commitString);
 		return;
 	}
-	qDebug() << "*** MarkdownPreview::onContentsChanged(" << position << ", " << charsRemoved << ", " << charsAdded << ")";
+	//##qDebug() << "*** MarkdownPreview::onContentsChanged(" << position << ", " << charsRemoved << ", " << charsAdded << ")";
 	m_processing = true;
 	m_procContentsChanged = true;
 	QTextCursor cursor = this->textCursor();
@@ -178,7 +178,7 @@ void MarkdownPreview::onContentsChanged(int position, int charsRemoved, int char
 				addedStr = "\n";
 			++pos0;
 		}
-		qDebug() << "addedStr = " << addedStr << ", pos0 = " << pos0;
+		//##qDebug() << "addedStr = " << addedStr << ", pos0 = " << pos0;
 		emit textInserted(addedStr);
 		cursor.setPosition(pos0);
 		setTextCursor(cursor);
@@ -488,7 +488,7 @@ void MarkdownPreview::mouseReleaseEvent(QMouseEvent *me)
 				onCursorPosChanged();
 				QTextBlockFormat fmt = block.blockFormat();
 				bool checked = fmt.marker() == QTextBlockFormat::MarkerType::Checked;
-				qDebug() << "checked = " << checked;
+				//##qDebug() << "checked = " << checked;
 				//emit lineClicked(block.blockNumber());
 				//int nth = countCheckBox(block);
 				emit checkboxLineClicked(/*nth,*/ checked);
@@ -529,8 +529,8 @@ void MarkdownPreview::mouseDoubleClickEvent(QMouseEvent *e) {
 }
 #if 1
 void MarkdownPreview::wheelEvent(QWheelEvent *event) {
-	qDebug() << "MarkdownPreview::wheelEvent()";
-	qDebug() << "e->angleDelta() = " << event->angleDelta();
+	//##qDebug() << "MarkdownPreview::wheelEvent()";
+	//##qDebug() << "e->angleDelta() = " << event->angleDelta();
 	if ((event->modifiers() & Qt::ControlModifier) != 0)  {
 		emit fontSizeChanged(event->angleDelta().y());
 		//if (event->angleDelta().y() > 0)
@@ -587,7 +587,7 @@ void MarkdownPreview::paintEvent(QPaintEvent *e) {
 void MarkdownPreview::do_body(QTextBlock srcBlock, QTextCursor& cursor, bool last) {
 	m_isPrevLineEmpty = false;
 	if( m_bodyList.isEmpty() ) return;
-	qDebug() << "srcBlock.blockNumber() = " << srcBlock.blockNumber();
+	//##qDebug() << "srcBlock.blockNumber() = " << srcBlock.blockNumber();
 #if 0	//	コモンマークダウン方式
 	static QRegularExpression re("(?<!!)\\[([^\\]]+)\\]\\(([^)]+)\\)");		//	[タイトル](パス#見出し)
 	QString buf;
@@ -641,7 +641,7 @@ int indexOfComment(QStringView buf, int start) {
 }
 //void updateCharFlags(QTextBlock srcBlock);
 void MarkdownPreview::setMarkdown(QTextDocument *doc) {		//	doc: markdown ソースドキュメント
-	qDebug() << "MarkdownPreview::setMarkdown(): cursor.position = " << textCursor().position();
+	//##qDebug() << "MarkdownPreview::setMarkdown(): cursor.position = " << textCursor().position();
 	m_headingList.clear();
 	m_docWidget->m_srcHeadingBlocks.clear();
 	m_docWidget->m_prvHeadingBlocks.clear();
@@ -772,7 +772,7 @@ void MarkdownPreview::setMarkdown(QTextDocument *doc) {		//	doc: markdown ソー
 	do_body(srcBlock, cursor, true);
 	cursor.endEditBlock();
 	m_processing = false;
-	qDebug() << "MarkdownPreview::setMarkdown(): cursor.position = " << textCursor().position();
+	//##qDebug() << "MarkdownPreview::setMarkdown(): cursor.position = " << textCursor().position();
 }
 void insertTable(QTextCursor& cursor, const QList<QStringList> &ll, const QList<QByteArray> &lba,
 					int max_clmn, vector<char> *tableAlign = nullptr)
@@ -1258,7 +1258,7 @@ void MarkdownPreview::do_SVG(QTextBlock& srcBlock, QTextCursor& cursor) {
     auto document = lunasvg::Document::loadFromData(buf.toUtf8());
     if (!document) {
         // ロード失敗（SVGの構文エラーなど）
-        qDebug() << "load failed.";
+        //##qDebug() << "load failed.";
         return;
     }
     lunasvg::Bitmap bitmap(
@@ -1648,7 +1648,7 @@ void MarkdownPreview::setCursorAt(int srcBlockNum, QString srcText, int ix) {		/
 	setTextCursor(cursor);
 }
 void MarkdownPreview::setCursorAtNthPat(int srcBlockNum, QString pat, int nth, bool tail) {		//	nth: 何番目か（>0）
-	qDebug() << QString("MarkdownPreview::setCursorAtNthPat(%1, '%2', %3,").arg(srcBlockNum).arg(pat).arg(nth) << tail << ")";
+	//##qDebug() << QString("MarkdownPreview::setCursorAtNthPat(%1, '%2', %3,").arg(srcBlockNum).arg(pat).arg(nth) << tail << ")";
 	int i = 0;
 	while( i+1 < m_docWidget->m_srcHeadingBlocks.size() && m_docWidget->m_srcHeadingBlocks[i+1] <= srcBlockNum ) ++i;
 	if( i >= m_docWidget->m_prvHeadingBlocks.size() ) return;
@@ -1739,8 +1739,8 @@ bool isLastBlockInRow(QTextBlock block) {
 }
 #endif
 int MarkdownPreview::findPosition(const PosContext &context) {
-	qDebug() << "MarkdownPreview::findPosition():";
-	qDebug() << ".ancharChar = " << context.m_anchorChar << ", nth = " << context.m_nth << ", offset = " << context.m_offset;
+	//##qDebug() << "MarkdownPreview::findPosition():";
+	//##qDebug() << ".ancharChar = " << context.m_anchorChar << ", nth = " << context.m_nth << ", offset = " << context.m_offset;
 	QTextBlock block = document()->findBlockByNumber(context.m_prvHBlockNum);
 	const QChar ch = context.m_anchorChar;
 	int nth = context.m_nth;
@@ -1810,12 +1810,12 @@ int MarkdownPreview::findPosition(const PosContext &context) {
 }
 void MarkdownPreview::setCursorByContext(const PosContext &context, const PosContext &acontext) {
 	if( m_processing ) return;		//	再入禁止
-	qDebug() << "MarkdownPreview::setCursorByContext(context)";
-	qDebug() << "context.ancharChar = " << context.m_anchorChar << ", nth = " << context.m_nth << ", offset = " << context.m_offset <<
-					", srcHBNum = " << context.m_srcHBlockNum << ", prvHBNum = " << context.m_prvHBlockNum;
+	//##qDebug() << "MarkdownPreview::setCursorByContext(context)";
+	//##qDebug() << "context.ancharChar = " << context.m_anchorChar << ", nth = " << context.m_nth << ", offset = " << context.m_offset <<
+					//##", srcHBNum = " << context.m_srcHBlockNum << ", prvHBNum = " << context.m_prvHBlockNum;
 	if( acontext.m_nth != 0 ) {
-		qDebug() << "acontext.ancharChar = " << acontext.m_anchorChar << ", nth = " << acontext.m_nth << ", offset = " << acontext.m_offset <<
-					", srcHBNum = " << acontext.m_srcHBlockNum << ", prvHBNum = " << acontext.m_prvHBlockNum;
+		//##qDebug() << "acontext.ancharChar = " << acontext.m_anchorChar << ", nth = " << acontext.m_nth << ", offset = " << acontext.m_offset <<
+					//##", srcHBNum = " << acontext.m_srcHBlockNum << ", prvHBNum = " << acontext.m_prvHBlockNum;
 	}
 	m_processing = true;
 	QTextCursor cursor = textCursor();

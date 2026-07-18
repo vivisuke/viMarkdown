@@ -428,7 +428,7 @@ MarkdownEditor::MarkdownEditor(const MainWindow* mainWindow, DocWidget* docWidge
     //m_blinkTimer->start(500);
 }
 QVariant MarkdownEditor::inputMethodQuery(Qt::InputMethodQuery query) const {
-	qDebug() << "query = " << query;
+	//##qDebug() << "query = " << query;
 	if (query == Qt::ImCursorRectangle) {
         // 現在のカーソル位置の矩形（Viewport相対座標）をOSに伝える
         //return cursorRect();
@@ -445,7 +445,7 @@ QVariant MarkdownEditor::inputMethodQuery(Qt::InputMethodQuery query) const {
         //r.moveTo(mainWindowPos);
         //QPoint pos = mapTo(m_mainWindow, QPoint(0, 0));
         //r.translate(pos);	//	r += pos
-        qDebug() << "pos = " << r;
+        //##qDebug() << "pos = " << r;
         return r;
     }
 	return QPlainTextEdit::inputMethodQuery(query);
@@ -501,10 +501,10 @@ void MarkdownEditor::inputMethodEvent(QInputMethodEvent *event) {
 	}
 }
 void MarkdownEditor::insertFromMimeData(const QMimeData *source) {
-	qDebug() << "MarkdownEditor::insertFromMimeData()";
+	//##qDebug() << "MarkdownEditor::insertFromMimeData()";
 	if (source->hasImage()) {
 		if( m_docWidget->m_fullPath.isEmpty() ) {
-			qDebug() << "has not fullpath, please save first.";
+			//##qDebug() << "has not fullpath, please save first.";
 			QApplication::beep();
 			m_mainWindow->statusBar()->showMessage(tr("To paste images, please save your document first."), 5000);
 			return;
@@ -726,7 +726,7 @@ void SvgCompleter::keyPressEvent(QKeyEvent *e) {
 		return;
 	}
 	QString txt = e->text();
-	qDebug() << "txt = " << txt;
+	//##qDebug() << "txt = " << txt;
 	if( !txt.isEmpty() ) {
 		int ix = m_curix;
 		for(;;) {
@@ -845,7 +845,7 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 		}
 		return;
 	} else if (e->key() == Qt::Key_F ) {
-		qDebug() << "e->key() == Qt::Key_F";
+		//##qDebug() << "e->key() == Qt::Key_F";
 	} else if (e->key() == Qt::Key_Space && (e->modifiers() & Qt::ControlModifier) != 0) {
 		check_svg_completer();
 		return;
@@ -891,7 +891,7 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 	}
 	//QTextCursor cursor = textCursor();
 	QString txt = e->text();
-	qDebug() << "e->text() = " << e->text();
+	//##qDebug() << "e->text() = " << e->text();
 	if( !txt.isEmpty() ) {
 		if( (e->modifiers() & Qt::ControlModifier) == 0 ) {
 			if( gvi.m_currentMode == ViMode::Normal ) {		//	vi コマンドモード
@@ -917,8 +917,8 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 			QScrollBar *vBar = verticalScrollBar();
 			int page = vBar->pageStep();
 		    int halfPage = page / 2;
-		    qDebug() << "txt = " << txt;
-		    qDebug() << "key = " << e->key();
+		    //##qDebug() << "txt = " << txt;
+		    //##qDebug() << "key = " << e->key();
 			switch(txt[0].unicode()) {
 			case 0x06:	//	^F:
 				//if (vBar && vBar->minimum() != vBar->maximum()) {
@@ -947,8 +947,8 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 		QScrollBar *vBar = verticalScrollBar();
 		int page = vBar->pageStep();
 	    int halfPage = page / 2;
-	    qDebug() << "txt = " << txt;
-	    qDebug() << "key = " << e->key();
+	    //##qDebug() << "txt = " << txt;
+	    //##qDebug() << "key = " << e->key();
 		switch(e->key()) {
 		case Qt::Key_F:	//	^F:
 			//if (vBar && vBar->minimum() != vBar->maximum()) {
@@ -985,7 +985,7 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 	}
 	MarkdownBaseEdit::keyPressEvent(e);	// 通常キーは通常通りの処理
 	qApp->inputMethod()->update(Qt::ImCursorRectangle);
-	qDebug() << "cursorRect = " << cursorRect();
+	//##qDebug() << "cursorRect = " << cursorRect();
 }
 void MarkdownEditor::do_insertText(const QString &txt) {
 	if( !txt.isEmpty() ) {
@@ -1121,8 +1121,8 @@ void MarkdownEditor::mouseDoubleClickEvent(QMouseEvent *e) {
 	setTextCursor(cursor);
 }
 void MarkdownEditor::wheelEvent(QWheelEvent *event) {
-	qDebug() << "MarkdownEditor::wheelEvent()";
-	qDebug() << "e->angleDelta() = " << event->angleDelta();
+	//##qDebug() << "MarkdownEditor::wheelEvent()";
+	//##qDebug() << "e->angleDelta() = " << event->angleDelta();
 	if ((event->modifiers() & Qt::ControlModifier) != 0)  {
 		emit changeFontSize(event->angleDelta().y());
 		event->accept();
@@ -1289,8 +1289,8 @@ bool isPrevEmptyBlock(QTextBlock block) {
 	return true;
 }
 int MarkdownEditor::findPosition(const PosContext &context) {
-	qDebug() << "MarkdownEditor::findPosition():";
-	qDebug() << ".ancharChar = " << context.m_anchorChar << ", nth = " << context.m_nth << ", offset = " << context.m_offset;
+	//##qDebug() << "MarkdownEditor::findPosition():";
+	//##qDebug() << ".ancharChar = " << context.m_anchorChar << ", nth = " << context.m_nth << ", offset = " << context.m_offset;
 	static QRegularExpression re("^(#+ *| *- )[\\*_~]*");
   	QTextBlock block = document()->findBlockByNumber(context.m_srcHBlockNum);
 	const QChar ch = context.m_anchorChar;
@@ -1439,8 +1439,8 @@ int MarkdownEditor::findPosition(const PosContext &context) {
 }
 void MarkdownEditor::setCursorByContext(const PosContext &context, const PosContext &acontext) {
 	if( m_processing ) return;		//	再入禁止
-	qDebug() << "MarkdownEditor::setCursorByContext(context)";
-	qDebug() << ".ancharChar = " << context.m_anchorChar << ", nth = " << context.m_nth << ", offset = " << context.m_offset;
+	//##qDebug() << "MarkdownEditor::setCursorByContext(context)";
+	//##qDebug() << ".ancharChar = " << context.m_anchorChar << ", nth = " << context.m_nth << ", offset = " << context.m_offset;
 	m_processing = true;
 	QTextCursor cursor = textCursor();
 	if( acontext.m_nth == 0 ) {		//	非選択状態
@@ -1463,7 +1463,7 @@ void MarkdownEditor::setCursorByContext(const PosContext &context, const PosCont
 	m_processing = false;
 }
 void MarkdownEditor::setCursorAtNthPat(int srcHeadingBlockNum, QString pat, int nth, bool tail) {		//	nth: 見出し行から何番目か（>0）
-	qDebug() << QString("MarkdownEditor::setCursorAtNthPat(%1, '%2', %3,").arg(srcHeadingBlockNum).arg(pat).arg(nth) << tail << ")";
+	//##qDebug() << QString("MarkdownEditor::setCursorAtNthPat(%1, '%2', %3,").arg(srcHeadingBlockNum).arg(pat).arg(nth) << tail << ")";
 	QTextBlock block = document()->findBlockByNumber(srcHeadingBlockNum);
 	QTextCursor cursor = textCursor();
 	if( !tail ) {
@@ -2300,8 +2300,8 @@ void MarkdownEditor::onContentsChanged(int position, int charsRemoved, int chars
 	if( m_processing || (charsRemoved == 0 && charsAdded == 0) ) return;
 	if (m_isComposing) return;		//	IME変換中
 	m_processing = true;
-	qDebug() << "MarkdownEditor::onContentsChanged()";
-	qDebug() << "pos = " << position << ", removed = " << charsRemoved << ", added = " << charsAdded;
+	//##qDebug() << "MarkdownEditor::onContentsChanged()";
+	//##qDebug() << "pos = " << position << ", removed = " << charsRemoved << ", added = " << charsAdded;
 	QTextCursor cursor = this->textCursor();
 	int k = findKeisen(cursor);
 	if( k >= 0 ) {		//	現カーソルの右側に罫線文字がある場合
@@ -2433,7 +2433,7 @@ void MarkdownEditor::check_svg_completer() {	//	SVGブロック補完
 	if( cursor.hasSelection() ) return;			//	選択状態の場合は表示しない
 	QTextBlock block = cursor.block();
 	if( blockType(block) == BT_SVG_BLOCK && m_lastCurBlockText.trimmed().isEmpty() ) {
-		qDebug() << "to show completion widget.";
+		//##qDebug() << "to show completion widget.";
 //		m_completerText = R"(<svg width="320" height="200">
 //  
 //</svg>
