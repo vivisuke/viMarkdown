@@ -251,7 +251,10 @@ void MainWindow::do_vi_delete(QChar cmd, QTextCursor& cursor, int rcnt) {		//	x 
 			}
 			gvi.m_yankBuffer = cursor.selectedText();
 			gvi.m_linewiseYanked = false;
-			cursor.deleteChar();
+			if( gvi.m_editor != nullptr )
+				gvi.m_editor->do_deleteText();
+			else
+				cursor.deleteChar();
 			moveLeftIfAtEol(cursor);
 			gvi.m_vMode = u' ';
 			break;
@@ -273,7 +276,10 @@ void MainWindow::do_vi_delete(QChar cmd, QTextCursor& cursor, int rcnt) {		//	x 
 			}
 			gvi.m_yankBuffer = cursor.selectedText();
 			gvi.m_linewiseYanked = true;
-			cursor.deleteChar();
+			if( gvi.m_editor != nullptr )
+				gvi.m_editor->do_deleteText();
+			else
+				cursor.deleteChar();
 			gvi.m_vMode = u' ';
 			break;
 		}
@@ -287,7 +293,10 @@ void MainWindow::do_vi_delete(QChar cmd, QTextCursor& cursor, int rcnt) {		//	x 
 		if( cursor.hasSelection() ) {
 			gvi.m_yankBuffer = cursor.selectedText();
 			gvi.m_linewiseYanked = false;
-			cursor.deleteChar();
+			if( gvi.m_editor != nullptr )
+				gvi.m_editor->do_deleteText();
+			else
+				cursor.deleteChar();
 			moveLeftIfAtEol(cursor);
 		}
 		break;
@@ -297,7 +306,10 @@ void MainWindow::do_vi_delete(QChar cmd, QTextCursor& cursor, int rcnt) {		//	x 
 		if( cursor.hasSelection() ) {
 			gvi.m_yankBuffer = cursor.selectedText();
 			gvi.m_linewiseYanked = false;
-			cursor.deleteChar();
+			if( gvi.m_editor != nullptr )
+				gvi.m_editor->do_deleteText();
+			else
+				cursor.deleteChar();
 		}
 		break;
 	case 'D':
@@ -305,7 +317,10 @@ void MainWindow::do_vi_delete(QChar cmd, QTextCursor& cursor, int rcnt) {		//	x 
 		if( cursor.hasSelection() ) {
 			gvi.m_yankBuffer = cursor.selectedText();
 			gvi.m_linewiseYanked = false;
-			cursor.deleteChar();
+			if( gvi.m_editor != nullptr )
+				gvi.m_editor->do_deleteText();
+			else
+				cursor.deleteChar();
 			moveLeftIfAtEol(cursor);
 		}
 		break;
@@ -1053,6 +1068,12 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 	//if( cmd.isEmpty() ) return;
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
+	gvi.m_editor = nullptr;
+	gvi.m_preview = nullptr;
+	QWidget *w = QApplication::focusWidget();
+	if( w == docWidget->m_editor ) gvi.m_editor = (MarkdownEditor*)w;
+	else if( w == docWidget->m_diffview ) gvi.m_editor = (MarkdownEditor*)w;
+	else if( w == docWidget->m_preview ) gvi.m_preview = (MarkdownPreview*)w;
 	//bool isEditor = cursor.document() == docWidget->m_editor->document();
 	bool completed = true;
 	int rcnt = getRepeatCount();

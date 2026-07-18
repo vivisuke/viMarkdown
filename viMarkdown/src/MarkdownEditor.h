@@ -227,6 +227,8 @@ public:
     void	setDummyInserted(bool b) { m_dummyInserted = b; }
     void	applyStyle(const QFont &font);
 	void	removeAllDummyLines();
+    void	do_insertText(const QString&);		//	Undo/Redo 対象の挿入関数
+    void	do_deleteText();					//	Undo/Redo 対象の削除関数、選択・非選択状態対応
 
 signals:
     void	tab_pressed();
@@ -251,8 +253,6 @@ protected:
     QVariant	inputMethodQuery(Qt::InputMethodQuery query) const ;
     void	contextMenuEvent(QContextMenuEvent *event);
     void	reflectWordToPeer(const QTextBlock &block, int start, int length, const QString &wordText);
-    void	do_insertText(const QString&);		//	Undo/Redo 対象の挿入関数
-    void	do_deleteText();					//	Undo/Redo 対象の削除関数、選択・非選択状態対応
 #if 0
     void	dragEnterEvent(QDragEnterEvent *e) override {
         e->acceptProposedAction();

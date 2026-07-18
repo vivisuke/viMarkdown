@@ -474,6 +474,7 @@ void MainWindow::do_diff() {
 	DocWidget *docWidget = getCurDocWidget();
 	if (docWidget == nullptr || !docWidget->m_diffMode)
 		return;
+	qDebug() << "MainWindow::do_diff()";
 	++m_processing;
 	int pos1 = docWidget->m_editor->textCursor().position();
     int pos2 = docWidget->m_diffview->textCursor().position();
@@ -715,10 +716,12 @@ void MainWindow::do_diff() {
 
     //restoreCursor(docWidget->m_editor, activeLine1, activeCol1);
     //restoreCursor(docWidget->m_diffview, activeLine2, activeCol2);
+#if 0
     cur1.setPosition(pos1);
 	docWidget->m_editor->setTextCursor(cur1);
     cur2.setPosition(pos2);
 	docWidget->m_editor->setTextCursor(cur2);
-	do_output(QString("pos1 = %1, pos2 = %2").arg(pos1).arg(pos2));
+#endif
+	//do_output(QString("pos1 = %1, pos2 = %2").arg(pos1).arg(pos2));
 	--m_processing;
 }

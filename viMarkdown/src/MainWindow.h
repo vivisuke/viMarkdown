@@ -185,6 +185,8 @@ struct ViStatus {
 	QString	m_insertedText;				//	i 等で挿入された文字列
     QString	m_yankBuffer;
     QStringList	m_exhist;				//	ex コマンド履歴、先頭が最新コマンド
+    MarkdownEditor	*m_editor = nullptr;		//	フォーカスを持っているマークダウンエディタ
+    MarkdownPreview	*m_preview = nullptr;	//	フォーカスを持っているマークダウンプレビュー
     QWidget	*m_prevFocusWidget = nullptr;	//	:/? 押下時点でフォーカスを持っていた Widget
 };
 
