@@ -668,7 +668,7 @@ SPR# 状 P Open Close ver     Type  概要
 0664 ◎ C 07/17 07/17 03036│ToDo│IMEでも自覚提示：vi 挿入モードに自動遷移
 0665 ◎ C 07/18 07/18 03037│ToDo│MarkdownEditor：BackSpace も do_deleteText() をコール
 0666 ● C 07/18            │ToDo│通常→diff表示に切り替えると、（ダミー行が挿入されなくとも）カーソル位置が移動してしまう
-0667 ● C 07/18            │問題│diff 表示中：editor→diffview カーソル同期を行うと、diffview→editor カーソル同期処理もコールされてしまう？
+0667 ◎ C 07/18 07/19 03037│問題│diff 表示中：editor→diffview カーソル同期を行うと、diffview→editor カーソル同期処理もコールされてしまう？
 									原因：MarkdownEditor::syncPreviewCursorFromEditor() 処理中は再入ガードされているが、処理後に相手エディタのそれがコールされてしまう？
 0668 ◎ C 07/18 07/19 03037│問題│diff表示中：挿入ブロック内で、カーソル下移動すると、実際には右移動してしまう
 0669 ◎ C 07/18 07/18 03037│問題│k コマンド：非空行改行位置に移動できてしまう

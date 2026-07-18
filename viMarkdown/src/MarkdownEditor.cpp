@@ -2475,7 +2475,7 @@ void MarkdownEditor::onCursorPosChanged() {
 		if( m_docWidget->m_docType == DocType::Markdown )
 			syncPreviewCursorFromEditor();
 	} else {	//	diff モード
-		//##syncDiffViewCursorFromEditor();
+		syncDiffViewCursorFromEditor();
 	}
 #ifdef Q_OS_WIN
 	QRect r = cursorRect();
