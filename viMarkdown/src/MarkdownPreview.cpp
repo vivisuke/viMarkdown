@@ -60,8 +60,10 @@ extern void drawTextCursor(QWidget *viewport, QPainter& p, QTextCursor cursor, Q
 MarkdownPreview::MarkdownPreview(const MainWindow *mainWindow, DocWidget *docWidget, QWidget* parent, bool readOnly)
 	: m_mainWindow(mainWindow), m_docWidget(docWidget), QTextEdit(parent)
 {
+	setUndoRedoEnabled(false);		//	Qt > undo/redo ディセーブル
 	setReadOnly(readOnly);
 	setUndoRedoEnabled(false);
+	qDebug() << "doc->isUndoRedoEnabled() = " << document()->isUndoRedoEnabled();
 	setFrameStyle(QFrame::NoFrame);
 	setCursorWidth(0);
 #if 0

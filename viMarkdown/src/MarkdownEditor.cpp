@@ -395,6 +395,8 @@ ushort getConnectionBits(QChar ch) {
 MarkdownEditor::MarkdownEditor(const MainWindow* mainWindow, DocWidget* docWidget, QWidget *parent, bool readOnly)
 	: m_mainWindow(mainWindow), m_docWidget(docWidget), MarkdownBaseEdit(parent)
 {
+	setUndoRedoEnabled(false);		//	Qt > undo/redo ディセーブル
+	qDebug() << "doc->isUndoRedoEnabled() = " << document()->isUndoRedoEnabled();
 	setReadOnly(readOnly);
 	setAttribute(Qt::WA_InputMethodEnabled, true);
 	m_highlighter = new MarkdownHighlighter(this->document());
@@ -980,6 +982,7 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 		m_docWidget->m_diffview->removeAllDummyLines();
 	}
 	if( !txt.isEmpty() && (e->modifiers() & Qt::ControlModifier) == 0 ) {
+		qDebug() << "doc->isUndoRedoEnabled() = " << document()->isUndoRedoEnabled();
 		do_insertText(txt);
 		return;
 	}

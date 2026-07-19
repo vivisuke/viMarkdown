@@ -897,8 +897,8 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	//auto containerWidget = new QWidget;
 	//docWidget->setStyleSheet("font-size: 12pt; line-height: 200%;");
 	QSplitter *splitter = new QSplitter(Qt::Horizontal, docWidget);
-	MarkdownEditor *mdEditor = newEditor(docWidget, splitter, readOnly);
-	MarkdownPreview *markdownPreview = newPreview(docWidget, splitter, readOnly);
+	MarkdownEditor *editor = newEditor(docWidget, splitter, readOnly);
+	MarkdownPreview *preview = newPreview(docWidget, splitter, readOnly);
 	MiniMap *minimap = docWidget->m_minimap = new MiniMap(splitter);
 	minimap->setFixedWidth(MINMAP_WIDTH);
 	//docWidget->m_mmPixmap = new QPixmap(MINMAP_WIDTH, 100);
@@ -906,8 +906,8 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	diffview->setDiffMode(true);
 	diffview->setLineWrapMode(QPlainTextEdit::NoWrap);
 	connect(diffview, &MarkdownEditor::textChanged, this, &MainWindow::onDiffViewChanged);
-	splitter->addWidget(mdEditor);
-	splitter->addWidget(markdownPreview);
+	splitter->addWidget(editor);
+	splitter->addWidget(preview);
 	splitter->addWidget(minimap);
 	splitter->addWidget(diffview);
 	splitter->setSizes(QList<int>() << 500 << 500 << MINMAP_WIDTH << 500);
@@ -950,9 +950,13 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	//if( docWidget->m_docType != DocType::Markdown )
 	//	docWidget->m_preview->hide();
 	if( docWidget->m_docType == DocType::Plain )
-		mdEditor->setHighlightMarkdown(false);
+		editor->setHighlightMarkdown(false);
 
 	docWidget->setModified(false);
+	editor->document()->setUndoRedoEnabled(false);
+	diffview->document()->setUndoRedoEnabled(false);
+	preview->document()->setUndoRedoEnabled(false);
+	qDebug() << "doc->isUndoRedoEnabled() = " << editor->document()->isUndoRedoEnabled();
 	return docWidget;
 }
 MarkdownEditor *MainWindow::newEditor(DocWidget *docWidget, QSplitter *splitter, bool readOnly) {
