@@ -676,7 +676,7 @@ SPR# 状 P Open Close ver     Type  概要
 0671 ◎ C 07/19 07/20 03037│問題│マークダウン書式が強調表示されない
 0672 ◎ C 07/20 07/20 03037│ToDo│MarkdownEditor, MarkdownPreview の undo/redo 機能はディセーブルしておく
 0673 ◎ C 07/20 07/20 03037│ToDo│自前の UndoManegaer 導入（UndoMgr.h, .cpp）
-0674 ● C 07/20            │ToDo│とりあえず struct UndoActionInsert 実装
+0674 ◎ C 07/20 07/20 03037│ToDo│とりあえず struct UndoActionXXX 実装
 0675 ● C 07/20            │ToDo│
 0676 ● C 07/20            │ToDo│
 0677 ● C 07/20            │ToDo│
