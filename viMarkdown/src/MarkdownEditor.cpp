@@ -453,12 +453,16 @@ QVariant MarkdownEditor::inputMethodQuery(Qt::InputMethodQuery query) const {
 	return QPlainTextEdit::inputMethodQuery(query);
 }
 void MarkdownEditor::rehighlight() {
-	m_highlighter->rehighlight();
-	m_diffHighlighter->rehighlight();
+	if( !m_diffMode )
+		m_highlighter->rehighlight();
+	else
+		m_diffHighlighter->rehighlight();
 }
 void MarkdownEditor::updateInlineColors() {
-	m_highlighter->updateInlineColors();
-	m_diffHighlighter->updateInlineColors();
+	if( !m_diffMode )
+		m_highlighter->updateInlineColors();
+	else
+		m_diffHighlighter->updateInlineColors();
 }
 void MarkdownEditor::updateViewportMargines() {
 	setViewportMargins(lnAreaWidth(), 0, 0, 0);
@@ -2346,6 +2350,7 @@ void MarkdownEditor::onContentsChanged(int position, int charsRemoved, int chars
 			}
 		}
 	}
+	updateInlineColors();
 	//rehighlight();
 	highlightSearchText(g.m_lastSearchedPat);
 	//syncEditorCursorFromPreview();

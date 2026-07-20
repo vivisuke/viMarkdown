@@ -143,6 +143,7 @@
     <ClCompile Include="ReplaceDialog.cpp" />
     <ClCompile Include="SettingsDialog.cpp" />
     <ClCompile Include="SlideShow.cpp" />
+    <ClCompile Include="UndoMgr.cpp" />
     <ClCompile Include="vicmd.cpp" />
     <QtRcc Include="MainWindow.qrc" />
     <QtUic Include="GrepDialog.ui" />
@@ -189,6 +190,7 @@
     <QtMoc Include="GrepDialog.h" />
     <QtMoc Include="OutputView.h" />
     <QtMoc Include="SlideShow.h" />
+    <ClInclude Include="UndoMgr.h" />
     <ClInclude Include="ver.h" />
   </ItemGroup>
   <ItemGroup>
