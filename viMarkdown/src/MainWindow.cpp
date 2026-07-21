@@ -2270,12 +2270,12 @@ void MainWindow::insertInline(const QString& delimiter) {
 void MainWindow::onAction_Undo() {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
-	docWidget->m_editor->undo();
+	docWidget->m_editor->do_undo();
 }
 void MainWindow::onAction_Redo() {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
-	docWidget->m_editor->redo();
+	docWidget->m_editor->do_redo();
 }
 void MainWindow::onAction_Cut() {
 	DocWidget *docWidget = getCurDocWidget();

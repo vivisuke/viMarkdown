@@ -683,7 +683,7 @@ SPR# 状 P Open Close ver     Type  概要
 0678 ◎ C 07/21 07/21 03037│ToDo│問題：UndoMgr::push_back_insText() 等の int ln は未使用なので、コメントアウトしておく
 0679 ◎ C 07/21 07/22 03037│ToDo│u U コマンド処理：UndoMgr をコールするよう修正
 0680 ◎ C 07/21 07/22 03037│ToDo│文字削除時：push_back_delText() をコール
-0681 ● C 07/21            │ToDo│
+0681 ◎ C 07/21 07/22 03037│問題│メニュー・ツールバー > Undo アクションを選択しても、MainWindow::onUndoTriggered() がコールされていない
 0682 ● C 07/21            │ToDo│
 0683 ● C 07/21            │ToDo│
 0684 ● C 07/21            │ToDo│
