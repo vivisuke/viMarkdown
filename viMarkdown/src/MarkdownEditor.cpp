@@ -1012,6 +1012,11 @@ void MarkdownEditor::do_insertText(const QString &txt) {
 }
 void MarkdownEditor::do_deleteText() {
 	QTextCursor cursor = textCursor();
+	int sz = 1;
+	if( cursor.hasSelection() ) {
+		sz = cursor.selectedText().size();
+	}
+	m_undoMgr->push_back_delText(cursor.position(), sz, false);
 	cursor.deleteChar();
 	setTextCursor(cursor);
 	if( m_diffMode ) {
