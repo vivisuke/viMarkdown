@@ -1338,7 +1338,7 @@ void MainWindow::onCutTriggered() {
 void MainWindow::onUndoTriggered() {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
-	docWidget->m_editor->undo();
+	docWidget->m_editor->do_undo();
 }
 void MainWindow::onRedoTriggered() {
 	DocWidget *docWidget = getCurDocWidget();

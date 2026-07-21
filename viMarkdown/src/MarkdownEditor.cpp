@@ -1002,6 +1002,7 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 void MarkdownEditor::do_insertText(const QString &txt) {
 	if( !txt.isEmpty() ) {
 		QTextCursor cursor = textCursor();
+		m_undoMgr->push_back_insText(cursor.position(), txt.size());
 		cursor.insertText(txt);
 		setTextCursor(cursor);
 	}
@@ -1016,6 +1017,9 @@ void MarkdownEditor::do_deleteText() {
 	if( m_diffMode ) {
 		((MainWindow*)m_mainWindow)->do_diff();
 	}
+}
+void MarkdownEditor::do_undo() {
+	m_undoMgr->undo();
 }
 int indexOfNotEsc(const QString &text, QChar ch, int ix) {
 	for(;;) {

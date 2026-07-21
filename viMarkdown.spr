@@ -679,7 +679,7 @@ SPR# 状 P Open Close ver     Type  概要
 0674 ◎ C 07/20 07/20 03037│ToDo│とりあえず struct UndoActionXXX 実装
 0675 ◎ C 07/21 07/21 03037│ToDo│UndoMgr の各メンバ関数をとりあえず実装（行フラグ処理はとりあえず除外）
 0676 ◎ C 07/21 07/21 03037│ToDo│MarkdownEditor：UndoMger *m_undoMgr を追加し、コンストラクタで生成
-0677 ● C 07/21            │ToDo│文字挿入時：push_back_insText() をコール
+0677 ◎ C 07/21 07/22 03037│ToDo│文字挿入時：push_back_insText() をコール
 0678 ◎ C 07/21 07/21 03037│ToDo│問題：UndoMgr::push_back_insText() 等の int ln は未使用なので、コメントアウトしておく
-0679 ● C 07/21            │ToDo│
+0679 ◎ C 07/21            │ToDo│Undo/Redo 処理：UndoMgr をコールするよう修正
 0680 ● C 07/21            │ToDo│
