@@ -135,7 +135,7 @@ void UndoMgr::prohibitMergeUndo() // 挿入マージ禁止
 			ptr->m_prohibitMerge = true;
 	}
 }
-bool UndoMgr::push_back_insText(int pos, int sz, int ln)
+bool UndoMgr::push_back_insText(int pos, int sz /*, int ln*/)
 {
 	// 改行以外の文字を連続した場所に挿入した場合は、直前のアクションに結合（マージ）する
 	if( m_cur != 0 && !isNewLine(m_buffer->characterAt(pos)) ) {
@@ -159,7 +159,7 @@ bool UndoMgr::push_back_insText(int pos, int sz, int ln)
 	return true;
 }
 
-bool UndoMgr::push_back_delText(int pos, int sz, bool BS, int ln)
+bool UndoMgr::push_back_delText(int pos, int sz, bool BS /*, int ln*/)
 {
 	const int ix = m_delText.size();
 	m_delText.resize(ix + sz); // 削除文字用バッファ容量確保
@@ -177,7 +177,7 @@ bool UndoMgr::push_back_delText(int pos, int sz, bool BS, int ln)
 	return true;
 }
 
-UndoActionReplace *UndoMgr::push_back_repText(int pos, int dsz, int isz, int ln)
+UndoActionReplace *UndoMgr::push_back_repText(int pos, int dsz, int isz /*, int ln*/)
 {
 	const int ix = m_delText.size();
 	m_delText.resize(ix + dsz);

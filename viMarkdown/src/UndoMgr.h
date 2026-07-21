@@ -119,9 +119,9 @@ public:
 	int		undo();
 	int		redo();
 	bool	push_back(UndoAction *);
-	bool	push_back_delText(pos_t, int, bool BS, int ln);
-	bool	push_back_insText(pos_t, int, int ln);
-	UndoActionReplace	*push_back_repText(pos_t, int dsz, int isz, int ln);
+	bool	push_back_delText(pos_t, int, bool BS /*, int ln*/);
+	bool	push_back_insText(pos_t, int /*, int ln*/);
+	UndoActionReplace	*push_back_repText(pos_t, int dsz, int isz /*, int ln*/);
 	void	setLcIns(int);
 	void	openBlock();
 	void	closeBlock();
