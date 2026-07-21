@@ -1193,7 +1193,7 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 			break;
 		}
 		case 'U':
-			docWidget->m_editor->redo();
+			docWidget->m_editor->do_redo();
 			break;
 		case ';':		//	順方向再検索
 			switch( gvi.m_last_fFtT.unicode() ) {

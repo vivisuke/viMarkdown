@@ -1021,6 +1021,9 @@ void MarkdownEditor::do_deleteText() {
 void MarkdownEditor::do_undo() {
 	m_undoMgr->undo();
 }
+void MarkdownEditor::do_redo() {
+	m_undoMgr->redo();
+}
 int indexOfNotEsc(const QString &text, QChar ch, int ix) {
 	for(;;) {
 		ix = text.indexOf(ch, ix);
