@@ -1,12 +1,17 @@
 ﻿#pragma once
 
 #include <vector>
+#include <QString>
+
+#define		POOL_SIZE		1024
 
 class MarkdownEditor;
+class QTextDocument;
 
 using uchar = unsigned char;
 using pos_t = int;
-using Buffer = MarkdownEditor;
+//using Buffer = MarkdownEditor;
+using Buffer = QTextDocument;
 
 struct UndoAction
 {
@@ -99,7 +104,7 @@ public:
 class UndoMgr
 {
 public:
-	UndoMgr(MarkdownEditor *);
+	UndoMgr(Buffer* = nullptr);
 	~UndoMgr();
 
 public:
@@ -132,7 +137,7 @@ protected:
 
 //private:
 public:
-	MarkdownEditor	*m_buffer;		//	編集バッファ
+	Buffer	*m_buffer;		//	編集バッファ
 	int		m_cur;			//	m_stack 現在位置
 	int		m_savePointCur;		//	モディファイ状態の場所（保存ポイント）
 	int		m_lastDelTextSize;		//	最後の削除文字長
@@ -141,8 +146,10 @@ public:
 	//bool	m_blockOpened;
 	bool	m_actionPushed;			//	オープン中にアクションが追加された
 	std::vector<UndoAction *>	m_stack;
-	std::vector<wchar_t>		m_delText;		//	削除文字列
-	std::vector<wchar_t>		m_insText;		//	挿入文字列
+	//std::vector<wchar_t>		m_delText;		//	削除文字列
+	//std::vector<wchar_t>		m_insText;		//	挿入文字列
+	QString		m_delText;		//	削除文字列
+	QString		m_insText;		//	挿入文字列
 
 	int		m_actInsPoolSize;
 	int		m_actDelPoolSize;

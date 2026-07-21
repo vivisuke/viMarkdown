@@ -677,9 +677,9 @@ SPR# 状 P Open Close ver     Type  概要
 0672 ◎ C 07/20 07/20 03037│ToDo│MarkdownEditor, MarkdownPreview の undo/redo 機能はディセーブルしておく
 0673 ◎ C 07/20 07/20 03037│ToDo│自前の UndoManegaer 導入（UndoMgr.h, .cpp）
 0674 ◎ C 07/20 07/20 03037│ToDo│とりあえず struct UndoActionXXX 実装
-0675 ● C 07/20            │ToDo│
-0676 ● C 07/20            │ToDo│
-0677 ● C 07/20            │ToDo│
-0678 ● C 07/20            │ToDo│
-0679 ● C 07/20            │ToDo│
-0680 ● C 07/20            │ToDo│
+0675 ◎ C 07/21 07/21 03037│ToDo│UndoMgr の各メンバ関数をとりあえず実装（行フラグ処理はとりあえず除外）
+0676 ● C 07/21            │ToDo│
+0677 ● C 07/21            │ToDo│
+0678 ● C 07/21            │ToDo│
+0679 ● C 07/21            │ToDo│
+0680 ● C 07/21            │ToDo│
