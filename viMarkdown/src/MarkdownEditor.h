@@ -162,6 +162,7 @@ class MarkdownEditor : public MarkdownBaseEdit
 	Q_OBJECT
 public:
 	MarkdownEditor(const MainWindow* mainWindow, DocWidget*, QWidget *parent = nullptr, bool readOnly = false);
+	~MarkdownEditor();
 public:
 	void	scrollToTop(int lineNum) {		//	lineNum: 0 org.
 		verticalScrollBar()->setValue(lineNum);
@@ -302,6 +303,7 @@ private:
     class MarkdownHighlighter	*m_highlighter;
     class DiffHighlighter		*m_diffHighlighter;
 	class LnAreaWidget	*m_lnAreaWidget = nullptr;
+	class UndoMgr		*m_undoMgr = nullptr;
 	SvgCompleter		*m_svgCompleter = nullptr;
     DocWidget			*m_docWidget;
     const MainWindow	*m_mainWindow = nullptr;

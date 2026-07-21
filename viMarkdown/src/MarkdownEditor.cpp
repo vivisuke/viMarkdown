@@ -18,6 +18,7 @@
 #include "MarkdownEditor.h"
 #include "MainWindow.h"
 #include "DocWidget.h"
+#include "UndoMgr.h"
 
 #ifdef	Q_OS_WIN
 #include <windows.h>
@@ -401,6 +402,7 @@ MarkdownEditor::MarkdownEditor(const MainWindow* mainWindow, DocWidget* docWidge
 	setAttribute(Qt::WA_InputMethodEnabled, true);
 	m_highlighter = new MarkdownHighlighter(this->document());
 	m_diffHighlighter = new DiffHighlighter(this->document());
+	m_undoMgr = new UndoMgr(this->document());
 #if 0
 	QTextCursor cursor = this->textCursor();
 	QTextBlockFormat format;
@@ -428,6 +430,9 @@ MarkdownEditor::MarkdownEditor(const MainWindow* mainWindow, DocWidget* docWidge
     //m_blinkTimer = new QTimer(this);	// カーソル点滅用タイマーの設定 (500ms)
     //connect(m_blinkTimer, &QTimer::timeout, this, &MarkdownEditor::toggleCursor);
     //m_blinkTimer->start(500);
+}
+MarkdownEditor::~MarkdownEditor() {
+	delete m_undoMgr;
 }
 QVariant MarkdownEditor::inputMethodQuery(Qt::InputMethodQuery query) const {
 	//##qDebug() << "query = " << query;
