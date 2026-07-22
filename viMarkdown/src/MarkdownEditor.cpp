@@ -510,6 +510,8 @@ void MarkdownEditor::inputMethodEvent(QInputMethodEvent *event) {
 	if( !txt.isEmpty() ) {
 		//do_insertText(QString());
 		m_undoMgr->push_back_insText(pos, txt.size());
+		if( m_diffMode )
+			((MainWindow*)m_mainWindow)->do_diff();
 		return;
 	}
 }
