@@ -1009,6 +1009,7 @@ void MarkdownEditor::do_insertText(const QString &txt) {
 	if( m_diffMode ) {
 		((MainWindow*)m_mainWindow)->do_diff();
 	}
+	emit canUndoRedoChanged();
 }
 void MarkdownEditor::do_deleteText() {
 	QTextCursor cursor = textCursor();
@@ -1022,6 +1023,7 @@ void MarkdownEditor::do_deleteText() {
 	if( m_diffMode ) {
 		((MainWindow*)m_mainWindow)->do_diff();
 	}
+	emit canUndoRedoChanged();
 }
 bool MarkdownEditor::canUndo() const {
 	return m_undoMgr->canUndo();
@@ -1031,9 +1033,11 @@ bool MarkdownEditor::canRedo() const {
 }
 void MarkdownEditor::do_undo() {
 	m_undoMgr->undo();
+	emit canUndoRedoChanged();
 }
 void MarkdownEditor::do_redo() {
 	m_undoMgr->redo();
+	emit canUndoRedoChanged();
 }
 int indexOfNotEsc(const QString &text, QChar ch, int ix) {
 	for(;;) {

@@ -975,6 +975,7 @@ MarkdownEditor *MainWindow::newEditor(DocWidget *docWidget, QSplitter *splitter,
 	connect(mdEditor, &MarkdownEditor::changeFontSize, this, &MainWindow::onChangeEditorFontSize);
 	connect(mdEditor, &MarkdownEditor::posContextChanged, this, &MainWindow::onSrcPosContextChanged);
 	connect(mdEditor, &MarkdownEditor::textChanged, this, &MainWindow::onMDTextChanged);
+	connect(mdEditor, &MarkdownEditor::canUndoRedoChanged, this, &MainWindow::updateUndoRedoEnabled);
 	//connect(mdEditor, &MarkdownPreview::textChanged, this, &MainWindow::onMDTextChanged);
 	connect(mdEditor->document(), &QTextDocument::modificationChanged, this, &MainWindow::onModificationChanged);
 	mdEditor->setPlaceholderText(g.m_japanese ? R"(

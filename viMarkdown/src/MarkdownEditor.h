@@ -243,6 +243,7 @@ signals:
     void	changeFontSize(int delta);
     void	posContextChanged(const PosContext &context, const PosContext &acontext);
     void	do_viCmd(QChar, QTextCursor&);
+    void	canUndoRedoChanged();
 
 protected:
     void	keyPressEvent(QKeyEvent *e) override;
