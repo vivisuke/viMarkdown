@@ -949,6 +949,12 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 			case 0x15:	//	^U
 				vBar->setValue(vBar->value() - halfPage);
 				break;
+			case 0x19:	//	^Y
+				do_redo();
+				break;
+			case 0x1a:	//	^Z
+				do_undo();
+				break;
 			default:
 				MarkdownBaseEdit::keyPressEvent(e);	// 通常キーは通常通りの処理
 				return;
