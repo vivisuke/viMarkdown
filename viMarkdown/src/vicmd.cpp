@@ -99,9 +99,10 @@ void MainWindow::do_cdy_moved(QTextCursor& cursor) {
 		if( cursor.hasSelection() ) {
 			gvi.m_yankBuffer = cursor.selectedText();
 			gvi.m_linewiseYanked = gvi.m_linewiseMoved;
-			if( gvi.m_operator == 'd' )
-				cursor.deleteChar();
-			else {		//	y<move>
+			if( gvi.m_operator == 'd' ) {
+				gvi.m_editor->do_deleteText(cursor);
+				//cursor.deleteChar();
+			} else {		//	y<move>
 				statusBar()->showMessage(QString("%1 charactors yanked.").arg(gvi.m_yankBuffer.size()), 5000);
 				cursor.setPosition(qMin(cursor.anchor(), cursor.position()));
 				//cursor.clearSelection();
@@ -252,7 +253,7 @@ void MainWindow::do_vi_delete(QChar cmd, QTextCursor& cursor, int rcnt) {		//	x 
 			gvi.m_yankBuffer = cursor.selectedText();
 			gvi.m_linewiseYanked = false;
 			if( gvi.m_editor != nullptr )
-				gvi.m_editor->do_deleteText();
+				gvi.m_editor->do_deleteText(cursor);
 			else
 				cursor.deleteChar();
 			moveLeftIfAtEol(cursor);
@@ -277,7 +278,7 @@ void MainWindow::do_vi_delete(QChar cmd, QTextCursor& cursor, int rcnt) {		//	x 
 			gvi.m_yankBuffer = cursor.selectedText();
 			gvi.m_linewiseYanked = true;
 			if( gvi.m_editor != nullptr )
-				gvi.m_editor->do_deleteText();
+				gvi.m_editor->do_deleteText(cursor);
 			else
 				cursor.deleteChar();
 			gvi.m_vMode = u' ';
@@ -294,7 +295,7 @@ void MainWindow::do_vi_delete(QChar cmd, QTextCursor& cursor, int rcnt) {		//	x 
 			gvi.m_yankBuffer = cursor.selectedText();
 			gvi.m_linewiseYanked = false;
 			if( gvi.m_editor != nullptr )
-				gvi.m_editor->do_deleteText();
+				gvi.m_editor->do_deleteText(cursor);
 			else
 				cursor.deleteChar();
 			moveLeftIfAtEol(cursor);
@@ -307,7 +308,7 @@ void MainWindow::do_vi_delete(QChar cmd, QTextCursor& cursor, int rcnt) {		//	x 
 			gvi.m_yankBuffer = cursor.selectedText();
 			gvi.m_linewiseYanked = false;
 			if( gvi.m_editor != nullptr )
-				gvi.m_editor->do_deleteText();
+				gvi.m_editor->do_deleteText(cursor);
 			else
 				cursor.deleteChar();
 		}
@@ -318,7 +319,7 @@ void MainWindow::do_vi_delete(QChar cmd, QTextCursor& cursor, int rcnt) {		//	x 
 			gvi.m_yankBuffer = cursor.selectedText();
 			gvi.m_linewiseYanked = false;
 			if( gvi.m_editor != nullptr )
-				gvi.m_editor->do_deleteText();
+				gvi.m_editor->do_deleteText(cursor);
 			else
 				cursor.deleteChar();
 			moveLeftIfAtEol(cursor);

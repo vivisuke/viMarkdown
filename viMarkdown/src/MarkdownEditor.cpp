@@ -840,7 +840,7 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 		if( (e->modifiers() & Qt::ControlModifier) != 0) {
 			deleteWord();
 		} else {
-			do_deleteText();
+			do_deleteText(cursor);
 			//cursor.deleteChar();
 			//setTextCursor(cursor);
 		}
@@ -855,7 +855,7 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 				if( cursor.position() == 0 ) return;
 				cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor);
 				setTextCursor(cursor);
-				do_deleteText();
+				do_deleteText(cursor);
 			}
 		}
 		return;
@@ -1015,13 +1015,15 @@ void MarkdownEditor::do_insertText(const QString &txt) {
 	}
 	emit canUndoRedoChanged();
 }
-void MarkdownEditor::do_deleteText() {
-	QTextCursor cursor = textCursor();
+void MarkdownEditor::do_deleteText(QTextCursor &cursor) {
+	//QTextCursor cursor = textCursor();
+	int pos = cursor.position();
 	int sz = 1;
 	if( cursor.hasSelection() ) {
 		sz = cursor.selectedText().size();
+		pos = qMin(pos, cursor.anchor());
 	}
-	m_undoMgr->push_back_delText(cursor.position(), sz, false);
+	m_undoMgr->push_back_delText(pos, sz, false);
 	cursor.deleteChar();
 	setTextCursor(cursor);
 	if( m_diffMode ) {
