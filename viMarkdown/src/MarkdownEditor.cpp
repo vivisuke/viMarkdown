@@ -499,15 +499,17 @@ void MarkdownEditor::setLineSpacing(int percentage) {
 }
 void MarkdownEditor::inputMethodEvent(QInputMethodEvent *event) {
 	m_isComposing = !event->preeditString().isEmpty();
-	QString commit = event->commitString();		//	確定文字列
-	if( !commit.isEmpty() ) {
+	QString txt = event->commitString();		//	確定文字列
+	if( !txt.isEmpty() ) {
 		if( g.m_viKeybindings && gvi.m_currentMode != ViMode::Insert ) {
 			gvi.m_currentMode = ViMode::Insert;
 		}
 	}
+	int pos = textCursor().position();
 	MarkdownBaseEdit::inputMethodEvent(event);
-	if( !commit.isEmpty() ) {
-		do_insertText(QString());
+	if( !txt.isEmpty() ) {
+		//do_insertText(QString());
+		m_undoMgr->push_back_insText(pos, txt.size());
 		return;
 	}
 }
