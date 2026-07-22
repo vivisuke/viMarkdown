@@ -1032,12 +1032,24 @@ bool MarkdownEditor::canRedo() const {
 	return m_undoMgr->canRedo();
 }
 void MarkdownEditor::do_undo() {
+	if( m_diffMode ) {
+		m_docWidget->m_editor->removeAllDummyLines();
+		m_docWidget->m_diffview->removeAllDummyLines();
+	}
 	m_undoMgr->undo();
 	emit canUndoRedoChanged();
+	if( m_diffMode )
+		((MainWindow*)m_mainWindow)->do_diff();
 }
 void MarkdownEditor::do_redo() {
+	if( m_diffMode ) {
+		m_docWidget->m_editor->removeAllDummyLines();
+		m_docWidget->m_diffview->removeAllDummyLines();
+	}
 	m_undoMgr->redo();
 	emit canUndoRedoChanged();
+	if( m_diffMode )
+		((MainWindow*)m_mainWindow)->do_diff();
 }
 int indexOfNotEsc(const QString &text, QChar ch, int ix) {
 	for(;;) {
