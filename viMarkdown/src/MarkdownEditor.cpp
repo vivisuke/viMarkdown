@@ -1023,6 +1023,12 @@ void MarkdownEditor::do_deleteText() {
 		((MainWindow*)m_mainWindow)->do_diff();
 	}
 }
+bool MarkdownEditor::canUndo() const {
+	return m_undoMgr->canUndo();
+}
+bool MarkdownEditor::canRedo() const {
+	return m_undoMgr->canRedo();
+}
 void MarkdownEditor::do_undo() {
 	m_undoMgr->undo();
 }

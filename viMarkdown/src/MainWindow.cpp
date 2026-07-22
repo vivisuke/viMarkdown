@@ -790,6 +790,7 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 	event->accept();
 }
 void MainWindow::onCurrentTabChanged(int ix) {
+	updateUndoRedoEnabled();
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
 	if( m_processing != 0 ) return;		//	再入禁止
@@ -2266,6 +2267,24 @@ void MainWindow::insertInline(const QString& delimiter) {
 		cursor.movePosition(QTextCursor::Left, QTextCursor::MoveAnchor, delimiter.length());
 	}
 	mdEditor->setTextCursor(cursor);
+}
+void MainWindow::updateUndoRedoEnabled() {
+	DocWidget *docWidget = getCurDocWidget();
+	bool undoEnabled = false;
+	bool redoEnabled = false;
+	if( docWidget != nullptr ) {
+		MarkdownEditor *editor = nullptr;
+		QWidget *w = QApplication::focusWidget();
+		if( w == docWidget->m_editor || w == docWidget->m_preview ) {
+			undoEnabled = docWidget->m_editor->canUndo();
+			redoEnabled = docWidget->m_editor->canRedo();
+		} else if( w == docWidget->m_diffview ) {
+			undoEnabled = docWidget->m_diffview->canUndo();
+			redoEnabled = docWidget->m_diffview->canRedo();
+		}
+	}
+	ui->action_Undo->setEnabled(undoEnabled);
+	ui->action_Redo->setEnabled(redoEnabled);
 }
 void MainWindow::onAction_Undo() {
 	DocWidget *docWidget = getCurDocWidget();

@@ -230,6 +230,8 @@ public:
 	void	removeAllDummyLines();
     void	do_insertText(const QString&);		//	Undo/Redo 対象の挿入関数
     void	do_deleteText();					//	Undo/Redo 対象の削除関数、選択・非選択状態対応
+    bool	canUndo() const;
+    bool	canRedo() const;
     void	do_undo();
     void	do_redo();
 

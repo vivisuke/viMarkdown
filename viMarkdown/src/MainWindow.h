@@ -306,6 +306,7 @@ protected:
     void	do_settings(int page=0);
     void	do_close(bool forced = false);
     void	diffview_open();
+    void	updateUndoRedoEnabled();
 
     void	onAction_New();
     void	onAction_NewTab();
