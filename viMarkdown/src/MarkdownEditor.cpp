@@ -1002,16 +1002,16 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 	}
 	if( !txt.isEmpty() && (e->modifiers() & Qt::ControlModifier) == 0 ) {
 		qDebug() << "doc->isUndoRedoEnabled() = " << document()->isUndoRedoEnabled();
-		do_insertText(txt);
+		do_insertText(cursor, txt);
 		return;
 	}
 	MarkdownBaseEdit::keyPressEvent(e);	// 通常キーは通常通りの処理
 	qApp->inputMethod()->update(Qt::ImCursorRectangle);
 	//##qDebug() << "cursorRect = " << cursorRect();
 }
-void MarkdownEditor::do_insertText(const QString &txt) {
+void MarkdownEditor::do_insertText(QTextCursor& cursor, const QString &txt) {
 	if( !txt.isEmpty() ) {
-		QTextCursor cursor = textCursor();
+		//QTextCursor cursor = textCursor();
 		m_undoMgr->push_back_insText(cursor.position(), txt.size());
 		cursor.insertText(txt);
 		setTextCursor(cursor);
@@ -1026,12 +1026,16 @@ void MarkdownEditor::do_deleteText(QTextCursor &cursor) {
 	int pos = cursor.position();
 	int sz = 1;
 	if( cursor.hasSelection() ) {
+		//auto t = cursor.selectedText();
 		sz = cursor.selectedText().size();
 		pos = qMin(pos, cursor.anchor());
 	}
+	//auto t1 = cursor.block().text();
 	m_undoMgr->push_back_delText(pos, sz, false);
+	//auto t2 = cursor.block().text();
 	cursor.deleteChar();
 	setTextCursor(cursor);
+	//auto t3 = cursor.block().text();
 	if( m_diffMode ) {
 		((MainWindow*)m_mainWindow)->do_diff();
 	}
@@ -1042,6 +1046,12 @@ bool MarkdownEditor::canUndo() const {
 }
 bool MarkdownEditor::canRedo() const {
 	return m_undoMgr->canRedo();
+}
+void MarkdownEditor::openUndoBlock() {
+	m_undoMgr->openBlock();
+}
+void MarkdownEditor::closeUndoBlock() {
+	m_undoMgr->closeBlock();
 }
 void MarkdownEditor::do_undo() {
 	if( m_diffMode ) {

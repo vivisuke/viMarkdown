@@ -289,8 +289,10 @@ void MainWindow::do_vi_delete(QChar cmd, QTextCursor& cursor, int rcnt) {		//	x 
 	QTextBlock block = cursor.block();
 	switch( cmd.unicode() ) {
 	case 'x':
-		while( --rcnt >= 0 && cursor.position() < block.position() + block.text().size() )	//	行末でない場合
-			cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor);
+		if( !cursor.hasSelection() ) {
+			while( --rcnt >= 0 && cursor.position() < block.position() + block.text().size() )	//	行末でない場合
+				cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor);
+		}
 		if( cursor.hasSelection() ) {
 			gvi.m_yankBuffer = cursor.selectedText();
 			gvi.m_linewiseYanked = false;
@@ -1019,6 +1021,7 @@ doneW:
 void do_join(QTextCursor& cursor, int rcnt) {
 	QTextDocument *doc = cursor.document();
 	int joins = (rcnt <= 1) ? 1 : (rcnt - 1);
+	gvi.m_editor->openUndoBlock();
 	cursor.beginEditBlock();
 	int finalCursorPos = -1;
 	for (int i = 0; i < joins; ++i) {
@@ -1038,9 +1041,10 @@ void do_join(QTextCursor& cursor, int rcnt) {
 			   (nextText[leadingSpaces] == ' ' || nextText[leadingSpaces] == '\t')) {
 			leadingSpaces++;
 		}
-		if (trailingSpaces > 0) {
+		if (trailingSpaces > 0) {	//	行末に空白があれば削除
 			cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor, trailingSpaces);
-			cursor.removeSelectedText();
+			//cursor.removeSelectedText();
+			gvi.m_editor->do_deleteText(cursor);
 		}
 		cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, 1 + leadingSpaces);
 		cursor.removeSelectedText();
@@ -1052,7 +1056,8 @@ void do_join(QTextCursor& cursor, int rcnt) {
 		}
 		
 		if (needsSpace) {
-			cursor.insertText(" ");
+			//cursor.insertText(" ");
+			gvi.m_editor->do_insertText(cursor, " ");
 		}
 		if (i == 0) {
 			finalCursorPos = cursor.position();
@@ -1061,6 +1066,7 @@ void do_join(QTextCursor& cursor, int rcnt) {
 			}
 		}
 	}
+	gvi.m_editor->closeUndoBlock();
 	cursor.endEditBlock();
 	if (finalCursorPos >= 0)
 		cursor.setPosition(finalCursorPos);

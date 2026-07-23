@@ -228,10 +228,12 @@ public:
     void	setDummyInserted(bool b) { m_dummyInserted = b; }
     void	applyStyle(const QFont &font);
 	void	removeAllDummyLines();
-    void	do_insertText(const QString&);		//	Undo/Redo 対象の挿入関数
+    void	do_insertText(QTextCursor& cursor, const QString&);		//	Undo/Redo 対象の挿入関数
     void	do_deleteText(QTextCursor& cursor);		//	Undo/Redo 対象の削除関数、選択・非選択状態対応
     bool	canUndo() const;
     bool	canRedo() const;
+    void	openUndoBlock();
+    void	closeUndoBlock();
     void	do_undo();
     void	do_redo();
 
