@@ -112,6 +112,9 @@ public:
     void	updatePanes();						//	スプリッター下の各ペインの表示・非表示設定
     void	removeDummyBlocks();
 
+    void	syncScrollFromLeft(int value);
+    void	syncScrollFromRight(int value);
+
 public:
 	DocType		m_docType = DocType::Markdown;
 	//bool	m_modified = false;		//	編集＆未保存状態
@@ -120,6 +123,7 @@ public:
 	bool	m_hasSaved = false;		//	保存直後
 	bool	m_withBOM = true;		//	BOM付き
 	bool	m_readOnly = false;
+	bool	m_isSyncingScroll = false;		// 再入防止フラグ
 	QStringConverter::Encoding m_encoding = QStringConverter::Utf8;
 	QString	m_title;				//	タブタイトル
 	QString	m_fullPath;

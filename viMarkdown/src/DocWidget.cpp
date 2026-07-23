@@ -429,3 +429,20 @@ void DocWidget::setEditorCurPos(int pos) {
 	m_editor->setTextCursor(cursor);
 	m_editor->ensureCursorVisible();
 }
+void DocWidget::syncScrollFromLeft(int value)
+{
+    if (m_isSyncingScroll) return;
+    m_isSyncingScroll = true;
+    // 左スクロールの値を右スクロールバーにそのまま適用
+    m_diffview->verticalScrollBar()->setValue(value);
+    m_isSyncingScroll = false;
+}
+
+void DocWidget::syncScrollFromRight(int value)
+{
+    if (m_isSyncingScroll) return;
+    m_isSyncingScroll = true;
+    // 右スクロールの値を左スクロールバーにそのまま適用
+    m_editor->verticalScrollBar()->setValue(value);
+    m_isSyncingScroll = false;
+}

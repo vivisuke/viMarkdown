@@ -232,6 +232,11 @@ void MainWindow::onAction_DiffMode(bool checked) {
 		docWidget->m_editor->setHighlightMarkdown(false);
 		docWidget->m_editor->setLineWrapMode(QPlainTextEdit::NoWrap);
 		do_diff();
+		connect(docWidget->m_editor->verticalScrollBar(), &QScrollBar::valueChanged,
+            docWidget, &DocWidget::syncScrollFromLeft);
+	    connect(docWidget->m_diffview->verticalScrollBar(), &QScrollBar::valueChanged,
+            docWidget, &DocWidget::syncScrollFromRight);
+	    docWidget->m_diffview->verticalScrollBar()->setValue(docWidget->m_diffview->verticalScrollBar()->value());
 	} else {
 		if( docWidget->m_docType == DocType::Markdown )
 			docWidget->m_editor->setHighlightMarkdown(true);
@@ -257,6 +262,10 @@ void MainWindow::onAction_DiffMode(bool checked) {
 	    docWidget->m_diffview->setDummyInserted(false);
 		doc1->setModified(modified1);
 		doc2->setModified(modified2);
+		disconnect(docWidget->m_editor->verticalScrollBar(), &QScrollBar::valueChanged,
+            docWidget, &DocWidget::syncScrollFromLeft);
+	    disconnect(docWidget->m_diffview->verticalScrollBar(), &QScrollBar::valueChanged,
+            docWidget, &DocWidget::syncScrollFromRight);
 	}
 	docWidget->m_editor->rehighlight();
 	docWidget->updatePanes();
