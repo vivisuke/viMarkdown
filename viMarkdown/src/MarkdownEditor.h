@@ -236,6 +236,7 @@ public:
     void	closeUndoBlock();
     void	do_undo();
     void	do_redo();
+    int		getVisibleLineCount() const;
 
 signals:
     void	tab_pressed();

@@ -700,6 +700,16 @@ SPR# 状 P Open Close ver     Type  概要
 0695 ◎ C 07/23 07/23 03038│ToDo│do_insertText()：第１引数に QTextCursor& 追加
 0696 ● C 07/23            │問題│J 後の u：改行削除・セパレータ挿入が一度に Undo されない
 0697 ◎ C 07/23 07/24 03038│問題│diff表示中、垂直スクロール位置を同期させた方がよい
-0698 ● C 07/23            │ToDo│
-0699 ● C 07/23            │ToDo│
-0700 ● C 07/23            │ToDo│
+0698 ● C 07/23            │問題│Tool > diff：モディファイフラグが立ってしまう（ダミーノードを追加してるため）
+0699 ● B 07/24            │問題│README_ja.md, README.md を diff すると変な状態になる
+0700 ◎ C 07/24 07/25 03038│ToDo│diff表示 > MiniMap：スクロール位置を赤矩形表示
+0701 ● C 07/24            │ToDo│MiniMap：view スクロール位置、表示可能行数をメンバ変数で保持、リサイズ時に更新、update
+0702 ● C 07/24            │ToDo│MainWindow::onAction_DiffMode(), onAction_DiffWithFile()：diffモード遷移する処理を関数化
+0703 ● C 07/24            │ToDo│
+0704 ● C 07/24            │ToDo│
+0705 ● C 07/24            │ToDo│
+0706 ● C 07/24            │ToDo│
+0707 ● C 07/24            │ToDo│
+0708 ● C 07/24            │ToDo│
+0709 ● C 07/24            │ToDo│
+0710 ● C 07/24            │ToDo│

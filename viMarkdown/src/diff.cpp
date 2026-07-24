@@ -237,6 +237,9 @@ void MainWindow::onAction_DiffMode(bool checked) {
 	    connect(docWidget->m_diffview->verticalScrollBar(), &QScrollBar::valueChanged,
             docWidget, &DocWidget::syncScrollFromRight);
 	    docWidget->m_diffview->verticalScrollBar()->setValue(docWidget->m_diffview->verticalScrollBar()->value());
+	    int fvl = docWidget->m_editor->verticalScrollBar()->value();
+        int vl = docWidget->m_editor->getVisibleLineCount();
+        docWidget->setMiniMapCurPos(fvl, vl);
 	} else {
 		if( docWidget->m_docType == DocType::Markdown )
 			docWidget->m_editor->setHighlightMarkdown(true);
@@ -698,6 +701,7 @@ void MainWindow::do_diff() {
     //qDebug() << "cur1_sv.position(): " << cur1_sv.position();
     //docWidget->m_editor->setTextCursor(cur1_sv);
     //docWidget->m_diffview->setTextCursor(cur2_sv);
+#if 0
     auto restoreCursor = [](MarkdownEditor* editor, int targetRealLine, int targetCol) {
         QTextDocument* doc = editor->document();
         QTextBlock block = doc->begin();
@@ -723,8 +727,9 @@ void MainWindow::do_diff() {
         }
     };
 
-    //restoreCursor(docWidget->m_editor, activeLine1, activeCol1);
-    //restoreCursor(docWidget->m_diffview, activeLine2, activeCol2);
+    restoreCursor(docWidget->m_editor, activeLine1, activeCol1);
+    restoreCursor(docWidget->m_diffview, activeLine2, activeCol2);
+#endif
 #if 0
     cur1.setPosition(pos1);
 	docWidget->m_editor->setTextCursor(cur1);

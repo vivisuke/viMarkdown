@@ -353,6 +353,11 @@ void DocWidget::updatePanes() {
 		}
 	}
 }
+void DocWidget::setMiniMapCurPos(int fvl, int vl) {
+	m_minimap->m_firstVisibleLine = fvl;
+	m_minimap->m_visibleLines = vl;
+	m_minimap->update();
+}
 void DocWidget::removeDummyBlocks() {
 	if( !m_diffMode ) return;
 	if( m_editor->dummyInserted() ) {

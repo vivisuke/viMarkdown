@@ -90,8 +90,15 @@ protected:
     	if (m_mapPixmap.isNull()) return;
     	QPainter p(this);
 		p.drawPixmap(0, 0, m_mapPixmap);
+		int y = m_firstVisibleLine;
+		int w = width() - 1;
+		int h = m_visibleLines;
+		p.setPen(QPen(Qt::red, 1, Qt::SolidLine));
+        p.drawRect(0, y, w, h);
     }
 public:
+	int		m_firstVisibleLine = 0;			//	0 オリジン
+	int		m_visibleLines = 10;			//	ビュー表示行数
 	QPixmap	m_mapPixmap;
 };
 
@@ -111,6 +118,7 @@ public:
     void	setEditorCurPos(int pos);
     void	updatePanes();						//	スプリッター下の各ペインの表示・非表示設定
     void	removeDummyBlocks();
+    void	setMiniMapCurPos(int fvl, int vl);
 
     void	syncScrollFromLeft(int value);
     void	syncScrollFromRight(int value);
