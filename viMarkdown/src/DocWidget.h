@@ -122,6 +122,7 @@ public:
 
     void	syncScrollFromLeft(int value);
     void	syncScrollFromRight(int value);
+    void	syncMinimapWithEditor(int value);
 
 public:
 	DocType		m_docType = DocType::Markdown;

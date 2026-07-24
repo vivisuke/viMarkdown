@@ -451,3 +451,7 @@ void DocWidget::syncScrollFromRight(int value)
     m_editor->verticalScrollBar()->setValue(value);
     m_isSyncingScroll = false;
 }
+void DocWidget::syncMinimapWithEditor(int value) {
+	m_minimap->m_firstVisibleLine = value;
+	m_minimap->update();
+}

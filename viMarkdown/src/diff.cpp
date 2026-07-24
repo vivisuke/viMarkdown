@@ -240,6 +240,8 @@ void MainWindow::onAction_DiffMode(bool checked) {
 	    int fvl = docWidget->m_editor->verticalScrollBar()->value();
         int vl = docWidget->m_editor->getVisibleLineCount();
         docWidget->setMiniMapCurPos(fvl, vl);
+        connect(docWidget->m_editor->verticalScrollBar(), &QScrollBar::valueChanged,
+		        docWidget, &DocWidget::syncMinimapWithEditor);
 	} else {
 		if( docWidget->m_docType == DocType::Markdown )
 			docWidget->m_editor->setHighlightMarkdown(true);
