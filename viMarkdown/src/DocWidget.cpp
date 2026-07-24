@@ -18,7 +18,8 @@ void MiniMap::mouseReleaseEvent(QMouseEvent *event) {
 void MiniMap::mouseMoveEvent(QMouseEvent *event) {
 	if( !m_mousePressed ) return;
 	auto pos = event->position();
-	m_firstVisibleLine = qMax(0, (int)pos.y() - m_visibleLines/2);
+	int mx = m_docWidget->m_editor->verticalScrollBar()->maximum();
+	m_firstVisibleLine = qMin(qMax(0, (int)pos.y() - m_visibleLines/2), mx);
 	m_docWidget->syncEditorWithMinimap(m_firstVisibleLine);
 	update();
 }
