@@ -118,6 +118,7 @@ public:
     void	setEditorCurPos(int pos);
     void	updatePanes();						//	スプリッター下の各ペインの表示・非表示設定
     void	removeDummyBlocks();
+    void	setMiniMapCurHeight(int vl);
     void	setMiniMapCurPos(int fvl, int vl);
 
     void	syncScrollFromLeft(int value);

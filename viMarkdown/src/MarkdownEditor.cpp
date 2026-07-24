@@ -469,11 +469,6 @@ void MarkdownEditor::updateInlineColors() {
 	else
 		m_diffHighlighter->updateInlineColors();
 }
-int MarkdownEditor::getVisibleLineCount() const {
-	int lineHeight = fontMetrics().lineSpacing(); 
-    if (lineHeight <= 0) return 0;
-    return viewport()->height() / lineHeight;    // 現在見えているビューポート全体の高さを割る
-}
 void MarkdownEditor::updateViewportMargines() {
 	setViewportMargins(lnAreaWidth(), 0, 0, 0);
 }
@@ -3105,6 +3100,13 @@ void MarkdownEditor::resizeEvent(QResizeEvent *event) {
 
 	QRect cr = contentsRect();
 	m_lnAreaWidget->setGeometry(QRect(cr.left(), cr.top(), lnAreaWidth(), cr.height()));
+
+	m_docWidget->setMiniMapCurHeight(getVisibleLineCount());
+}
+int MarkdownEditor::getVisibleLineCount() const {
+	int lineHeight = fontMetrics().lineSpacing(); 
+    if (lineHeight <= 0) return 0;
+    return viewport()->height() / lineHeight;    // 現在見えているビューポート全体の高さを割る
 }
 void MarkdownEditor::dragEnterEvent(QDragEnterEvent *e) {
    	e->ignore();

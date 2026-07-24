@@ -353,6 +353,10 @@ void DocWidget::updatePanes() {
 		}
 	}
 }
+void DocWidget::setMiniMapCurHeight(int vl) {
+	m_minimap->m_visibleLines = vl;
+	m_minimap->update();
+}
 void DocWidget::setMiniMapCurPos(int fvl, int vl) {
 	m_minimap->m_firstVisibleLine = fvl;
 	m_minimap->m_visibleLines = vl;
