@@ -4,6 +4,14 @@
 #include "DocWidget.h"
 #include "MarkdownPreview.h"
 
+void MiniMap::mousePressEvent(QMouseEvent *event) {
+	auto pos = event->position();
+	m_firstVisibleLine = qMax(0, (int)pos.y() - m_visibleLines/2);
+	//emit vScrollValueChanged(m_firstVisibleLine);
+	m_docWidget->syncEditorWithMinimap(m_firstVisibleLine);
+	update();
+}
+//----------------------------------------------------------------------
 BlockData* getBlockData(QTextBlock srcBlock, bool init /*, int length*/) {
 	assert( srcBlock.isValid() );
 	int bn = srcBlock.blockNumber();	//	for Debug
@@ -458,4 +466,7 @@ void DocWidget::syncScrollFromRight(int value)
 void DocWidget::syncMinimapWithEditor(int value) {
 	m_minimap->m_firstVisibleLine = value;
 	m_minimap->update();
+}
+void DocWidget::syncEditorWithMinimap(int value) {
+	m_editor->verticalScrollBar()->setValue(value);
 }

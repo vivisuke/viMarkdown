@@ -901,7 +901,9 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	MarkdownEditor *editor = newEditor(docWidget, splitter, readOnly);
 	MarkdownPreview *preview = newPreview(docWidget, splitter, readOnly);
 	MiniMap *minimap = docWidget->m_minimap = new MiniMap(splitter);
+	minimap->m_docWidget = docWidget;
 	minimap->setFixedWidth(MINMAP_WIDTH);
+	//connect(minimap, &MiniMap::vScrollValueChanged, docWidget, &DocWidget::syncEditorWithMinimap);
 	//docWidget->m_mmPixmap = new QPixmap(MINMAP_WIDTH, 100);
 	DiffView *diffview = docWidget->m_diffview = new DiffView(this, docWidget, splitter);
 	diffview->setDiffMode(true);

@@ -85,6 +85,8 @@ public:
 		m_mapPixmap.fill(Qt::green);
 	}
 	void updateMap(QTextDocument* doc1, QTextDocument* doc2); 
+//signals:
+//	void vScrollValueChanged(int);
 protected:
     void paintEvent(QPaintEvent* event) override {
     	if (m_mapPixmap.isNull()) return;
@@ -96,10 +98,12 @@ protected:
 		p.setPen(QPen(Qt::blue, 1, Qt::SolidLine));
         p.drawRect(0, y, w, h);
     }
+	void mousePressEvent(QMouseEvent *event) override;
 public:
 	int		m_firstVisibleLine = 0;			//	0 オリジン
 	int		m_visibleLines = 10;			//	ビュー表示行数
 	QPixmap	m_mapPixmap;
+	class DocWidget	*m_docWidget;
 };
 
 class DocWidget : public QWidget
@@ -124,6 +128,7 @@ public:
     void	syncScrollFromLeft(int value);
     void	syncScrollFromRight(int value);
     void	syncMinimapWithEditor(int value);
+    void	syncEditorWithMinimap(int value);
 
 public:
 	DocType		m_docType = DocType::Markdown;
