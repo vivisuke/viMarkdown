@@ -93,7 +93,7 @@ protected:
 		int y = m_firstVisibleLine;
 		int w = width() - 1;
 		int h = m_visibleLines;
-		p.setPen(QPen(Qt::red, 1, Qt::SolidLine));
+		p.setPen(QPen(Qt::blue, 1, Qt::SolidLine));
         p.drawRect(0, y, w, h);
     }
 public:

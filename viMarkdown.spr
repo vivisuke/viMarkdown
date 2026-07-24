@@ -706,7 +706,7 @@ SPR# 状 P Open Close ver     Type  概要
 0701 ◎ C 07/24 07/25 03038│ToDo│MiniMap：view スクロール位置、表示可能行数をメンバ変数で保持、リサイズ時に更新、update
 0702 ● C 07/24            │ToDo│MainWindow::onAction_DiffMode(), onAction_DiffWithFile()：diffモード遷移する処理を関数化
 0703 ◎ C 07/25 07/25 03038│ToDo│diff表示中 > ビュー：垂直スクロールした場合、MiniMap カーソル表示位置更新
-0704 ● C 07/25            │ToDo│
+0704 ◎ C 07/25 07/25 03038│ToDo│diff表示 > MiniMap：スクロール位置を赤矩形表示→青矩形表示に変更してみる
 0705 ● C 07/25            │ToDo│
 0706 ● C 07/25            │ToDo│
 0707 ● C 07/25            │ToDo│
