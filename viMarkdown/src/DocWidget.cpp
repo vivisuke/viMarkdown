@@ -5,9 +5,20 @@
 #include "MarkdownPreview.h"
 
 void MiniMap::mousePressEvent(QMouseEvent *event) {
+	m_mousePressed = true;
+	auto pos = event->position();
+	//m_pressedY = pos.y();
+	m_firstVisibleLine = qMax(0, (int)pos.y() - m_visibleLines/2);
+	m_docWidget->syncEditorWithMinimap(m_firstVisibleLine);
+	update();
+}
+void MiniMap::mouseReleaseEvent(QMouseEvent *event) {
+	m_mousePressed = false;
+}
+void MiniMap::mouseMoveEvent(QMouseEvent *event) {
+	if( !m_mousePressed ) return;
 	auto pos = event->position();
 	m_firstVisibleLine = qMax(0, (int)pos.y() - m_visibleLines/2);
-	//emit vScrollValueChanged(m_firstVisibleLine);
 	m_docWidget->syncEditorWithMinimap(m_firstVisibleLine);
 	update();
 }

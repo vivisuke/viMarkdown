@@ -99,9 +99,13 @@ protected:
         p.drawRect(0, y, w, h);
     }
 	void mousePressEvent(QMouseEvent *event) override;
+	void mouseReleaseEvent(QMouseEvent *event) override;
+	void mouseMoveEvent(QMouseEvent *event) override;
 public:
+	bool	m_mousePressed = false;
 	int		m_firstVisibleLine = 0;			//	0 オリジン
 	int		m_visibleLines = 10;			//	ビュー表示行数
+	int		m_pressedY;
 	QPixmap	m_mapPixmap;
 	class DocWidget	*m_docWidget;
 };
