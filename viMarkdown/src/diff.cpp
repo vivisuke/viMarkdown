@@ -603,11 +603,10 @@ void MainWindow::do_diff() {
 	                    setDummyLine(block2);
 	                    block2 = block2.next();
 		        	} else {
-		        		break;
-		        		//cur2.movePosition(QTextCursor::End);
-	                    //cur2.insertText("\n");
-	                    //QTextBlock prevBlock = cur2.block().previous();
-                        //setDummyLine(prevBlock);
+		        		cur2.movePosition(QTextCursor::End);
+	                    cur2.insertText("\n");
+	                    QTextBlock b = doc2->end();
+                        setDummyLine(b);
 		        	}
             	}
             } else if( d < 0 ) {
@@ -618,7 +617,10 @@ void MainWindow::do_diff() {
 	                    setDummyLine(block1);
 	                    block1 = block1.next();
 		        	} else {
-		        		break;
+		        		cur1.movePosition(QTextCursor::End);
+	                    cur1.insertText("\n");
+	                    QTextBlock b = doc1->end();
+                        setDummyLine(b);
 		        	}
             	}
             }

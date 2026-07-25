@@ -89,6 +89,10 @@ void do_swap_case(QTextCursor& cursor, int rcnt) {
 	cursor.setPosition(block.position() + ix9, QTextCursor::KeepAnchor);
 	cursor.insertText(text);
 }
+void save_preffered_x() {
+	if( gvi.m_editor != nullptr ) {
+	}
+}
 void MainWindow::do_cdy_moved(QTextCursor& cursor) {
 	if( gvi.m_operator == 'c' ) {
 		if( cursor.hasSelection() )
@@ -949,6 +953,10 @@ doneW:
 	case '$':
 		if( !block.text().isEmpty() ) {
 			gvi.m_preferred_x = INT_MAX;
+			if( rcnt > 1 ) {
+				cursor.movePosition(QTextCursor::NextBlock, moveMode, rcnt-1);
+				block = cursor.block();
+			}
 			cursor.setPosition(block.position() + block.text().size() - 1, moveMode);
 		}
 		break;
