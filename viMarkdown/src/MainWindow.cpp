@@ -324,6 +324,7 @@ void MainWindow::setup_tabMenu() {
 	    QMenu menu(this);
 	    QAction *closeAction = menu.addAction(tr("Close"));
 	    QAction *copyPathAction = menu.addAction(tr("Copy Fullpath"));
+	    QAction *copyTitleAction = menu.addAction(tr("Copy Title"));
 	    QAction *selectedAction = menu.exec(tabBar->mapToGlobal(pos));
 	    if (selectedAction == closeAction) {
 	        ui->tabWidget->removeTab(index); 
@@ -335,6 +336,12 @@ void MainWindow::setup_tabMenu() {
 	        		clipboard->setText(docWidget->m_fullPath);
 	        	else
 	        		clipboard->setText(docWidget->m_title);
+	        }
+	    } else if (selectedAction == copyTitleAction) {
+	        DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(index);
+	        if( docWidget != nullptr ) {
+	        	QClipboard *clipboard = QGuiApplication::clipboard();
+        		clipboard->setText(docWidget->m_title);
 	        }
 	    }
 	});
