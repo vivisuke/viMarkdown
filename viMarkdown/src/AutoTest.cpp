@@ -1264,6 +1264,19 @@ const QList<ViTestCase> viTestCases = {
             "k", "abc\n┃  defgh\n\nij\n"   // 2行目のカラム0（1つ目のスペース）に戻る（行末維持が解除されているか）
         }
     },
+	{ "Move to end of line with count (<num>$) and EOL memory",
+        "a┃bc\n  defgh\n\nij\n",
+        {
+            "2$", "abc\n  defg┃h\n\nij\n", // 2$: 1行下（2行目）の末尾 'h' に移動
+            "k", "ab┃c\n  defgh\n\nij\n",  // k: 1行目の末尾 'c' に戻る（行末維持メモリが機能しているか）
+            "4$", "abc\n  defgh\n\ni┃j\n",  // 4$: 3行下（4行目）の末尾 'j' に移動（空行を跨ぐ）
+            "0", "abc\n  defgh\n\n┃ij\n",  // 0: 4行目の絶対行頭 'i' に移動（行末維持メモリが解除される）
+            "k", "abc\n  defgh\n┃\nij\n",  // k: 3行目の空行に戻る
+            "k", "abc\n┃  defgh\n\nij\n",  // k: 2行目のカラム0（1つ目のスペース）に戻る（行末維持が解除されていることの確認）
+            "1$", "abc\n  defg┃h\n\nij\n", // 1$: 現在行（2行目）の末尾 'h' に移動（$ と同等）
+            "10$", "abc\n  defgh\n\ni┃j\n", // 10$: 範囲外の大きなカウントは最終行（4行目）の末尾 'j' で止まる
+        }
+    },
 	{ "Jump to matching bracket (%) - Basic and Search",
         "┃(abc [def] {ghi})\n",
         {
