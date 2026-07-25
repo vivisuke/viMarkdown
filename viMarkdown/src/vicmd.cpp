@@ -1870,6 +1870,10 @@ void MainWindow::do_exCmd(const QString &text, int ix, /*QString cmd, QChar nch,
 		gvi.m_inGlobal = true;
 		do_global(text, ix, cursor, doc, docWidget);
 		gvi.m_inGlobal = false;
+	} else if( is_match(cmd, "di(ff") ) {
+		DocWidget *docWidget = getCurDocWidget();
+		if( docWidget == nullptr ) return;
+		onAction_DiffMode(!docWidget->m_diffMode);
 	} else {
 		statusBar()->showMessage(tr("illegal command."), 5000);
 	}
