@@ -490,6 +490,7 @@ void MainWindow::do_diff() {
 		return;
 	qDebug() << "MainWindow::do_diff()";
 	++m_processing;
+	onAction_DumpBlockUserStates();		//	dump block.userData() for Debug
 	int pos1 = docWidget->m_editor->textCursor().position();
     int pos2 = docWidget->m_diffview->textCursor().position();
 	//##disconnect(docWidget->m_editor, &MarkdownEditor::textChanged, this, &MainWindow::onMDTextChanged);
@@ -511,20 +512,7 @@ void MainWindow::do_diff() {
     int activeCol2 = docWidget->m_diffview->textCursor().positionInBlock();
 	std::vector<QString> lines1 = extractLinesFromDocument(doc1);
     std::vector<QString> lines2 = extractLinesFromDocument(doc2);
-#if 0
-    if( lines1.back() == lines2.back() ) {
-    	lines1.pop_back();
-    	lines2.pop_back();
-    	if( lines1.empty() && lines2.empty() ) {
-    		QTextBlock block1 = doc1->begin();
-    		setPhysicalLine(block1, 1, 0);
-    		QTextBlock block2 = doc2->begin();
-    		setPhysicalLine(block2, 1, 0);
-    		--m_processing;
-    		return;
-    	}
-    }
-#endif
+
     dtl::Diff<QString, std::vector<QString>> d(lines1, lines2);
     d.compose();
 
@@ -553,19 +541,9 @@ void MainWindow::do_diff() {
 	        	block1 = block1.next();
 	        	cur2.setPosition(block2.position()); 
                 cur2.insertText("\n");
-#if 0
-                block2 = cur2.block();
-                assert( block2.isValid() );
-                int bn = block2.blockNumber();
-                QTextBlock dummyBlock = block2.previous();
-                assert( dummyBlock.isValid() );
-                setDummyLine(dummyBlock);
-                dummyBlock.setUserData(nullptr);
-#else
                 setDummyLine(block2);   // 空になった現在のブロック（行）をダミーに設定
 	        	block2.setUserData(nullptr);		//	clear userData
                 block2 = block2.next();  // 下に押し出されたテキストが入っているブロックへ進む
-#endif
             }
         } else if (nDelete == 0) { // 右側（doc2）で新しく追加された場合のみ
             for (int ln = diffLn2; ln < endLn2; ++ln) {
@@ -576,22 +554,15 @@ void MainWindow::do_diff() {
 	        	block2 = block2.next();
 	        	cur1.setPosition(block1.position());
                 cur1.insertText("\n");
-#if 0
-                block1 = cur1.block();
-                QTextBlock dummyBlock = block1.previous();
-                setDummyLine(dummyBlock);
-                dummyBlock.setUserData(nullptr);
-#else
                 setDummyLine(block1);   // 空になった現在のブロック（行）をダミーに設定
 	        	block1.setUserData(nullptr);		//	clear userData
                 block1 = block1.next();  // 下に押し出されたテキストが入っているブロックへ進む
-#endif
             }
         } else {	//	変更行
 			//std::vector<QChar> text1, text2;
 			QString text1, text2;
 			auto b1 = block1, b2 = block2;
-			for(int i = 0; i < nAdd; ++i, b1=b1.next()) {
+			for(int i = 0; i < nDelete; ++i, b1=b1.next()) {
 				if( !b1.text().isEmpty() ) {
 					//const QChar *ptr = b1.text().data();
 					//text1.insert(text1.end(), ptr, ptr + b1.text().size());
@@ -599,7 +570,7 @@ void MainWindow::do_diff() {
 				}
 				text1.push_back(QChar(u'\n'));
 			}
-			for(int i = 0; i < nDelete; ++i, b2=b2.next()) {
+			for(int i = 0; i < nAdd; ++i, b2=b2.next()) {
 				if( !b2.text().isEmpty() ) {
 					//const QChar *ptr = b2.text().data();
 					//text2.insert(text2.end(), ptr, ptr + b2.text().size());
@@ -626,29 +597,29 @@ void MainWindow::do_diff() {
             int d = (endLn1 - diffLn1) - (endLn2 - diffLn2);
             if( d > 0 ) {
             	for(int i = 0; i < d; ++i) {
-		        	cur2.setPosition(block2.position());
-                    cur2.insertText("\n");
-#if 0
-	                block2 = cur2.block();
-                    QTextBlock dummyBlock = block2.previous();
-                    setDummyLine(dummyBlock);
-#else
-                    setDummyLine(block2);
-                    block2 = block2.next();
-#endif
+		        	if( block2.isValid() ) {
+			        	cur2.setPosition(block2.position());
+	                    cur2.insertText("\n");
+	                    setDummyLine(block2);
+	                    block2 = block2.next();
+		        	} else {
+		        		break;
+		        		//cur2.movePosition(QTextCursor::End);
+	                    //cur2.insertText("\n");
+	                    //QTextBlock prevBlock = cur2.block().previous();
+                        //setDummyLine(prevBlock);
+		        	}
             	}
             } else if( d < 0 ) {
             	for(int i = 0; i < -d; ++i) {
-		        	cur1.setPosition(block1.position());
-                    cur1.insertText("\n");
-#if 0
-	                block1 = cur1.block();
-                    QTextBlock dummyBlock = block1.previous();
-                    setDummyLine(dummyBlock);
-#else
-                    setDummyLine(block1);
-                    block1 = block1.next();
-#endif
+		        	if( block1.isValid() ) {
+			        	cur1.setPosition(block1.position());
+	                    cur1.insertText("\n");
+	                    setDummyLine(block1);
+	                    block1 = block1.next();
+		        	} else {
+		        		break;
+		        	}
             	}
             }
         }
@@ -703,41 +674,6 @@ void MainWindow::do_diff() {
     //qDebug() << "cur1_sv.position(): " << cur1_sv.position();
     //docWidget->m_editor->setTextCursor(cur1_sv);
     //docWidget->m_diffview->setTextCursor(cur2_sv);
-#if 0
-    auto restoreCursor = [](MarkdownEditor* editor, int targetRealLine, int targetCol) {
-        QTextDocument* doc = editor->document();
-        QTextBlock block = doc->begin();
-        int realLineCount = 0;
-        
-        while (block.isValid()) {
-            // ダミー行ではない「本物のテキスト行」だけをカウントする
-            if (!isDummyLine(block)) {
-                if (realLineCount == targetRealLine) {
-                    break;
-                }
-                realLineCount++;
-            }
-            block = block.next();
-        }
-        
-        if (block.isValid()) {
-            QTextCursor cur(block);
-            // 行内の元の列位置に移動（行の長さを超えないようにガード）
-            int col = qMin(targetCol, block.text().length());
-            cur.setPosition(block.position() + col);
-            editor->setTextCursor(cur);
-        }
-    };
-
-    restoreCursor(docWidget->m_editor, activeLine1, activeCol1);
-    restoreCursor(docWidget->m_diffview, activeLine2, activeCol2);
-#endif
-#if 0
-    cur1.setPosition(pos1);
-	docWidget->m_editor->setTextCursor(cur1);
-    cur2.setPosition(pos2);
-	docWidget->m_editor->setTextCursor(cur2);
-#endif
 	//do_output(QString("pos1 = %1, pos2 = %2").arg(pos1).arg(pos2));
 	--m_processing;
 }

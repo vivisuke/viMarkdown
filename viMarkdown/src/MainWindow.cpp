@@ -62,6 +62,7 @@ const QStringView KEY_FAVORITE_FILES(u"favoriteFilePaths");
 
 uchar blockType(const QTextBlock &block);
 void setBlockType(QTextBlock block, uchar type);
+void setPhysicalLine(QTextBlock &block, int ln, int flag);
 
 Global g;
 ViStatus gvi;
@@ -913,6 +914,8 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	//connect(minimap, &MiniMap::vScrollValueChanged, docWidget, &DocWidget::syncEditorWithMinimap);
 	//docWidget->m_mmPixmap = new QPixmap(MINMAP_WIDTH, 100);
 	DiffView *diffview = docWidget->m_diffview = new DiffView(this, docWidget, splitter);
+	QTextBlock block = diffview->document()->begin();
+	setPhysicalLine(block, 1, 0);
 	diffview->setDiffMode(true);
 	diffview->setLineWrapMode(QPlainTextEdit::NoWrap);
 	connect(diffview, &MarkdownEditor::textChanged, this, &MainWindow::onDiffViewChanged);
