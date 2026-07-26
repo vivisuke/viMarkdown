@@ -1279,8 +1279,12 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 			completed = true;
 		}
 	}
-	auto p2 = cursor.position();	//	fora Debug
+	auto p2 = cursor.position();	//	for Debug
 	if( completed ) {	//	コマンド完結
+		if( cmd != 'j' && cmd != 'k' ) {
+			if( gvi.m_editor != nullptr )
+				gvi.m_editor->savePrefferedX();
+		}
 		if( gvi.m_redoing && gvi.m_currentMode == ViMode::Insert && !gvi.m_insertedText.isEmpty() ) {
 			cursor.insertText(gvi.m_insertedText);
 			//gvi.m_viCmdMode = true;

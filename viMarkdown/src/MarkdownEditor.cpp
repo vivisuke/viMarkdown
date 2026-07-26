@@ -3108,6 +3108,11 @@ int MarkdownEditor::getVisibleLineCount() const {
     if (lineHeight <= 0) return 0;
     return viewport()->height() / lineHeight;    // 現在見えているビューポート全体の高さを割る
 }
+void MarkdownEditor::savePrefferedX() {
+	auto cr = cursorRect();
+	int scrollX = horizontalScrollBar()->value();
+	qDebug() << "cr.x() + scrollX = " << cr.x() + scrollX;
+}
 void MarkdownEditor::dragEnterEvent(QDragEnterEvent *e) {
    	e->ignore();
 }
