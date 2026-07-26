@@ -726,11 +726,11 @@ SPR# 状 P Open Close ver     Type  概要
 0720 ◎ C 07/26 07/26 03039│問題│README_ja.md, README.md を diff すると、行数が合わなくなる（末尾ダミー行が挿入されていない）
 0721 ◎ C 07/26 07/27 03039│ToDo│m_preferred_x は エディタ・プレビューに移動
 0722 ◎ C 07/26 07/27 03039│ToDo│j k 以外の場合は、カーソル水平位置保存
-0723 ● C 07/26            │ToDo│
-0724 ● C 07/26            │ToDo│
-0725 ● C 07/26            │ToDo│
-0726 ● C 07/26            │ToDo│
-0727 ● C 07/26            │ToDo│
-0728 ● C 07/26            │ToDo│
-0729 ● C 07/26            │ToDo│
-0730 ● C 07/26            │ToDo│
+0723 ◎ C 07/27 07/27 03039│ToDo│MarkdownEditor：保存カーソル水平位置取得関数追加
+0724 ● C 07/27            │問題│README.md の画像は英語版画像の方がよい
+0725 ● C 07/27            │ToDo│マウスクリックの場合も m_preferred_x 設定
+0726 ● C 07/27            │ToDo│$ コマンドの場合も、各ビューの m_preferred_x を INT_MAX に
+0727 ● C 07/27            │ToDo│
+0728 ● C 07/27            │ToDo│
+0729 ● C 07/27            │ToDo│
+0730 ● C 07/27            │ToDo│

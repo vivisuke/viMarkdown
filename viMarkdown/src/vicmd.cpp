@@ -832,11 +832,16 @@ void MainWindow::do_vi_motion(QChar cmd, QTextCursor& cursor, int rcnt, DocWidge
 			if( !cursor.movePosition(QTextCursor::Up, moveMode, rcnt) ) break;
 		} while( cursor.block().isValid() && !cursor.block().isVisible() );
 		block = cursor.block();
+		assert( block.isValid() );
 		if( gvi.m_preferred_x == INT_MAX ) {
 			cursor.setPosition(block.position() + block.text().size());
 			moveLeftIfAtEol(cursor);
-		} else if( block.isValid() && !block.text().isEmpty() && cursor.position() == block.position() + block.text().size() )
-			cursor.movePosition(QTextCursor::Left);		//	非空行の改行位置には移動不可
+		} else {
+			int offset = gvi.m_editor->getPrefferdOffset(block);
+			cursor.setPosition(block.position() + offset);
+			if( block.isValid() && !block.text().isEmpty() && cursor.position() == block.position() + block.text().size() )
+				cursor.movePosition(QTextCursor::Left);		//	非空行の改行位置には移動不可
+		}
 		gvi.m_linewiseMoved = true;
 		break;
 	case 'j':
@@ -844,11 +849,16 @@ void MainWindow::do_vi_motion(QChar cmd, QTextCursor& cursor, int rcnt, DocWidge
 			if( !cursor.movePosition(QTextCursor::Down, moveMode, rcnt) ) break;
 		} while( cursor.block().isValid() && !cursor.block().isVisible() );
 		block = cursor.block();
+		assert( block.isValid() );
 		if( gvi.m_preferred_x == INT_MAX ) {	//	'$' で行末移動してた場合
 			cursor.setPosition(block.position() + block.text().size());
 			moveLeftIfAtEol(cursor);
-		} else if( block.isValid() && !block.text().isEmpty() && cursor.position() == block.position() + block.text().size() )
-			cursor.movePosition(QTextCursor::Left);		//	非空行の改行位置には移動不可
+		} else {
+			int offset = gvi.m_editor->getPrefferdOffset(block);
+			cursor.setPosition(block.position() + offset);
+			if( /*block.isValid() &&*/ !block.text().isEmpty() && cursor.position() == block.position() + block.text().size() )
+				cursor.movePosition(QTextCursor::Left);		//	非空行の改行位置には移動不可
+		}
 		gvi.m_linewiseMoved = true;
 		break;
 	case 'h':

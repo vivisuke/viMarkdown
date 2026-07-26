@@ -238,6 +238,7 @@ public:
     void	do_redo();
     int		getVisibleLineCount() const;
     void	savePrefferedX();
+    int		getPrefferdOffset(const QTextBlock& block);
 
 signals:
     void	tab_pressed();
@@ -305,7 +306,7 @@ private:
 	int		m_selEnd = 0;
 	int		m_linkClickedPos = -1;			//	リンククリック位置
 	int		m_charWidth = 0;
-	int		m_preferred_x = -1;				//	保存カーソル位置
+	int		m_preferredX = -1;				//	保存カーソル位置
 	//QTimer	*m_blinkTimer;
     //bool	m_cursorVisible = true;
 	QString	m_lastCurBlockText;				//	事前のカーソルブロックテキスト

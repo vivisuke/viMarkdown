@@ -3112,6 +3112,18 @@ void MarkdownEditor::savePrefferedX() {
 	auto cr = cursorRect();
 	int scrollX = horizontalScrollBar()->value();
 	qDebug() << "cr.x() + scrollX = " << cr.x() + scrollX;
+	m_preferredX = cr.x() + scrollX;
+}
+int MarkdownEditor::getPrefferdOffset(const QTextBlock& block) {
+	if (!block.isValid()) return 0;
+	QTextLayout *layout = block.layout();
+    if (!layout || layout->lineCount() == 0) return 0;
+    QTextLine line = layout->lineAt(0);
+    if (!line.isValid()) return 0;
+    qreal relativeX = m_preferredX - (layout->position().x() + line.x());
+    int offset = line.xToCursor(relativeX);
+    int maxOffset = block.text().length();
+    return qBound(0, offset, maxOffset);
 }
 void MarkdownEditor::dragEnterEvent(QDragEnterEvent *e) {
    	e->ignore();
