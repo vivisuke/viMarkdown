@@ -225,6 +225,8 @@ void MainWindow::do_vi_insert(QChar cmd, QTextCursor& cursor, int rcnt) {
 	case 'C':		//	カーソル位置から行末まで削除して挿入モードへ遷移
 		cursor.beginEditBlock();
 		g.m_editBlockOpen = true;
+		if( rcnt > 1 )
+			cursor.movePosition(QTextCursor::Down, QTextCursor::KeepAnchor, rcnt - 1);
 		cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
 		if( cursor.hasSelection() ) {
 			gvi.m_yankBuffer = cursor.selectedText();
