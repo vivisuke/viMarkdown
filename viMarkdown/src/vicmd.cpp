@@ -837,40 +837,50 @@ void MainWindow::do_vi_motion(QChar cmd, QTextCursor& cursor, int rcnt, DocWidge
 	QTextDocument *doc = cursor.document();
 	QTextBlock block = cursor.block();
 	switch( cmd.unicode() ) {
-	case 'k':
+	case 'k': {
 		do {
 			if( !cursor.movePosition(QTextCursor::Up, moveMode, rcnt) ) break;
 		} while( cursor.block().isValid() && !cursor.block().isVisible() );
 		block = cursor.block();
 		assert( block.isValid() );
-		if( gvi.m_preferred_x == INT_MAX ) {
+		//if( gvi.m_preferred_x == INT_MAX ) {
+		//	cursor.setPosition(block.position() + block.text().size());
+		//	moveLeftIfAtEol(cursor);
+		//} else {
+		int offset = gvi.m_editor->getPrefferdOffset(block);
+		if( offset == INT_MAX ) {
 			cursor.setPosition(block.position() + block.text().size());
 			moveLeftIfAtEol(cursor);
 		} else {
-			int offset = gvi.m_editor->getPrefferdOffset(block);
 			cursor.setPosition(block.position() + offset);
 			if( block.isValid() && !block.text().isEmpty() && cursor.position() == block.position() + block.text().size() )
 				cursor.movePosition(QTextCursor::Left);		//	非空行の改行位置には移動不可
 		}
 		gvi.m_linewiseMoved = true;
 		break;
-	case 'j':
+	}
+	case 'j': {
 		do {
 			if( !cursor.movePosition(QTextCursor::Down, moveMode, rcnt) ) break;
 		} while( cursor.block().isValid() && !cursor.block().isVisible() );
 		block = cursor.block();
 		assert( block.isValid() );
-		if( gvi.m_preferred_x == INT_MAX ) {	//	'$' で行末移動してた場合
+		//if( gvi.m_preferred_x == INT_MAX ) {	//	'$' で行末移動してた場合
+		//	cursor.setPosition(block.position() + block.text().size());
+		//	moveLeftIfAtEol(cursor);
+		//} else {
+		int offset = gvi.m_editor->getPrefferdOffset(block);
+		if( offset == INT_MAX ) {
 			cursor.setPosition(block.position() + block.text().size());
 			moveLeftIfAtEol(cursor);
 		} else {
-			int offset = gvi.m_editor->getPrefferdOffset(block);
 			cursor.setPosition(block.position() + offset);
 			if( /*block.isValid() &&*/ !block.text().isEmpty() && cursor.position() == block.position() + block.text().size() )
 				cursor.movePosition(QTextCursor::Left);		//	非空行の改行位置には移動不可
 		}
 		gvi.m_linewiseMoved = true;
 		break;
+	}
 	case 'h':
 		if( cursor.position() == block.position() ) {		//	行頭にいる場合
 			if( is_folded(block) )
@@ -972,7 +982,8 @@ doneW:
 		break;
 	case '$':
 		if( !block.text().isEmpty() ) {
-			gvi.m_preferred_x = INT_MAX;
+			//gvi.m_preferred_x = INT_MAX;
+			gvi.m_editor->setPrefferedX(INT_MAX);
 			if( rcnt > 1 ) {
 				cursor.movePosition(QTextCursor::NextBlock, moveMode, rcnt-1);
 				block = cursor.block();
@@ -1041,10 +1052,10 @@ doneW:
 	do_cdy_moved(cursor);
 	if( gvi.m_vMode != u' ' )
 		docWidget->m_editor->highlightVText(cursor);
-	if( cmd.unicode() != u'$' && cmd.unicode() != u'j' && cmd.unicode() != u'k' ) {
-		auto r = docWidget->m_editor->cursorRect();
-		gvi.m_preferred_x = r.x();
-	}
+	//if( cmd.unicode() != u'$' && cmd.unicode() != u'j' && cmd.unicode() != u'k' ) {
+	//	auto r = docWidget->m_editor->cursorRect();
+	//	gvi.m_preferred_x = r.x();
+	//}
 }
 void do_join(QTextCursor& cursor, int rcnt) {
 	QTextDocument *doc = cursor.document();
@@ -1301,7 +1312,7 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 	}
 	auto p2 = cursor.position();	//	for Debug
 	if( completed ) {	//	コマンド完結
-		if( cmd != 'j' && cmd != 'k' ) {
+		if( cmd != 'j' && cmd != 'k' && cmd != '$' ) {
 			if( gvi.m_editor != nullptr )
 				gvi.m_editor->savePrefferedX(cursor);
 		}

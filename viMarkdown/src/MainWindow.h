@@ -170,7 +170,7 @@ struct ViStatus {
     QChar	m_last_fFtT = ' ';			//	{fFtT}
     QChar	m_last_fFtT_char = ' ';		//	{fFtT}
     QChar	m_vMode = ' ';				//	v V モード
-	int		m_preferred_x = 0;			//	本来の x 座標
+	//int		m_preferred_x = 0;			//	本来の x 座標
 	int		m_vAnchor;					//	v コマンド用アンカー位置（position）
 	int		m_vAnchorBlock;				//	v コマンド用アンカー位置（blocknumber）
     int		m_opCount = 1;				//	op 繰り返し回数 for c d y

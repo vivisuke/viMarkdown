@@ -3108,6 +3108,7 @@ int MarkdownEditor::getVisibleLineCount() const {
     if (lineHeight <= 0) return 0;
     return viewport()->height() / lineHeight;    // 現在見えているビューポート全体の高さを割る
 }
+//void MarkdownEditor::savePrefferedX(int x) {
 void MarkdownEditor::savePrefferedX(const QTextCursor& cursor) {
 #if 1
 	QFontMetrics fm(font());
@@ -3129,6 +3130,7 @@ void MarkdownEditor::savePrefferedX(const QTextCursor& cursor) {
 }
 int MarkdownEditor::getPrefferdOffset(const QTextBlock& block) {
 	if (!block.isValid()) return 0;
+	if( m_preferredX == INT_MAX ) return INT_MAX;
 	QTextLayout *layout = block.layout();
     if (!layout || layout->lineCount() == 0) return 0;
     QTextLine line = layout->lineAt(0);
