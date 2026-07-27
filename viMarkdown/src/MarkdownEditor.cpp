@@ -3108,11 +3108,24 @@ int MarkdownEditor::getVisibleLineCount() const {
     if (lineHeight <= 0) return 0;
     return viewport()->height() / lineHeight;    // 現在見えているビューポート全体の高さを割る
 }
-void MarkdownEditor::savePrefferedX() {
+void MarkdownEditor::savePrefferedX(const QTextCursor& cursor) {
+#if 1
+	QFontMetrics fm(font());
+	const QTextBlock block = cursor.block();
+	const QString txt = block.text();
+	int offset = cursor.position() - block.position();
+	int wd = fm.horizontalAdvance(txt.left(offset)); 
+	int fw = fm.horizontalAdvance(u'9');
+	m_preferredX = wd + fw/2;
+	qDebug() << "m_preferredX = " << m_preferredX << ", m_preferredX/fw = " << m_preferredX/fw;
+#else
 	auto cr = cursorRect();
 	int scrollX = horizontalScrollBar()->value();
-	qDebug() << "cr.x() + scrollX = " << cr.x() + scrollX;
+	QFontMetrics fm(font());
+	int wd = fm.horizontalAdvance(u'9'); 
 	m_preferredX = cr.x() + scrollX;
+	qDebug() << "cr.x() + scrollX = " << cr.x() + scrollX << ", x/wd = " << m_preferredX / wd;
+#endif
 }
 int MarkdownEditor::getPrefferdOffset(const QTextBlock& block) {
 	if (!block.isValid()) return 0;

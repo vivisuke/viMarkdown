@@ -237,7 +237,7 @@ public:
     void	do_undo();
     void	do_redo();
     int		getVisibleLineCount() const;
-    void	savePrefferedX();
+    void	savePrefferedX(const QTextCursor&);
     int		getPrefferdOffset(const QTextBlock& block);
 
 signals:

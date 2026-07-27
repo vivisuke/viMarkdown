@@ -1293,7 +1293,7 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 	if( completed ) {	//	コマンド完結
 		if( cmd != 'j' && cmd != 'k' ) {
 			if( gvi.m_editor != nullptr )
-				gvi.m_editor->savePrefferedX();
+				gvi.m_editor->savePrefferedX(cursor);
 		}
 		if( gvi.m_redoing && gvi.m_currentMode == ViMode::Insert && !gvi.m_insertedText.isEmpty() ) {
 			cursor.insertText(gvi.m_insertedText);
