@@ -322,6 +322,8 @@ void MainWindow::do_vi_delete(QChar cmd, QTextCursor& cursor, int rcnt) {		//	x 
 		}
 		break;
 	case 'D':
+		if( rcnt > 1 )
+			cursor.movePosition(QTextCursor::Down, QTextCursor::KeepAnchor, rcnt - 1);
 		cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
 		if( cursor.hasSelection() ) {
 			gvi.m_yankBuffer = cursor.selectedText();

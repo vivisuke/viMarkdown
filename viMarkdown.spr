@@ -732,5 +732,15 @@ SPR# 状 P Open Close ver     Type  概要
 0726 ● C 07/27            │ToDo│$ コマンドの場合も、各ビューの m_preferred_x を INT_MAX に
 0727 ◎ C 07/27 07/27 03039│問題│MarkdownEditor::savePrefferedX() をコールするタイミングが変？
 0728 ◎ C 07/27 07/27 03039│問題│<num>C の <num> が効かない
-0729 ● C 07/27            │ToDo│
-0730 ● C 07/27            │ToDo│
+0729 ◎ C 07/27 07/27 03039│問題│<num>D の <num> が効かない
+0730 ● C 07/27            │問題│C のあとの Undo が効かない
+0731 ● C 07/27            │ToDo│
+0732 ● C 07/27            │ToDo│
+0733 ● C 07/27            │ToDo│
+0734 ● C 07/27            │ToDo│
+0735 ● C 07/27            │ToDo│
+0736 ● C 07/27            │ToDo│
+0737 ● C 07/27            │ToDo│
+0738 ● C 07/27            │ToDo│
+0739 ● C 07/27            │ToDo│
+0740 ● C 07/27            │ToDo│
