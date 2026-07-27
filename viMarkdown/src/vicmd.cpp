@@ -233,7 +233,11 @@ void MainWindow::do_vi_insert(QChar cmd, QTextCursor& cursor, int rcnt) {
 		if( cursor.hasSelection() ) {
 			gvi.m_yankBuffer = cursor.selectedText();
 			gvi.m_linewiseYanked = false;
-			cursor.deleteChar();
+			//cursor.deleteChar();
+			if( gvi.m_editor != nullptr )
+				gvi.m_editor->do_deleteText(cursor);
+			else
+				cursor.deleteChar();
 		}
 		cursor.endEditBlock();
 		gvi.m_joinEditBlock = true;
