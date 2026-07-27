@@ -1145,6 +1145,8 @@ void MarkdownEditor::mouseReleaseEvent(QMouseEvent *event) {
 	emit title_clicked(title);
 #endif
 	MarkdownBaseEdit::mouseReleaseEvent(event);
+	QTextCursor cursor = textCursor();
+	savePrefferedX(cursor);
 }
 void MarkdownEditor::selectWordAt(QTextCursor& cursor) {
 	int pos = cursor.position();

@@ -728,8 +728,8 @@ SPR# 状 P Open Close ver     Type  概要
 0722 ◎ C 07/26 07/27 03039│ToDo│j k 以外の場合は、カーソル水平位置保存
 0723 ◎ C 07/27 07/27 03039│ToDo│MarkdownEditor：保存カーソル水平位置取得関数追加
 0724 ● C 07/27            │問題│README.md の画像は英語版画像の方がよい
-0725 ● C 07/27            │ToDo│マウスクリックの場合も m_preferredX 設定
-0726 ◎ C 07/27 07/28 03039│ToDo│$ コマンドの場合も、各ビューの m_preferredX を INT_MAX に
+0725 ◎ C 07/27 07/28 03040│ToDo│マウスクリックの場合も m_preferredX 設定
+0726 ◎ C 07/27 07/28 03040│ToDo│$ コマンドの場合も、各ビューの m_preferredX を INT_MAX に
 0727 ◎ C 07/27 07/27 03039│問題│MarkdownEditor::savePrefferedX() をコールするタイミングが変？
 0728 ◎ C 07/27 07/27 03039│問題│<num>C の <num> が効かない
 0729 ◎ C 07/27 07/27 03039│問題│<num>D の <num> が効かない
