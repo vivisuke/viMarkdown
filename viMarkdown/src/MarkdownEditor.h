@@ -149,6 +149,8 @@ signals:
     void	esc_pressed();
 protected:
     void	keyPressEvent(QKeyEvent *e) override;
+    void	mouseReleaseEvent(QMouseEvent *e) override;
+    void	mouseDoubleClickEvent(QMouseEvent *e) override;
 private:
     int		m_curix = 0;		//	現補完候補
     QStringList	m_cmpl_lst;		//	補完候補

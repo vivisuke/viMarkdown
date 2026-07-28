@@ -707,6 +707,17 @@ void SvgCompleter::highlight_cur_line() {
 	setTextCursor(cursor);
 	ensureCursorVisible();
 }
+void SvgCompleter::mouseReleaseEvent(QMouseEvent *e) {
+	QTextEdit::mouseReleaseEvent(e);
+	if (e->button() == Qt::LeftButton) {
+        // 3. 現在のテキストカーソルを取得します。
+        QTextCursor cursor = textCursor();
+        m_curix = cursor.block().blockNumber();
+        highlight_cur_line();
+    }
+}
+void SvgCompleter::mouseDoubleClickEvent(QMouseEvent *e) {
+}
 void SvgCompleter::keyPressEvent(QKeyEvent *e) {
 	if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) {		//	改行入力
 		emit enter_pressed();
