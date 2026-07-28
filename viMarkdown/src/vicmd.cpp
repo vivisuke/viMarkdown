@@ -68,11 +68,15 @@ void do_r(QChar ch, QTextCursor& cursor, int rcnt) {
 void do_openline(QTextCursor& cursor, bool before) {
 	if( before ) {
 		cursor.movePosition(QTextCursor::StartOfBlock);
-		cursor.insertText("\n");
+		//cursor.insertText("\n");
+		if( gvi.m_editor != nullptr )
+			gvi.m_editor->do_insertText(cursor, "\n");
 		cursor.movePosition(QTextCursor::PreviousBlock);
 	} else {
 		cursor.setPosition(cursor.block().position() + cursor.block().text().size());
-		cursor.insertText("\n");
+		//cursor.insertText("\n");
+		if( gvi.m_editor != nullptr )
+			gvi.m_editor->do_insertText(cursor, "\n");
 	}
 }
 void do_swap_case(QTextCursor& cursor, int rcnt) {
@@ -216,15 +220,17 @@ void MainWindow::do_vi_insert(QChar cmd, QTextCursor& cursor, int rcnt) {
 		//gvi.m_joinEditBlock = true;
 		break;
 	case 'o':
-		cursor.beginEditBlock();
+		//cursor.beginEditBlock();
 		//g.m_editBlockOpen = true;
+		if( gvi.m_editor != nullptr )
+			gvi.m_editor->openUndoBlock();
 #if 1
 		do_openline(cursor, false);
 #else
 		//cursor.movePosition(QTextCursor::EndOfBlock);
 		//insertEnter();
 #endif
-		cursor.endEditBlock();
+		//cursor.endEditBlock();
 		//gvi.m_joinEditBlock = true;
 		break;
 	case 'C':		//	カーソル位置から行末まで削除して挿入モードへ遷移
