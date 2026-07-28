@@ -189,17 +189,21 @@ void MainWindow::do_vi_insert(QChar cmd, QTextCursor& cursor, int rcnt) {
 		do_vi_change_line(cursor);
 		break;
 	case 's':
-		cursor.beginEditBlock();	//	文字削除とその後の文字挿入を１回でundo可能にするため
+		//cursor.beginEditBlock();	//	文字削除とその後の文字挿入を１回でundo可能にするため
 		g.m_editBlockOpen = true;
 		rcnt = qMin(rcnt, eolpos - cursor.position());
 		cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, rcnt);
+		if( gvi.m_editor != nullptr )
+			gvi.m_editor->openUndoBlock();
 		if( cursor.hasSelection() ) {
 			gvi.m_yankBuffer = cursor.selectedText();
-			cursor.deleteChar();
+			if( gvi.m_editor != nullptr )
+				gvi.m_editor->do_deleteText(cursor);
+			//cursor.deleteChar();
 			gvi.m_joinEditBlock = true;
 		}
 		rcnt = 1;
-		cursor.endEditBlock();
+		//cursor.endEditBlock();
 		break;
 	case 'O':
 		cursor.beginEditBlock();
@@ -1062,7 +1066,8 @@ doneW:
 void do_join(QTextCursor& cursor, int rcnt) {
 	QTextDocument *doc = cursor.document();
 	int joins = (rcnt <= 1) ? 1 : (rcnt - 1);
-	gvi.m_editor->openUndoBlock();
+	if( gvi.m_editor != nullptr )
+		gvi.m_editor->openUndoBlock();
 	cursor.beginEditBlock();
 	int finalCursorPos = -1;
 	for (int i = 0; i < joins; ++i) {

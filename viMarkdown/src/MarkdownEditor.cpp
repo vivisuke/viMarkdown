@@ -813,6 +813,7 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 			((MainWindow*)m_mainWindow)->exitInsertMode(cursor);	//	暫定的
 			setOverwriteMode(false);
 			this->setTextCursor(cursor);
+			closeUndoBlock();
 			highlightVText(cursor);
 		}
 #ifdef Q_OS_WIN

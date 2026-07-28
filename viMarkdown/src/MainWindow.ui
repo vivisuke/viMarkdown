@@ -1087,7 +1087,7 @@
     <string>&amp;Language...</string>
    </property>
    <property name="shortcut">
-    <string>Shift+F8</string>
+    <string>Alt+F8</string>
    </property>
   </action>
   <action name="action_OutputBar">
