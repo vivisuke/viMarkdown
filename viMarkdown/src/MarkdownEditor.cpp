@@ -916,6 +916,7 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 				viewport()->update();
 				return;
 			}
+#if 0
 			if( gvi.m_joinEditBlock ) {
 				cursor.joinPreviousEditBlock();
 				cursor.insertText(txt);
@@ -927,6 +928,7 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 					gvi.m_insertedText += txt;
 				return;
 			}
+#endif
 			if (gvi.m_recInsertedText)
 				gvi.m_insertedText += txt;
 		} else {	//	Ctrl +

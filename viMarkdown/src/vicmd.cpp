@@ -160,7 +160,7 @@ void do_vi_change_line(QTextCursor& cursor) {
 		cursor.deleteChar();
 	}
 	cursor.endEditBlock();
-	gvi.m_joinEditBlock = true;
+	//gvi.m_joinEditBlock = true;
 	gvi.m_currentMode = ViMode::Insert;
 	//gvi.m_viCmdMode = false;
 }
@@ -200,7 +200,7 @@ void MainWindow::do_vi_insert(QChar cmd, QTextCursor& cursor, int rcnt) {
 			if( gvi.m_editor != nullptr )
 				gvi.m_editor->do_deleteText(cursor);
 			//cursor.deleteChar();
-			gvi.m_joinEditBlock = true;
+			//gvi.m_joinEditBlock = true;
 		}
 		rcnt = 1;
 		//cursor.endEditBlock();
@@ -213,7 +213,7 @@ void MainWindow::do_vi_insert(QChar cmd, QTextCursor& cursor, int rcnt) {
 		cursor.insertText("\n");
 		cursor.movePosition(QTextCursor::PreviousBlock);
 		cursor.endEditBlock();
-		gvi.m_joinEditBlock = true;
+		//gvi.m_joinEditBlock = true;
 		break;
 	case 'o':
 		cursor.beginEditBlock();
@@ -225,7 +225,7 @@ void MainWindow::do_vi_insert(QChar cmd, QTextCursor& cursor, int rcnt) {
 		//insertEnter();
 #endif
 		cursor.endEditBlock();
-		gvi.m_joinEditBlock = true;
+		//gvi.m_joinEditBlock = true;
 		break;
 	case 'C':		//	カーソル位置から行末まで削除して挿入モードへ遷移
 		cursor.beginEditBlock();
@@ -245,7 +245,7 @@ void MainWindow::do_vi_insert(QChar cmd, QTextCursor& cursor, int rcnt) {
 				cursor.deleteChar();
 		}
 		cursor.endEditBlock();
-		gvi.m_joinEditBlock = true;
+		//gvi.m_joinEditBlock = true;
 		break;
 	default:
 		return;
@@ -568,7 +568,7 @@ bool MainWindow::do_cdy(QChar cmd, QTextCursor& cursor) {
 				cursor.beginEditBlock();
 				cursor.deleteChar();
 				cursor.endEditBlock();
-				gvi.m_joinEditBlock = true;
+				//gvi.m_joinEditBlock = true;
 				//gvi.m_viCmdMode = false;
 				gvi.m_currentMode = ViMode::Insert;
 				return true;
@@ -598,7 +598,7 @@ bool MainWindow::do_vi_operator(QChar cmd, QTextCursor& cursor, int rcnt, DocWid
 				cursor.beginEditBlock();
 				cursor.deleteChar();
 				cursor.endEditBlock();
-				gvi.m_joinEditBlock = true;
+				//gvi.m_joinEditBlock = true;
 				//gvi.m_viCmdMode = false;
 				gvi.m_currentMode = ViMode::Insert;
 				return true;
