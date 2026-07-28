@@ -661,7 +661,9 @@ bool MainWindow::do_vi_operator(QChar cmd, QTextCursor& cursor, int rcnt, DocWid
 			if( cursor.hasSelection() ) {
 				gvi.m_yankBuffer = cursor.selectedText();
 				gvi.m_linewiseYanked = true;
-				cursor.deleteChar();
+				//cursor.deleteChar();
+				if( gvi.m_editor != nullptr )
+					gvi.m_editor->do_deleteText(cursor);
 				gvi.m_isEditCommand = true;
 			}
 			break;
