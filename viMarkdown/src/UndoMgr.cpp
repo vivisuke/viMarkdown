@@ -271,6 +271,21 @@ int UndoMgr::redo()
 			pos = p->m_pos;
 			break;
 		}
+		case UndoAction::ACT_REPLACE: {
+			auto p = (UndoActionReplace *)ptr;
+			int ix = p->m_ixDel; // undo時に縮小された位置（m_delText.size()）と一致します
+			m_delText.resize(ix + p->m_sizeDel);
+			m_delText.replace(ix, p->m_sizeDel, getText(m_buffer, p->m_pos, p->m_sizeDel));
+			
+			// 元々あったテキストを削除し、新しく挿入するテキストに置換（再挿入）
+			basicDeleteText(m_buffer, p->m_pos, p->m_sizeDel);
+			basicInsertText(m_buffer, p->m_pos, m_insText.mid(p->m_ixIns, p->m_sizeIns));
+			m_insText.resize(p->m_ixIns);
+			
+			// 置換されたテキストの末尾にカーソルを設定
+			pos = p->m_pos + p->m_sizeIns;
+			break;
+		}
 		}
 	} while( flag );
 	
