@@ -89,7 +89,7 @@ void UndoMgr::closeBlock()
 void UndoMgr::onSaved()
 {
 	m_savePointCur = m_cur;
-	// ※ 個別行の LINEFLAG_SAVED などのビットパック処理は削除しました。
+	// ※ 個別行の LINEFLAG_SAVED などのビットパック処理は削除
 }
 bool UndoMgr::push_back(UndoAction *ptr)
 {
@@ -174,6 +174,7 @@ bool UndoMgr::push_back_delText(int pos, int sz, bool BS /*, int ln*/)
 	act->m_size = sz;
 	act->m_ix = ix;
 	push_back(act);
+	qDebug() << "push_back_delText() pos = " << pos << ", sz = " << sz << ", ix = " << ix << ", delText = " << m_delText.mid(ix, sz);
 	return true;
 }
 
@@ -191,6 +192,7 @@ UndoActionReplace *UndoMgr::push_back_repText(int pos, int dsz, int isz /*, int 
 	act->m_ixDel = ix;
 	act->m_sizeIns = isz;
 	push_back(act);
+	qDebug() << "push_back_repText() pos = " << pos << ", dsz = " << dsz << ", ix = " << ix << ", delText = " << m_delText.mid(ix, dsz);
 	return act;
 }
 int UndoMgr::undo()

@@ -735,12 +735,12 @@ SPR# 状 P Open Close ver     Type  概要
 0729 ◎ C 07/27 07/27 03039│問題│<num>D の <num> が効かない
 0730 ◎ C 07/27 07/27 03039│問題│C<Esc> のあとの Undo が効かない
 0731 ◎ C 07/27 07/27 03039│問題│2Cxyz<Esc> を実行すると、xyz が2回挿入されてしまう
-0732 ● C 07/27            │ToDo│
-0733 ● C 07/27            │ToDo│
-0734 ● C 07/27            │ToDo│
-0735 ● C 07/27            │ToDo│
-0736 ● C 07/27            │ToDo│
-0737 ● C 07/27            │ToDo│
-0738 ● C 07/27            │ToDo│
-0739 ● C 07/27            │ToDo│
-0740 ● C 07/27            │ToDo│
+0732 ● C 07/28            │問題│diff表示中：r<char> で1文字上書きしても、diff再計算されない
+0733 ◎ C 07/28 07/28 03040│問題│r<char> の undo が動作不良
+0734 ● C 07/28            │問題│diff表示中：EOF行に1文字挿入すると、結果が変になる
+0735 ● C 07/28            │問題│UndoMgr::redo()：case UndoAction::ACT_REPLACE:が抜けている？
+0736 ◎ C 07/28 07/28 03040│問題│文字列選択状態で文字入力後の undo が動作不良
+0737 ◎ C 07/28 07/28 03040│問題│MarkdownEditor::do_insertText() > push_back_repText(pos)：選択開始位置になっていない
+0738 ● C 07/28            │ToDo│
+0739 ● C 07/28            │ToDo│
+0740 ● C 07/28            │ToDo│

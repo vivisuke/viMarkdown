@@ -1011,10 +1011,23 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 }
 void MarkdownEditor::do_insertText(QTextCursor& cursor, const QString &txt) {
 	if( !txt.isEmpty() ) {
-		//QTextCursor cursor = textCursor();
-		m_undoMgr->push_back_insText(cursor.position(), txt.size());
+		if( cursor.hasSelection() ) {
+			int dsz = cursor.selectedText().size();
+			m_undoMgr->push_back_repText(cursor.selectionStart(), dsz, txt.size());
+#if 0
+			m_undoMgr->openBlock();
+			int sz = cursor.selectedText().size();
+			m_undoMgr->push_back_delText(cursor.position(), sz, false);
+			m_undoMgr->push_back_insText(cursor.position(), txt.size());
+			m_undoMgr->closeBlock();
+#endif
+		} else {
+			m_undoMgr->push_back_insText(cursor.position(), txt.size());
+		}
 		cursor.insertText(txt);
 		setTextCursor(cursor);
+	} else if( cursor.hasSelection() ) {
+		do_deleteText(cursor);
 	}
 	if( m_diffMode ) {
 		((MainWindow*)m_mainWindow)->do_diff();
@@ -1028,7 +1041,7 @@ void MarkdownEditor::do_deleteText(QTextCursor &cursor) {
 	if( cursor.hasSelection() ) {
 		//auto t = cursor.selectedText();
 		sz = cursor.selectedText().size();
-		pos = qMin(pos, cursor.anchor());
+		pos = cursor.selectionStart();
 	}
 	//auto t1 = cursor.block().text();
 	m_undoMgr->push_back_delText(pos, sz, false);
