@@ -984,7 +984,8 @@ doneW:
 	case '$':
 		if( !block.text().isEmpty() ) {
 			//gvi.m_preferred_x = INT_MAX;
-			gvi.m_editor->setPrefferedX(INT_MAX);
+			if( gvi.m_editor != nullptr )
+				gvi.m_editor->setPrefferedX(INT_MAX);
 			if( rcnt > 1 ) {
 				cursor.movePosition(QTextCursor::NextBlock, moveMode, rcnt-1);
 				block = cursor.block();

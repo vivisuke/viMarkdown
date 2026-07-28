@@ -741,6 +741,6 @@ SPR# 状 P Open Close ver     Type  概要
 0735 ◎ C 07/28 07/28 03040│問題│UndoMgr::redo()：case UndoAction::ACT_REPLACE:が抜けている？
 0736 ◎ C 07/28 07/28 03040│問題│文字列選択状態で文字入力後の undo が動作不良
 0737 ◎ C 07/28 07/28 03040│問題│MarkdownEditor::do_insertText() > push_back_repText(pos)：選択開始位置になっていない
-0738 ● C 07/28            │ToDo│
+0738 ◎ A 07/28 07/28 03040│問題│Test > vi を実行するとクラッシュする
 0739 ● C 07/28            │ToDo│
 0740 ● C 07/28            │ToDo│
