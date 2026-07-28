@@ -251,10 +251,10 @@ void MarkdownPreview::keyPressEvent(QKeyEvent *e) {
 	}
 	if (e->key() == Qt::Key_Escape) {
 		if( g.m_viKeybindings ) {
-			if( g.m_editBlockOpen ) {
-				cursor.endEditBlock();
-				g.m_editBlockOpen = false;
-			}
+			//if( g.m_editBlockOpen ) {
+			//	cursor.endEditBlock();
+			//	g.m_editBlockOpen = false;
+			//}
 			gvi.m_currentMode = ViMode::Normal;
 			//gvi.m_viCmdMode = true;
 		}

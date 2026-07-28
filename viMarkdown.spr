@@ -746,7 +746,7 @@ SPR# 状 P Open Close ver     Type  概要
 0740 ◎ C 07/28 07/28 03040│問題│A<text><Esc> 後の Undo が動作しない
 0741 ◎ C 07/28 07/28 03040│ToDo│ViStatus.m_joinEditBlock はもう不要なので削除
 0742 ◎ C 07/28 07/28 03040│問題│3A<char><Esc> u すると、<char> 1文字しか消えない
-0743 ● C 07/28            │ToDo│ViStatus.m_editBlockOpen も、もう不要なので削除
+0743 ◎ C 07/28 07/28 03040│ToDo│ViStatus.m_editBlockOpen も、もう不要なので削除
 0744 ● C 07/28            │ToDo│
 0745 ● C 07/28            │ToDo│
 0746 ● C 07/28            │ToDo│

@@ -123,7 +123,7 @@ struct Global {
 	bool	m_japanese;
 	bool	m_auto_svg_completer;	//	SVG補完ダイアログ自動表示
 	bool	m_viKeybindings;		//	vi コマンドキー割り当て有効/無効
-	bool	m_editBlockOpen = false;
+	//bool	m_editBlockOpen = false;
 	bool	m_searchForward = true;		//	/ or ? 検索、true for /
 	int		m_editorFontSize;
 	int		m_previewFontSize;

@@ -152,7 +152,7 @@ bool do_fFtT(QTextCursor& cursor, QChar cmd, QChar ch, int rcnt) {
 }
 void do_vi_change_line(QTextCursor& cursor) {
 	cursor.beginEditBlock();	//	１文字削除とその後の文字挿入を１回でundo可能にするため
-	g.m_editBlockOpen = true;
+	//g.m_editBlockOpen = true;
 	hat(cursor);
 	cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
 	if( cursor.hasSelection() ) {
@@ -190,7 +190,7 @@ void MainWindow::do_vi_insert(QChar cmd, QTextCursor& cursor, int rcnt) {
 		break;
 	case 's':
 		//cursor.beginEditBlock();	//	文字削除とその後の文字挿入を１回でundo可能にするため
-		g.m_editBlockOpen = true;
+		//g.m_editBlockOpen = true;
 		rcnt = qMin(rcnt, eolpos - cursor.position());
 		cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, rcnt);
 		if( gvi.m_editor != nullptr )
@@ -207,7 +207,7 @@ void MainWindow::do_vi_insert(QChar cmd, QTextCursor& cursor, int rcnt) {
 		break;
 	case 'O':
 		cursor.beginEditBlock();
-		g.m_editBlockOpen = true;
+		//g.m_editBlockOpen = true;
 		//do_openline(cursor, true);
 		cursor.movePosition(QTextCursor::StartOfBlock);
 		cursor.insertText("\n");
@@ -217,7 +217,7 @@ void MainWindow::do_vi_insert(QChar cmd, QTextCursor& cursor, int rcnt) {
 		break;
 	case 'o':
 		cursor.beginEditBlock();
-		g.m_editBlockOpen = true;
+		//g.m_editBlockOpen = true;
 #if 1
 		do_openline(cursor, false);
 #else
@@ -229,7 +229,7 @@ void MainWindow::do_vi_insert(QChar cmd, QTextCursor& cursor, int rcnt) {
 		break;
 	case 'C':		//	カーソル位置から行末まで削除して挿入モードへ遷移
 		cursor.beginEditBlock();
-		g.m_editBlockOpen = true;
+		//g.m_editBlockOpen = true;
 		if( rcnt > 1 ) {
 			cursor.movePosition(QTextCursor::Down, QTextCursor::KeepAnchor, rcnt - 1);
 			rcnt = 1;
@@ -1367,13 +1367,14 @@ void MainWindow::exitInsertMode(QTextCursor& cursor) {
 		for(int i = 0; i < gvi.m_insRepCount - 1; ++i)
 			txt += gvi.m_insertedText;
 		//cursor.insertText(txt);
-		gvi.m_editor->do_insertText(cursor, txt);
+		if( gvi.m_editor != nullptr )
+			gvi.m_editor->do_insertText(cursor, txt);
 		gvi.m_insRepCount = 1;
 	}
-	if( g.m_editBlockOpen ) {
-		//cursor.endEditBlock();
-		g.m_editBlockOpen = false;
-	}
+	//if( g.m_editBlockOpen ) {
+	//	//cursor.endEditBlock();
+	//	g.m_editBlockOpen = false;
+	//}
 	if( /*!gvi.m_insertedText.isEmpty() &&*/ cursor.position() > cursor.block().position()) {
 		cursor.movePosition(QTextCursor::Left);
 		//##this->setTextCursor(cursor);
