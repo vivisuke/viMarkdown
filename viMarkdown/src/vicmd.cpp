@@ -210,13 +210,16 @@ void MainWindow::do_vi_insert(QChar cmd, QTextCursor& cursor, int rcnt) {
 		//cursor.endEditBlock();
 		break;
 	case 'O':
-		cursor.beginEditBlock();
+		if( gvi.m_editor != nullptr )
+			gvi.m_editor->openUndoBlock();
+		do_openline(cursor, true);
+		//cursor.beginEditBlock();
 		//g.m_editBlockOpen = true;
 		//do_openline(cursor, true);
-		cursor.movePosition(QTextCursor::StartOfBlock);
-		cursor.insertText("\n");
-		cursor.movePosition(QTextCursor::PreviousBlock);
-		cursor.endEditBlock();
+		//cursor.movePosition(QTextCursor::StartOfBlock);
+		//cursor.insertText("\n");
+		//cursor.movePosition(QTextCursor::PreviousBlock);
+		//cursor.endEditBlock();
 		//gvi.m_joinEditBlock = true;
 		break;
 	case 'o':
