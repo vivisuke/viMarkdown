@@ -747,7 +747,7 @@ SPR# 状 P Open Close ver     Type  概要
 0741 ◎ C 07/28 07/28 03040│ToDo│ViStatus.m_joinEditBlock はもう不要なので削除
 0742 ◎ C 07/28 07/28 03040│問題│3A<char><Esc> u すると、<char> 1文字しか消えない
 0743 ◎ C 07/28 07/28 03040│ToDo│ViStatus.m_editBlockOpen も、もう不要なので削除
-0744 ● C 07/28            │ToDo│
+0744 ◎ C 07/28 07/28 03040│問題│英語モードで F1：英語版 help.md がオープンされない
 0745 ● C 07/28            │ToDo│
 0746 ● C 07/28            │ToDo│
 0747 ● C 07/28            │ToDo│

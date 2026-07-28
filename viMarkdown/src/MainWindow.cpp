@@ -1619,7 +1619,10 @@ void MainWindow::onAction_Help() {
 	}
 #endif
 //#endif
-	dir.cd("docs/ja");
+	if( g.m_japanese )
+		dir.cd("docs/ja");
+	else
+		dir.cd("docs");
 	//##qDebug() << "helpdir = " << dir.path();
 	do_open("", dir.path() + "/help.md", QString(), true);
 }
