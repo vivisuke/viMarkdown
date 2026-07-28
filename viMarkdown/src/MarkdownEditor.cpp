@@ -710,13 +710,19 @@ void SvgCompleter::highlight_cur_line() {
 void SvgCompleter::mouseReleaseEvent(QMouseEvent *e) {
 	QTextEdit::mouseReleaseEvent(e);
 	if (e->button() == Qt::LeftButton) {
-        // 3. 現在のテキストカーソルを取得します。
         QTextCursor cursor = textCursor();
         m_curix = cursor.block().blockNumber();
         highlight_cur_line();
     }
 }
 void SvgCompleter::mouseDoubleClickEvent(QMouseEvent *e) {
+	QTextEdit::mouseDoubleClickEvent(e);
+	if (e->button() == Qt::LeftButton) {
+        QTextCursor cursor = textCursor();
+        m_curix = cursor.block().blockNumber();
+        highlight_cur_line();
+		emit enter_pressed();		//	補完確定
+	}
 }
 void SvgCompleter::keyPressEvent(QKeyEvent *e) {
 	if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) {		//	改行入力
