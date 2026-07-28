@@ -1366,7 +1366,8 @@ void MainWindow::exitInsertMode(QTextCursor& cursor) {
 		QString txt;
 		for(int i = 0; i < gvi.m_insRepCount - 1; ++i)
 			txt += gvi.m_insertedText;
-		cursor.insertText(txt);
+		//cursor.insertText(txt);
+		gvi.m_editor->do_insertText(cursor, txt);
 		gvi.m_insRepCount = 1;
 	}
 	if( g.m_editBlockOpen ) {
