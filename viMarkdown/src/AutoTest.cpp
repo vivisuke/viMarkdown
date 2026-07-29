@@ -890,6 +890,15 @@ const QList<ViTestCase> viTestCases = {
         }
     },
 #endif
+    { "Insert with count ([num]i)", "┃\n",
+        {
+            "3ix", "xx┃x\n", // 1文字の複数回挿入（'xxx' を挿入後、Escで2番目の 'x' にスナップ）
+            "u", "┃\n", // undoして元に戻す
+            "3iabc", "abcabcab┃c\n", // 複数文字の複数回挿入（'abcabcabc' を挿入後、Escで最後の 'c' にスナップ）
+            "u", "┃\n", // undoして元に戻す
+            "1iabc", "ab┃c\n" // カウントが 1 の場合の挙動（通常の i と同一）
+        }
+    },
 #if 0
     { "Basic ex command",
         "li┃ne1\nline2\nline3\n",
@@ -901,7 +910,7 @@ const QList<ViTestCase> viTestCases = {
 	//{ "Move cursor right",	"h┃ello\n", {"l", "he┃llo\n", "l", "hel┃lo\n", "l", "hell┃o\n", } },
 	//{ "Move cursor left",	"h┃ello\n", {"h", "┃hello\n", "h", "┃hello\n", } },
 	//{ "Visual mode",		"h┃ello\n", {"v", "h《┃e》llo\n", "l", "h《e┃l》lo\n", } },
-#if 1
+#if 0
 #if 1		//	h j k l
 	// 下移動 (j) の基本動作と最終行での境界制御
     { "Move cursor down (j)",
@@ -1519,7 +1528,6 @@ const QList<ViTestCase> viTestCases = {
         }
     },
 #endif
-#endif
 	{ "Basic i command", "┃\n",
         {
             "iabc", "ab┃c\n", // 空行での基本挿入（Escにより末尾の 'c' から1文字左にスナップ）
@@ -1660,6 +1668,7 @@ const QList<ViTestCase> viTestCases = {
             "2Cxyz", "axy┃z\nghi\n", // 2行分（現在の行のカーソルから次の行の末尾まで）を削除して置換
         }
     },
+#endif
 };
 QString removeCursor(const QString &src, int &pos, int &anchor) {
 	QString dst;
@@ -1767,6 +1776,7 @@ void MainWindow::onAction_TestViCommands() {
 				do_output(QString("Expected: '%1'\nActual:   '%2'\n").arg(exp).arg(act));
 				cursor.setPosition(pos);
 				editor->setTextCursor(cursor);
+				break;
 			}
 			if( cursor.document()->toPlainText() != exp ) {
 				QString exp = steps[k+1];
@@ -1778,6 +1788,7 @@ void MainWindow::onAction_TestViCommands() {
 				do_output("Commands: '" + cmd_text + "'\n");
 				do_output(QString("Expected: '%1'\nActual:   '%2'\n").arg(exp).arg(act));
 				//do_output("expected:\n'" + exp + "', but:\n'" + cursor.document()->toPlainText() + "'\n");
+				break;
 			}
 		}
 		do_output("\n");

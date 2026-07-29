@@ -1,0 +1,192 @@
+﻿## viMarkdown v0.3 SPR stats
+
+```CSV
+ #week, StartOfWeek, opened, closed, remaining, Summary
+ #1, 04-27, 28, 25, 3, プロジェクト初期設定と日本語対応（国際化）の基盤整備
+ #2, 05-04, 32, 30, 5, 各種ダイアログ日本語化とSVGブロック補完機能の初期実装
+ #3, 05-11, 37, 35, 7, アウトプットバー追加とGrep検索（正規表現・履歴）ダイアログ実装
+ #4, 05-18, 99, 66, 40, LunaSVG移行と本格的なViキーバインド（hjkl等）の開発開始
+ #5, 05-25, 77, 84, 33, ViStatus構造化とステータスバー・下部コマンドラインの導入
+ #6, 06-01, 69, 57, 45, Exコマンド（保存・終了等）および見出し折り畳み機能（zc/zo/za）実装
+ #7, 06-08, 58, 52, 51, 折り畳み挙動修正、Vi自動テストの導入、ビジュアルモード試作
+ #8, 06-15, 75, 61, 65, ビジュアル（v/V）モードの統合、および複雑なExコマンドの拡充
+ #9, 06-22, 48, 50, 63, カーソル調整、水平位置（preferredX）保持、テストケース大幅補強
+ #10, 06-29, 62, 50, 75, プレインテキスト対応開始、およびDiff（文書比較）機能の開発着手
+ #11, 07-06, 38, 36, 77, Diff詳細表示の調整、MiniMap実装、単語・文字単位差分可視化
+ #12, 07-13, 47, 36, 88, 比較元・先ビューのカーソル・スクロール同期およびマージ処理実装
+ #13, 07-20, 51, 38, 101, 自作UndoManager（Undo/Redo制御）導入、MiniMap位置ドラッグ同期
+ #14, 07-27, 28, 24, 105, 水平カーソル位置保持の最適化、編集バグ修正、テストコード補強
+```
+
+
+
+
+
+```SVG
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="100%" height="100%">
+  <!-- スタイル定義 -->
+  <style>
+    .title { font-family: 'MS Gothic', Arial, 'Hiragino Kaku Gothic ProN', sans-serif; font-size: 18px; font-weight: bold; fill: #1e293b; }
+    .subtitle { font-family: 'MS Gothic', Arial, sans-serif; font-size: 12px; fill: #64748b; }
+    .axis-label { font-family: 'MS Gothic', Arial, sans-serif; font-size: 11px; fill: #64748b; }
+    .legend-text { font-family: 'MS Gothic', Arial, 'Hiragino Kaku Gothic ProN', sans-serif; font-size: 12px; fill: #334155; }
+    .grid-line { stroke: #f1f5f9; stroke-width: 1; }
+    .grid-line-major { stroke: #e2e8f0; stroke-width: 1; stroke-dasharray: 4 4; }
+    .axis { stroke: #cbd5e1; stroke-width: 1.5; }
+    .line-opened { stroke: #3b82f6; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .line-closed { stroke: #10b981; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .line-remaining { stroke: #ef4444; stroke-width: 3.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .marker-opened { fill: #3b82f6; stroke: #ffffff; stroke-width: 1.5; }
+    .marker-closed { fill: #10b981; stroke: #ffffff; stroke-width: 1.5; }
+    .marker-remaining { fill: #ef4444; stroke: #ffffff; stroke-width: 1.5; }
+  </style>
+
+  <!-- グラデーション定義 -->
+  <defs>
+    <linearGradient id="remaining-gradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ef4444" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#ef4444" stop-opacity="0.0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 背景パネル -->
+  <rect width="800" height="450" rx="16" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <!-- タイトル・凡例エリア -->
+  <text x="40" y="38" class="title">Weekly SPR Trend</text>
+  <text x="40" y="58" class="subtitle">04-27 to 07-27 (Opened vs. Closed vs. Remaining)</text>
+
+  <!-- 凡例 (Legend) -->
+  <g id="legend">
+    <!-- Remaining -->
+    <circle cx="460" cy="34" r="5" fill="#ef4444"/>
+    <text x="472" y="38" class="legend-text">Remaining (残数)</text>
+    
+    <!-- Opened -->
+    <circle cx="585" cy="34" r="5" fill="#3b82f6"/>
+    <text x="597" y="38" class="legend-text">Opened (新規)</text>
+    
+    <!-- Closed -->
+    <circle cx="685" cy="34" r="5" fill="#10b981"/>
+    <text x="697" y="38" class="legend-text">Closed (完了)</text>
+  </g>
+
+  <!-- 背景グリッド（横線）とY軸ラベル -->
+  <!-- 120 -->
+  <line x1="80" y1="50" x2="720" y2="50" class="grid-line-major"/>
+  <text x="65" y="54" text-anchor="end" class="axis-label">120</text>
+  
+  <!-- 100 -->
+  <line x1="80" y1="107" x2="720" y2="107" class="grid-line"/>
+  <text x="65" y="111" text-anchor="end" class="axis-label">100</text>
+  
+  <!-- 80 -->
+  <line x1="80" y1="163" x2="720" y2="163" class="grid-line"/>
+  <text x="65" y="167" text-anchor="end" class="axis-label">80</text>
+  
+  <!-- 60 -->
+  <line x1="80" y1="220" x2="720" y2="220" class="grid-line"/>
+  <text x="65" y="224" text-anchor="end" class="axis-label">60</text>
+  
+  <!-- 40 -->
+  <line x1="80" y1="277" x2="720" y2="277" class="grid-line"/>
+  <text x="65" y="281" text-anchor="end" class="axis-label">40</text>
+  
+  <!-- 20 -->
+  <line x1="80" y1="333" x2="720" y2="333" class="grid-line"/>
+  <text x="65" y="337" text-anchor="end" class="axis-label">20</text>
+  
+  <!-- 0 -->
+  <line x1="80" y1="390" x2="720" y2="390" class="axis"/>
+  <text x="65" y="394" text-anchor="end" class="axis-label">0</text>
+
+  <!-- X軸 (縦方向補助線は省略してシンプルに) -->
+  <line x1="80" y1="50" x2="80" y2="390" class="axis"/>
+
+  <!-- Remaining 下部のグラデーション塗りつぶし -->
+  <path d="M 80,390 L 80,382 L 129,376 L 179,370 L 228,277 L 277,297 L 326,263 L 375,246 L 425,206 L 474,212 L 523,178 L 572,172 L 622,141 L 671,104 L 720,93 L 720,390 Z" fill="url(#remaining-gradient)"/>
+
+  <!-- データラインの描画 -->
+  <!-- Opened (新規) -->
+  <path d="M 80,311 L 129,299 L 179,285 L 228,110 L 277,172 L 326,195 L 375,226 L 425,178 L 474,254 L 523,214 L 572,282 L 622,257 L 671,246 L 720,311" class="line-opened"/>
+
+  <!-- Closed (完了) -->
+  <path d="M 80,319 L 129,305 L 179,291 L 228,203 L 277,152 L 326,229 L 375,243 L 425,217 L 474,248 L 523,248 L 572,288 L 622,288 L 671,282 L 720,322" class="line-closed"/>
+
+  <!-- Remaining (残数) -->
+  <path d="M 80,382 L 129,376 L 179,370 L 228,277 L 277,297 L 326,263 L 375,246 L 425,206 L 474,212 L 523,178 L 572,172 L 622,141 L 671,104 L 720,93" class="line-remaining"/>
+
+  <!-- データポイントのマーカー（丸ドット） -->
+  <!-- Opened Markers -->
+  <g id="markers-opened">
+    <circle cx="80" cy="311" r="4.5" class="marker-opened"/>
+    <circle cx="129" cy="299" r="4.5" class="marker-opened"/>
+    <circle cx="179" cy="285" r="4.5" class="marker-opened"/>
+    <circle cx="228" cy="110" r="4.5" class="marker-opened"/>
+    <circle cx="277" cy="172" r="4.5" class="marker-opened"/>
+    <circle cx="326" cy="195" r="4.5" class="marker-opened"/>
+    <circle cx="375" cy="226" r="4.5" class="marker-opened"/>
+    <circle cx="425" cy="178" r="4.5" class="marker-opened"/>
+    <circle cx="474" cy="254" r="4.5" class="marker-opened"/>
+    <circle cx="523" cy="214" r="4.5" class="marker-opened"/>
+    <circle cx="572" cy="282" r="4.5" class="marker-opened"/>
+    <circle cx="622" cy="257" r="4.5" class="marker-opened"/>
+    <circle cx="671" cy="246" r="4.5" class="marker-opened"/>
+    <circle cx="720" cy="311" r="4.5" class="marker-opened"/>
+  </g>
+
+  <!-- Closed Markers -->
+  <g id="markers-closed">
+    <circle cx="80" cy="319" r="4.5" class="marker-closed"/>
+    <circle cx="129" cy="305" r="4.5" class="marker-closed"/>
+    <circle cx="179" cy="291" r="4.5" class="marker-closed"/>
+    <circle cx="228" cy="203" r="4.5" class="marker-closed"/>
+    <circle cx="277" cy="152" r="4.5" class="marker-closed"/>
+    <circle cx="326" cy="229" r="4.5" class="marker-closed"/>
+    <circle cx="375" cy="243" r="4.5" class="marker-closed"/>
+    <circle cx="425" cy="217" r="4.5" class="marker-closed"/>
+    <circle cx="474" cy="248" r="4.5" class="marker-closed"/>
+    <circle cx="523" cy="248" r="4.5" class="marker-closed"/>
+    <circle cx="572" cy="288" r="4.5" class="marker-closed"/>
+    <circle cx="622" cy="288" r="4.5" class="marker-closed"/>
+    <circle cx="671" cy="282" r="4.5" class="marker-closed"/>
+    <circle cx="720" cy="322" r="4.5" class="marker-closed"/>
+  </g>
+
+  <!-- Remaining Markers -->
+  <g id="markers-remaining">
+    <circle cx="80" cy="382" r="5" class="marker-remaining"/>
+    <circle cx="129" cy="376" r="5" class="marker-remaining"/>
+    <circle cx="179" cy="370" r="5" class="marker-remaining"/>
+    <circle cx="228" cy="277" r="5" class="marker-remaining"/>
+    <circle cx="277" cy="297" r="5" class="marker-remaining"/>
+    <circle cx="326" cy="263" r="5" class="marker-remaining"/>
+    <circle cx="375" cy="246" r="5" class="marker-remaining"/>
+    <circle cx="425" cy="206" r="5" class="marker-remaining"/>
+    <circle cx="474" cy="212" r="5" class="marker-remaining"/>
+    <circle cx="523" cy="178" r="5" class="marker-remaining"/>
+    <circle cx="572" cy="172" r="5" class="marker-remaining"/>
+    <circle cx="622" cy="141" r="5" class="marker-remaining"/>
+    <circle cx="671" cy="104" r="5" class="marker-remaining"/>
+    <circle cx="720" cy="93" r="5" class="marker-remaining"/>
+  </g>
+
+  <!-- X軸のラベル（日程） -->
+  <g id="x-labels">
+    <text x="80" y="415" text-anchor="middle" class="axis-label">04-27</text>
+    <text x="129" y="415" text-anchor="middle" class="axis-label">05-04</text>
+    <text x="179" y="415" text-anchor="middle" class="axis-label">05-11</text>
+    <text x="228" y="415" text-anchor="middle" class="axis-label">05-18</text>
+    <text x="277" y="415" text-anchor="middle" class="axis-label">05-25</text>
+    <text x="326" y="415" text-anchor="middle" class="axis-label">06-01</text>
+    <text x="375" y="415" text-anchor="middle" class="axis-label">06-08</text>
+    <text x="425" y="415" text-anchor="middle" class="axis-label">06-15</text>
+    <text x="474" y="415" text-anchor="middle" class="axis-label">06-22</text>
+    <text x="523" y="415" text-anchor="middle" class="axis-label">06-29</text>
+    <text x="572" y="415" text-anchor="middle" class="axis-label">07-06</text>
+    <text x="622" y="415" text-anchor="middle" class="axis-label">07-13</text>
+    <text x="671" y="415" text-anchor="middle" class="axis-label">07-20</text>
+    <text x="720" y="415" text-anchor="middle" class="axis-label">07-27</text>
+  </g>
+</svg>
+```
