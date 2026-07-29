@@ -557,7 +557,8 @@ void MarkdownEditor::moveToNextWordEnd(QTextCursor& cursor, bool shift) {
 	const int maxPos = doc->characterCount() - 1;
 	if (pos >= maxPos) return;
 	pos++;
-	while (pos < maxPos && getCharType(doc->characterAt(pos)) == Type_Space) {
+	CharType ct;
+	while (pos < maxPos && ((ct = getCharType(doc->characterAt(pos))) == Type_Space || ct == Type_NewLine) ) {
 		pos++;
 	}
 	if (pos >= maxPos) {

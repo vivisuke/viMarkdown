@@ -877,9 +877,12 @@ void MainWindow::onFileChanged(const QString& fullPath) {
 	DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(tix);
 	if( docWidget->isModified() ) {
 		QMessageBox msgBox(this);
-		msgBox.setWindowTitle("外部変更の検知");
-		msgBox.setText("未保存文書のファイルが外部で変更されました。");
-		msgBox.setInformativeText("最新の状態を読み込みますか？");
+		msgBox.setWindowTitle(tr("External Change Detected"));
+		msgBox.setText(tr("The file for the unsaved document has been modified externally."));
+		msgBox.setInformativeText(tr("Do you want to reload it?"));
+		//msgBox.setWindowTitle("外部変更の検知");
+		//msgBox.setText("未保存文書のファイルが外部で変更されました。");
+		//msgBox.setInformativeText("最新の状態を読み込みますか？");
 
 		// ボタンの設定 (Yes, No, Ignore を配置)
 		msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
