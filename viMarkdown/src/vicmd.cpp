@@ -899,10 +899,12 @@ void MainWindow::do_vi_motion(QChar cmd, QTextCursor& cursor, int rcnt, DocWidge
 	}
 	case 'h':
 		if( cursor.position() == block.position() ) {		//	行頭にいる場合
-			if( is_folded(block) )
-				do_unfold(block);
-			else if( is_foldable(block) )
-				do_fold(block);
+			if( !docWidget->m_diffMode ) {
+				if( is_folded(block) )
+					do_unfold(block);
+				else if( is_foldable(block) )
+					do_fold(block);
+			}
 		} else {
 			rcnt = qMin(rcnt, cursor.position() - block.position());	//	行頭対応
 			cursor.movePosition(QTextCursor::Left, moveMode, rcnt);

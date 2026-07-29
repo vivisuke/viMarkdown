@@ -1718,6 +1718,7 @@ void MainWindow::onAction_TestViCommands() {
 		cursor.insertText(removeCursor(viTestCases[i].m_initialText, pos, anchor));
 		cursor.setPosition(pos);
 		editor->setTextCursor(cursor);
+		editor->savePrefferedX(cursor);
 		QCoreApplication::processEvents();		//	溜まっているイベント処理
 		const QStringList &steps = viTestCases[i].m_steps;
 		for(int k = 0; k < steps.size(); k+=2) {
