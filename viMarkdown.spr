@@ -761,6 +761,6 @@ SPR# 状 P Open Close ver     Type  概要
 0755 ◎ C 07/30 07/30 03041│問題│MainWindow::onFileChanged()：メッセージが "日本語" になっている。tr("英語") にすべき
 0756 ◎ C 07/30 07/30 03041│問題│abc\ndef\n の c にカーソルがある時 e で f に移動せず、改行位置にカーソル移動してしまう
 0757 ◎ C 07/30 07/30 03041│問題│MainWindow::onAction_TestViCommands()：<num>挿入コマンド<text> の <num> に対応していない？
-0758 ● C 07/30            │ToDo│
+0758 ◎ C 07/30 07/30 03041│問題│abc[EOF] の c にカーソルがある場合、e コマンドで [EOF] に移動してしまう
 0759 ● C 07/30            │ToDo│
 0760 ● C 07/30            │ToDo│

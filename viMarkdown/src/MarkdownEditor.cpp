@@ -552,6 +552,42 @@ void MarkdownEditor::moveToNextWord(QTextCursor& cursor, bool shift) {
 	cursor.setPosition(pos, shift ? QTextCursor::KeepAnchor : QTextCursor::MoveAnchor);
 }
 void MarkdownEditor::moveToNextWordEnd(QTextCursor& cursor, bool shift) {
+#if 1
+	QTextDocument *doc = document();
+    const int end = doc->characterCount();  // -1 しない（重要）
+    int pos = cursor.position();
+    if (pos >= end - 1) {
+        cursor.setPosition(end, shift ? QTextCursor::KeepAnchor : QTextCursor::MoveAnchor);
+        return;
+    }
+    pos++;    // 1文字進める
+    // 空白・改行をスキップ
+    while (pos < end) {
+        CharType ct = getCharType(doc->characterAt(pos));
+        if (ct != Type_Space && ct != Type_NewLine) {
+            break;
+        }
+        pos++;
+    }
+    if (pos >= end) {
+        cursor.setPosition(end, shift ? QTextCursor::KeepAnchor : QTextCursor::MoveAnchor);
+        return;
+    }
+    // 同じ文字タイプの連続をスキップ（単語の終端まで）
+    const CharType currentType = getCharType(doc->characterAt(pos));
+    while (pos < end) {
+        if (getCharType(doc->characterAt(pos)) != currentType) {
+            break;
+        }
+        ++pos;
+    }
+    // ここで pos は「次の単語の開始位置」または「文書末尾」になっている
+    // → 1文字戻して「現在の単語の最後の文字」にする
+    if (pos > 0) {
+        --pos;
+    }
+    cursor.setPosition(pos, shift ? QTextCursor::KeepAnchor : QTextCursor::MoveAnchor);
+#else
 	int pos = cursor.position();
 	QTextDocument *doc = document();
 	const int maxPos = doc->characterCount() - 1;
@@ -571,6 +607,7 @@ void MarkdownEditor::moveToNextWordEnd(QTextCursor& cursor, bool shift) {
 	}
 	if (pos > 0) --pos;
 	cursor.setPosition(pos, shift ? QTextCursor::KeepAnchor : QTextCursor::MoveAnchor);
+#endif
 }
 void MarkdownEditor::moveToPrevWord(QTextCursor& cursor, bool shift) {
 	int pos = cursor.position();
