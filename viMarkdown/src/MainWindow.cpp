@@ -1750,7 +1750,8 @@ void MainWindow::do_load(const QString& fullPath) {
 	}
 	QFile file(fullPath);
 	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-		QMessageBox::warning(this, tr("エラー"), tr("ファイルが開けません:\n%1").arg(fullPath));
+		QMessageBox::warning(this, tr("Error"), tr("Cannot open file:\n%1").arg(fullPath));
+		//QMessageBox::warning(this, tr("エラー"), tr("ファイルが開けません:\n%1").arg(fullPath));
 		return;
 	}
 	QString content = file.readAll();
@@ -1824,7 +1825,8 @@ bool MainWindow::do_open(const QString& title0, const QString& fullPath, const Q
 	}
 	QFileInfo checkFile(fullPath);
 	if( !checkFile.exists() ) {
-		QString mess = QString("'%1'\nファイルが存在しません。\n新規作成しますか？").arg(fullPath);
+		QString mess = QString("'%1'\nFile does not exist.\nDo you want to create it?").arg(fullPath);
+		//QString mess = QString("'%1'\nファイルが存在しません。\n新規作成しますか？").arg(fullPath);
 		auto reply = QMessageBox::question(this, "confirmation", mess,
                                    QMessageBox::Yes | QMessageBox::No);
 		if( reply != QMessageBox::Yes ) return false;
@@ -1838,7 +1840,8 @@ bool MainWindow::do_open(const QString& title0, const QString& fullPath, const Q
 	m_opening_file = true;
 	QFile file(fullPath);
 	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-		QMessageBox::warning(this, tr("エラー"), tr("ファイルが開けません:\n%1").arg(fullPath));
+		QMessageBox::warning(this, tr("Error"), tr("Cannot open file:\n%1").arg(fullPath));
+		//QMessageBox::warning(this, tr("エラー"), tr("ファイルが開けません:\n%1").arg(fullPath));
 		return false;
 	}
     bool withBOM = hasBOM(file);
