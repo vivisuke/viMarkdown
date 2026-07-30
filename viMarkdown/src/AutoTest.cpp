@@ -1741,11 +1741,13 @@ void MainWindow::onAction_TestViCommands() {
 				do_viCmd(cmd_text[i], cursor);
 				if( gvi.m_currentMode == ViMode::Insert ) {
 					auto txt = gvi.m_insertedText = cmd_text.mid(i+1);
-					if( gvi.m_insRepCount > 1 ) {
-						//qDebug() << "gvi.m_insRepCount = " << gvi.m_insRepCount;
-						txt = txt.repeated(gvi.m_insRepCount-1);
-					}
-					cursor.insertText(txt);
+					//if( gvi.m_insRepCount > 1 ) {
+					//	//qDebug() << "gvi.m_insRepCount = " << gvi.m_insRepCount;
+					//	txt = txt.repeated(gvi.m_insRepCount-1);
+					//}
+					//cursor.insertText(txt);
+					editor->openUndoBlock();
+					editor->do_insertText(cursor, txt);
 					exitInsertMode(cursor);
 					//if( cursor.position() > cursor.block().position())
 					//	cursor.movePosition(QTextCursor::Left);

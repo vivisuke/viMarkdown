@@ -1376,12 +1376,17 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 }
 void MainWindow::exitInsertMode(QTextCursor& cursor) {
 	if( gvi.m_insRepCount > 1 && !gvi.m_insertedText.isEmpty() ) {
-		QString txt;
-		for(int i = 0; i < gvi.m_insRepCount - 1; ++i)
-			txt += gvi.m_insertedText;
+		QString txt = gvi.m_insertedText.repeated(gvi.m_insRepCount - 1);
+		//QString txt;
+		//for(int i = 0; i < gvi.m_insRepCount - 1; ++i)
+		//	txt += gvi.m_insertedText;
 		//cursor.insertText(txt);
+		if( !txt.isEmpty() ) {
+			if( gvi.m_editor != nullptr )
+				gvi.m_editor->do_insertText(cursor, txt);
+		}
 		if( gvi.m_editor != nullptr )
-			gvi.m_editor->do_insertText(cursor, txt);
+			gvi.m_editor->closeUndoBlock();
 		gvi.m_insRepCount = 1;
 	}
 	//if( g.m_editBlockOpen ) {
