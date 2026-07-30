@@ -583,7 +583,9 @@ bool MainWindow::do_cdy(QChar cmd, QTextCursor& cursor) {
 				return true;
 			case 'd':	//	選択状態で d
 				gvi.m_yankBuffer = cursor.selectedText();
-				cursor.deleteChar();
+				//cursor.deleteChar();
+				if( gvi.m_editor != nullptr )
+					gvi.m_editor->do_deleteText(cursor);
 				return true;
 			case 'y':	//	選択状態で y
 				gvi.m_yankBuffer = cursor.selectedText();

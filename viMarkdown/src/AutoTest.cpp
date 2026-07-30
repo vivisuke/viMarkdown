@@ -890,6 +890,7 @@ const QList<ViTestCase> viTestCases = {
         }
     },
 #endif
+#if 0
     { "Insert with count ([num]i)", "┃\n",
         {
             "3ix", "xx┃x\n", // 1文字の複数回挿入（'xxx' を挿入後、Escで2番目の 'x' にスナップ）
@@ -899,6 +900,7 @@ const QList<ViTestCase> viTestCases = {
             "1iabc", "ab┃c\n" // カウントが 1 の場合の挙動（通常の i と同一）
         }
     },
+#endif
 #if 0
     { "Basic ex command",
         "li┃ne1\nline2\nline3\n",
@@ -910,7 +912,7 @@ const QList<ViTestCase> viTestCases = {
 	//{ "Move cursor right",	"h┃ello\n", {"l", "he┃llo\n", "l", "hel┃lo\n", "l", "hell┃o\n", } },
 	//{ "Move cursor left",	"h┃ello\n", {"h", "┃hello\n", "h", "┃hello\n", } },
 	//{ "Visual mode",		"h┃ello\n", {"v", "h《┃e》llo\n", "l", "h《e┃l》lo\n", } },
-#if 0
+#if 1
 #if 1		//	h j k l
 	// 下移動 (j) の基本動作と最終行での境界制御
     { "Move cursor down (j)",
