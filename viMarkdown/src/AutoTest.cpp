@@ -1005,6 +1005,14 @@ const QList<ViTestCase> viTestCases = {
             "w", "abc\n  def\n\ngh┃i"  // ← 4回目で末尾クランプ
         }
     },
+    { "Move forward word (w) - Across lines and empty lines(2)",
+        "┃abc\n\n\ndef\n",
+        {
+            "w", "abc\n┃\n\ndef\n", // ← 1回目は空行の先頭で止まる（Vimの正しい挙動）
+            "w", "abc\n\n┃\ndef\n", // ← 2回目も空行の先頭で止まる（Vimの正しい挙動）
+            "w", "abc\n\n\n┃def\n", // ← 3回目で def の先頭へ移動
+        }
+    },
     { "Move forward word (w) - Punctuation boundaries",
         "┃abc.def!ghi",
         {

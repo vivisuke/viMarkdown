@@ -540,9 +540,13 @@ void MarkdownEditor::moveToNextWord(QTextCursor& cursor, bool shift) {
 	QTextDocument *doc = document();
 	if (pos >= doc->characterCount() - 1) return;
 	CharType startType = getCharType(doc->characterAt(pos));
-	// 同じ種別の間は進む
-	while (pos < doc->characterCount() - 1 && getCharType(doc->characterAt(pos)) == startType) {
-		pos++;
+	if (startType == Type_NewLine) {
+		++pos;
+	} else {
+		// 同じ種別の間は進む
+		while (pos < doc->characterCount() - 1 && getCharType(doc->characterAt(pos)) == startType) {
+			pos++;
+		}
 	}
 	if( startType != Type_Space ) {
 		while (pos < doc->characterCount() - 1 && getCharType(doc->characterAt(pos)) == Type_Space) {
