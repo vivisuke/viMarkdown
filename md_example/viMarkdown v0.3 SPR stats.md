@@ -1,7 +1,7 @@
 ﻿## viMarkdown v0.3 SPR stats
 
 ```CSV
- #week, StartOfWeek, opened, closed, remaining, Summary
+ #week, 開始日, opened, closed, 残数, 概要
  #1, 04-27, 28, 25, 3, プロジェクト初期設定と日本語対応（国際化）の基盤整備
  #2, 05-04, 32, 30, 5, 各種ダイアログ日本語化とSVGブロック補完機能の初期実装
  #3, 05-11, 37, 35, 7, アウトプットバー追加とGrep検索（正規表現・履歴）ダイアログ実装

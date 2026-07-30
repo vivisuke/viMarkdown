@@ -1238,7 +1238,9 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 					//do_openline(cursor, false);
 				} else
 					cursor.movePosition(QTextCursor::Right);
-				cursor.insertText(gvi.m_yankBuffer.repeated(rcnt));
+				//cursor.insertText(gvi.m_yankBuffer.repeated(rcnt));
+				if( gvi.m_editor != nullptr )
+					gvi.m_editor->do_insertText(cursor, gvi.m_yankBuffer.repeated(rcnt));
 			}
 			break;
 		case 'P':
