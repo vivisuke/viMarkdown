@@ -859,6 +859,8 @@ void MainWindow::do_vi_motion(QChar cmd, QTextCursor& cursor, int rcnt, DocWidge
 						QTextCursor::MoveAnchor : QTextCursor::KeepAnchor;
 	QTextDocument *doc = cursor.document();
 	QTextBlock block = cursor.block();
+	if( gvi.m_operator == 'c' && cmd == u'w' )
+		cmd = u'e';		//	cw は ce として処理
 	switch( cmd.unicode() ) {
 	case 'k': {
 		do {
@@ -969,6 +971,8 @@ doneW:
 				docWidget->m_preview->moveToNextWordEnd(cursor, /*select = */gvi.m_operator != ' ');
 			if( cursor.position() == pos ) break;
 		}
+		if( gvi.m_operator == u'c' || gvi.m_operator == u'd' )
+			cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor);	//	ce、cd の場合：単語末尾も削除
 		break;
 	case 'E': {
 		const int maxPos = doc->characterCount() - 1;
