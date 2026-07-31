@@ -1818,20 +1818,6 @@ void MainWindow::onAction_TestViCommands() {
 			QString exp = removeCursor(steps[k+1], pos, anchor);
 			//cursor = editor->textCursor();
 			//int cpos2 = cursor.position();
-			if( cursor.position() != pos ) {
-				//do_output(QString("wrong cursor position. pos = %1 expected, but %2\n").arg(pos).arg(cursor.position()));
-				QString exp = steps[k+1];
-				exp.replace('\n', "\\n");
-				QString act = actualText(cursor);
-				++total_failed;
-				do_output(QString("\n[FAILED #%1] wrong cursor position.\n").arg(total_failed));
-				do_output(QString("Before:   '%1'\n").arg(before));
-				do_output("Commands: '" + cmd_text + "'\n");
-				do_output(QString("Expected: '%1'\nActual:   '%2'\n").arg(exp).arg(act));
-				cursor.setPosition(pos);
-				editor->setTextCursor(cursor);
-				break;
-			}
 			if( cursor.document()->toPlainText() != exp ) {
 				QString exp = steps[k+1];
 				exp.replace('\n', "\\n");
@@ -1842,6 +1828,20 @@ void MainWindow::onAction_TestViCommands() {
 				do_output("Commands: '" + cmd_text + "'\n");
 				do_output(QString("Expected: '%1'\nActual:   '%2'\n").arg(exp).arg(act));
 				//do_output("expected:\n'" + exp + "', but:\n'" + cursor.document()->toPlainText() + "'\n");
+				break;
+			}
+			if( cursor.position() != pos ) {
+				//do_output(QString("wrong cursor position. pos = %1 expected, but %2\n").arg(pos).arg(cursor.position()));
+				QString exp = steps[k+1];
+				exp.replace('\n', "\\n");
+				QString act = actualText(cursor);
+				++total_failed;
+				do_output(QString("\n[FAILED #%1] wrong cursor position.\n").arg(total_failed));
+				do_output(QString("Before:   '%1'\n").arg(before));
+				do_output("Commands: '" + cmd_text + "'\n");
+				do_output(QString("Expected: '%1'\nActual:   '%2'\n").arg(exp).arg(act));
+				//cursor.setPosition(pos);
+				//editor->setTextCursor(cursor);
 				break;
 			}
 		}

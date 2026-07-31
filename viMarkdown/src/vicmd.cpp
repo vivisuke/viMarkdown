@@ -956,21 +956,21 @@ void MainWindow::do_vi_motion(QChar cmd, QTextCursor& cursor, int rcnt, DocWidge
 			auto pos = cursor.position();
 			if( isEditor ) {
 				docWidget->m_editor->moveToNextWord(cursor, /*select = */gvi.m_operator != ' ');
-				QTextBlock block = cursor.block();
-				//qDebug() << "cursor.position()" << cursor.position();
-				//qDebug() << "doc->characterCount()" << doc->characterCount();
-				if( gvi.m_operator == ' ' && !block.text().isEmpty() && cursor.position() == block.position() + block.text().size() ) {
-					//	非空行行末にいる場合
-					if( cursor.position() >= doc->characterCount() - 1 ) {	//	EOF にいる場合
-						cursor.movePosition(QTextCursor::Left, moveMode);
-					} else {
-						cursor.movePosition(QTextCursor::NextBlock, moveMode);
-						hat(cursor, moveMode);
-					}
-				}
 			} else
 				docWidget->m_preview->moveToNextWord(cursor, /*select = */gvi.m_operator != ' ');
 			if( cursor.position() == pos ) break;
+		}
+		if( isEditor ) {
+			QTextBlock block = cursor.block();
+			if( gvi.m_operator == ' ' && !block.text().isEmpty() && cursor.position() == block.position() + block.text().size() ) {
+				//	非空行行末にいる場合
+				if( cursor.position() >= doc->characterCount() - 1 ) {	//	EOF にいる場合
+					cursor.movePosition(QTextCursor::Left, moveMode);
+				} else {
+					cursor.movePosition(QTextCursor::NextBlock, moveMode);
+					hat(cursor, moveMode);
+				}
+			}
 		}
 		break;
 	case 'W': {
