@@ -100,8 +100,13 @@ void save_preffered_x() {
 }
 void MainWindow::do_cdy_moved(QTextCursor& cursor) {
 	if( gvi.m_operator == 'c' ) {
-		if( cursor.hasSelection() )
-			cursor.deleteChar();
+		if( cursor.hasSelection() ) {
+			//cursor.deleteChar();
+			if( gvi.m_editor != nullptr ) {
+				gvi.m_editor->openUndoBlock();
+				gvi.m_editor->do_deleteText(cursor);
+			}
+		}
 		gvi.m_currentMode = ViMode::Insert;
 		//gvi.m_viCmdMode = false;
 	} else if( gvi.m_operator == 'd' || gvi.m_operator == 'y' ) {	//	d<move> or y<move>
