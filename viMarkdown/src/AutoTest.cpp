@@ -1679,6 +1679,48 @@ const QList<ViTestCase> viTestCases = {
         }
     },
 #endif
+// 1. 単純な dw
+    { "Delete word (dw) - Basic",
+        "┃abc def ghi\n",
+        {
+            "dw", "┃def ghi\n", // "abc " を削除、カーソルは "def" の先頭へ
+            "dw", "┃ghi\n"     // "def " を削除、カーソルは "ghi" の先頭へ
+        }
+    },
+
+    // 2. <num>dw, d<num>w, <num>d<num>w
+    { "Delete word with counts (2dw, d2w, 2d2w)",
+        "┃w1 w2 w3 w4 w5 w6 w7 w8 w9\n",
+        {
+            "2dw",  "┃w3 w4 w5 w6 w7 w8 w9\n", // 2単語 ("w1 w2 ") を削除
+            "d2w",  "┃w5 w6 w7 w8 w9\n",       // 2単語 ("w3 w4 ") を削除
+            "2d2w", "┃w9\n"                   // 2×2=4単語 ("w5 w6 w7 w8 ") を削除
+        }
+    },
+
+    // 3. 行末単語の dw
+    { "Delete word at end of line (dw)",
+        "hello ┃world\n",
+        {
+            "dw", "hello ┃\n" // "world" を削除。改行(\n)は削除されず行末の空白位置にカーソルが留まる
+        }
+    },
+
+    // 4. 改行にカーソルがある場合の dw
+    { "Delete word on newline (dw)",
+        "first\n┃\nsecond\n",
+        {
+            "dw", "first\n┃second\n" // 改行文字(\n)自体が削除され、下の行と連結される
+        }
+    },
+
+    // 5. 行をまたぐ <num>dw
+    { "Delete words across lines (<num>dw)",
+        "┃foo bar\nbaz qux\n",
+        {
+            "3dw", "┃qux\n" // 1:"foo ", 2:"bar\n", 3:"baz " の計3単語分を削除して改行を跨ぐ
+        }
+    },
 };
 QString removeCursor(const QString &src, int &pos, int &anchor) {
 	QString dst;

@@ -99,6 +99,28 @@ void save_preffered_x() {
 	}
 }
 void MainWindow::do_cdy_moved(QTextCursor& cursor) {
+#if 0
+	if( cursor.hasSelection() && gvi.m_linewiseMoved ) {
+		int startPos = cursor.selectionStart();
+        int endPos = cursor.selectionEnd();
+		QTextCursor cStart = cursor;
+        cStart.setPosition(startPos);
+        cStart.movePosition(QTextCursor::StartOfBlock);
+        QTextCursor cEnd = cursor;
+        cEnd.setPosition(endPos);
+        if (!cEnd.movePosition(QTextCursor::NextBlock))
+            cEnd.movePosition(QTextCursor::EndOfBlock);
+        if (cursor.position() >= cursor.anchor()) {
+            // 上から下への選択
+            cursor.setPosition(cStart.position());
+            cursor.setPosition(cEnd.position(), QTextCursor::KeepAnchor);
+        } else {
+            // 下から上への選択
+            cursor.setPosition(cEnd.position());
+            cursor.setPosition(cStart.position(), QTextCursor::KeepAnchor);
+        }
+	}
+#endif
 	if( gvi.m_operator == 'c' ) {
 		if( cursor.hasSelection() ) {
 			//cursor.deleteChar();
@@ -114,7 +136,8 @@ void MainWindow::do_cdy_moved(QTextCursor& cursor) {
 			gvi.m_yankBuffer = cursor.selectedText();
 			gvi.m_linewiseYanked = gvi.m_linewiseMoved;
 			if( gvi.m_operator == 'd' ) {
-				gvi.m_editor->do_deleteText(cursor);
+				if(gvi.m_editor != nullptr)
+					gvi.m_editor->do_deleteText(cursor);
 				//cursor.deleteChar();
 			} else {		//	y<move>
 				statusBar()->showMessage(QString("%1 charactors yanked.").arg(gvi.m_yankBuffer.size()), 5000);
