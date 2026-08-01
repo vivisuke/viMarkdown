@@ -11,6 +11,8 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindowClass; };
 QT_END_NAMESPACE
 
+#define		PREVIEW_VICMD		0
+
 #define	KEY_VI_KEYBINDINGS			u"viKeybindings"
 #define	KEY_IGNORE_CASE				u"ignoreCase"
 #define	KEY_REGEXP					u"regexp"

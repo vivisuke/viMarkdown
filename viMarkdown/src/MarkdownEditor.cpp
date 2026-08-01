@@ -2723,8 +2723,8 @@ void drawEOF(QPainter &p, QRect r) {
 //	g.m_cursorVisible = !g.m_cursorVisible;
 //    this->viewport()->update(); 
 //}
-void drawTextCursor(QWidget *viewport, QPainter& p, QTextCursor cursor, QRect rect, QFontMetrics fontMetrics, bool hasFocus) {
-	if( gvi.m_currentMode == ViMode::Normal ) {
+void drawTextCursor(QWidget *viewport, QPainter& p, QTextCursor cursor, QRect rect, QFontMetrics fontMetrics, bool hasFocus, bool isEditor) {
+	if( isEditor && gvi.m_currentMode == ViMode::Normal ) {
 		auto ht = rect.height();
 		rect.setY(rect.y() + ht/2);
 		rect.setHeight(ht - ht/2);
@@ -2822,7 +2822,7 @@ void MarkdownEditor::paintEvent(QPaintEvent *e) {
 	}
 	if( !isReadOnly() ) {
 		QRect rect = cursorRect();
-		drawTextCursor(viewport(), p, textCursor(), rect, fontMetrics(), hasFocus());		//	カーソル描画
+		drawTextCursor(viewport(), p, textCursor(), rect, fontMetrics(), hasFocus(), true);		//	カーソル描画
 	}
 }
 void MarkdownEditor::highlightVText(QTextCursor cursor) {

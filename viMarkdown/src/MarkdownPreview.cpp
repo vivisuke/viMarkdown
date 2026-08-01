@@ -55,7 +55,7 @@ const QChar ZWSP(0x200b);			//	ゼロ幅空白文字
 static QRegularExpression re_tailspc(" +$");	//	行末半角空白列
 
 extern CharType getCharType(QChar ch);
-extern void drawTextCursor(QWidget *viewport, QPainter& p, QTextCursor cursor, QRect rect, QFontMetrics fontMetrics, bool hasFocus);
+extern void drawTextCursor(QWidget *viewport, QPainter& p, QTextCursor cursor, QRect rect, QFontMetrics fontMetrics, bool hasFocus, bool);
 
 MarkdownPreview::MarkdownPreview(const MainWindow *mainWindow, DocWidget *docWidget, QWidget* parent, bool readOnly)
 	: m_mainWindow(mainWindow), m_docWidget(docWidget), QTextEdit(parent)
@@ -65,7 +65,7 @@ MarkdownPreview::MarkdownPreview(const MainWindow *mainWindow, DocWidget *docWid
 	setUndoRedoEnabled(false);
 	qDebug() << "doc->isUndoRedoEnabled() = " << document()->isUndoRedoEnabled();
 	setFrameStyle(QFrame::NoFrame);
-	setCursorWidth(0);
+	setCursorWidth(0);	//	標準テキストカーソル非表示
 #if 0
 	document()->setDefaultStyleSheet(
 	    "blockquote {"
@@ -250,6 +250,7 @@ void MarkdownPreview::keyPressEvent(QKeyEvent *e) {
 		return;
 	}
 	if (e->key() == Qt::Key_Escape) {
+#if 0
 		if( g.m_viKeybindings ) {
 			//if( g.m_editBlockOpen ) {
 			//	cursor.endEditBlock();
@@ -258,6 +259,7 @@ void MarkdownPreview::keyPressEvent(QKeyEvent *e) {
 			gvi.m_currentMode = ViMode::Normal;
 			//gvi.m_viCmdMode = true;
 		}
+#endif
 		//gvi.m_viCmdMode = true;
 		//QTextCursor cursor = textCursor();
 		if( cursor.hasSelection() ) {	//	選択状態ならば
@@ -337,6 +339,7 @@ void MarkdownPreview::keyPressEvent(QKeyEvent *e) {
 			return;
 		}
 	}
+#if PREVIEW_VICMD
 	if( gvi.m_currentMode == ViMode::Normal ) {
 		QString txt = e->text();
 		//QTextCursor cursor = textCursor();
@@ -346,6 +349,7 @@ void MarkdownPreview::keyPressEvent(QKeyEvent *e) {
 			return;
 		}
 	}
+#endif
 	QTextEdit::keyPressEvent(e);	// 通常キーは通常通りの処理
 }
 void MarkdownPreview::moveToNextWord(QTextCursor& cursor, bool shift) {
@@ -550,6 +554,7 @@ void MarkdownPreview::wheelEvent(QWheelEvent *event) {
 //}
 void MarkdownPreview::paintEvent(QPaintEvent *e) {
 	QTextEdit::paintEvent(e); // 先にテキストを普通に描画
+#if 1
 	QPainter p(viewport());
 	if( !isReadOnly() ) {
 		QRect rect = cursorRect();
@@ -557,7 +562,7 @@ void MarkdownPreview::paintEvent(QPaintEvent *e) {
 		QTextCharFormat fmt = cursor.charFormat();
 		QFont font = fmt.font();
 		QFontMetrics fm(font);
-		drawTextCursor(viewport(), p, textCursor(), rect, fm, hasFocus());		//	カーソル描画
+		drawTextCursor(viewport(), p, textCursor(), rect, fm, hasFocus(), false);		//	カーソル描画
 #if 0
 		if( gvi.m_viCmdMode ) {
 			auto ht = rect.height();
@@ -584,6 +589,7 @@ void MarkdownPreview::paintEvent(QPaintEvent *e) {
 		p.drawLine(left, y, right, y);
 #endif
 	}
+#endif
 }
 
 void MarkdownPreview::do_body(QTextBlock srcBlock, QTextCursor& cursor, bool last) {

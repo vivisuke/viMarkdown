@@ -912,7 +912,7 @@ const QList<ViTestCase> viTestCases = {
 	//{ "Move cursor right",	"h┃ello\n", {"l", "he┃llo\n", "l", "hel┃lo\n", "l", "hell┃o\n", } },
 	//{ "Move cursor left",	"h┃ello\n", {"h", "┃hello\n", "h", "┃hello\n", } },
 	//{ "Visual mode",		"h┃ello\n", {"v", "h《┃e》llo\n", "l", "h《e┃l》lo\n", } },
-#if 0
+#if 1
 #if 1		//	h j k l
 	// 下移動 (j) の基本動作と最終行での境界制御
     { "Move cursor down (j)",
@@ -1463,89 +1463,6 @@ const QList<ViTestCase> viTestCases = {
 	    }
 	},
 #endif
-#if 1
-    { "Ex Range - Absolute Line Number (:num)",
-        "line 1\nli┃ne 2\nline 3\nline 4\n",
-        {
-            ":3", "line 1\nline 2\n┃line 3\nline 4\n", // 3行目の行頭へジャンプ
-            ":1", "┃line 1\nline 2\nline 3\nline 4\n"  // 1行目の行頭へジャンプ
-        }
-    },
-    { "Ex Range - Current Line (:.)",
-        "line 1\nli┃ne 2\nline 3\n",
-        {
-            ":.", "line 1\n┃line 2\nline 3\n" // カレント行（2行目）の行頭へジャンプ
-        }
-    },
-    { "Ex Range - End of File (:$ and :%)",
-        "line 1\nli┃ne 2\nline 3\n",
-        {
-            ":$", "line 1\nline 2\n┃line 3\n", // 最終行（3行目）へジャンプ
-            ":%", "line 1\nline 2\n┃line 3\n"  // 全行。範囲のみ指定時は、最後の行（3行目）へジャンプ
-        }
-    },
-    { "Ex Range - Relative Offsets (:+-)",
-        "line 1\nline 2\nli┃ne 3\nline 4\nline 5\n",
-        {
-            ":+2", "line 1\nline 2\nline 3\nline 4\n┃line 5\n", // '.' 省略の相対移動。現在行(3) + 2 = 5行目へ
-            ":-3", "line 1\n┃line 2\nline 3\nline 4\nline 5\n", // 現在行(5) - 3 = 2行目へ
-            ":-",  "┃line 1\nline 2\nline 3\nline 4\nline 5\n"  // 数値省略時は -1。現在行(2) - 1 = 1行目へ
-        }
-    },
-    { "Ex Range - Forward Pattern Search (:/pat/)",
-        "line 1\nline 2 (TODO)\nli┃ne 3\nline 4 (TODO)\nline 5\n",
-        {
-            // 3行目以降で、最初にマッチする行（4行目）へジャンプ
-            ":/TODO/", "line 1\nline 2 (TODO)\nline 3\n┃line 4 (TODO)\nline 5\n" 
-        }
-    },
-    { "Ex Range - Backward Pattern Search (:?pat?)",
-        "line 1\nline 2 (TODO)\nline 3\nli┃ne 4 (TODO)\nline 5\n",
-        {
-            // 4行目より前で、最初にマッチする行（2行目）へジャンプ
-            ":?TODO?", "line 1\n┃line 2 (TODO)\nline 3\nline 4 (TODO)\nline 5\n" 
-        }
-    },
-    { "Ex Range - Semicolon Separator (:;)",
-        "line 1\nli┃ne 2\nline 3\nline 4\nline 5\n",
-        {
-            // セミコロン区切り：'1' で一度カレント行が1行目に更新され、そこから '+2' されて3行目へジャンプ
-            ":1;+2", "line 1\nline 2\n┃line 3\nline 4\nline 5\n" 
-        }
-    },
-#endif
-#if 1
-    { "Ex Delete - Current Line (:d)",
-        "line 1\nli┃ne 2\nline 3\n",
-        {
-            ":d", "line 1\n┃line 3\n" // 範囲省略時はカレント行（2行目）を削除。カーソルは次の行の先頭へ
-        }
-    },
-    { "Ex Delete - Specific Line (:1d)",
-        "line 1\nli┃ne 2\nline 3\n",
-        {
-            ":1d", "┃line 2\nline 3\n" // 指定した1行目を削除。カーソルは新しい1行目（元2行目）の先頭へ
-        }
-    },
-    { "Ex Delete - Range (:1,2d)",
-        "line 1\nline 2\nli┃ne 3\n",
-        {
-            ":1,2d", "┃line 3\n" // 1〜2行目を一括削除。カーソルは残った3行目の先頭へ
-        }
-    },
-    { "Ex Delete - Whole Document (:%d)",
-        "line 1\nli┃ne 2\nline 3\n",
-        {
-            ":%d", "┃\n" // バッファ全体のすべての行を削除。Vimの仕様として、中身のない空行が1行だけ残る
-        }
-    },
-    { "Ex Delete - To EOF (:.,$d)",
-        "line 1\nli┃ne 2\nline 3\n",
-        {
-            ":.,$d", "┃line 1\n" // カレント行（2行目）から最終行（3行目）まで削除。下に行がないため、カーソルは1行目へ
-        }
-    },
-#endif
 #endif
 	{ "Basic i command", "┃\n",
         {
@@ -1729,6 +1646,90 @@ const QList<ViTestCase> viTestCases = {
             "3dw", "┃qux\n" // 1:"foo ", 2:"bar\n", 3:"baz " の計3単語分を削除して改行を跨ぐ
         }
     },
+//	ex commands
+#if 0
+    { "Ex Range - Absolute Line Number (:num)",
+        "line 1\nli┃ne 2\nline 3\nline 4\n",
+        {
+            ":3", "line 1\nline 2\n┃line 3\nline 4\n", // 3行目の行頭へジャンプ
+            ":1", "┃line 1\nline 2\nline 3\nline 4\n"  // 1行目の行頭へジャンプ
+        }
+    },
+    { "Ex Range - Current Line (:.)",
+        "line 1\nli┃ne 2\nline 3\n",
+        {
+            ":.", "line 1\n┃line 2\nline 3\n" // カレント行（2行目）の行頭へジャンプ
+        }
+    },
+    { "Ex Range - End of File (:$ and :%)",
+        "line 1\nli┃ne 2\nline 3\n",
+        {
+            ":$", "line 1\nline 2\n┃line 3\n", // 最終行（3行目）へジャンプ
+            ":%", "line 1\nline 2\n┃line 3\n"  // 全行。範囲のみ指定時は、最後の行（3行目）へジャンプ
+        }
+    },
+    { "Ex Range - Relative Offsets (:+-)",
+        "line 1\nline 2\nli┃ne 3\nline 4\nline 5\n",
+        {
+            ":+2", "line 1\nline 2\nline 3\nline 4\n┃line 5\n", // '.' 省略の相対移動。現在行(3) + 2 = 5行目へ
+            ":-3", "line 1\n┃line 2\nline 3\nline 4\nline 5\n", // 現在行(5) - 3 = 2行目へ
+            ":-",  "┃line 1\nline 2\nline 3\nline 4\nline 5\n"  // 数値省略時は -1。現在行(2) - 1 = 1行目へ
+        }
+    },
+    { "Ex Range - Forward Pattern Search (:/pat/)",
+        "line 1\nline 2 (TODO)\nli┃ne 3\nline 4 (TODO)\nline 5\n",
+        {
+            // 3行目以降で、最初にマッチする行（4行目）へジャンプ
+            ":/TODO/", "line 1\nline 2 (TODO)\nline 3\n┃line 4 (TODO)\nline 5\n" 
+        }
+    },
+    { "Ex Range - Backward Pattern Search (:?pat?)",
+        "line 1\nline 2 (TODO)\nline 3\nli┃ne 4 (TODO)\nline 5\n",
+        {
+            // 4行目より前で、最初にマッチする行（2行目）へジャンプ
+            ":?TODO?", "line 1\n┃line 2 (TODO)\nline 3\nline 4 (TODO)\nline 5\n" 
+        }
+    },
+    { "Ex Range - Semicolon Separator (:;)",
+        "line 1\nli┃ne 2\nline 3\nline 4\nline 5\n",
+        {
+            // セミコロン区切り：'1' で一度カレント行が1行目に更新され、そこから '+2' されて3行目へジャンプ
+            ":1;+2", "line 1\nline 2\n┃line 3\nline 4\nline 5\n" 
+        }
+    },
+#endif
+#if 0
+    { "Ex Delete - Current Line (:d)",
+        "line 1\nli┃ne 2\nline 3\n",
+        {
+            ":d", "line 1\n┃line 3\n" // 範囲省略時はカレント行（2行目）を削除。カーソルは次の行の先頭へ
+        }
+    },
+    { "Ex Delete - Specific Line (:1d)",
+        "line 1\nli┃ne 2\nline 3\n",
+        {
+            ":1d", "┃line 2\nline 3\n" // 指定した1行目を削除。カーソルは新しい1行目（元2行目）の先頭へ
+        }
+    },
+    { "Ex Delete - Range (:1,2d)",
+        "line 1\nline 2\nli┃ne 3\n",
+        {
+            ":1,2d", "┃line 3\n" // 1〜2行目を一括削除。カーソルは残った3行目の先頭へ
+        }
+    },
+    { "Ex Delete - Whole Document (:%d)",
+        "line 1\nli┃ne 2\nline 3\n",
+        {
+            ":%d", "┃\n" // バッファ全体のすべての行を削除。Vimの仕様として、中身のない空行が1行だけ残る
+        }
+    },
+    { "Ex Delete - To EOF (:.,$d)",
+        "line 1\nli┃ne 2\nline 3\n",
+        {
+            ":.,$d", "┃line 1\n" // カレント行（2行目）から最終行（3行目）まで削除。下に行がないため、カーソルは1行目へ
+        }
+    },
+#endif
 };
 QString removeCursor(const QString &src, int &pos, int &anchor) {
 	QString dst;
