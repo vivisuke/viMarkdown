@@ -1031,6 +1031,14 @@ const QList<ViTestCase> viTestCases = {
             "3w", "abc def ghi jkl mn┃o"  // 3単語分移動（足りないためファイル末尾の文字 'o' で停止）
         }
     },
+    { "Word motion and gg (2w, gg, 3w)",
+        "┃abc def\nxyz hoge\n",
+        {
+            "2w", "abc def\n┃xyz hoge\n", // 'a' から 2w 移動して 'x' へ
+            "gg", "┃abc def\nxyz hoge\n", // gg でファイルの先頭 ('a') へ戻る
+            "3w", "abc def\nxyz ┃hoge\n"  // 'a' から 3w 移動して 'h' (hoge の頭) へ
+        }
+    },
     { "Move forward word (w) - Japanese word classes",
         "┃日本語ひらがなカタカナ。漢字",
         {

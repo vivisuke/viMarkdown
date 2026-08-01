@@ -956,6 +956,8 @@ void MainWindow::do_vi_motion(QChar cmd, QTextCursor& cursor, int rcnt, DocWidge
 			auto pos = cursor.position();
 			if( isEditor ) {
 				docWidget->m_editor->moveToNextWord(cursor, /*select = */gvi.m_operator != ' ');
+				if( i+1 < rcnt && cursor.position() == block.position() + block.text().size() )		//	行末にいる場合
+					cursor.movePosition(QTextCursor::Right, moveMode);
 			} else
 				docWidget->m_preview->moveToNextWord(cursor, /*select = */gvi.m_operator != ' ');
 			if( cursor.position() == pos ) break;
