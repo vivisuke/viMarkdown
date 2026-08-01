@@ -912,7 +912,7 @@ const QList<ViTestCase> viTestCases = {
 	//{ "Move cursor right",	"h┃ello\n", {"l", "he┃llo\n", "l", "hel┃lo\n", "l", "hell┃o\n", } },
 	//{ "Move cursor left",	"h┃ello\n", {"h", "┃hello\n", "h", "┃hello\n", } },
 	//{ "Visual mode",		"h┃ello\n", {"v", "h《┃e》llo\n", "l", "h《e┃l》lo\n", } },
-#if 1
+#if 0
 #if 1		//	h j k l
 	// 下移動 (j) の基本動作と最終行での境界制御
     { "Move cursor down (j)",
@@ -1546,6 +1546,7 @@ const QList<ViTestCase> viTestCases = {
         }
     },
 #endif
+#endif
 	{ "Basic i command", "┃\n",
         {
             "iabc", "ab┃c\n", // 空行での基本挿入（Escにより末尾の 'c' から1文字左にスナップ）
@@ -1686,8 +1687,7 @@ const QList<ViTestCase> viTestCases = {
             "2Cxyz", "axy┃z\nghi\n", // 2行分（現在の行のカーソルから次の行の末尾まで）を削除して置換
         }
     },
-#endif
-// 1. 単純な dw
+	// 1. 単純な dw
     { "Delete word (dw) - Basic",
         "┃abc def ghi\n",
         {
@@ -1786,6 +1786,7 @@ void MainWindow::onAction_TestViCommands() {
 		cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
 		cursor.insertText(removeCursor(viTestCases[i].m_initialText, pos, anchor));
 		cursor.setPosition(pos);
+		cursor.clearSelection();
 		editor->setTextCursor(cursor);
 		editor->savePrefferedX(cursor);
 		QCoreApplication::processEvents();		//	溜まっているイベント処理

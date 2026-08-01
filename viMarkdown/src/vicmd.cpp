@@ -1397,6 +1397,7 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 		gvi.m_isEditCommand = false;
 		if( docWidget != nullptr ) {
 			docWidget->m_editor->viewport()->update();
+			docWidget->m_editor->prohibitMergeUndo();
 			docWidget->m_preview->viewport()->update();
 		}
 		//##qDebug() << "gvi.m_lastEditCommand = " << gvi.m_lastEditCommand;

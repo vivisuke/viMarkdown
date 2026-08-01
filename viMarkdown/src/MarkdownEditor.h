@@ -236,6 +236,7 @@ public:
     bool	canRedo() const;
     void	openUndoBlock();
     void	closeUndoBlock();
+    void	prohibitMergeUndo();
     void	do_undo();
     void	do_redo();
     int		getVisibleLineCount() const;

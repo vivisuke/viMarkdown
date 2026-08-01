@@ -1128,6 +1128,9 @@ void MarkdownEditor::openUndoBlock() {
 void MarkdownEditor::closeUndoBlock() {
 	m_undoMgr->closeBlock();
 }
+void MarkdownEditor::prohibitMergeUndo() {
+	m_undoMgr->prohibitMergeUndo();
+}
 void MarkdownEditor::do_undo() {
 	if( m_diffMode ) {
 		m_docWidget->m_editor->removeAllDummyLines();
