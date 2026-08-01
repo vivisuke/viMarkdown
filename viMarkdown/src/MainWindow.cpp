@@ -1303,7 +1303,8 @@ void MainWindow::onDel_pressed(bool ctrl) {
 	if( docWidget == nullptr ) return;
 	QTextCursor cursor = docWidget->m_editor->textCursor();
 	if( cursor.hasSelection() ) {
-		cursor.deleteChar();
+		//cursor.deleteChar();
+		docWidget->m_editor->do_deleteText(cursor);
 	} else {
 		if( ctrl )
 			docWidget->m_editor->deleteWord();
@@ -1312,7 +1313,8 @@ void MainWindow::onDel_pressed(bool ctrl) {
 			if( pos > 0 && docWidget->m_editor->document()->characterAt(pos-1) == '\\' ) {
 				cursor.deletePreviousChar();
 			}
-			cursor.deleteChar();
+			//cursor.deleteChar();
+			docWidget->m_editor->do_deleteText(cursor);
 		}
 	}
 	docWidget->m_editor->setTextCursor(cursor);
