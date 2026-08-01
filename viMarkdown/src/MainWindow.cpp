@@ -1279,7 +1279,8 @@ void MainWindow::onTextInsertedAtPreview(QString txt) {
 	QTextCursor cursor = docWidget->m_editor->textCursor();
 	//m_processing = true;
 	docWidget->m_editor->setIgnoreCC(true);
-	cursor.insertText(txt);
+	//cursor.insertText(txt);
+	docWidget->m_editor->do_insertText(cursor, txt);
 	docWidget->m_editor->setTextCursor(cursor);
 	docWidget->m_editor->setIgnoreCC(false);
 	//m_processing = false;
