@@ -238,6 +238,11 @@ bool MarkdownPreview::isTableHyphenLine(const QString& lnStr) {
 }
 #endif
 
+void MarkdownPreview::focusInEvent(QFocusEvent *e) {
+	if( gvi.m_currentMode == ViMode::CommandLine )
+		((MainWindow*)m_mainWindow)->close_cmdLine();
+	QTextEdit::focusInEvent(e);
+}
 void MarkdownPreview::keyPressEvent(QKeyEvent *e) {
 	QTextCursor cursor = textCursor();
 	if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) {		//	改行入力

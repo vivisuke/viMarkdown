@@ -1335,7 +1335,8 @@ void MainWindow::onBS_pressed(bool ctrl) {
 	if( docWidget == nullptr ) return;
 	QTextCursor cursor = docWidget->m_editor->textCursor();
 	if( cursor.hasSelection() ) {
-		cursor.deleteChar();
+		//cursor.deleteChar();
+		docWidget->m_editor->do_deleteText(cursor);
 	} else {
 		if( ctrl )
 			docWidget->m_editor->backSpaceWord();

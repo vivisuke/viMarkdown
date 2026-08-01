@@ -214,6 +214,7 @@ public:
     void	onChangePreviewFontSize(int);
     void	exitInsertMode(QTextCursor& cursor);
     void	do_diff();
+    void	close_cmdLine();
 
 protected:
     void	load_settings();
@@ -414,7 +415,6 @@ protected:
     void	on_cmdLine_escape();
     void	on_cmdLine_up();		//	↑
     void	on_cmdLine_down();		//	↓
-    void	close_cmdLine();
     //void	do_fold(QTextBlock block, QTextDocument*);
     //void	do_unfold(QTextBlock block, QTextDocument*);
     void	do_viCmd(QChar cmd, QTextCursor&);

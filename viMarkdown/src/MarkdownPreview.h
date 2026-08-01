@@ -71,6 +71,7 @@ signals:
     void	do_viCmd(QChar, QTextCursor&);
 
 protected:
+    void	focusInEvent(QFocusEvent *event) override;
     void	keyPressEvent(QKeyEvent *e) override;
     void	mousePressEvent(QMouseEvent *e) override;
     void	mouseMoveEvent(QMouseEvent *e) override;
