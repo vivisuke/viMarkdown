@@ -1342,10 +1342,18 @@ void MainWindow::onBS_pressed(bool ctrl) {
 			docWidget->m_editor->backSpaceWord();
 		else {
 			auto pos = cursor.position();
+			if( pos > 1 && docWidget->m_editor->document()->characterAt(pos-2) == '\\' )
+				cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor, 2);
+			else
+				cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor, 1);
+			docWidget->m_editor->do_deleteText(cursor);
+#if 0
+			auto pos = cursor.position();
 			if( pos > 1 && docWidget->m_editor->document()->characterAt(pos-2) == '\\' ) {
 				cursor.deletePreviousChar();
 			}
 			cursor.deletePreviousChar();
+#endif
 		}
 	}
 	docWidget->m_editor->setTextCursor(cursor);
