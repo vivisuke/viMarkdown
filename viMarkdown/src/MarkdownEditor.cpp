@@ -1131,25 +1131,27 @@ void MarkdownEditor::closeUndoBlock() {
 void MarkdownEditor::prohibitMergeUndo() {
 	m_undoMgr->prohibitMergeUndo();
 }
-void MarkdownEditor::do_undo() {
+int MarkdownEditor::do_undo() {
 	if( m_diffMode ) {
 		m_docWidget->m_editor->removeAllDummyLines();
 		m_docWidget->m_diffview->removeAllDummyLines();
 	}
-	m_undoMgr->undo();
+	int pos = m_undoMgr->undo();
 	emit canUndoRedoChanged();
 	if( m_diffMode )
 		((MainWindow*)m_mainWindow)->do_diff();
+	return pos;
 }
-void MarkdownEditor::do_redo() {
+int MarkdownEditor::do_redo() {
 	if( m_diffMode ) {
 		m_docWidget->m_editor->removeAllDummyLines();
 		m_docWidget->m_diffview->removeAllDummyLines();
 	}
-	m_undoMgr->redo();
+	int pos = m_undoMgr->redo();
 	emit canUndoRedoChanged();
 	if( m_diffMode )
 		((MainWindow*)m_mainWindow)->do_diff();
+	return pos;
 }
 int indexOfNotEsc(const QString &text, QChar ch, int ix) {
 	for(;;) {

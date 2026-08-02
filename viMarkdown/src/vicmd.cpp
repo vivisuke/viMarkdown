@@ -1291,14 +1291,19 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 			break;
 		case 'u': {
 			docWidget->removeDummyBlocks();
-			docWidget->m_editor->do_undo();
+			int pos = docWidget->m_editor->do_undo();
 			cursor = docWidget->m_editor->textCursor();
+			cursor.setPosition(pos);
 			moveLeftIfAtEol(cursor);
 			break;
 		}
-		case 'U':
-			docWidget->m_editor->do_redo();
+		case 'U': {
+			int pos = docWidget->m_editor->do_redo();
+			cursor = docWidget->m_editor->textCursor();
+			cursor.setPosition(pos);
+			moveLeftIfAtEol(cursor);
 			break;
+		}
 		case ';':		//	順方向再検索
 			switch( gvi.m_last_fFtT.unicode() ) {
 			case 'f':

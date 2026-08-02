@@ -237,8 +237,8 @@ public:
     void	openUndoBlock();
     void	closeUndoBlock();
     void	prohibitMergeUndo();
-    void	do_undo();
-    void	do_redo();
+    int		do_undo();
+    int		do_redo();
     int		getVisibleLineCount() const;
     void	setPrefferedX(int x) { m_preferredX = x; }
     void	savePrefferedX(const QTextCursor&);
