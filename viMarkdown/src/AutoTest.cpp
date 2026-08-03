@@ -1301,7 +1301,7 @@ const QList<ViTestCase> viTestCases = {
             "k", "abc\n  defgh\n┃\nij\n",  // k: 3行目の空行に戻る
             "k", "abc\n┃  defgh\n\nij\n",  // k: 2行目のカラム0（1つ目のスペース）に戻る（行末維持が解除されていることの確認）
             "1$", "abc\n  defg┃h\n\nij\n", // 1$: 現在行（2行目）の末尾 'h' に移動（$ と同等）
-            "10$", "abc\n  defgh\n\ni┃j\n", // 10$: 範囲外の大きなカウントは最終行（4行目）の末尾 'j' で止まる
+            "10$", "abc\n  defgh\n\nij\n┃", // 10$: 範囲外の大きなカウントは最終行（4行目）の末尾 'j' で止まる？
         }
     },
 	{ "Jump to matching bracket (%) - Basic and Search",

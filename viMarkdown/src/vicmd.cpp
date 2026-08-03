@@ -1035,16 +1035,14 @@ doneW:
 		}
 		break;
 	case '$':
-		if( !block.text().isEmpty() ) {
-			//gvi.m_preferred_x = INT_MAX;
-			if( gvi.m_editor != nullptr )
-				gvi.m_editor->setPrefferedX(INT_MAX);
-			if( rcnt > 1 ) {
-				cursor.movePosition(QTextCursor::NextBlock, moveMode, rcnt-1);
-				block = cursor.block();
-			}
-			cursor.setPosition(block.position() + block.text().size() - 1, moveMode);
+		if( gvi.m_editor != nullptr )
+			gvi.m_editor->setPrefferedX(INT_MAX);
+		if( rcnt > 1 ) {
+			cursor.movePosition(QTextCursor::NextBlock, moveMode, rcnt-1);
+			block = cursor.block();
 		}
+		if( !block.text().isEmpty() )
+			cursor.setPosition(block.position() + block.text().size() - 1, moveMode);
 		break;
 	case '-':
 		cursor.movePosition(QTextCursor::PreviousBlock, moveMode, rcnt);
