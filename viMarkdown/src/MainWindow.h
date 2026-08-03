@@ -211,6 +211,9 @@ struct DayInfo {
     // ファイルが存在し、何らかのデータがあるか判定するヘルパー
     bool hasData() const { return exists; }
 };
+// 1ヶ月分のデータを保持する型定義（QDate -> DayInfo）
+using MonthDiaryMap = QMap<QDate, DayInfo>;
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -330,6 +333,7 @@ protected:
     void	diffview_open();
     void	updateUndoRedoEnabled();
     void	onCalendarClicked(QDate date);
+    void	onCalendarPageChanged(int, int);
     void	do_openDiary(QDate date);
 
     void	onAction_New();

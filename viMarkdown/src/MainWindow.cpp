@@ -66,6 +66,9 @@ void setPhysicalLine(QTextBlock &block, int ln, int flag);
 
 Global g;
 ViStatus gvi;
+// キーは「年月（例: "2026-08"）」などの文字列、または「その月の1日のQDate」
+QMap<QString, MonthDiaryMap> g_monthlyCache;
+
 
 MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent)
@@ -749,6 +752,7 @@ void MainWindow::setup_connections() {
 	//connect(ui->treeWidget, &QTreeWidget::itemDoubleClicked, this, &MainWindow::onTreeItemDoubleClicked);
 	connect(ui->treeWidget, &QTreeWidget::itemActivated, this, &MainWindow::onTreeItemActivated);				//	ダブルクリック or Enter 押下
 	connect(ui->action_AboutViMarkdown, &QAction::triggered, this, &MainWindow::onAction_About);
+	connect(ui->calendarWidget, &QCalendarWidget::currentPageChanged, this, &MainWindow::onCalendarPageChanged);
 	connect(ui->calendarWidget, &QCalendarWidget::clicked, this, &MainWindow::onCalendarClicked);
 }
 void MainWindow::restore_win() {
@@ -1993,6 +1997,36 @@ void MainWindow::do_close(bool forced) {
 	if (ix >= 0)
 		ui->tabWidget->removeTab(ix);
 	removeTopLevelItem(docWidget);
+}
+void MainWindow::onCalendarPageChanged(int year, int month) {
+	qDebug() << year << ", " << month;
+	QString dirPath = QString("%1/diary/%2/%3")
+                        .arg(g.m_defaultDir)
+                        .arg(year, 4, 10, QChar('0'))
+                        .arg(month, 2, 10, QChar('0'));
+
+    QDir dir(dirPath);
+    if (!dir.exists()) {
+        return; // ディレクトリが存在しなければ終了
+    }
+    QStringList filters;
+    filters << "*.md";
+    QFileInfoList fileList = dir.entryInfoList(filters, QDir::Files);
+    QTextCharFormat hasDiaryFormat;
+    hasDiaryFormat.setBackground(QColor(220, 235, 252)); // 薄い青色 (#DCEBFC)
+    hasDiaryFormat.setForeground(QColor(0, 51, 102));    // 濃い青色の文字（見やすさ向上）
+    hasDiaryFormat.setFontWeight(QFont::Bold);           // 太字
+    for (const QFileInfo &fileInfo : fileList) {
+        // 例: "20260803.md" のベース名 "20260803" を取得
+        QString baseName = fileInfo.baseName(); 
+        QDate date = QDate::fromString(baseName, "yyyyMMdd");
+        if (date.isValid()) {
+            // 背景を薄青強調
+            ui->calendarWidget->setDateTextFormat(date, hasDiaryFormat);
+            // 次回のページ切り替え時のクリア用に保持
+            //m_highlightedDates.append(date);
+        }
+    }
 }
 void MainWindow::onCalendarClicked(QDate date) {
 	//qDebug() << date;
