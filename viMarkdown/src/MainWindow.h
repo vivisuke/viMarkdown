@@ -311,6 +311,7 @@ protected:
     void	diffview_open();
     void	updateUndoRedoEnabled();
     void	onCalendarClicked(QDate date);
+    void	do_openDiary(QDate date);
 
     void	onAction_New();
     void	onAction_NewTab();

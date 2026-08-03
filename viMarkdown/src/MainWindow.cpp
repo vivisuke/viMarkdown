@@ -1995,15 +1995,19 @@ void MainWindow::do_close(bool forced) {
 	removeTopLevelItem(docWidget);
 }
 void MainWindow::onCalendarClicked(QDate date) {
-	qDebug() << date;
-	if( date == QDate::currentDate() )
-		onAction_TodaysDiary();
+	//qDebug() << date;
+	//if( date == QDate::currentDate() )
+	//	onAction_TodaysDiary();
+	do_openDiary(date);
 }
 void MainWindow::onAction_TodaysDiary() {
-	QDate today = QDate::currentDate();
-    QString yearStr  = today.toString("yyyy");
-    QString monthStr = today.toString("MM");
-    QString dateStr  = today.toString("yyyyMMdd");
+	//QDate today = QDate::currentDate();
+	do_openDiary(QDate::currentDate());
+}
+void MainWindow::do_openDiary(QDate date) {
+    QString yearStr  = date.toString("yyyy");
+    QString monthStr = date.toString("MM");
+    QString dateStr  = date.toString("yyyyMMdd");
 	QString dir = QString("%1/diary/%2/%3").arg(g.m_defaultDir, yearStr, monthStr);
 	//qDebug() << "dir = " << dir;
 	QDir diaryDir(dir);
@@ -2020,8 +2024,8 @@ void MainWindow::onAction_TodaysDiary() {
     if (!file.exists()) {
         if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
             QTextStream out(&file);
-            // ※ Qt6 の場合は setEncoding(QStringConverter::Utf8) を推論
-            out << QString("# %1\n\n## Todo\n- [ ] \n\n## Notes\n\n").arg(today.toString("yyyy-MM-dd"));
+            out.setEncoding(QStringConverter::Utf8);
+            out << QString("# %1\n\n## Todo\n- [ ] \n\n## Notes\n- \n\n").arg(date.toString("yyyy-MM-dd"));
             file.close();
             qDebug() << "Created todays diary file:" << filePath;
         }
