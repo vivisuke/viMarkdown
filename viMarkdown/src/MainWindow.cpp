@@ -127,6 +127,8 @@ MainWindow::MainWindow(QWidget *parent)
 	restore_win();
 	onAction_NewTab();
 	onAction_MarkdownCheatSheet();
+	QDate today = QDate::currentDate();
+	onCalendarPageChanged(today.year(), today.month());
 }
 MainWindow::~MainWindow()
 {
