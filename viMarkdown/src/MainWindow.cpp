@@ -106,6 +106,7 @@ MainWindow::MainWindow(QWidget *parent)
 	//updateHTMLModeCheck();		//	HTML or Source チェック状態に
 	updateThinThickCheck();		//	細・太罫線モード
 	ui->action_OutlineBar->setChecked(true);	//	暫定的
+	ui->action_SideBar->setChecked(true);	//	暫定的
 	setWindowTitle(QString("viMarkdown ") + VER_STR); 
 	m_watcher = new QFileSystemWatcher(this);			//	外部アプリによる文書変更監視オブジェクト
 	setup_statusBar();
@@ -745,6 +746,7 @@ void MainWindow::setup_connections() {
 	connect(ui->action_HTML, &QAction::toggled, this, &MainWindow::onAction_HTML);
 	connect(ui->action_Source, &QAction::toggled, this, &MainWindow::onAction_Source);
 	connect(ui->action_OutlineBar, &QAction::toggled, this, &MainWindow::onAction_OutlineBar);
+	connect(ui->action_SideBar, &QAction::toggled, this, &MainWindow::onAction_SideBar);
 	connect(ui->action_FocusOutline, &QAction::triggered, this, &MainWindow::onAction_FocusOutline);
 	connect(ui->action_OutputBar, &QAction::toggled, this, &MainWindow::onAction_OutputBar);
 	connect(ui->action_ViKeybindings, &QAction::toggled, this, &MainWindow::onAction_ViKeybindings);
@@ -756,6 +758,7 @@ void MainWindow::setup_connections() {
 	connect(ui->action_SwitchToAltFile, &QAction::triggered, this, &MainWindow::onAction_SwitchToAltFile);
 	connect(ui->action_TagJump, &QAction::triggered, this, &MainWindow::onAction_TagJump);
 	connect(ui->outlineBar, &QDockWidget::visibilityChanged, this, &MainWindow::onOutlineBarVisibilityChanged);
+	connect(ui->sideBar, &QDockWidget::visibilityChanged, this, &MainWindow::onSideBarVisibilityChanged);
 	connect(ui->outputBar, &QDockWidget::visibilityChanged, this, &MainWindow::onOutputBarVisibilityChanged);
 	connect(ui->treeWidget, &QTreeWidget::currentItemChanged, this, &MainWindow::onTreeCurrentItemChanged);
 	//connect(ui->treeWidget, &QTreeWidget::itemDoubleClicked, this, &MainWindow::onTreeItemDoubleClicked);
@@ -2040,8 +2043,8 @@ void MainWindow::onCalendarPageChanged(int year, int month) {
     QFileInfoList fileList = dir.entryInfoList(filters, QDir::Files);
     QTextCharFormat hasDiaryFormat, hasUndoneFormat, hasAlldoneFormat;
     hasDiaryFormat.setBackground(QColor(220, 235, 252)); // 薄い青色 (#DCEBFC)
-    hasDiaryFormat.setForeground(QColor(0, 51, 102));    // 濃い青色の文字（見やすさ向上）
-    hasDiaryFormat.setFontWeight(QFont::Bold);           // 太字
+    //hasDiaryFormat.setForeground(QColor(0, 51, 102));    // 濃い青色の文字（見やすさ向上）
+    //hasDiaryFormat.setFontWeight(QFont::Bold);           // 太字
     hasUndoneFormat.setBackground(QColor(252, 192, 192));	// 薄い赤色 (#FCc0c0)
     hasAlldoneFormat.setBackground(QColor(192, 252, 192));	// 薄い緑色 (#FCc0c0)
     for (const QFileInfo &fileInfo : fileList) {
@@ -2567,6 +2570,9 @@ void MainWindow::onAction_TagJump() {
 void MainWindow::onAction_OutlineBar(bool checked) {
 	ui->outlineBar->setVisible(checked);
 }
+void MainWindow::onAction_SideBar(bool checked) {
+	ui->sideBar->setVisible(checked);
+}
 void MainWindow::onAction_FocusOutline() {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
@@ -2632,6 +2638,9 @@ void MainWindow::onOutlineBarVisibilityChanged(bool v) {
 }
 void MainWindow::onOutputBarVisibilityChanged(bool v) {
 	ui->action_OutputBar->setChecked(v);
+}
+void MainWindow::onSideBarVisibilityChanged(bool v) {
+	ui->action_SideBar->setChecked(v);
 }
 int MainWindow::treeItemToTabIndex(QTreeWidgetItem *current) {
 	if( current == nullptr ) return -1;

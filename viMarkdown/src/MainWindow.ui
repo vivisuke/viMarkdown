@@ -102,6 +102,7 @@
     <addaction name="action_FocusOutline"/>
     <addaction name="action_OutputBar"/>
     <addaction name="action_ClearOutput"/>
+    <addaction name="action_SideBar"/>
     <addaction name="action_SlideShow"/>
    </widget>
    <widget class="QMenu" name="menu_Edit">
@@ -1281,6 +1282,14 @@
    </property>
    <property name="toolTip">
     <string>Weekly Note</string>
+   </property>
+  </action>
+  <action name="action_SideBar">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>SideBar</string>
    </property>
   </action>
  </widget>
