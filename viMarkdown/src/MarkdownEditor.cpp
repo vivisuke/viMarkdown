@@ -1527,7 +1527,8 @@ int MarkdownEditor::findPosition(const PosContext &context) {
 				if( --nth == 0 ) {
 					while (ix < charFlags.size() && charFlags[ix] > PCF_IMAGE_BEGIN && block.text()[ix] != u',') {
 						++ix;		//	非表示文字をスキップ
-						if( block.text()[ix] == u'"' ) break;	//	"" の場合は最初の " だけスキップ
+						if( ix < block.text().size() && block.text()[ix] == u'"' )
+							break;	//	"" の場合は最初の " だけスキップ
 					}
 					break;
 				}
