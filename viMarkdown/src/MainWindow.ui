@@ -211,9 +211,16 @@
     <property name="title">
      <string>&amp;Tool</string>
     </property>
+    <widget class="QMenu" name="menu_Diary">
+     <property name="title">
+      <string>&amp;Diary</string>
+     </property>
+     <addaction name="action_TodaysDiary"/>
+    </widget>
     <addaction name="action_DiffMode"/>
     <addaction name="action_DiffWithFile"/>
     <addaction name="separator"/>
+    <addaction name="menu_Diary"/>
     <addaction name="action_KeisenMode"/>
     <addaction name="action_ThinKeisen"/>
     <addaction name="action_ThickKeisen"/>
@@ -250,6 +257,7 @@
    <addaction name="action_New"/>
    <addaction name="action_NewTab"/>
    <addaction name="action_Open"/>
+   <addaction name="action_TodaysDiary"/>
    <addaction name="action_Save"/>
    <addaction name="action_SaveAs"/>
    <addaction name="action_Close"/>
@@ -1211,6 +1219,15 @@
    </property>
    <property name="text">
     <string>Diff with file...</string>
+   </property>
+  </action>
+  <action name="action_TodaysDiary">
+   <property name="icon">
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/event_note.png</normaloff>:/MainWindow/images/event_note.png</iconset>
+   </property>
+   <property name="text">
+    <string>Today's &amp;Diary</string>
    </property>
   </action>
  </widget>

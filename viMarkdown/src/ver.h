@@ -9,7 +9,7 @@
 
 #pragma once
 
-#define		VER_STR_0		"ver 0.3.040 dev"
+#define		VER_STR_0		"ver 0.3.042 dev"
 
 #ifdef BUILD_WITH_CMAKE
 #define		VER_STR			QString(VER_STR_0" (CMake ver)")

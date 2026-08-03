@@ -55,3 +55,7 @@ viMarkdown ver 1.0 までに実装予定機能一覧を示す。
 - [ ] マーメイド 対応  
 - [ ] ページビュー？  
   - [ ] 脚注  
+
+## v0.3.1xx-alpha リリースまで
+- [ ] What's New in ver 0.3
+- [ ] :edit fileName

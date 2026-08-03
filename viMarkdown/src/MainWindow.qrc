@@ -55,5 +55,6 @@
         <file>images/regexp.png</file>
         <file>images/difference.png</file>
         <file>images/diffWithFile.png</file>
+        <file>images/event_note.png</file>
     </qresource>
 </RCC>

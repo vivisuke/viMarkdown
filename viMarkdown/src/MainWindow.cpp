@@ -687,6 +687,7 @@ void MainWindow::setup_connections() {
 	connect(ui->action_SaveAs, &QAction::triggered, this, &MainWindow::onAction_SaveAs);
 	connect(ui->action_AsPDF, &QAction::triggered, this, &MainWindow::onAction_ExportAsPDF);
 	connect(ui->action_Close, &QAction::triggered, this, &MainWindow::onAction_Close);
+	connect(ui->action_TodaysDiary, &QAction::triggered, this, &MainWindow::onAction_TodaysDiary);
 	connect(ui->action_Print, &QAction::triggered, this, &MainWindow::onAction_Print);
 	connect(ui->action_List, &QAction::triggered, this, &MainWindow::onAction_List);
 	connect(ui->action_NumList, &QAction::triggered, this, &MainWindow::onAction_NumList);
@@ -1991,6 +1992,36 @@ void MainWindow::do_close(bool forced) {
 	if (ix >= 0)
 		ui->tabWidget->removeTab(ix);
 	removeTopLevelItem(docWidget);
+}
+void MainWindow::onAction_TodaysDiary() {
+	QDate today = QDate::currentDate();
+    QString yearStr  = today.toString("yyyy");
+    QString monthStr = today.toString("MM");
+    QString dateStr  = today.toString("yyyyMMdd");
+	QString dir = QString("%1/diary/%2/%3").arg(g.m_defaultDir, yearStr, monthStr);
+	//qDebug() << "dir = " << dir;
+	QDir diaryDir(dir);
+    if (!diaryDir.exists()) {
+        if (diaryDir.mkpath(".")) { // mkpath("整ったパス") で階層ごと作成
+            qDebug() << "Created directory:" << dir;
+        } else {
+            qDebug() << "Failed to create directory:" << dir;
+            return;
+        }
+    }
+    QString filePath = QString("%1/%2.md").arg(dir, dateStr);
+    QFile file(filePath);
+    if (!file.exists()) {
+        if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            QTextStream out(&file);
+            // ※ Qt6 の場合は setEncoding(QStringConverter::Utf8) を推論
+            out << QString("# %1\n\n## Todo\n- [ ] \n\n## Notes\n\n").arg(today.toString("yyyy-MM-dd"));
+            file.close();
+            qDebug() << "Created todays diary file:" << filePath;
+        }
+    }
+    // 6. 生成した日記ファイルをエディタで開く
+    do_open("", filePath);
 }
 void MainWindow::onAction_Print() {
 	DocWidget *docWidget = getCurDocWidget();
