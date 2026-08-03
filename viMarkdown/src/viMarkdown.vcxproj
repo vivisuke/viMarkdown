@@ -128,6 +128,7 @@
     <ClCompile Include="..\3rdparty\lunasvg\source\svgrenderstate.cpp" />
     <ClCompile Include="..\3rdparty\lunasvg\source\svgtextelement.cpp" />
     <ClCompile Include="AutoTest.cpp" />
+    <ClCompile Include="CalendarWidget.cpp" />
     <ClCompile Include="diff.cpp" />
     <ClCompile Include="DocWidget.cpp" />
     <ClCompile Include="GrepDialog.cpp" />
@@ -181,6 +182,7 @@
     <ClInclude Include="..\3rdparty\lunasvg\source\svgproperty.h" />
     <ClInclude Include="..\3rdparty\lunasvg\source\svgrenderstate.h" />
     <ClInclude Include="..\3rdparty\lunasvg\source\svgtextelement.h" />
+    <QtMoc Include="CalendarWidget.h" />
     <ClInclude Include="DocWidget.h" />
     <QtMoc Include="MarkdownPreview.h" />
     <QtMoc Include="MarkdownEditor.h" />

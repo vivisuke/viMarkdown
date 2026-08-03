@@ -142,6 +142,9 @@
     <ClCompile Include="UndoMgr.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="CalendarWidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DocWidget.h">
@@ -242,6 +245,9 @@
       <Filter>Header Files</Filter>
     </QtMoc>
     <QtMoc Include="SlideShow.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="CalendarWidget.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>

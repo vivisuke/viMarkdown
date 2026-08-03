@@ -310,6 +310,7 @@ protected:
     void	do_close(bool forced = false);
     void	diffview_open();
     void	updateUndoRedoEnabled();
+    void	onCalendarClicked(QDate date);
 
     void	onAction_New();
     void	onAction_NewTab();

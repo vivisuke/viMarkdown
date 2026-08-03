@@ -71,9 +71,17 @@
      </property>
      <addaction name="action_AsPDF"/>
     </widget>
+    <widget class="QMenu" name="menu_Diary_2">
+     <property name="title">
+      <string>&amp;Diary</string>
+     </property>
+     <addaction name="action_TodaysDiary"/>
+     <addaction name="action_WeeklyNote"/>
+    </widget>
     <addaction name="action_New"/>
     <addaction name="action_NewTab"/>
     <addaction name="action_Open"/>
+    <addaction name="menu_Diary_2"/>
     <addaction name="action_Reload"/>
     <addaction name="action_Save"/>
     <addaction name="action_SaveAs"/>
@@ -211,16 +219,9 @@
     <property name="title">
      <string>&amp;Tool</string>
     </property>
-    <widget class="QMenu" name="menu_Diary">
-     <property name="title">
-      <string>&amp;Diary</string>
-     </property>
-     <addaction name="action_TodaysDiary"/>
-    </widget>
     <addaction name="action_DiffMode"/>
     <addaction name="action_DiffWithFile"/>
     <addaction name="separator"/>
-    <addaction name="menu_Diary"/>
     <addaction name="action_KeisenMode"/>
     <addaction name="action_ThinKeisen"/>
     <addaction name="action_ThickKeisen"/>
@@ -373,6 +374,50 @@
         <bool>true</bool>
        </property>
       </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
+  <widget class="QDockWidget" name="sideBar">
+   <property name="windowTitle">
+    <string>SideBar</string>
+   </property>
+   <attribute name="dockWidgetArea">
+    <number>2</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_4">
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <property name="leftMargin">
+      <number>0</number>
+     </property>
+     <property name="topMargin">
+      <number>0</number>
+     </property>
+     <property name="rightMargin">
+      <number>0</number>
+     </property>
+     <property name="bottomMargin">
+      <number>0</number>
+     </property>
+     <item>
+      <widget class="QCalendarWidget" name="calendarWidget">
+       <property name="firstDayOfWeek">
+        <enum>Qt::DayOfWeek::Monday</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="verticalSpacer">
+       <property name="orientation">
+        <enum>Qt::Orientation::Vertical</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>40</height>
+        </size>
+       </property>
+      </spacer>
      </item>
     </layout>
    </widget>
@@ -1228,6 +1273,14 @@
    </property>
    <property name="text">
     <string>Today's &amp;Diary</string>
+   </property>
+  </action>
+  <action name="action_WeeklyNote">
+   <property name="text">
+    <string>&amp;Weekly Note</string>
+   </property>
+   <property name="toolTip">
+    <string>Weekly Note</string>
    </property>
   </action>
  </widget>

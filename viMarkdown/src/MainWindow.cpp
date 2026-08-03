@@ -749,6 +749,7 @@ void MainWindow::setup_connections() {
 	//connect(ui->treeWidget, &QTreeWidget::itemDoubleClicked, this, &MainWindow::onTreeItemDoubleClicked);
 	connect(ui->treeWidget, &QTreeWidget::itemActivated, this, &MainWindow::onTreeItemActivated);				//	ダブルクリック or Enter 押下
 	connect(ui->action_AboutViMarkdown, &QAction::triggered, this, &MainWindow::onAction_About);
+	connect(ui->calendarWidget, &QCalendarWidget::clicked, this, &MainWindow::onCalendarClicked);
 }
 void MainWindow::restore_win() {
 	QSettings settings;
@@ -1992,6 +1993,11 @@ void MainWindow::do_close(bool forced) {
 	if (ix >= 0)
 		ui->tabWidget->removeTab(ix);
 	removeTopLevelItem(docWidget);
+}
+void MainWindow::onCalendarClicked(QDate date) {
+	qDebug() << date;
+	if( date == QDate::currentDate() )
+		onAction_TodaysDiary();
 }
 void MainWindow::onAction_TodaysDiary() {
 	QDate today = QDate::currentDate();

@@ -794,9 +794,9 @@ SPR# 状 P Open Close ver     Type  概要
 0788 ● C 08/03            │ToDo│Tool > Diary > This Week's Note 追加
 0789 ● C 08/03            │ToDo│Tool > Diary > Recent Diary 追加
 0790 ◎ C 08/03 08/03 03043│ToDo│Today'sDiary：/diary/年/月 ディレクトリが存在しない場合は作成
-0791 ● C 08/03            │ToDo│
-0792 ● C 08/03            │ToDo│
-0793 ● C 08/03            │ToDo│
+0791 ● C 08/03            │ToDo│デフォルトディレクトリ/diary/diary.md が存在する場合はテンプレートとして参照
+0792 ◎ C 08/03 08/03 03043│ToDo│Diary > Today'sDiary：Tool から File に移動
+0793 ◎ C 08/03 08/03 03043│ToDo│右側にもドックバーを追加し、カレンダーウィジットを配置
 0794 ● C 08/03            │ToDo│
 0795 ● C 08/03            │ToDo│
 0796 ● C 08/03            │ToDo│
