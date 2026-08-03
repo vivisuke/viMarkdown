@@ -4,6 +4,8 @@
 #include <QTextCursor>
 #include <QSplitter>
 #include <QTimer>
+#include <QDate>
+#include <QDateTime>
 //#include "ui_MainWindow.h"
 //#include "markdowntohtmlconvertor.h"
 
@@ -191,7 +193,24 @@ struct ViStatus {
     MarkdownPreview	*m_preview = nullptr;	//	フォーカスを持っているマークダウンプレビュー
     QWidget	*m_prevFocusWidget = nullptr;	//	:/? 押下時点でフォーカスを持っていた Widget
 };
+enum class TodoStatus {
+    None,       // ToDo無し
+    HasOpen,    // 未完了（オープン）のToDoあり（例: - [ ] ）
+    AllClosed   // すべて完了（全クローズ）（例: - [x] のみ）
+};
+struct DayInfo {
+    QDate date;                           // 日付
+    bool exists = false;                  // ファイルが存在するか
+    QDateTime lastModified;               // 最終更新日時（QFileInfo::lastModified()）
+    TodoStatus todoStatus = TodoStatus::None; // ToDoの状態
 
+    // (オプション) 詳細データを持たせておくとツールチップ表示等で役立ちます
+    int totalTodoCount = 0;               // ToDoの総数
+    int openTodoCount = 0;                // 未完了ToDoの数
+
+    // ファイルが存在し、何らかのデータがあるか判定するヘルパー
+    bool hasData() const { return exists; }
+};
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
