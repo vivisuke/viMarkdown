@@ -56,6 +56,13 @@ const int MAX_DOC_LOC_HIST_SIZE = 100;
 
 const int OPEN_DST_WIDTH = 50;
 
+enum {
+	DIARY_NONE = 0,
+	DIARY_NORMAL,
+	DIARY_UNDONE,
+	DIARY_ALLDONE,
+};
+
 const QStringView KEY_RECENT_FILES(u"recentFilePaths");
 const QStringView KEY_FAVORITE_FILES(u"favoriteFilePaths");
 //const QStringView KEY_EDITOR_FONT_SIZE(u"editorFontSize");
@@ -2000,6 +2007,23 @@ void MainWindow::do_close(bool forced) {
 		ui->tabWidget->removeTab(ix);
 	removeTopLevelItem(docWidget);
 }
+int parseMdFile(const QString fullPath) {
+	QFile file(fullPath);
+	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) return 0;
+	QString content = file.readAll();
+	QStringList lst = content.split('\n');
+	file.close();
+	int nUndone = 0;
+	int nDone = 0;
+	for(auto txt: lst) {
+		auto txt2 = txt.trimmed();
+		if( txt2.startsWith("- [ ] ") ) ++nUndone;
+		else if( txt2.startsWith("- [x] ", Qt::CaseInsensitive) ) ++nDone;
+	}
+	if( nUndone != 0 ) return DIARY_UNDONE;
+	if( nDone != 0 ) return DIARY_ALLDONE;
+	return DIARY_NORMAL;
+}
 void MainWindow::onCalendarPageChanged(int year, int month) {
 	qDebug() << year << ", " << month;
 	QString dirPath = QString("%1/diary/%2/%3")
@@ -2014,17 +2038,22 @@ void MainWindow::onCalendarPageChanged(int year, int month) {
     QStringList filters;
     filters << "*.md";
     QFileInfoList fileList = dir.entryInfoList(filters, QDir::Files);
-    QTextCharFormat hasDiaryFormat;
+    QTextCharFormat hasDiaryFormat, hasUndoneFormat, hasAlldoneFormat;
     hasDiaryFormat.setBackground(QColor(220, 235, 252)); // 薄い青色 (#DCEBFC)
     hasDiaryFormat.setForeground(QColor(0, 51, 102));    // 濃い青色の文字（見やすさ向上）
     hasDiaryFormat.setFontWeight(QFont::Bold);           // 太字
+    hasUndoneFormat.setBackground(QColor(252, 192, 192));	// 薄い赤色 (#FCc0c0)
+    hasAlldoneFormat.setBackground(QColor(192, 252, 192));	// 薄い緑色 (#FCc0c0)
     for (const QFileInfo &fileInfo : fileList) {
         // 例: "20260803.md" のベース名 "20260803" を取得
         QString baseName = fileInfo.baseName(); 
         QDate date = QDate::fromString(baseName, "yyyyMMdd");
         if (date.isValid()) {
+        	auto type = parseMdFile(fileInfo.absoluteFilePath());
             // 背景を薄青強調
-            ui->calendarWidget->setDateTextFormat(date, hasDiaryFormat);
+            ui->calendarWidget->setDateTextFormat(date,
+            							type == DIARY_UNDONE ? hasUndoneFormat :
+            							type == DIARY_ALLDONE ? hasAlldoneFormat : hasDiaryFormat);
             // 次回のページ切り替え時のクリア用に保持
             //m_highlightedDates.append(date);
         }
