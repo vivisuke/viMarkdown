@@ -167,6 +167,7 @@ struct ViStatus {
     bool	m_redoing = false;			//	. コマンド処理中
     //bool	m_joinEditBlock = false;
     bool	m_recInsertedText = false;	//	挿入文字列保存
+    bool	m_ftForward = true;			//	ft or FT
     bool	m_inGlobal = false;			//	:g 処理中
     QChar	m_operator = u' ';			//	{c|d|y|<|>}<move> の先頭部分
     QChar	m_prefix = u' ';			//	{z|g|r|]|[}<char> の先頭部分

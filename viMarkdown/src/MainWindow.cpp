@@ -1970,6 +1970,8 @@ void MainWindow::do_save(bool fDialog) {
 	}
 	docWidget->m_saving = false;
 	m_watcher->addPath(fullPath);
+	//QDate today = QDate::currentDate();
+	onCalendarPageChanged(ui->calendarWidget->yearShown(), ui->calendarWidget->monthShown());		//	ちょっち手抜き
 }
 void MainWindow::onAction_ExportAsPDF() {
 	DocWidget *docWidget = getCurDocWidget();
