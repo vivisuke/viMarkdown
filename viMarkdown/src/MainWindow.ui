@@ -401,7 +401,7 @@
       <number>0</number>
      </property>
      <item>
-      <widget class="QCalendarWidget" name="calendarWidget">
+      <widget class="CalendarWidget" name="calendarWidget">
        <property name="firstDayOfWeek">
         <enum>Qt::DayOfWeek::Monday</enum>
        </property>
@@ -1299,6 +1299,11 @@
    <class>OutputView</class>
    <extends>QPlainTextEdit</extends>
    <header>OutputView.h</header>
+  </customwidget>
+  <customwidget>
+   <class>CalendarWidget</class>
+   <extends>QCalendarWidget</extends>
+   <header>calendarwidget.h</header>
   </customwidget>
  </customwidgets>
  <resources>
