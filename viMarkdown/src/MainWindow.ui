@@ -405,6 +405,9 @@
        <property name="firstDayOfWeek">
         <enum>Qt::DayOfWeek::Monday</enum>
        </property>
+       <property name="gridVisible">
+        <bool>true</bool>
+       </property>
       </widget>
      </item>
      <item>

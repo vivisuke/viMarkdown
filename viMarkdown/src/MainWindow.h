@@ -194,6 +194,7 @@ struct ViStatus {
     MarkdownPreview	*m_preview = nullptr;	//	フォーカスを持っているマークダウンプレビュー
     QWidget	*m_prevFocusWidget = nullptr;	//	:/? 押下時点でフォーカスを持っていた Widget
 };
+#if 0
 enum class TodoStatus {
     None,       // ToDo無し
     HasOpen,    // 未完了（オープン）のToDoあり（例: - [ ] ）
@@ -214,6 +215,7 @@ struct DayInfo {
 };
 // 1ヶ月分のデータを保持する型定義（QDate -> DayInfo）
 using MonthDiaryMap = QMap<QDate, DayInfo>;
+#endif
 
 class MainWindow : public QMainWindow
 {

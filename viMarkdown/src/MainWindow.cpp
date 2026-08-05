@@ -41,6 +41,7 @@
 #include "GrepDialog.h"
 #include "OutputView.h"
 #include "SlideShow.h"
+#include "CalendarWidget.h"
 
 #ifdef Q_OS_WIN
 //#ifdef _WIN32
@@ -74,7 +75,7 @@ void setPhysicalLine(QTextBlock &block, int ln, int flag);
 Global g;
 ViStatus gvi;
 // キーは「年月（例: "2026-08"）」などの文字列、または「その月の1日のQDate」
-QMap<QString, MonthDiaryMap> g_monthlyCache;
+//QMap<QString, MonthDiaryMap> g_monthlyCache;
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -2012,7 +2013,7 @@ void MainWindow::do_close(bool forced) {
 		ui->tabWidget->removeTab(ix);
 	removeTopLevelItem(docWidget);
 }
-int parseMdFile(const QString fullPath) {
+int parseMdFile(const QString fullPath, DayInfo &di) {
 	QFile file(fullPath);
 	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) return 0;
 	QString content = file.readAll();
@@ -2025,6 +2026,8 @@ int parseMdFile(const QString fullPath) {
 		if( txt2.startsWith("- [ ] ") ) ++nUndone;
 		else if( txt2.startsWith("- [x] ", Qt::CaseInsensitive) ) ++nDone;
 	}
+	di.m_totalTodoCount = nUndone + nDone;
+	di.m_openTodoCount = nUndone;
 	if( nUndone != 0 ) return DIARY_UNDONE;
 	if( nDone != 0 ) return DIARY_ALLDONE;
 	return DIARY_NORMAL;
@@ -2044,7 +2047,8 @@ void MainWindow::onCalendarPageChanged(int year, int month) {
     filters << "*.md";
     QFileInfoList fileList = dir.entryInfoList(filters, QDir::Files);
     QTextCharFormat hasDiaryFormat, hasUndoneFormat, hasAlldoneFormat;
-    hasDiaryFormat.setBackground(QColor(220, 235, 252)); // 薄い青色 (#DCEBFC)
+    hasDiaryFormat.setBackground(Qt::transparent); // 透明
+    //hasDiaryFormat.setBackground(QColor(220, 235, 252)); // 薄い青色 (#DCEBFC)
     //hasDiaryFormat.setForeground(QColor(0, 51, 102));    // 濃い青色の文字（見やすさ向上）
     //hasDiaryFormat.setFontWeight(QFont::Bold);           // 太字
     hasUndoneFormat.setBackground(QColor(252, 192, 192));	// 薄い赤色 (#FCc0c0)
@@ -2054,13 +2058,15 @@ void MainWindow::onCalendarPageChanged(int year, int month) {
         QString baseName = fileInfo.baseName(); 
         QDate date = QDate::fromString(baseName, "yyyyMMdd");
         if (date.isValid()) {
-        	auto type = parseMdFile(fileInfo.absoluteFilePath());
+        	DayInfo di;
+        	di.m_lastModified = fileInfo.lastModified();
+        	auto type = parseMdFile(fileInfo.absoluteFilePath(), di);
+            ui->calendarWidget->setDayInfoMap(date, di);
+            ui->calendarWidget->setDateTextFormat(date, hasDiaryFormat);
             // 背景を薄青強調
-            ui->calendarWidget->setDateTextFormat(date,
-            							type == DIARY_UNDONE ? hasUndoneFormat :
-            							type == DIARY_ALLDONE ? hasAlldoneFormat : hasDiaryFormat);
-            // 次回のページ切り替え時のクリア用に保持
-            //m_highlightedDates.append(date);
+            //ui->calendarWidget->setDateTextFormat(date,
+            //							type == DIARY_UNDONE ? hasUndoneFormat :
+            //							type == DIARY_ALLDONE ? hasAlldoneFormat : hasDiaryFormat);
         }
     }
 }
