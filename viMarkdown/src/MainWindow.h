@@ -39,6 +39,7 @@ QT_END_NAMESPACE
 #define	KEY_LANGUAGE				u"language"
 #define	KEY_AUTO_SVG_CMPL			u"autoSvgCmpl"
 #define	KEY_DEFAULT_DIR				u"defaultDir"
+#define	KEY_FIRST_DAY_OF_WEEK		u"firstDayOfWeek"
 
 enum {
     SystemDefault = 0,  // Localeに従う（OSの設定に依存）
@@ -132,6 +133,7 @@ struct Global {
 	int		m_editorFontSize;
 	int		m_previewFontSize;
 	int		m_matchedPosition;		//	マッチ位置
+	int		m_firstDayOfWeek = 1;	//	週開始曜日（1 for 月曜日、2 for 火曜日、... 7 for 日曜日）
     QString	m_defaultDir;			//	（load, save) デフォルトディレクトリ
     QString	m_lastSearchedPat;		//	最新検索文字列
     //QTextCursor	m_matchedCursor;	//	一致位置カーソル

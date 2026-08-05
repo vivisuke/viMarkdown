@@ -21,6 +21,7 @@ SettingsDialog::SettingsDialog(QWidget *parent, int page)
 	ui->previewFontSize->setValue(g.m_previewFontSize);
 	ui->autoSvgCompleter->setChecked(g.m_auto_svg_completer);
 	ui->defaultDir->setText(g.m_defaultDir);
+	ui->firstDayOfWeekCB->setCurrentIndex(g.m_firstDayOfWeek - 1);
 	updateColorButtons();
 	//QColor color("#800000");
 	connect(ui->defaultDirPB, &QPushButton::clicked, this, &SettingsDialog::onDefaultDir);
@@ -144,6 +145,7 @@ void SettingsDialog::accept() {
 	settings.setValue(KEY_PREVIEW_FONT_SIZE, ui->previewFontSize->value());
 	settings.setValue(KEY_AUTO_SVG_CMPL, g.m_auto_svg_completer = ui->autoSvgCompleter->isChecked());
 	settings.setValue(KEY_DEFAULT_DIR, g.m_defaultDir = ui->defaultDir->text());
+	settings.setValue(KEY_FIRST_DAY_OF_WEEK, g.m_firstDayOfWeek = ui->firstDayOfWeekCB->currentIndex()+1);
 	QDialog::accept();
 }
 void SettingsDialog::pickColor(QColor &targetColor, const QString &title) {

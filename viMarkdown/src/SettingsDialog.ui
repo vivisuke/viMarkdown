@@ -467,6 +467,13 @@
              </widget>
             </item>
             <item>
+             <widget class="QPushButton" name="defaultDirPB">
+              <property name="text">
+               <string>Dir...</string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <spacer name="horizontalSpacer_3">
               <property name="orientation">
                <enum>Qt::Orientation::Horizontal</enum>
@@ -479,18 +486,88 @@
               </property>
              </spacer>
             </item>
-            <item>
-             <widget class="QPushButton" name="defaultDirPB">
-              <property name="text">
-               <string>Dir...</string>
-              </property>
-             </widget>
-            </item>
            </layout>
           </widget>
          </item>
          <item>
           <widget class="QLineEdit" name="defaultDir"/>
+         </item>
+         <item>
+          <widget class="QWidget" name="widget_2" native="true">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>40</height>
+            </size>
+           </property>
+           <layout class="QHBoxLayout" name="horizontalLayout_5">
+            <item>
+             <widget class="QLabel" name="label_18">
+              <property name="text">
+               <string>Calendar &gt; FirstDayOfWeek;</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="firstDayOfWeekCB">
+              <property name="minimumSize">
+               <size>
+                <width>100</width>
+                <height>0</height>
+               </size>
+              </property>
+              <item>
+               <property name="text">
+                <string>Monday</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Tuesday</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Wednesday</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Thursday</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Friday</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Saturday</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Sunday</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_4">
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>182</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </widget>
          </item>
          <item>
           <spacer name="page_6_verticalSpacer">
