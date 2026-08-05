@@ -15,6 +15,8 @@ public:
 	SettingsDialog(QWidget *parent = nullptr, int=0);	//	初期ページ
 	~SettingsDialog();
 
+	void	setPage(int);
+
 protected:
 	void accept() override;
 
@@ -39,7 +41,6 @@ protected:
 	void onTreeItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous);
 	void	updateColorButtons();
 	void	pickColor(QColor &targetColor, const QString &title);
-	void	setPage(int);
 
 signals:
 	void	settingsChanged();

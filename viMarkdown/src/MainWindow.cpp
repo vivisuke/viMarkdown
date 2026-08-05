@@ -1685,6 +1685,7 @@ void MainWindow::do_settings(int page) {
 	Global g0 = g;
 	SettingsDialog dlg(this, page);
 	connect(&dlg, &SettingsDialog::settingsChanged, this, &MainWindow::onSettingsChanged);
+	//dlg.setPage(page);
 	if (dlg.exec() == QDialog::Accepted) {
 	    save_settings();
 	    ui->calendarWidget->setFirstDayOfWeek((Qt::DayOfWeek)g.m_firstDayOfWeek);

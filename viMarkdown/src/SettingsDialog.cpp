@@ -57,6 +57,9 @@ void SettingsDialog::onTreeItemChanged(QTreeWidgetItem *current, QTreeWidgetItem
     setPage(index);
 }
 void SettingsDialog::setPage(int page) {
+	QTreeWidgetItem *item = ui->treeWidget->topLevelItem(page);
+	if( item != nullptr )
+	    ui->treeWidget->setCurrentItem(item);
     if (page == 0) {
         ui->stackedWidget->setCurrentWidget(ui->page_6); // General
     } else if (page == 1) {
