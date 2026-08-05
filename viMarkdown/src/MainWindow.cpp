@@ -143,6 +143,7 @@ MainWindow::MainWindow(QWidget *parent)
 	    }
     )";
     ui->calendarWidget->setStyleSheet(calendarStyle);
+    ui->calendarWidget->setFirstDayOfWeek((Qt::DayOfWeek)g.m_firstDayOfWeek);
 	onCalendarPageChanged(today.year(), today.month());
 }
 MainWindow::~MainWindow()
