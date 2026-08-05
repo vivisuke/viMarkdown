@@ -137,6 +137,12 @@ MainWindow::MainWindow(QWidget *parent)
 	onAction_NewTab();
 	onAction_MarkdownCheatSheet();
 	QDate today = QDate::currentDate();
+	QString calendarStyle = R"(
+	    QCalendarWidget QWidget#qt_calendar_navigationbar {
+	        background-color: #808080;
+	    }
+    )";
+    ui->calendarWidget->setStyleSheet(calendarStyle);
 	onCalendarPageChanged(today.year(), today.month());
 }
 MainWindow::~MainWindow()
