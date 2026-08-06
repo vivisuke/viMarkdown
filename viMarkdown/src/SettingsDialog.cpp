@@ -41,6 +41,9 @@ SettingsDialog::SettingsDialog(QWidget *parent, int page)
 	connect(ui->quotePB, &QPushButton::clicked, this, &SettingsDialog::onQuoteColorButtonClicked);
 	connect(ui->codeBlockPB, &QPushButton::clicked, this, &SettingsDialog::onCodeBlockColorButtonClicked);
 	connect(ui->keisenBlockPB, &QPushButton::clicked, this, &SettingsDialog::onKeisenBlockColorButtonClicked);
+	connect(ui->completedPB, &QPushButton::clicked, this, &SettingsDialog::onCompletedColorButtonClicked);
+	connect(ui->pendingPB, &QPushButton::clicked, this, &SettingsDialog::onPendingColorButtonClicked);
+	connect(ui->notesOnlyPB, &QPushButton::clicked, this, &SettingsDialog::onNotesOnlyColorButtonClicked);
 	connect(ui->treeWidget, &QTreeWidget::currentItemChanged, this, &SettingsDialog::onTreeItemChanged);
 	setPage(page);
 }
@@ -98,6 +101,9 @@ void SettingsDialog::updateColorButtons() {
     setColorButtonStyle(ui->quotePB,             g.m_quoteColor);
     setColorButtonStyle(ui->codeBlockPB,         g.m_codeBlockColor);
     setColorButtonStyle(ui->keisenBlockPB,       g.m_keisenBlockColor);
+    setColorButtonStyle(ui->completedPB,		g.m_completedColor);
+    setColorButtonStyle(ui->pendingPB,			g.m_pendingColor);
+    setColorButtonStyle(ui->notesOnlyPB,		g.m_notesOnlyColor);
 #else
 	ui->headingsColorPB->setStyleSheet(QString(
         "background-color: %1;" // 背景色をセット
@@ -208,4 +214,13 @@ void SettingsDialog::onCodeBlockColorButtonClicked() {
 }
 void SettingsDialog::onKeisenBlockColorButtonClicked() {
 	pickColor(g.m_keisenBlockColor, "Keisen Block ");
+}
+void SettingsDialog::onCompletedColorButtonClicked() {
+	pickColor(g.m_completedColor, "Completed");
+}
+void SettingsDialog::onPendingColorButtonClicked() {
+	pickColor(g.m_pendingColor, "Pending");
+}
+void SettingsDialog::onNotesOnlyColorButtonClicked() {
+	pickColor(g.m_notesOnlyColor, "Notes Only");
 }

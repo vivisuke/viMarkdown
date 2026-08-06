@@ -267,6 +267,9 @@ void MainWindow::load_settings() {
 	g.m_quoteColor = settings.value(KEY_QUOTE_COLOR, QColor("#f0f8ff")).value<QColor>();	// 薄い青
 	g.m_codeBlockColor = settings.value(KEY_CODE_BLOCK_COLOR, QColor("lightyellow")).value<QColor>();
 	g.m_keisenBlockColor = settings.value(KEY_KEISEN_BLOCK_COLOR, QColor("#c0f0c0")).value<QColor>();		//	淡い緑
+	g.m_completedColor = settings.value(KEY_COMPLETED_COLOR, QColor("#c0f0c0")).value<QColor>();		//	淡緑
+	g.m_pendingColor = settings.value(KEY_PENDING_COLOR, QColor("#f0c0c0")).value<QColor>();		//	淡赤
+	g.m_notesOnlyColor = settings.value(KEY_NOTES_ONLY_COLOR, QColor("#c0c0f0")).value<QColor>();		//	淡青
 	g.m_firstDayOfWeek = settings.value(KEY_FIRST_DAY_OF_WEEK, 1).toInt();		//	1 for 月曜日
 }
 void MainWindow::save_settings() {
@@ -291,6 +294,9 @@ void MainWindow::save_settings() {
     settings.setValue(KEY_QUOTE_COLOR, g.m_quoteColor);
     settings.setValue(KEY_CODE_BLOCK_COLOR, g.m_codeBlockColor);
     settings.setValue(KEY_KEISEN_BLOCK_COLOR, g.m_keisenBlockColor);
+    settings.setValue(KEY_COMPLETED_COLOR, g.m_completedColor);
+    settings.setValue(KEY_PENDING_COLOR, g.m_pendingColor);
+    settings.setValue(KEY_NOTES_ONLY_COLOR, g.m_notesOnlyColor);
     settings.setValue(KEY_FIRST_DAY_OF_WEEK, g.m_firstDayOfWeek);
 }
 void MainWindow::insertSearchComboBox() {

@@ -1,5 +1,8 @@
 ﻿#include <QPainter>
 #include "CalendarWidget.h"
+#include "MainWindow.h"
+
+extern Global g;
 
 CalendarWidget::CalendarWidget(QWidget *parent)
 	: QCalendarWidget(parent)
@@ -20,19 +23,19 @@ void CalendarWidget::paintCell(QPainter *painter, const QRect &rect, QDate date)
 	painter->save();
 	if( di.m_totalTodoCount > 0 ) {
         if( di.m_openTodoCount == 0 )
-			painter->fillRect(rect, QColor("#c0ffc0"));
+			painter->fillRect(rect, g.m_completedColor /*QColor("#c0ffc0")*/);
         else {
-			painter->fillRect(rect, QColor("#ffc0c0"));
+			painter->fillRect(rect, g.m_pendingColor /*QColor("#ffc0c0")*/);
 			int closedCount = di.m_totalTodoCount - di.m_openTodoCount;
 	        //double ratio = (double)closedCount / di.m_totalTodoCount;
 			//int fillWidth = rect.width() * closedCount / di.m_totalTodoCount;
 			//QRect fillRect(rect.left(), rect.top(), fillWidth, rect.height());
 			int fillHeight = rect.height() * closedCount / di.m_totalTodoCount;
 			QRect fillRect(rect.left(), rect.top() + rect.height() - fillHeight, rect.width(), fillHeight);
-			painter->fillRect(fillRect, QColor("#c0ffc0"));
+			painter->fillRect(fillRect, g.m_completedColor /*QColor("#c0ffc0")*/);
         }
 	} else
-		painter->fillRect(rect, QColor("#c0c0ff"));
+		painter->fillRect(rect, g.m_notesOnlyColor /*QColor("#c0c0ff")*/);
 	painter->restore();
 	QCalendarWidget::paintCell(painter, rect, date);
 }

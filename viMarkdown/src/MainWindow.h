@@ -40,6 +40,9 @@ QT_END_NAMESPACE
 #define	KEY_AUTO_SVG_CMPL			u"autoSvgCmpl"
 #define	KEY_DEFAULT_DIR				u"defaultDir"
 #define	KEY_FIRST_DAY_OF_WEEK		u"firstDayOfWeek"
+#define	KEY_COMPLETED_COLOR			u"completedColor"
+#define	KEY_PENDING_COLOR			u"pendingColor"
+#define	KEY_NOTES_ONLY_COLOR		u"notesOnlyColor"
 
 enum {
     SystemDefault = 0,  // Localeに従う（OSの設定に依存）
@@ -152,6 +155,9 @@ struct Global {
 	QColor	m_quoteColor;			//	引用ブロック背景色
 	QColor	m_codeBlockColor;		//	コードブロック背景色
 	QColor	m_keisenBlockColor;		//	罫線ブロック背景色
+	QColor	m_completedColor;		//	全ToDo完了
+	QColor	m_pendingColor;			//	未完ToDo有り
+	QColor	m_notesOnlyColor;		//	ToDo無し、Notesのみ
 };
 enum class ViMode {
     Normal = 0,

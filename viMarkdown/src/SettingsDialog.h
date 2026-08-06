@@ -38,6 +38,9 @@ protected:
 	void onQuoteColorButtonClicked();
 	void onCodeBlockColorButtonClicked();
 	void onKeisenBlockColorButtonClicked();
+	void onCompletedColorButtonClicked();
+	void onPendingColorButtonClicked();
+	void onNotesOnlyColorButtonClicked();
 	void onTreeItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous);
 	void	updateColorButtons();
 	void	pickColor(QColor &targetColor, const QString &title);
