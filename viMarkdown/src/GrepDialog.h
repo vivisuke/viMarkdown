@@ -22,6 +22,7 @@ protected:
 	void	onDirBtnClicked();
 	void	onIgnoreCaseCheckStateChanged(Qt::CheckState state);
 	void	onRegexpCheckStateChanged(Qt::CheckState state);
+	void	onGrepSubDirCheckStateChanged(Qt::CheckState state);
 	void	onClearOutputCheckStateChanged(Qt::CheckState state);
 
 private:

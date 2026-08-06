@@ -248,6 +248,7 @@ void MainWindow::load_settings() {
 	g.m_viKeybindings = settings.value(KEY_VI_KEYBINDINGS, false).toBool();
 	g.m_ignoreCase = settings.value(KEY_IGNORE_CASE, true).toBool();
 	g.m_regexp = settings.value(KEY_REGEXP, true).toBool();
+	g.m_grepSubDir = settings.value(KEY_GREP_SUBDIR, false).toBool();
 	g.m_clearOutput = settings.value(KEY_CLEAR_OUTPUT, true).toBool();
 	g.m_auto_svg_completer = settings.value(KEY_AUTO_SVG_CMPL, true).toBool();
 	g.m_editorFontSize = settings.value(KEY_EDITOR_FONT_SIZE, 12).toInt();		//	デフォルト：12pt
@@ -277,6 +278,7 @@ void MainWindow::save_settings() {
     settings.setValue(KEY_VI_KEYBINDINGS, g.m_viKeybindings);
     settings.setValue(KEY_IGNORE_CASE, g.m_ignoreCase);
     settings.setValue(KEY_REGEXP, g.m_regexp);
+    settings.setValue(KEY_GREP_SUBDIR, g.m_grepSubDir);
     settings.setValue(KEY_CLEAR_OUTPUT, g.m_clearOutput);
     settings.setValue(KEY_AUTO_SVG_CMPL, g.m_auto_svg_completer);
     settings.setValue(KEY_EDITOR_FONT_SIZE, g.m_editorFontSize);

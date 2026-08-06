@@ -18,6 +18,7 @@ QT_END_NAMESPACE
 #define	KEY_VI_KEYBINDINGS			u"viKeybindings"
 #define	KEY_IGNORE_CASE				u"ignoreCase"
 #define	KEY_REGEXP					u"regexp"
+#define	KEY_GREP_SUBDIR				u"grepSubdir"
 #define	KEY_CLEAR_OUTPUT			u"clearOutput"
 #define	KEY_EDITOR_FONT_SIZE		u"editorFontSize"
 #define	KEY_PREVIEW_FONT_SIZE		u"previewFontSize"
@@ -127,6 +128,7 @@ struct Global {
 	bool	m_cursorVisible = true;
 	bool	m_ignoreCase;			//	検索時：大文字小文字同一視
 	bool	m_regexp;				//	正規表現検索
+	bool	m_grepSubDir;
 	bool	m_clearOutput;			//	grep前に Output をクリア
 	bool	m_japanese;
 	bool	m_auto_svg_completer;	//	SVG補完ダイアログ自動表示
