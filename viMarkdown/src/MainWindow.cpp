@@ -2162,11 +2162,39 @@ void MainWindow::do_openDiary(QDate date) {
     }
     QString filePath = QString("%1/%2.md").arg(dir, dateStr);
     QFile file(filePath);
-    if (!file.exists()) {
+    if (!file.exists()) {	//	日付.md が存在しない場合
+    	QString templatePath = g.m_defaultDir + "/diary/template.md";
+	    QFile templateFile(templatePath);
+	    if (!templateFile.exists()) {		//	日記テンプレートファイルが無い場合
+	        QFileInfo tFileInfo(templatePath);
+	        tFileInfo.dir().mkpath("."); // ディレクトリが無ければ自動作成
+	        if (templateFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+	            QTextStream tOut(&templateFile);
+	            tOut.setEncoding(QStringConverter::Utf8);
+	            tOut << "# yyyy-MM-dd\n\n## Todo\n- [ ] \n\n## Notes\n- \n\n";
+	            templateFile.close();
+	            qDebug() << "Created default template file:" << templatePath;
+	        }
+	    }
+	    QString content;	//	日付.md 内容
+	    if (templateFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+	        QTextStream in(&templateFile);
+	        in.setEncoding(QStringConverter::Utf8);
+	        content = in.readAll();
+	        templateFile.close();
+	    } else {
+	        // 読み込みに失敗した場合のフォールバック用デフォルト文章
+	        content = "# yyyy-MM-dd\n\n## Todo\n- [ ] \n\n## Notes\n- \n\n";
+	    }
+	    auto lst = content.split('\n');
+	    lst[0] = date.toString(lst[0]);
+	    //content = date.toString(content);
+	    content = lst.join('\n');
         if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
             QTextStream out(&file);
             out.setEncoding(QStringConverter::Utf8);
-            out << QString("# %1\n\n## Todo\n- [ ] \n\n## Notes\n- \n\n").arg(date.toString("yyyy-MM-dd"));
+			out << content;
+            //out << QString("# %1\n\n## Todo\n- [ ] \n\n## Notes\n- \n\n").arg(date.toString("yyyy-MM-dd"));
             file.close();
             qDebug() << "Created todays diary file:" << filePath;
         }
