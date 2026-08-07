@@ -28,11 +28,27 @@ void CalendarWidget::paintCell(QPainter *painter, const QRect &rect, QDate date)
 			painter->fillRect(rect, g.m_pendingColor /*QColor("#ffc0c0")*/);
 			int closedCount = di.m_totalTodoCount - di.m_openTodoCount;
 	        //double ratio = (double)closedCount / di.m_totalTodoCount;
-			//int fillWidth = rect.width() * closedCount / di.m_totalTodoCount;
-			//QRect fillRect(rect.left(), rect.top(), fillWidth, rect.height());
+#if 0
+			int fillWidth = rect.width() * closedCount / di.m_totalTodoCount;
+			QRect fillRect(rect.left(), rect.top(), fillWidth, rect.height());
+#else
 			int fillHeight = rect.height() * closedCount / di.m_totalTodoCount;
 			QRect fillRect(rect.left(), rect.top() + rect.height() - fillHeight, rect.width(), fillHeight);
+#endif
 			painter->fillRect(fillRect, g.m_completedColor /*QColor("#c0ffc0")*/);
+        }
+        if( di.m_totalTodoCount >= 5 ) {
+        	static const QPixmap firePixmap(":/MainWindow/images/fire-2.png"); 
+        	if( !firePixmap.isNull() ) {
+				// セルサイズに合わせてアスペクト比を維持したまま縮小（※余白を入れるなら rect.size() * 0.8）
+				QPixmap scaled = firePixmap.scaled(rect.size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+				// 中央揃えの座標（x, y）を計算
+				int x = rect.left() + (rect.width() - scaled.width()) / 2;
+				int y = rect.top() + (rect.height() - scaled.height()) / 2;
+				if( di.m_totalTodoCount < 10 )
+					 painter->setOpacity(0.3); 
+				painter->drawPixmap(x, y, scaled);
+			}
         }
 	} else
 		painter->fillRect(rect, g.m_notesOnlyColor /*QColor("#c0c0ff")*/);

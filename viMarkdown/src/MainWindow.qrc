@@ -56,5 +56,8 @@
         <file>images/difference.png</file>
         <file>images/diffWithFile.png</file>
         <file>images/event_note.png</file>
+        <file>images/fire.png</file>
+        <file>images/fire-2.png</file>
+        <file>images/fire-3.png</file>
     </qresource>
 </RCC>
