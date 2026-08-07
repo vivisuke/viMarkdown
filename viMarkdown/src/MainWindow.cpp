@@ -29,6 +29,7 @@
 #include <QInputMethod>
 #include <QLocale>
 #include <QStandardPaths>
+#include <QDirIterator>
 #include "ver.h"
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
@@ -503,6 +504,79 @@ void MainWindow::onAction_Replace() {
 		updateSearchOptions();
 	}
 }
+void MainWindow::do_grep(const QString &searchText, const QString &dirPath, bool grepSubDir) {
+	QDir directory(dirPath);
+	QStringList filters;
+    filters << "*.md";
+    QFileInfoList fileList = directory.entryInfoList(filters, QDir::Files | QDir::NoDotAndDotDot);
+    do_output(QString(tr("Grepping '%1' in *.md under '%2' ...\n")).arg(searchText).arg(dirPath));
+    //int cnt = 0, nfiles = 0;
+    auto ic = g.m_ignoreCase ? Qt::CaseInsensitive : Qt::CaseSensitive;
+    QRegularExpression re;
+    if( g.m_regexp )
+		re = QRegularExpression(searchText);
+#if 1
+    QDirIterator::IteratorFlags flags = QDirIterator::NoIteratorFlags;
+    if (grepSubDir) {
+        flags |= QDirIterator::Subdirectories;
+    }
+    // QDirIterator を使ってファイルを取得
+    QDirIterator it(dirPath, filters, QDir::Files | QDir::NoDotAndDotDot, flags);
+    while (it.hasNext()) {
+        it.next();
+        QFileInfo fileInfo = it.fileInfo();
+		qDebug() << fileInfo.filePath();
+		//if( fileInfo.isDir() ) {
+        //	continue;
+        //}
+        QFile file(fileInfo.absoluteFilePath());
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) continue;
+        bool fn_printed = false;
+        QTextStream in(&file);
+        int lineNum = 0;
+        while (!in.atEnd()) {
+            lineNum++;
+            QString line = in.readLine();
+            if ((!g.m_regexp && line.contains(searchText, ic)) ||
+                (g.m_regexp && re.match(line).hasMatch()))
+            {
+                if (!fn_printed) {
+                    ++m_nGrepFiles;
+                    fn_printed = true;
+                    do_output("\n\"" + fileInfo.absoluteFilePath() + "\"\n");
+                }
+                do_output(QString("%1: %2\n").arg(lineNum, 4).arg(line));
+                ++m_nMatchLines;
+            }
+        }
+        file.close();
+    }
+#else
+    for (const QFileInfo &fileInfo : fileList) {
+        QFile file(fileInfo.absoluteFilePath());
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) continue;
+        bool fn_printed = false;
+    	QTextStream in(&file);
+        int lineNum = 0;
+        while (!in.atEnd()) {
+            lineNum++;
+            QString line = in.readLine();
+            if (!g.m_regexp && line.contains(searchText, ic) ||
+            	g.m_regexp && re.match(line).hasMatch())
+            {
+            	if( !fn_printed ) {
+            		++m_nGrepFiles;
+            		fn_printed = true;
+			        do_output("\n\"" + fileInfo.absoluteFilePath() + "\"\n");
+            	}
+            	do_output(QString("%1: %2\n").arg(lineNum, 4).arg(line));
+            	++m_nMatchLines;
+            }
+        }
+        file.close();
+    }
+#endif
+}
 void MainWindow::onAction_Grep() {
 	GrepDialog dlg(m_searchHist, m_grepDirHist, this);
 	if (dlg.exec() == QDialog::Accepted) {
@@ -517,41 +591,10 @@ void MainWindow::onAction_Grep() {
 			m_searchHist.removeDuplicates();	//	重複削除
 			m_grepDirHist.push_front(dirPath);
 			m_grepDirHist.removeDuplicates();	//	重複削除
-			QDir directory(dirPath);
-			QStringList filters;
-		    filters << "*.md";
-		    QFileInfoList fileList = directory.entryInfoList(filters, QDir::Files | QDir::NoDotAndDotDot);
-		    do_output(QString(tr("Grepping '%1' in *.md under '%2' ...\n")).arg(searchText).arg(dirPath));
-		    int cnt = 0, nfiles = 0;
-		    auto ic = g.m_ignoreCase ? Qt::CaseInsensitive : Qt::CaseSensitive;
-		    QRegularExpression re;
-		    if( g.m_regexp )
-				re = QRegularExpression(searchText);
-		    for (const QFileInfo &fileInfo : fileList) {
-		        QFile file(fileInfo.absoluteFilePath());
-		        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) continue;
-		        bool fn_printed = false;
-	        	QTextStream in(&file);
-		        int lineNum = 0;
-		        while (!in.atEnd()) {
-		            lineNum++;
-		            QString line = in.readLine();
-		            if (!g.m_regexp && line.contains(searchText, ic) ||
-		            	g.m_regexp && re.match(line).hasMatch())
-		            {
-		            	if( !fn_printed ) {
-		            		++nfiles;
-		            		fn_printed = true;
-					        do_output("\n\"" + fileInfo.absoluteFilePath() + "\"\n");
-		            	}
-		            	do_output(QString("%1: %2\n").arg(lineNum, 4).arg(line));
-		            	++cnt;
-		            }
-		        }
-		        file.close();
-		    }
+			m_nMatchLines = m_nGrepFiles = 0;
+			do_grep(searchText, dirPath, dlg.isGrepSubDir());
 		    do_output(QString(tr("\nGrepped '%1' in *.md under '%2'.\n")).arg(searchText).arg(dirPath));
-		    do_output(QString(tr("%1 lines matches in %2 files.")).arg(cnt).arg(nfiles));
+		    do_output(QString(tr("%1 lines matches in %2 files.")).arg(m_nMatchLines).arg(m_nGrepFiles));
 
 			DocWidget *docWidget = getCurDocWidget();
 			if( docWidget != nullptr )
@@ -1705,6 +1748,7 @@ void MainWindow::do_settings(int page) {
 void MainWindow::onSettingsChanged() {
 	updateEditorFontSize(g.m_editorFontSize);
 	updatePreviewFontSize(g.m_previewFontSize);
+	ui->calendarWidget->update();
 }
 void MainWindow::onAction_Exit() {
 	this->close(); // メインウィンドウを閉じる

@@ -17,6 +17,7 @@ public:
 
 	const QString searchText() const { return ui->searchTextCB->currentText(); }
 	const QString dirText() const { return ui->dirCB->currentText(); }
+	bool isGrepSubDir() const { return ui->grepSubDir->isChecked(); }
 
 protected:
 	void	onDirBtnClicked();

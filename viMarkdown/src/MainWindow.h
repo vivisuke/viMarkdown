@@ -349,6 +349,7 @@ protected:
     void	onCalendarClicked(QDate date);
     void	onCalendarPageChanged(int, int);
     void	do_openDiary(QDate date);
+    void	do_grep(const QString &searchText, const QString &dirPath, bool grepSubDir = false);
 
     void	onAction_New();
     void	onAction_NewTab();
@@ -485,6 +486,8 @@ private:
     bool	m_edittingInPreview = false;		//	プレビューでの編集処理中
     int		m_tab_number = 0;
     int		m_QA_tab_number = 0;
+    int		m_nMatchLines = 0;			//	マッチ行数
+    int		m_nGrepFiles = 0;			//	grep ファイル数
     //int		m_editorFontSize = 12;		//	暫定的
     //QString	m_plainText;
     //QString	m_htmlText;
