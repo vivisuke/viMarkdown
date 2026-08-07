@@ -513,8 +513,10 @@ void MainWindow::do_grep(const QString &searchText, const QString &dirPath, bool
     //int cnt = 0, nfiles = 0;
     auto ic = g.m_ignoreCase ? Qt::CaseInsensitive : Qt::CaseSensitive;
     QRegularExpression re;
-    if( g.m_regexp )
-		re = QRegularExpression(searchText);
+    if( g.m_regexp ) {
+    	auto opt = g.m_ignoreCase ? QRegularExpression::CaseInsensitiveOption : QRegularExpression::NoPatternOption;
+		re = QRegularExpression(searchText, opt);
+    }
 #if 1
     QDirIterator::IteratorFlags flags = QDirIterator::NoIteratorFlags;
     if (grepSubDir) {
