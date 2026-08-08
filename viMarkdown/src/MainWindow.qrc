@@ -60,5 +60,6 @@
         <file>images/fire-2.png</file>
         <file>images/fire-3.png</file>
         <file>images/star.png</file>
+        <file>images/save_all.png</file>
     </qresource>
 </RCC>

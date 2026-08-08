@@ -285,7 +285,7 @@ protected:
     void	removeTopLevelItem(DocWidget*);
     void	do_load(const QString&);
     void	close_empty_doc();
-    void	do_save(bool fDialog = false);
+    void	do_save(bool fDialog = false, int ix = -1);
     int		treeItemToTabIndex(QTreeWidgetItem *current);
     void	addToRecentFiles(const QString& fullPath);
     void	insertSearchComboBox();
@@ -357,6 +357,7 @@ protected:
     void	onAction_Open();
     void	onAction_Save();
     void	onAction_SaveAs();
+    void	onAction_SaveAll();
     void	onAction_ExportAsPDF();
     void	onAction_Close();
     void	onAction_TodaysDiary();

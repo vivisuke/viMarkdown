@@ -32,6 +32,8 @@ set(PROJECT_SOURCES
         SlideShow.cpp
         vicmd.cpp
         diff.cpp
+        UndoMgr.cpp
+        CalendarWidget.cpp
         ver.h
         ${TS_FILES}
 )

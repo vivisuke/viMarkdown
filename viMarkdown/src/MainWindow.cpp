@@ -761,6 +761,7 @@ void MainWindow::setup_connections() {
 	connect(ui->action_Open, &QAction::triggered, this, &MainWindow::onAction_Open);
 	connect(ui->action_Save, &QAction::triggered, this, &MainWindow::onAction_Save);
 	connect(ui->action_SaveAs, &QAction::triggered, this, &MainWindow::onAction_SaveAs);
+	connect(ui->action_SaveAll, &QAction::triggered, this, &MainWindow::onAction_SaveAll);
 	connect(ui->action_AsPDF, &QAction::triggered, this, &MainWindow::onAction_ExportAsPDF);
 	connect(ui->action_Close, &QAction::triggered, this, &MainWindow::onAction_Close);
 	connect(ui->action_TodaysDiary, &QAction::triggered, this, &MainWindow::onAction_TodaysDiary);
@@ -1984,8 +1985,14 @@ void MainWindow::onAction_SaveAs() {
 	if( top != nullptr )
 		top->setToolTip(0, docWidget->m_fullPath);
 }
-void MainWindow::do_save(bool fDialog) {
-	int ix = ui->tabWidget->currentIndex();
+void MainWindow::onAction_SaveAll() {
+	for(int ix = 0; ix < ui->tabWidget->count(); ++ix) {
+		do_save(false, ix);
+	}
+}
+void MainWindow::do_save(bool fDialog, int ix) {
+	if( ix < 0 )
+		ix = ui->tabWidget->currentIndex();
 	if( ix < 0 ) return;
 	DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(ix);
 	if( docWidget == nullptr ) return;

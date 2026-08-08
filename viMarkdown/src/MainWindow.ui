@@ -85,6 +85,7 @@
     <addaction name="action_Reload"/>
     <addaction name="action_Save"/>
     <addaction name="action_SaveAs"/>
+    <addaction name="action_SaveAll"/>
     <addaction name="menu_Exoirt"/>
     <addaction name="action_Close"/>
     <addaction name="menu_RecentFiles"/>
@@ -262,6 +263,7 @@
    <addaction name="action_TodaysDiary"/>
    <addaction name="action_Save"/>
    <addaction name="action_SaveAs"/>
+   <addaction name="action_SaveAll"/>
    <addaction name="action_Close"/>
    <addaction name="separator"/>
    <addaction name="action_NaviBack"/>
@@ -1296,6 +1298,18 @@
    </property>
    <property name="toolTip">
     <string>CalendarBar</string>
+   </property>
+  </action>
+  <action name="action_SaveAll">
+   <property name="icon">
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/save_all.png</normaloff>:/MainWindow/images/save_all.png</iconset>
+   </property>
+   <property name="text">
+    <string>SaveAll</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+W</string>
    </property>
   </action>
  </widget>
