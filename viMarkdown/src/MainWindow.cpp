@@ -2195,6 +2195,7 @@ void MainWindow::do_openDiary(QDate date) {
 	    lst[0] = date.toString(lst[0]);
 	    //content = date.toString(content);
 	    content = lst.join('\n');
+#if 0
         if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
             QTextStream out(&file);
             out.setEncoding(QStringConverter::Utf8);
@@ -2203,9 +2204,11 @@ void MainWindow::do_openDiary(QDate date) {
             file.close();
             qDebug() << "Created todays diary file:" << filePath;
         }
+#endif
+        do_open_sub(dateStr, filePath, QString(), content, true, QStringConverter::Utf8, false);
+    } else {
+	    do_open("", filePath);		// 日記ファイルをエディタで開く
     }
-    // 6. 生成した日記ファイルをエディタで開く
-    do_open("", filePath);
 }
 void MainWindow::onAction_Print() {
 	DocWidget *docWidget = getCurDocWidget();
