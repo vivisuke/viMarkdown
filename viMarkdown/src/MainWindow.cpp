@@ -1954,19 +1954,24 @@ bool MainWindow::do_open(const QString& title0, const QString& fullPath, const Q
 	QFileInfo fileInfo(fullPath);
 	QString title = fileInfo.fileName();
 	title.remove(QRegularExpression("\\.md$"));
+	do_open_sub(title, fullPath, name, content, withBOM, encoding, readOnly);
+	m_opening_file = false;
+	return true;
+}
+void MainWindow::do_open_sub(const QString& title, const QString& fullPath, const QString name,
+								const QString& content, bool withBOM, QStringConverter::Encoding encoding, bool readOnly) {
 	addTab(title, fullPath, content, withBOM, encoding, readOnly);
 	updateOutlineTree();
+	QFileInfo fileInfo(fullPath);
 	QDir::setCurrent(fileInfo.path());
 	//##qDebug() << "setCurrent(" << fileInfo.path() << ")";
 	m_watcher->addPath(fullPath);
-	m_opening_file = false;
 
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget != nullptr )
 		docWidget->m_editor->jumpToHeading(name);
 	addToRecentFiles(fullPath);
 	close_empty_doc();
-	return true;
 }
 void MainWindow::onAction_Save() {
 	do_save();

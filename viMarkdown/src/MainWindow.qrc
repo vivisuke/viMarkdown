@@ -59,5 +59,6 @@
         <file>images/fire.png</file>
         <file>images/fire-2.png</file>
         <file>images/fire-3.png</file>
+        <file>images/star.png</file>
     </qresource>
 </RCC>

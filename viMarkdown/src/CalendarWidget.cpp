@@ -39,9 +39,11 @@ void CalendarWidget::paintCell(QPainter *painter, const QRect &rect, QDate date)
         }
         if( di.m_totalTodoCount >= 5 ) {
         	static const QPixmap firePixmap(":/MainWindow/images/fire-2.png"); 
-        	if( !firePixmap.isNull() ) {
+        	static const QPixmap starPixmap(":/MainWindow/images/star.png"); 
+        	if( !firePixmap.isNull() && !starPixmap.isNull() ) {
 				// セルサイズに合わせてアスペクト比を維持したまま縮小（※余白を入れるなら rect.size() * 0.8）
-				QPixmap scaled = firePixmap.scaled(rect.size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+				const auto& pm = di.m_openTodoCount == 0 ? starPixmap : firePixmap;
+				QPixmap scaled = pm.scaled(rect.size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
 				// 中央揃えの座標（x, y）を計算
 				int x = rect.left() + (rect.width() - scaled.width()) / 2;
 				int y = rect.top() + (rect.height() - scaled.height()) / 2;

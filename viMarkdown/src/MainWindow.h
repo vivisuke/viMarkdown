@@ -243,6 +243,7 @@ public:
     bool	isCursorCyncing() const { return m_isCursorSyncing; }
     bool	isEdittingInPreview() const { return m_edittingInPreview; }
     bool	do_open(const QString& title, const QString& fullPath, const QString name = QString(), bool readOnly = false);
+    void	do_open_sub(const QString& title, const QString& fullPath, const QString name, const QString& content, bool withBOM, QStringConverter::Encoding encoding, bool readOnly);
     void	do_open_pl(const QString fullPath, int ln);
     void	syncEditorToPreviewCursor();
     void	onChangeEditorFontSize(int);
