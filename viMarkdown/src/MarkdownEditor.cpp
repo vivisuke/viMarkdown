@@ -852,6 +852,9 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 			}
 			if( g.m_auto_svg_completer )
 				check_svg_completer();
+			if( m_diffMode ) {
+				((MainWindow*)m_mainWindow)->do_diff();
+			}
 		}
 		return;
 	} else if (e->key() == Qt::Key_Tab ) {

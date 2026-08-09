@@ -76,8 +76,8 @@
 |　ver.　|　概要　|　スケジュール　|
 |:---:|----|----|
 |0.2|基本エディタ機能、基本マークダウン、罫線ブロック、CSVブロック、プレビュー内編集（限定的）|2026/04/End 安定版リリース予定（win版のみ）
-|0.4|viコマンド、メニュー等日本語・英語対応、正規表現検索、grep, diff?, SVGブロック、グラフビュー？、使い勝手向上、パフォーマンス向上、CMake化（QtCreator/Mac/Linux？対応）|2026/05 dev版、08 alpha版、10 beta版開始予定。2026/12 RC版・安定版（Win版・Mac版?バイナリ）リリース予定
-|0.6|数式表示、マインドマップ？、ページビュー（段組み、脚注）？、プレゼンモード？、矩形選択?、フォルダ表示？|未定|
+|0.4|viコマンド、メニュー等日本語・英語対応、正規表現検索、grep, diff?, SVGブロック、カレンダー・日記、使い勝手向上、パフォーマンス向上、CMake化（QtCreator/Mac/Linux？対応）|2026/05 dev版、08 alpha版、10 beta版開始予定。2026/12 RC版・安定版（Win版・Mac版?バイナリ）リリース予定
+|0.6|数式表示、マインドマップ？、ページビュー（段組み、脚注）？、プレゼンモード？、矩形選択?、フォルダ表示？、グラフビュー？|未定|
 |0.8|マーメイド？|未定|
 |1.0|未定|未定|
 
@@ -87,7 +87,7 @@
 ## ■ インストール・起動方法（Windows）
 下記より viMarkdown-0xxxx.zip をダウンロード・解凍し、viMarkdown.exe を起動します。
 
-- 最新版（ver 0.3.x）ダウンロード：[Release](https://github.com/vivisuke/viMarkdown/releases)
+- 開発版（ver 0.3.x）ダウンロード：[Release](https://github.com/vivisuke/viMarkdown/releases)
 - 安定版（ver 0.2.x）ダウンロード：[Release](https://github.com/vivisuke/viMarkdown/releases/v0.2.004)
 
 ## ■ ビルド方法
@@ -108,7 +108,8 @@
 
 ### QtCreator (CMake) on MacOS / Windows / Linux
 Qt Creator と CMake を使用したマルチプラットフォームでのビルドにも対応しています。
-※ 2025年4月現在、Windows 11 および MacOS 環境でのビルドを確認済みです。Linux 環境は未検証のため、ビルド時にエラーが発生する可能性があります。
+※ 2026年６月：shigmas\-san がビルドエラーを対処し、Linux環境でもビルド可能にしてくださいました（感謝）。
+~~※ 2026年4月現在、Windows 11 および MacOS 環境でのビルドを確認済みです。Linux 環境は未検証のため、ビルド時にエラーが発生する可能性があります。~~
 
 **Qt Creator でのビルド手順:**
 1. 本リポジトリをクローンします。

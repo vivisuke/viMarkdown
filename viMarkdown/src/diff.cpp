@@ -513,7 +513,7 @@ void MainWindow::do_diff() {
 	std::vector<QString> lines1 = extractLinesFromDocument(doc1);
     std::vector<QString> lines2 = extractLinesFromDocument(doc2);
 
-    dtl::Diff<QString, std::vector<QString>> d(lines1, lines2);
+    dtl::Diff<QString, std::vector<QString>> d(lines1, lines2);		//	dtl を使った diff 処理 O(ND)
     d.compose();
 
     do_output("\n");
