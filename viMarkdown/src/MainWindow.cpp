@@ -2257,6 +2257,7 @@ void MainWindow::onAction_Indent() {
 	MarkdownEditor *mdEditor = getCurDocWidget()->m_editor;
 	QTextCursor cursor = mdEditor->textCursor();
 	QTextDocument *doc = mdEditor->document();
+	mdEditor->openUndoBlock();
 	cursor.beginEditBlock();
 	int startPos = cursor.selectionStart();
 	int endPos = cursor.selectionEnd();
@@ -2268,7 +2269,8 @@ void MainWindow::onAction_Indent() {
 		endBlock = endBlock.previous();		//	最終ブロック修正
 	while (currentBlock.isValid() && currentBlock.blockNumber() <= endBlock.blockNumber()) {
 		cursor.setPosition(currentBlock.position());	//	行頭位置
-		cursor.insertText("  ");
+		mdEditor->do_insertText(cursor, "  ");
+		//cursor.insertText("  ");
 		currentBlock = currentBlock.next();		// 次のブロックへ
 	}
 	if( startBlock < endBlock ) {
@@ -2285,6 +2287,7 @@ void MainWindow::onAction_Indent() {
 	}
 	mdEditor->setTextCursor(cursor);
 	cursor.endEditBlock();
+	mdEditor->closeUndoBlock();
 }
 void MainWindow::onAction_UnIndent() {
 	MarkdownEditor *mdEditor = getCurDocWidget()->m_editor;
@@ -2326,6 +2329,7 @@ void MainWindow::onAction_Checkbox() {
 	MarkdownEditor *mdEditor = getCurDocWidget()->m_editor;
 	QTextCursor cursor = mdEditor->textCursor();
 	QTextDocument *doc = mdEditor->document();
+	mdEditor->openUndoBlock();
 	cursor.beginEditBlock();
 	bool hadSelection = cursor.hasSelection();
 	int startPos = cursor.selectionStart();
@@ -2348,9 +2352,12 @@ void MainWindow::onAction_Checkbox() {
 			if( !isCheckboxBlock(currentBlock) ) {
 				if( currentBlock.text().startsWith("- ") ) {
 					cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, 2);
-					cursor.insertText("[ ] ");
-				} else
-					cursor.insertText("- [ ] ");
+					mdEditor->do_insertText(cursor, "[ ] ");
+					//cursor.insertText("[ ] ");
+				} else {
+					mdEditor->do_insertText(cursor, "- [ ] ");
+					//cursor.insertText("- [ ] ");
+				}
 			}
 		}
 		currentBlock = currentBlock.next();		// 次のブロックへ
@@ -2366,6 +2373,7 @@ void MainWindow::onAction_Checkbox() {
 	}
 	cursor.endEditBlock();
 	mdEditor->setTextCursor(cursor);
+	mdEditor->closeUndoBlock();
 	this->activateWindow();
 	mdEditor->setFocus();
 }
