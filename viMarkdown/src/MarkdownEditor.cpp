@@ -683,7 +683,8 @@ void MarkdownEditor::insertEnter() {
 		atxt += "1) ";
 	else if( mtxt.startsWith("> ") )
 		atxt += "> ";
-	cursor.insertText("\n" + atxt);
+	//cursor.insertText("\n" + atxt);
+	do_insertText(cursor, "\n" + atxt);
 	setTextCursor(cursor);
 	// カーソル位置を画面内に維持
 	this->ensureCursorVisible();
@@ -848,13 +849,14 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 			{
 				insertEnter();
 			} else {
-				cursor.insertText("\n");
+				//cursor.insertText("\n");
+				do_insertText(cursor, "\n");
 			}
 			if( g.m_auto_svg_completer )
 				check_svg_completer();
-			if( m_diffMode ) {
-				((MainWindow*)m_mainWindow)->do_diff();
-			}
+			//if( m_diffMode ) {
+			//	((MainWindow*)m_mainWindow)->do_diff();
+			//}
 		}
 		return;
 	} else if (e->key() == Qt::Key_Tab ) {
