@@ -413,7 +413,7 @@ protected:
     void	onAction_SlideShow();
     void	onAction_NextTab();
     void	onAction_PrevTab();
-    void	onAction_ToggleFocus();
+    void	onAction_ToggleFocus();				//	Ctrl + ￥　 
     void	onAction_SwitchToAltFile();
     void	onAction_TagJump();
     void	onAction_About();

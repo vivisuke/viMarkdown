@@ -9,7 +9,7 @@
 
 <!--<img width="700" alt="image" src="./screen.png" />-->
 
-![image](screen.png)
+![image](screen_v03.png)
 
 ## ■ 主な特徴
 - **リアルタイム同期プレビュー**

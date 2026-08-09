@@ -246,10 +246,13 @@ void MarkdownPreview::focusInEvent(QFocusEvent *e) {
 void MarkdownPreview::keyPressEvent(QKeyEvent *e) {
 	QTextCursor cursor = textCursor();
 	if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) {		//	改行入力
+#if 0
 		if( gvi.m_currentMode == ViMode::Normal ) {
 			emit do_viCmd(u'\n', cursor);
 			setTextCursor(cursor);
-		} else {
+		} else
+#endif
+		{
 			emit Enter_pressed();
 		}
 		return;

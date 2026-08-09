@@ -2730,9 +2730,12 @@ void MainWindow::onAction_PrevTab() {
 void MainWindow::onAction_ToggleFocus() {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
-	if( docWidget->m_editor->hasFocus() )
-		docWidget->m_preview->setFocus();
-	else
+	if( docWidget->m_editor->hasFocus() ) {
+		if( !docWidget->m_diffMode )
+			docWidget->m_preview->setFocus();
+		else
+			docWidget->m_diffview->setFocus();
+	} else
 		docWidget->m_editor->setFocus();
 	docWidget->m_editor->viewport()->update();
 	docWidget->m_preview->viewport()->update();
