@@ -2399,7 +2399,8 @@ void MainWindow::onAction_List() {
 			int n = isListBlock(currentBlock);
 			if( n != 0 ) {
 				cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, n);
-				cursor.removeSelectedText();
+				mdEditor->do_deleteText(cursor);
+				//cursor.removeSelectedText();
 			}
 		} else {
 			if( !isListBlock(currentBlock) ) {
