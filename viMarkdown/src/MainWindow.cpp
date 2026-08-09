@@ -2346,7 +2346,8 @@ void MainWindow::onAction_Checkbox() {
 			int n = isCheckboxBlock(currentBlock);
 			if( n != 0 ) {
 				cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, n);
-				cursor.removeSelectedText();
+				mdEditor->do_deleteText(cursor);
+				//cursor.removeSelectedText();
 			}
 		} else {
 			if( !isCheckboxBlock(currentBlock) ) {
