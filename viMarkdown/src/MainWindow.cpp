@@ -2435,6 +2435,7 @@ void MainWindow::onAction_NumList() {
 	MarkdownEditor *mdEditor = getCurDocWidget()->m_editor;
 	QTextCursor cursor = mdEditor->textCursor();
 	QTextDocument *doc = mdEditor->document();
+	mdEditor->openUndoBlock();
 	cursor.beginEditBlock();
 	bool hadSelection = cursor.hasSelection();
 	int startPos = cursor.selectionStart();
@@ -2452,7 +2453,8 @@ void MainWindow::onAction_NumList() {
 			int n = isNumListBlock(currentBlock);
 			if( n != 0 ) {
 				cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, n);
-				cursor.removeSelectedText();
+				mdEditor->do_deleteText(cursor);
+				//cursor.removeSelectedText();
 			}
 		} else {
 			if( !isNumListBlock(currentBlock) ) {
@@ -2461,7 +2463,8 @@ void MainWindow::onAction_NumList() {
 					cursor.setPosition(currentBlock.position() + n - 2);		//	2 for "- ".length()
 					cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, 2);
 				}
-				cursor.insertText("1. ");
+				mdEditor->do_insertText(cursor, "1. ");
+				//cursor.insertText("1. ");
 			}
 		}
 		currentBlock = currentBlock.next();		// 次のブロックへ
@@ -2476,6 +2479,7 @@ void MainWindow::onAction_NumList() {
 		cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
 	}
 	cursor.endEditBlock();
+	mdEditor->closeUndoBlock();
 	mdEditor->setTextCursor(cursor);
 	this->activateWindow();
 	mdEditor->setFocus();
