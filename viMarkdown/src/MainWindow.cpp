@@ -2382,6 +2382,7 @@ void MainWindow::onAction_List() {
 	MarkdownEditor *mdEditor = getCurDocWidget()->m_editor;
 	QTextCursor cursor = mdEditor->textCursor();
 	QTextDocument *doc = mdEditor->document();
+	mdEditor->openUndoBlock();
 	cursor.beginEditBlock();
 	bool hadSelection = cursor.hasSelection();
 	int startPos = cursor.selectionStart();
@@ -2407,7 +2408,8 @@ void MainWindow::onAction_List() {
 					cursor.setPosition(currentBlock.position() + n - 3);		//	3 for "数字. ".length()
 					cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, 3);
 				}
-				cursor.insertText("- ");
+				mdEditor->do_insertText(cursor, "- ");
+				//cursor.insertText("- ");
 			}
 		}
 		currentBlock = currentBlock.next();		// 次のブロックへ
@@ -2423,6 +2425,7 @@ void MainWindow::onAction_List() {
 	}
 	cursor.endEditBlock();
 	mdEditor->setTextCursor(cursor);
+	mdEditor->closeUndoBlock();
 	this->activateWindow();
 	mdEditor->setFocus();
 }
