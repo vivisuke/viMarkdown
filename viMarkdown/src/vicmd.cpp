@@ -1324,11 +1324,11 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 			switch( gvi.m_last_fFtT.unicode()) {
 			case 'f':
 			case 'F':
-				c = 'F';
+				c = QChar(u'F' + u'f' - gvi.m_last_fFtT.unicode());
 				break;
 			case 't':
 			case 'T':
-				c = 'T';
+				c = QChar(u'T' + u't' - gvi.m_last_fFtT.unicode());
 				break;
 			}
 			do_fFtT(cursor, c, gvi.m_last_fFtT_char, rcnt, true);
