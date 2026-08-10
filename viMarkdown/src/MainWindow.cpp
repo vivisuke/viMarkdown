@@ -700,12 +700,12 @@ void MainWindow::onSearchCBActivated() {
 void MainWindow::do_undo_replaceDlg() {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
-	docWidget->m_editor->undo();
+	docWidget->m_editor->do_undo();
 }
 void MainWindow::do_redo_replaceDlg() {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
-	docWidget->m_editor->redo();
+	docWidget->m_editor->do_redo();
 }
 void MainWindow::onAction_ForwardAgain() {
 	do_find();
