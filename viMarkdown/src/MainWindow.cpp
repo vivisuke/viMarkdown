@@ -614,7 +614,8 @@ void MainWindow::do_replace_next(const QString srcText, const QString dstText) {
 	MarkdownEditor *mdEditor = docWidget->m_editor;
 	QTextCursor cursor = mdEditor->textCursor();
 	if( cursor.hasSelection() ) {
-		cursor.insertText(dstText);
+		//cursor.insertText(dstText);
+		mdEditor->do_insertText(cursor, dstText);
 		mdEditor->setTextCursor(cursor);
 		m_replaceHist.push_front(dstText);
 		m_replaceHist.removeDuplicates();	//	重複削除
@@ -628,16 +629,19 @@ void MainWindow::do_replace_all(const QString srcText, const QString dstText) {
 	MarkdownEditor *mdEditor = docWidget->m_editor;
 	QTextDocument *doc = mdEditor->document();
 	QTextCursor cursor(doc), cursor2;
+	mdEditor->openUndoBlock();
 	cursor.beginEditBlock();
 	bool replaced = false;
 	for (;;) {
 	    if( (cursor2 = doc->find(srcText, cursor)) .isNull() )
 	    	break;
 	    cursor = cursor2;
-	    cursor.insertText(dstText);
+	    mdEditor->do_insertText(cursor, dstText);
+	    //cursor.insertText(dstText);
 	    replaced = true;
 	}
 	cursor.endEditBlock();
+	mdEditor->closeUndoBlock();
 	if( replaced ) {
 		m_replaceHist.push_front(dstText);
 		m_replaceHist.removeDuplicates();	//	重複削除
