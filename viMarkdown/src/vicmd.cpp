@@ -147,7 +147,7 @@ void MainWindow::do_cdy_moved(QTextCursor& cursor) {
 		}
 	}
 }
-bool do_fFtT(QTextCursor& cursor, QChar cmd, QChar ch, int rcnt) {
+bool do_fFtT(QTextCursor& cursor, QChar cmd, QChar ch, int rcnt, bool isRepeat = false) {
 	QTextBlock block = cursor.block();
 	const QString buf = block.text();
 	int ix = cursor.position() - block.position();		//	ブロック内インデックス
@@ -170,8 +170,10 @@ bool do_fFtT(QTextCursor& cursor, QChar cmd, QChar ch, int rcnt) {
 		if( ix2 < 0 ) ix = ix0;		//	未発見の場合
 	}
 	if( ix != ix0 ) {
-		gvi.m_last_fFtT = cmd;
-		gvi.m_last_fFtT_char = ch;
+		if( !isRepeat ) {
+			gvi.m_last_fFtT = cmd;
+			gvi.m_last_fFtT_char = ch;
+		}
 		if( gvi.m_operator == ' ' )
 			cursor.setPosition(block.position() + ix);
 		else {
@@ -1303,7 +1305,7 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 			break;
 		}
 		case ';':		//	同方向再検索
-			do_fFtT(cursor, gvi.m_last_fFtT, gvi.m_last_fFtT_char, rcnt);
+			do_fFtT(cursor, gvi.m_last_fFtT, gvi.m_last_fFtT_char, rcnt, true);
 #if 0
 			switch( gvi.m_last_fFtT.unicode() ) {
 			case 'f':
@@ -1329,7 +1331,7 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 				c = 'T';
 				break;
 			}
-			do_fFtT(cursor, c, gvi.m_last_fFtT_char, rcnt);
+			do_fFtT(cursor, c, gvi.m_last_fFtT_char, rcnt, true);
 			break;
 		case '.':
 			if( gvi.m_redoing || gvi.m_lastEditCommand.isEmpty() ) break;

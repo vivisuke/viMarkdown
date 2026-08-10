@@ -852,5 +852,5 @@ SPR# 状 P Open Close ver     Type  概要
 0846 ● C 08/10            │問題│diff表示中：EOF位置に１文字挿入するとdiff表示が不正になる
 0847 ● C 08/10            │問題│Tool > diff with file を実行すると do_diff が２回コールされる
 0848 ◎ C 08/11 08/11 03102│問題│F<char> 後の ; が行頭方向に検索されない
-0849 ● C 08/11            │ToDo│
+0849 ◎ C 08/11 08/11 03102│問題│; , 処理の do_fFtT() 中で gvi.m_last_fFtT が更新されてしまう
 0850 ● C 08/11            │ToDo│
