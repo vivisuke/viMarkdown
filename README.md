@@ -45,8 +45,8 @@ Please refer to the [LICENSE](LICENSE) file for more details.
 |0.1.2xx| beta | Bug fixes only | 10 Mar 2026 –|
 |0.2.xxx| rc | Bug fixes only (ensuring no side effects) | 21 Apr 2026 –  |
 |0.2.xxx| Stable | Maintenance mode | End Apr 2026 – |
-|0.3.0xx|dev|Feature implementation & verification|May 2026- (**Current**)|
-|0.3.1xx|alpha|Bug fixes, refactoring, documentation, and minor feature additions|Aug 2026 - |
+|0.3.0xx|dev|Feature implementation & verification|May 2026- |
+|0.3.1xx|alpha|Bug fixes, refactoring, documentation, and minor feature additions|Aug 2026 - (**Current**)|
 |0.3.2xx|beta|Bug fixes, minor refactoring, and documentation|Oct 2026 -|
 |0.4.xxx| rc | Bug fixes only (ensuring no side effects) | Dec 2026 –  |
 |0.4.xxx| Stable | Maintenance mode | Mid Dec 2026 – |

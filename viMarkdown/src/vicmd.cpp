@@ -1302,7 +1302,9 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 			moveLeftIfAtEol(cursor);
 			break;
 		}
-		case ';':		//	順方向再検索
+		case ';':		//	同方向再検索
+			do_fFtT(cursor, gvi.m_last_fFtT, gvi.m_last_fFtT_char, rcnt);
+#if 0
 			switch( gvi.m_last_fFtT.unicode() ) {
 			case 'f':
 			case 'F':
@@ -1314,8 +1316,9 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 				break;
 			}
 			do_fFtT(cursor, c, gvi.m_last_fFtT_char, rcnt);
+#endif
 			break;
-		case ',':		//	逆方向再検索
+		case ',':		//	（前回と）逆方向再検索
 			switch( gvi.m_last_fFtT.unicode()) {
 			case 'f':
 			case 'F':
