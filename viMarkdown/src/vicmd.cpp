@@ -160,7 +160,7 @@ bool do_fFtT(QTextCursor& cursor, QChar cmd, QChar ch, int rcnt, bool isRepeat =
 		}
 		if( cmd== 't' ) --ix;
 		if( ix2 < 0 ) ix = ix0;		//	未発見の場合
-	} else {		//	F T 逆方向検索
+	} else if( ix != 0 ) {		//	F T 逆方向検索
 		for(int i = 0; i != rcnt; ++i) {
 			ix2 = buf.lastIndexOf(ch, ix-1);
 			if( ix2 < 0 ) break;	//	未発見
