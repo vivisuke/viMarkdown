@@ -2533,13 +2533,16 @@ void MainWindow::insertInline(const QString& delimiter) {
 		    int end = cursor.selectionEnd() + delimiter.size();
 			cursor.setPosition(start);
 			cursor.setPosition(end, QTextCursor::KeepAnchor);
-			cursor.insertText(newText);
+			mdEditor->do_insertText(cursor, newText);
+			//cursor.insertText(newText);
 		} else {
 			QString newText = delimiter + cursor.selectedText() + delimiter;
-			cursor.insertText(newText);
+			mdEditor->do_insertText(cursor, newText);
+			//cursor.insertText(newText);
 		}
 	} else {
-		cursor.insertText(delimiter + delimiter);
+		mdEditor->do_insertText(cursor, delimiter + delimiter);
+		//cursor.insertText(delimiter + delimiter);
 		cursor.movePosition(QTextCursor::Left, QTextCursor::MoveAnchor, delimiter.length());
 	}
 	mdEditor->setTextCursor(cursor);
@@ -2590,21 +2593,25 @@ void MainWindow::onAction_Paste() {
 void MainWindow::onAction_Heading() {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
-	QTextCursor cursor = docWidget->m_editor->textCursor();
+	MarkdownEditor *editor = docWidget->m_editor;
+	QTextCursor cursor = editor->textCursor();
 	const QString buf = cursor.block().text();
 	cursor.movePosition(QTextCursor::StartOfBlock);
 	if( !buf.startsWith("#") ) {	//	ヘッダ行でない場合
-		cursor.insertText("# ");
+		editor->do_insertText(cursor, "# ");
+		//cursor.insertText("# ");
 	} else {
 		int h = 0;
 		while( ++h < buf.size() && buf[h] == '#' ) {}
 		if( h < 6 ) {
 			cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, h);
-			cursor.insertText("#");
+			editor->do_insertText(cursor, "#");
+			//cursor.insertText("#");
 		} else {
 			while( h < buf.size() && buf[h] == ' ' ) ++h;
 			cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, h);
-			cursor.deleteChar();
+			editor->do_deleteText(cursor);
+			//cursor.deleteChar();
 		}
 	}
 	docWidget->m_editor->setTextCursor(cursor);
