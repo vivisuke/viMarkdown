@@ -208,7 +208,6 @@ void MainWindow::onAction_DiffWithFile() {
     m_diffviewLabel->setText(fi2.fileName());
 	docWidget->m_diffview->setPlainText(content);
 	//
-	ui->action_DiffMode->setChecked(true);
 	docWidget->m_diffMode = true;
 	docWidget->m_editor->setDiffMode(true);
 	docWidget->m_editor->expandAll();
@@ -218,7 +217,8 @@ void MainWindow::onAction_DiffWithFile() {
 	docWidget->m_editor->setLineWrapMode(QPlainTextEdit::NoWrap);
 	docWidget->m_editor->rehighlight();
 	docWidget->updatePanes();
-	do_diff();
+    ui->action_DiffMode->setChecked(true);
+    //do_diff();
 }
 void MainWindow::onAction_DiffMode(bool checked) {
 	DocWidget *docWidget = getCurDocWidget();

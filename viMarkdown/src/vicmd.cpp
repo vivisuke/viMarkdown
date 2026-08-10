@@ -987,6 +987,8 @@ void MainWindow::do_vi_motion(QChar cmd, QTextCursor& cursor, int rcnt, DocWidge
 			if( cursor.position() >= maxPos ) break;
 		}
 doneW:
+		if (cursor.position() == maxPos)
+			cursor.movePosition(QTextCursor::Left);
 		break;
 	}
 	case 'e':
