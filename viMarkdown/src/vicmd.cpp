@@ -980,10 +980,18 @@ void MainWindow::do_vi_motion(QChar cmd, QTextCursor& cursor, int rcnt, DocWidge
 	case 'W': {
 		const int maxPos = doc->characterCount() - 1;
 		for(int i = 0; i < rcnt; ++i) {
-			while( cursor.position() < maxPos && !isSpaceChar(doc->characterAt(cursor.position())) )
+			// 現在の WORD(非空白の連続)をスキップ
+			if( cursor.block().text().isEmpty() ) {	//	空行にいる場合
 				if( !cursor.movePosition(QTextCursor::Right) ) goto doneW;
-			while( cursor.position() < maxPos && isSpaceChar(doc->characterAt(cursor.position())) )
+			} else {
+				while( cursor.position() < maxPos && !isSpaceChar(doc->characterAt(cursor.position())) )
+					if( !cursor.movePosition(QTextCursor::Right) ) goto doneW;
+			}
+			// 空白をスキップ。ただし「行頭かつ改行文字」(=空行)に来たら停止
+			while( cursor.position() < maxPos && isSpaceChar(doc->characterAt(cursor.position())) ) {
+				if( cursor.block().text().isEmpty() ) break;	//	空行にいる場合
 				if( !cursor.movePosition(QTextCursor::Right) ) goto doneW;
+			}
 			if( cursor.position() >= maxPos ) break;
 		}
 doneW:
@@ -1031,10 +1039,13 @@ doneW:
 		break;
 	case 'B':
 		for(int i = 0; i < rcnt; ++i) {
-			while( cursor.position() > 0 && isSpaceChar(doc->characterAt(cursor.position()-1)) )
+			while( cursor.position() > 0 && isSpaceChar(doc->characterAt(cursor.position()-1)) ) {
 				cursor.movePosition(QTextCursor::Left);
-			while( cursor.position() > 0 && !isSpaceChar(doc->characterAt(cursor.position()-1)) )
+				if( cursor.block().text().isEmpty() ) break;	//	空行にいる場合
+			}
+			while( cursor.position() > 0 && !isSpaceChar(doc->characterAt(cursor.position()-1)) ) {
 				cursor.movePosition(QTextCursor::Left);
+			}
 			if( cursor.position() == 0 ) break;
 		}
 		break;
