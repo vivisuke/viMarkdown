@@ -2027,6 +2027,7 @@ void MainWindow::on_cmdLine_down() {
 		m_cmdLine->setText(gvi.m_exhist[--gvi.m_exhist_ix]);
 	}
 }
+
 void MainWindow::close_cmdLine() {
 	m_cmdLine->hide();
 	gvi.m_currentMode = ViMode::Normal;

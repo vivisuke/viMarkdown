@@ -620,6 +620,10 @@ void MarkdownEditor::moveToPrevWord(QTextCursor& cursor, bool shift) {
 	CharType startType = getCharType(doc->characterAt(pos - 1));
 	while (pos > 0 && getCharType(doc->characterAt(pos - 1)) == startType) {
 		pos--;
+		cursor.setPosition(pos);
+		if( cursor.block().text().isEmpty() ) break;	//	空行の場合
+		//auto t = doc->characterAt(pos);
+		//if( doc->characterAt(pos) == '\n' ) break;
 	}
 	if( startType == Type_Space ) {
 		CharType startType = getCharType(doc->characterAt(pos - 1));
