@@ -225,6 +225,8 @@ void MainWindow::onAction_DiffMode(bool checked) {
 	if( docWidget == nullptr ) return;
 	docWidget->m_diffMode = checked;
 	docWidget->m_editor->setDiffMode(checked);
+	QScrollBar *bar1 = docWidget->m_editor->horizontalScrollBar();
+	QScrollBar *bar2 = docWidget->m_diffview->horizontalScrollBar();
 	if (checked) {
 		docWidget->m_editor->expandAll();
 		docWidget->m_editor->setHighlightDiff(true);
@@ -242,6 +244,8 @@ void MainWindow::onAction_DiffMode(bool checked) {
         docWidget->setMiniMapCurPos(fvl, vl);
         connect(docWidget->m_editor->verticalScrollBar(), &QScrollBar::valueChanged,
 		        docWidget, &DocWidget::syncMinimapWithEditor);
+        connect(bar1, &QScrollBar::valueChanged, bar2, &QScrollBar::setValue);
+		connect(bar2, &QScrollBar::valueChanged, bar1, &QScrollBar::setValue);
 	} else {
 		if( docWidget->m_docType == DocType::Markdown )
 			docWidget->m_editor->setHighlightMarkdown(true);
@@ -271,11 +275,13 @@ void MainWindow::onAction_DiffMode(bool checked) {
             docWidget, &DocWidget::syncScrollFromLeft);
 	    disconnect(docWidget->m_diffview->verticalScrollBar(), &QScrollBar::valueChanged,
             docWidget, &DocWidget::syncScrollFromRight);
+        disconnect(bar1, &QScrollBar::valueChanged, bar2, &QScrollBar::setValue);
+		disconnect(bar2, &QScrollBar::valueChanged, bar1, &QScrollBar::setValue);
 	}
 	docWidget->m_editor->rehighlight();
 	docWidget->updatePanes();
 }
-void MainWindow::onDiffViewChanged() {
+void MainWindow::onDiffViewChanged() {	//	比較先エディタが編集された場合
 	//##qDebug() << "MainWindow::onDiffViewChanged()";
     if (m_processing!=0) return;
     ++m_processing;
