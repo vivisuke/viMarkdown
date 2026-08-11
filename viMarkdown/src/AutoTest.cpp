@@ -1131,7 +1131,8 @@ const QList<ViTestCase> viTestCases = {
         "abc\n  def\n\ngh┃i",
         {
             "b", "abc\n  def\n\n┃ghi", // 現在の単語 "ghi" の先頭へ移動
-            "b", "abc\n  ┃def\n\nghi", // 空行をスキップし、前の単語 "def" の先頭へ移動
+            "b", "abc\n  def\n┃\nghi", // 空行をスキップしない
+            "b", "abc\n  ┃def\n\nghi", // 前の単語 "def" の先頭へ移動
             "b", "┃abc\n  def\n\nghi"  // インデントと改行をスキップし、前の単語 "abc" の先頭へ移動
         }
     },

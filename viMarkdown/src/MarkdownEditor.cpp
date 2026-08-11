@@ -614,7 +614,8 @@ void MarkdownEditor::moveToNextWordEnd(QTextCursor& cursor, bool shift) {
 #endif
 }
 void MarkdownEditor::moveToPrevWord(QTextCursor& cursor, bool shift) {
-	int pos = cursor.position();
+	int pos0 = cursor.position();
+	int pos = pos0;
 	QTextDocument *doc = document();
 	if (pos <= 0) return;
 	CharType startType = getCharType(doc->characterAt(pos - 1));
@@ -625,12 +626,15 @@ void MarkdownEditor::moveToPrevWord(QTextCursor& cursor, bool shift) {
 		//auto t = doc->characterAt(pos);
 		//if( doc->characterAt(pos) == '\n' ) break;
 	}
-	if( startType == Type_Space ) {
+	if( startType == Type_Space || startType == Type_NewLine ) {
 		CharType startType = getCharType(doc->characterAt(pos - 1));
 		while (pos > 0 && getCharType(doc->characterAt(pos - 1)) == startType) {
 			pos--;
+			cursor.setPosition(pos);
+			if( cursor.block().text().isEmpty() ) break;	//	空行の場合
 		}
 	}
+	cursor.setPosition(pos0);
 	cursor.setPosition(pos, shift ? QTextCursor::KeepAnchor : QTextCursor::MoveAnchor);
 }
 void MarkdownEditor::moveToStartOfWord(QTextCursor& cursor, bool shift) {
