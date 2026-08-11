@@ -605,7 +605,7 @@ void MainWindow::do_diff() {
 		        	} else {
 		        		cur2.movePosition(QTextCursor::End);
 	                    cur2.insertText("\n");
-	                    QTextBlock b = doc2->end();
+	                    QTextBlock b = doc2->lastBlock();
                         setDummyLine(b);
 		        	}
             	}
@@ -619,7 +619,7 @@ void MainWindow::do_diff() {
 		        	} else {
 		        		cur1.movePosition(QTextCursor::End);
 	                    cur1.insertText("\n");
-	                    QTextBlock b = doc1->end();
+	                    QTextBlock b = doc1->lastBlock();
                         setDummyLine(b);
 		        	}
             	}

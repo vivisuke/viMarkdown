@@ -37,6 +37,7 @@
 -->
 
 ## ■ ドキュメント
+- [ver 0.3 新機能](docs/ja/v03WhatsNew.md)
 - [ヘルプ](docs/ja/help.md)
 - [簡単な入門](docs/ja/quickstart.md)
 - [メニュー一覧](docs/ja/menu.md)

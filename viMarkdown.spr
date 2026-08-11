@@ -849,7 +849,7 @@ SPR# 状 P Open Close ver     Type  概要
 0843 ◎ C 08/10 08/10 03101│問題│置換ダイアログ > 置換・次検索 後の undo が動作不良
 0844 ◎ C 08/10 08/10 03101│問題│置換ダイアログ > 全置換の undo が動作不良
 0845 ◎ C 08/10 08/10 03101│問題│置換ダイアログ > Undo, Redo が動作不良
-0846 ● C 08/10            │問題│diff表示中：EOF位置に１文字挿入するとdiff表示が不正になる
+0846 ◎ C 08/10 08/12 03102│問題│diff表示中：EOF位置に１文字挿入するとdiff表示が不正になる
 0847 ◎ C 08/10 08/11 03102│問題│Tool > diff with file を実行すると do_diff が２回コールされる
 									メモ：MainWindow::onAction_DiffMode(bool checked)、MainWindow::onAction_DiffWithFile() からコール
 0848 ◎ C 08/11 08/11 03102│問題│F<char> 後の ; が行頭方向に検索されない
