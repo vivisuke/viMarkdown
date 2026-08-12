@@ -497,6 +497,7 @@ void MainWindow::do_prefix_cmd(QChar cmd, QTextCursor& cursor, int rcnt, DocWidg
 			break;
 		}
 		case 'a':		//	za
+			if( docWidget->m_diffMode ) break;
 			if (!block.isValid()) break;
 			if( is_folded(block) )
 				do_unfold(block);
@@ -505,14 +506,17 @@ void MainWindow::do_prefix_cmd(QChar cmd, QTextCursor& cursor, int rcnt, DocWidg
 			onMDTextChanged();
 			break;
 		case 'c':		//	zc
+			if( docWidget->m_diffMode ) break;
 			do_fold(block);
 			onMDTextChanged();
 			break;
 		case 'o':		//	zo
+			if( docWidget->m_diffMode ) break;
 			do_unfold(block);
 			onMDTextChanged();
 			break;
 		case 'M':		//	zM	すべて折り畳み
+			if( docWidget->m_diffMode ) break;
 			block = doc->begin();
 			while( block.isValid() ) {
 				if( blockType(block) == BT_HEADING && block.isVisible() )
@@ -522,6 +526,7 @@ void MainWindow::do_prefix_cmd(QChar cmd, QTextCursor& cursor, int rcnt, DocWidg
 			onMDTextChanged();
 			break;
 		case 'R':		//	zR	すべて展開
+			if( docWidget->m_diffMode ) break;
 			block = doc->begin();
 			while( block.isValid() ) {
 				if( blockType(block) == BT_HEADING )
