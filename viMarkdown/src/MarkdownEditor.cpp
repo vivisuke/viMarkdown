@@ -614,28 +614,25 @@ void MarkdownEditor::moveToNextWordEnd(QTextCursor& cursor, bool shift) {
 #endif
 }
 void MarkdownEditor::moveToPrevWord(QTextCursor& cursor, bool shift) {
-	int pos0 = cursor.position();
-	int pos = pos0;  
+	int pos = cursor.position();
 	QTextDocument *doc = document();
 	if (pos <= 0) return;
-	//	1. 空白 or 改行 をスキップ
-	CharType startType = getCharType(doc->characterAt(pos - 1));
-	while (pos > 0 && getCharType(doc->characterAt(pos - 1)) == startType) {
-		pos--;
-		cursor.setPosition(pos);
-		if( cursor.block().text().isEmpty() ) break;	//	空行の場合
-		//auto t = doc->characterAt(pos);
-		//if( doc->characterAt(pos) == '\n' ) break;
-	}
-	if( startType == Type_Space || startType == Type_NewLine ) {
-		CharType startType = getCharType(doc->characterAt(pos - 1));
-		while (pos > 0 && getCharType(doc->characterAt(pos - 1)) == startType) {
-			pos--;
-			cursor.setPosition(pos);
-			if( cursor.block().text().isEmpty() ) break;	//	空行の場合
+	//	直前が 空白 or 改行 の場合は、それらをスキップ
+	bool blankLine = false;
+	CharType type;
+	while( (type = getCharType(doc->characterAt(pos - 1))) == Type_Space || type == Type_NewLine ) {
+		if( --pos == 0 ) break;
+		if( type == Type_NewLine && doc->findBlock(pos).text().isEmpty() ) {	//	空行の場合
+			blankLine = true;
+			break;
 		}
 	}
-	cursor.setPosition(pos0);
+	if( pos > 0 && !blankLine ) {
+		//	直前タイプと同じ文字が続く限り左移動
+		type = getCharType(doc->characterAt(--pos));
+		while( pos > 0 && getCharType(doc->characterAt(pos-1)) == type )
+			--pos;
+	}
 	cursor.setPosition(pos, shift ? QTextCursor::KeepAnchor : QTextCursor::MoveAnchor);
 }
 void MarkdownEditor::moveToStartOfWord(QTextCursor& cursor, bool shift) {

@@ -199,6 +199,7 @@ struct ViStatus {
 	QString	m_pendingCommand;			//	入力中の vi コマンド
 	QString	m_insertedText;				//	i 等で挿入された文字列
     QString	m_yankBuffer;
+    QString	m_cmdArg;					//	コマンド引数部分
     QStringList	m_exhist;				//	ex コマンド履歴、先頭が最新コマンド
     MarkdownEditor	*m_editor = nullptr;		//	フォーカスを持っているマークダウンエディタ
     MarkdownPreview	*m_preview = nullptr;	//	フォーカスを持っているマークダウンプレビュー

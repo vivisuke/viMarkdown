@@ -1553,18 +1553,28 @@ int parseLineSpec(const QString &text, int &i, int currentLine, int totalLines, 
 //	pat: "q(uit" の場合、"q", "qu", "qui", "quit" でマッチ、"qx" は不一致
 //	pat: "quit" の場合、"quit" のみがマッチ
 bool is_match(const QString &cmd, const QString &pat) {
+	gvi.m_cmdArg.clear();
 	int i = 0, k = 0;
 	bool paren = false;		//	'(' フラグ
 	while( i < cmd.size() && k < pat.size() ) {
 		if( pat[k] == '(' ) {
 			paren = true;
-			++k;
-			continue;
+			//++k;
+			//continue;
+			break;
 		}
 		if( cmd[i++] != pat[k++] ) return false;	//	不一致
 	}
-	if( i != cmd.size() ) return false;	//	cmd の最後までマッチしていない
-	return k == pat.size() || (k < pat.size() && pat[k] == '(') || paren;	//	次が '(' または既に発見
+	if( i != cmd.size() && cmd[i] != ' ' )
+		return false;	//	cmd の最後までマッチしていない
+	if( k == pat.size() || (k < pat.size() && pat[k] == '(') || paren ) {	//	次が '(' または既に発見
+		while( i < cmd.size() - 1 && cmd[i] != ' ' ) ++i;
+		while( i < cmd.size() - 1 && cmd[i] == ' ' ) ++i;
+		if( i < cmd.size() - 1 )
+			gvi.m_cmdArg = cmd.mid(i);
+		return true;
+	} else
+		return false;
 }
 bool parse_subst(const QString &text, int &ix, QString &pat, QString &after, bool &global) {
 	if (ix >= text.size()) {
@@ -1945,11 +1955,12 @@ void MainWindow::do_exCmd(const QString &text, int ix, /*QString cmd, QChar nch,
 			QDir::setCurrent(g.m_defaultDir);
 			do_output(QString("\ncurrent directory: %1\n").arg(QDir::currentPath()));
 		}
-	} else if( is_match(cmd, "e(dit") ) {
+	} else if( is_match(text, "e(dit") ) {
 		if( nch == u'\0')
 			onAction_Open();
 		else {
-			QString arg = text.mid(ix).trimmed();
+			QString arg = gvi.m_cmdArg.trimmed();
+			//QString arg = text.mid(ix).trimmed();
 			do_open("", arg);
 		}
 	} else if( is_match(cmd, "w(rite") ) {
