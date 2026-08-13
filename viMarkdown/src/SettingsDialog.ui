@@ -68,7 +68,15 @@
         <number>0</number>
        </property>
        <widget class="QWidget" name="page_5">
-        <widget class="QWidget" name="">
+        <widget class="QWidget" name="layoutWidget">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>385</width>
+           <height>238</height>
+          </rect>
+         </property>
          <layout class="QHBoxLayout" name="horizontalLayout_2">
           <item>
            <widget class="QGroupBox" name="groupBox">
@@ -391,21 +399,21 @@
         <widget class="QGroupBox" name="groupBox_4">
          <property name="geometry">
           <rect>
-           <x>10</x>
-           <y>314</y>
-           <width>201</width>
-           <height>81</height>
+           <x>0</x>
+           <y>244</y>
+           <width>181</width>
+           <height>151</height>
           </rect>
          </property>
          <property name="title">
           <string>Cursor</string>
          </property>
-         <widget class="QWidget" name="">
+         <widget class="QWidget" name="layoutWidget">
           <property name="geometry">
            <rect>
-            <x>32</x>
+            <x>11</x>
             <y>20</y>
-            <width>150</width>
+            <width>161</width>
             <height>56</height>
            </rect>
           </property>
@@ -462,22 +470,22 @@
         <widget class="QGroupBox" name="groupBox_3">
          <property name="geometry">
           <rect>
-           <x>231</x>
-           <y>255</y>
-           <width>221</width>
-           <height>141</height>
+           <x>191</x>
+           <y>245</y>
+           <width>191</width>
+           <height>151</height>
           </rect>
          </property>
          <property name="title">
           <string>Calendar</string>
          </property>
-         <widget class="QWidget" name="">
+         <widget class="QWidget" name="layoutWidget">
           <property name="geometry">
            <rect>
             <x>10</x>
-            <y>30</y>
-            <width>186</width>
-            <height>86</height>
+            <y>15</y>
+            <width>171</width>
+            <height>71</height>
            </rect>
           </property>
           <layout class="QFormLayout" name="formLayout_4">

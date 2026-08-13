@@ -615,9 +615,10 @@ void MarkdownEditor::moveToNextWordEnd(QTextCursor& cursor, bool shift) {
 }
 void MarkdownEditor::moveToPrevWord(QTextCursor& cursor, bool shift) {
 	int pos0 = cursor.position();
-	int pos = pos0;
+	int pos = pos0;  
 	QTextDocument *doc = document();
 	if (pos <= 0) return;
+	//	1. 空白 or 改行 をスキップ
 	CharType startType = getCharType(doc->characterAt(pos - 1));
 	while (pos > 0 && getCharType(doc->characterAt(pos - 1)) == startType) {
 		pos--;
