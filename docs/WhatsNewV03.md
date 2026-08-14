@@ -15,9 +15,12 @@ Integrated a complete vi editing system supporting Normal, Insert, Visual, and C
 
 ### Diff
 ![diff](diff.png)
+
 Added a Diff mode that displays side-by-side comparisons of two documents or a document and an external file. Additions, deletions, and modifications are highlighted by background colors on a line-by-line and word-by-word basis, allowing you to merge differences using the `≪` and `≫` buttons. Additionally, a "MiniMap" is included to visually track the overall diff and scroll position.
 
 ### Calendar / Diary
+![calendar](calendar.png)
+
 Linked with the sidebar calendar, clicking any date automatically generates and opens daily notes or journals (`diary/YYYY/MM/YYYYMMDD.md`) for present, past, or future dates.
 The background colors of dates on the calendar are automatically color-coded based on the completion status of ToDos within each diary (incomplete ToDos: light red / all completed: light green / no ToDos: light blue), allowing you to check task progress at a glance.
 
