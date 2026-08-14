@@ -874,4 +874,14 @@ SPR# 状 P Open Close ver     Type  概要
 0867 ◎ C 08/14 08/14 03103│ToDo│README.md：Dockument > WhatsNewV03.md へのリンク追加
 0868 ● C 08/14            │問題│README.md：スクリーンショットをカレンダー表示中のものに差し替えた方がよい
 0869 ◎ C 08/14 08/14 03103│問題│QMessageBox > メッセージに tr() が記述されていないものがある
-0870 ● C 08/14            │ToDo│
+0870 ◎ C 08/14 08/14 03103│ToDo│WhatsNewV03.md > SVG：SVG 表示画像挿入
+0871 ● C 08/14            │ToDo│
+0872 ● C 08/14            │ToDo│
+0873 ● C 08/14            │ToDo│
+0874 ● C 08/14            │ToDo│
+0875 ● C 08/14            │ToDo│
+0876 ● C 08/14            │ToDo│
+0877 ● C 08/14            │ToDo│
+0878 ● C 08/14            │ToDo│
+0879 ● C 08/14            │ToDo│
+0880 ● C 08/14            │ToDo│

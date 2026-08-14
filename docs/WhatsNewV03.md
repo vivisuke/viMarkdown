@@ -29,6 +29,8 @@ Allows you to fold and unfold text content according to the Markdown heading str
 In addition to clicking the icons (▼ / ▶) next to line numbers, it also supports vi folding commands (`zc`, `zo`, `za`, `zM`, `zR`), significantly improving readability for long-form documents.
 
 ### SVG
+![PDCA](SVG_PDCA.png)
+
 Renders SVG data written inside `SVG ... ` code blocks in real time using the LunaSVG engine.
 Furthermore, an auto-completion dialog triggered by `Ctrl + Space` allows you to easily insert templates for `<svg>` tags and various shape elements (`rect`, `ellipse`, `text`, `path`, etc.).
 
