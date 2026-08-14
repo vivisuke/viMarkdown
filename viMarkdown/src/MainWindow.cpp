@@ -1929,7 +1929,7 @@ bool MainWindow::do_open(const QString& title0, const QString& fullPath, const Q
 	}
 	QFileInfo checkFile(fullPath);
 	if( !checkFile.exists() ) {
-		QString mess = QString("'%1'\nFile does not exist.\nDo you want to create it?").arg(fullPath);
+		QString mess = QString(tr("'%1'\nFile does not exist.\nDo you want to create it?")).arg(fullPath);
 		//QString mess = QString("'%1'\nファイルが存在しません。\n新規作成しますか？").arg(fullPath);
 		auto reply = QMessageBox::question(this, "confirmation", mess,
                                    QMessageBox::Yes | QMessageBox::No);
@@ -2080,7 +2080,7 @@ void MainWindow::do_close(bool forced) {
 	if( !forced && docWidget->isModified() ) {
 		QMessageBox::StandardButton reply = QMessageBox::question(this,
 								  "Confirm save",				 // タイトル
-								  "The document has been modified.\nDo you want to save your changes?", // 本文
+								  tr("The document has been modified.\nDo you want to save your changes?"), // 本文
 								  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel); // ボタンの種類
 
 		if (reply == QMessageBox::Yes) {
