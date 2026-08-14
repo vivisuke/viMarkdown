@@ -855,7 +855,7 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 		DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(ix);
 		if( docWidget->isModified() ) {
 			ui->tabWidget->setCurrentIndex(ix);
-			QString mess = QString("The document '%1' has been modified.\nDo you want to save your changes ?").arg(docWidget->m_title);
+			QString mess = QString(tr("The document '%1' has been modified.\nDo you want to save your changes ?")).arg(docWidget->m_title);
 			QMessageBox::StandardButton reply = QMessageBox::question(this,
 								  "Confirm save",
 								  mess,
