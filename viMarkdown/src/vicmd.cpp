@@ -60,9 +60,10 @@ void do_r(QChar ch, QTextCursor& cursor, int rcnt) {
 	QTextBlock block = cursor.block();
     int available = block.position() + block.text().size() - cursor.position();
     if( rcnt > available ) return;   // 行末を超える場合は無視（viの仕様）
-    cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, rcnt);
-	//cursor.insertText(QString(rcnt, ch));
+	cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, rcnt);
 	gvi.m_editor->do_insertText(cursor, QString(rcnt, ch));
+	if( ch != u'\n' )
+		cursor.movePosition(QTextCursor::Left);
 	gvi.m_isEditCommand = true;
 }
 void do_openline(QTextCursor& cursor, bool before) {
