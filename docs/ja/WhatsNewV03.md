@@ -1,4 +1,4 @@
-﻿# ver 0.3 新機能（What's New）
+﻿# v0.3 新機能（What's New）
 
 ## 目次
 - [vi](#vi)

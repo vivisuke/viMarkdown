@@ -1,4 +1,4 @@
-﻿# ver 3.0 What's new
+﻿# Ver 0.3 What's New
 
 ## Table of Contents
 - [vi](#vi)
