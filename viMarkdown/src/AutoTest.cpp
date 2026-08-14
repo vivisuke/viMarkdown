@@ -1605,6 +1605,7 @@ const QList<ViTestCase> viTestCases = {
             "2Cxyz", "axy┃z\nghi\n", // 2行分（現在の行のカーソルから次の行の末尾まで）を削除して置換
         }
     },
+    
 	// 1. 単純な dw
     { "Delete word (dw) - Basic",
         "┃abc def ghi\n",
@@ -1645,6 +1646,57 @@ const QList<ViTestCase> viTestCases = {
         "┃foo bar\nbaz qux\n",
         {
             "3dw", "┃qux\n" // 1:"foo ", 2:"bar\n", 3:"baz " の計3単語分を削除して改行を跨ぐ
+        }
+    },
+    { "Basic r command",
+        "a┃bc\n",
+        {
+            "rx", "a┃xc\n",         // 'b' を 'x' に置換（カーソルは置換した文字の上）
+        }
+    },
+    { "r command at the end of line",
+        "ab┃c\n",
+        {
+            "rx", "ab┃x\n",         // 行末文字 'c' を 'x' に置換
+        }
+    },
+    { "r command with count",
+        "a┃bcde\n",
+        {
+            "3rx", "axx┃xe\n",      // 'b', 'c', 'd' の3文字を 'x' に置換（カーソルは置換した最後の文字の上）
+        }
+    },
+    { "r command with Enter (replace with newline)",
+        "a┃bc\n",
+        {
+            "r\n", "a\n┃c\n",       // 'b' を改行に置換
+        }
+    },
+    { "r command repeat with dot",
+        "┃abc\n",
+        {
+            "rx",  "┃xbc\n",        // 1文字目を 'x' に置換
+            "l.",  "x┃xc\n",        // 右に移動して '.' で同じ置換を繰り返し
+        }
+    },
+    { "r command undo",
+        "a┃bc\n",
+        {
+            "rx", "a┃xc\n",         // 置換
+            "u",  "a┃bc\n",         // Undo で元に戻る
+        }
+    },
+    { "r command with count undo",
+        "a┃bcde\n",
+        {
+            "3rx", "axx┃xe\n",      // 3文字置換
+            "u",   "a┃bcde\n",      // Undo で3文字とも一度に戻る
+        }
+    },
+    { "r command multibyte character",
+        "あ┃いう\n",
+        {
+            "rえ", "あ┃えう\n",     // マルチバイト文字の置換
         }
     },
 //	ex commands

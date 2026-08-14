@@ -11,6 +11,8 @@
 - [Multilingual Resource Support](#multilingual-resource-support)
 
 ### vi
+![vi](viArch.png)
+
 Integrated a complete vi editing system supporting Normal, Insert, Visual, and Command-line modes. This feature can be enabled by turning ON "Other > vi Keybindings" in the menu. It supports cursor navigation via `hjkl`, various editing commands (`x`, `dd`, `yy`, `p`, `c`, `s`, `.`, etc.), searching with `/` and `?`, and ex commands such as `:w`, `:q`, and `:e`. Furthermore, a proprietary Undo/Redo management engine optimized specifically for vi operations has been implemented.
 
 ### Diff
