@@ -868,7 +868,7 @@ SPR# 状 P Open Close ver     Type  概要
 0861 ◎ C 08/13 08/13 03103│問題│設定 > font/color：グループボックスが綺麗に揃っていない
 0862 ● C 08/14            │ToDo│[text](#heading) の場合、プレビューでリンクをクリックすると、エディタでは見出しにカーソル移動するが、プレビューではカーソル移動しない
 0863 ◎ C 08/14 08/14 03103│ToDo│v03WhatsNew.md > vi：「Other > vi Keybindings をONにする必要がある」明記
-0864 ● C 08/14            │ToDo│v03WhatsNew.md > diff：diff 表示画像挿入
+0864 ◎ C 08/14 08/14 03103│ToDo│v03WhatsNew.md > diff：diff 表示画像挿入
 0865 ● C 08/14            │ToDo│v03WhatsNew.md > カレンダー・日記：カレンダー画像挿入
 0866 ◎ C 08/14 08/14 03103│ToDo│v03WhatsNew.md → WhatsNewV03 にリネーム
 0867 ◎ C 08/14 08/14 03103│ToDo│README.md：Dockument > WhatsNewV03.md へのリンク追加

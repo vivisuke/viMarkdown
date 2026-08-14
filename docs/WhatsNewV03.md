@@ -14,6 +14,7 @@
 Integrated a complete vi editing system supporting Normal, Insert, Visual, and Command-line modes. This feature can be enabled by turning ON "Other > vi Keybindings" in the menu. It supports cursor navigation via `hjkl`, various editing commands (`x`, `dd`, `yy`, `p`, `c`, `s`, `.`, etc.), searching with `/` and `?`, and ex commands such as `:w`, `:q`, and `:e`. Furthermore, a proprietary Undo/Redo management engine optimized specifically for vi operations has been implemented.
 
 ### Diff
+![diff](diff.png)
 Added a Diff mode that displays side-by-side comparisons of two documents or a document and an external file. Additions, deletions, and modifications are highlighted by background colors on a line-by-line and word-by-word basis, allowing you to merge differences using the `≪` and `≫` buttons. Additionally, a "MiniMap" is included to visually track the overall diff and scroll position.
 
 ### Calendar / Diary
