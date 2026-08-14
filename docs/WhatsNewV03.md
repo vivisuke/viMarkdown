@@ -1,6 +1,6 @@
 ﻿# What's New in v0.3
 
-## Table of Contents
+### Table of Contents
 - [vi](#vi)
 - [Diff](#diff)
 - [Calendar / Diary](#calendar--diary)
@@ -25,6 +25,8 @@ Linked with the sidebar calendar, clicking any date automatically generates and 
 The background colors of dates on the calendar are automatically color-coded based on the completion status of ToDos within each diary (incomplete ToDos: light red / all completed: light green / no ToDos: light blue), allowing you to check task progress at a glance.
 
 ### Heading Folding
+![fold](fold.png)
+
 Allows you to fold and unfold text content according to the Markdown heading structure (`#` to `###`).
 In addition to clicking the icons (▼ / ▶) next to line numbers, it also supports vi folding commands (`zc`, `zo`, `za`, `zM`, `zR`), significantly improving readability for long-form documents.
 
