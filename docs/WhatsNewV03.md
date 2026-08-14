@@ -37,10 +37,14 @@ Renders SVG data written inside `SVG ... ` code blocks in real time using the Lu
 Furthermore, an auto-completion dialog triggered by `Ctrl + Space` allows you to easily insert templates for `<svg>` tags and various shape elements (`rect`, `ellipse`, `text`, `path`, etc.).
 
 ### Grep & Enhanced Search
+![grep](grep.png)
+
 Features a Grep search dialog capable of cross-searching files across specified directories.
 It supports toggling regular expression search and case-insensitive search (IgnoreCase), alongside quick searches from the toolbar and highlight displays for search results.
 
 ### OutputBar
+![outputBar](outputBar.png)
+
 Introduced a new "OutputBar" at the bottom of the screen to display search results and logs.
 It can be used for jumping to corresponding lines by double-clicking Grep search results, receiving SVG syntax error notifications, displaying vi automated test results, and referencing cheat sheets.
 
