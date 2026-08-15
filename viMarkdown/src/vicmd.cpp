@@ -127,6 +127,7 @@ void MainWindow::do_cdy_moved(QTextCursor& cursor) {
 			//cursor.deleteChar();
 			if( gvi.m_editor != nullptr ) {
 				gvi.m_editor->openUndoBlock();
+				gvi.m_yankBuffer = cursor.selectedText();
 				gvi.m_editor->do_deleteText(cursor);
 			}
 		}
