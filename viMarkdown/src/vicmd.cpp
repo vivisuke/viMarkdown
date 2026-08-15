@@ -711,6 +711,11 @@ bool MainWindow::do_vi_operator(QChar cmd, QTextCursor& cursor, int rcnt, DocWid
 				if( gvi.m_editor != nullptr )
 					gvi.m_editor->do_deleteText(cursor);
 				gvi.m_isEditCommand = true;
+				int pos = cursor.position();
+				int sz = gvi.m_editor->document()->characterCount();
+				if( cursor.position() >= gvi.m_editor->document()->characterCount() - 1 ) {
+					cursor.movePosition(QTextCursor::PreviousBlock);
+				}
 			}
 			break;
 		case 'y':	//	yy
