@@ -1624,6 +1624,7 @@ void MarkdownPreview::do_list(QTextBlock srcBlock, QTextCursor& cursor, QString 
 	}
 	int startPos = cursor.position();
 	//setBlockType(cursor.block(), is_checkbox ? BT_CHECKBOX : BT_LIST);
+	buf.replace(re_tailspc, "&nbsp;");
 	cursor.insertMarkdown(buf);
 	QTextBlock firstBlock = document()->findBlock(startPos);
 	if (firstBlock.isValid() && firstBlock.text().isEmpty()) {
