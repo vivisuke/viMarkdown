@@ -1475,7 +1475,9 @@ void MarkdownPreview::do_numlist(QTextBlock srcBlock, QTextCursor& cursor, QStri
 		//QTextBlock b = list->item(list->count() - 1);
 		//cursor.insertText(m_lst[m_ln].remove(re_numlist) /*+ "\n"*/);
 		setBlockType(cursor.block(), BT_NUMLIST);
-		cursor.insertMarkdown(m_lst[m_ln] + "\n");
+		auto text = m_lst[m_ln];
+		text.replace(re_tailspc, "&nbsp;");
+		cursor.insertMarkdown(text + "\n");
 		if( ++m_ln >= m_lst.size() ) break;
 		srcBlock = srcBlock.next();
 		match = re_numlist.match(m_lst[m_ln]);
