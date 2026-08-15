@@ -61,12 +61,14 @@ void do_r(QChar ch, QTextCursor& cursor, int rcnt) {
     int available = block.position() + block.text().size() - cursor.position();
     if( rcnt > available ) return;   // 行末を超える場合は無視（viの仕様）
 	cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, rcnt);
+	assert( gvi.m_editor != nullptr );
 	gvi.m_editor->do_insertText(cursor, QString(rcnt, ch));
 	if( ch != u'\n' )
 		cursor.movePosition(QTextCursor::Left);
 	gvi.m_isEditCommand = true;
 }
 void do_openline(QTextCursor& cursor, bool before) {
+	assert( gvi.m_editor != nullptr );
 	if( before ) {
 		cursor.movePosition(QTextCursor::StartOfBlock);
 		//cursor.insertText("\n");
@@ -100,6 +102,7 @@ void save_preffered_x() {
 	}
 }
 void MainWindow::do_cdy_moved(QTextCursor& cursor) {
+	assert( gvi.m_editor != nullptr );
 #if 0
 	if( cursor.hasSelection() && gvi.m_linewiseMoved ) {
 		int startPos = cursor.selectionStart();
@@ -201,6 +204,7 @@ void do_vi_change_line(QTextCursor& cursor) {
 	//gvi.m_viCmdMode = false;
 }
 void MainWindow::do_vi_insert(QChar cmd, QTextCursor& cursor, int rcnt) {
+	assert( gvi.m_editor != nullptr );
 	QTextBlock block = cursor.block();
 	int eolpos = block.position() + block.text().size();
 	switch( cmd.unicode() ) {
@@ -297,6 +301,7 @@ void MainWindow::do_vi_insert(QChar cmd, QTextCursor& cursor, int rcnt) {
 	//gvi.m_viCmdMode = false;
 }
 void MainWindow::do_vi_delete(QChar cmd, QTextCursor& cursor, int rcnt) {		//	x X D
+	assert( gvi.m_editor != nullptr );
 	if( gvi.m_vMode == u'v' ) {
 		switch( cmd.unicode() ) {
 		case 'x':
@@ -584,6 +589,7 @@ void MainWindow::do_prefix_cmd(QChar cmd, QTextCursor& cursor, int rcnt, DocWidg
 	}
 }
 bool MainWindow::do_cdy(QChar cmd, QTextCursor& cursor) {
+	assert( gvi.m_editor != nullptr );
 	if( gvi.m_vMode == u'v' || gvi.m_vMode == u'V' ) {
 		if( gvi.m_vMode == u'v' ) {
 			if( gvi.m_vAnchor <= cursor.position() ) {
@@ -638,6 +644,7 @@ bool MainWindow::do_cdy(QChar cmd, QTextCursor& cursor) {
 	return false;
 }
 bool MainWindow::do_vi_operator(QChar cmd, QTextCursor& cursor, int rcnt, DocWidget* docWidget) {		//	{c d y < >}<move>
+	assert( gvi.m_editor != nullptr );
 	if( gvi.m_operator == ' ' ) {
 		if( cursor.hasSelection() ) {
 			switch( cmd.unicode() ) {
@@ -884,6 +891,7 @@ void do_match_paren(QTextCursor& cursor) {
 	}
 }
 void MainWindow::do_vi_motion(QChar cmd, QTextCursor& cursor, int rcnt, DocWidget* docWidget) {		//	hjkl等
+	assert( gvi.m_editor != nullptr );
 	auto p = cursor.position();		//	for Debug
 	gvi.m_linewiseMoved = false;
 	bool isEditor = cursor.document() == docWidget->m_editor->document();
@@ -1133,6 +1141,7 @@ doneW:
 	//}
 }
 void do_join(QTextCursor& cursor, int rcnt) {
+	assert( gvi.m_editor != nullptr );
 	QTextDocument *doc = cursor.document();
 	int joins = (rcnt <= 1) ? 1 : (rcnt - 1);
 	if( gvi.m_editor != nullptr )
