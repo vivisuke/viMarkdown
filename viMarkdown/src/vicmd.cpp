@@ -1359,13 +1359,16 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 			gvi.m_redoing = true;
 			buf = gvi.m_lastEditCommand;
 			if( gvi.m_repeatCount != 0 ) {		//	<num>. の場合
+				//gvi.m_redoCount = gvi.m_repeatCount;
 				int i = 0;
 				while( i < buf.size() && buf[i].isDigit() )		//	数字部分をスキップ
 					++i;
 				buf = QString::number(gvi.m_repeatCount) + buf.mid(i);
-			}
+			} //else
+				//gvi.m_redoCount = 1;
 			//buf += gvi.m_insertedText;
 			//##qDebug() << "redo buf = " << buf;
+			gvi.m_repeatCount = 0;
 			for(QChar ch: buf) {
 				do_viCmd(ch, cursor);
 			}

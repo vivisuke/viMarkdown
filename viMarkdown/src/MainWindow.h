@@ -191,6 +191,7 @@ struct ViStatus {
     int		m_opCount = 1;				//	op 繰り返し回数 for c d y
     int		m_repeatCount = 0;			//	vi コマンド繰り返し回数
     int		m_insRepCount = 1;			//	挿入回数
+    int		m_redoCount = 1;			//	<num>.
     int		m_rangeStart = 1;
     int		m_nRange = 0;				//	指定された行番号数
     int		m_rangeEnd = 1;
