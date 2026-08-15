@@ -886,8 +886,8 @@ SPR# 状 P Open Close ver     Type  概要
 0879 ◎ C 08/15 08/15 03104│問題│i<text> カーソル移動 . 後の undo が動作不良
 0880 ◎ C 08/15 08/15 03104│ToDo│vi 自動テスト：dd コマンドテスト追加
 0881 ● A 08/15            │問題│vi 自動テスト実行でクラッシュした。原因 gvi.m_editor が nullptr になる場合がある
-0882 ● C 08/15            │ToDo│
-0883 ● C 08/15            │ToDo│
+0882 ● C 08/15            │ToDo│assert( gvi.m_editor != nullptr ) をあちこちに散りばめる？
+0883 ◎ C 08/15 08/15 03104│ToDo│ViStatus::m_preview は当面コメントアウトしておく
 0884 ● C 08/15            │ToDo│
 0885 ● C 08/15            │ToDo│
 0886 ● C 08/15            │ToDo│

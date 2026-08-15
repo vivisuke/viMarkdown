@@ -1191,12 +1191,13 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
 	gvi.m_editor = nullptr;
-	gvi.m_preview = nullptr;
+	//gvi.m_preview = nullptr;
 	QWidget *w = QApplication::focusWidget();
 	if( w == docWidget->m_editor ) gvi.m_editor = (MarkdownEditor*)w;
 	else if( w == docWidget->m_diffview ) gvi.m_editor = (MarkdownEditor*)w;
-	else if( w == docWidget->m_preview ) gvi.m_preview = (MarkdownPreview*)w;
+	//else if( w == docWidget->m_preview ) gvi.m_preview = (MarkdownPreview*)w;
 	//bool isEditor = cursor.document() == docWidget->m_editor->document();
+	assert( gvi.m_editor != nullptr );
 	bool completed = true;
 	int rcnt = getRepeatCount();
 	gvi.m_pendingCommand += cmd;

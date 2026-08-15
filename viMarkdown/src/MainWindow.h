@@ -203,7 +203,7 @@ struct ViStatus {
     QString	m_cmdArg;					//	コマンド引数部分
     QStringList	m_exhist;				//	ex コマンド履歴、先頭が最新コマンド
     MarkdownEditor	*m_editor = nullptr;		//	フォーカスを持っているマークダウンエディタ
-    MarkdownPreview	*m_preview = nullptr;	//	フォーカスを持っているマークダウンプレビュー
+    //MarkdownPreview	*m_preview = nullptr;	//	フォーカスを持っているマークダウンプレビュー
     QWidget	*m_prevFocusWidget = nullptr;	//	:/? 押下時点でフォーカスを持っていた Widget
 };
 #if 0
