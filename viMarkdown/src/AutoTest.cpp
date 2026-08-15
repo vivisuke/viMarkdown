@@ -1716,8 +1716,8 @@ const QList<ViTestCase> viTestCases = {
             "dd", "first\n"
                   "┃third\n",
             "u",  "first\n"
-                  "sec┃ond\n"
-                  "third\n",          // Undo で元の行・カーソル位置が復元される
+                  "┃second\n"
+                  "third\n",          // Undo で元の行・先頭位置が復元される
         }
     },
     { "dd with count undo",
