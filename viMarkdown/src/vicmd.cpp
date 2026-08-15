@@ -1360,7 +1360,7 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 			buf = gvi.m_lastEditCommand;
 			if( gvi.m_repeatCount != 0 ) {		//	<num>. の場合
 				int i = 0;
-				while( i < buf.size() && buf[i].isDigit() )
+				while( i < buf.size() && buf[i].isDigit() )		//	数字部分をスキップ
 					++i;
 				buf = QString::number(gvi.m_repeatCount) + buf.mid(i);
 			}
@@ -1403,7 +1403,11 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 				gvi.m_editor->savePrefferedX(cursor);
 		}
 		if( gvi.m_redoing && gvi.m_currentMode == ViMode::Insert && !gvi.m_insertedText.isEmpty() ) {
-			cursor.insertText(gvi.m_insertedText);
+			auto text = gvi.m_insertedText;
+			if( gvi.m_repeatCount > 1 )
+				text = gvi.m_insertedText.repeated(gvi.m_repeatCount);
+			gvi.m_editor->do_insertText(cursor, text);
+			//cursor.insertText(gvi.m_insertedText.repeated(gvi.m_repeatCount));
 			//gvi.m_viCmdMode = true;
 			gvi.m_currentMode = ViMode::Normal;
 		}
