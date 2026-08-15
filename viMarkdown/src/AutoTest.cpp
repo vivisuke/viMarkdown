@@ -1648,6 +1648,103 @@ const QList<ViTestCase> viTestCases = {
             "3dw", "┃qux\n" // 1:"foo ", 2:"bar\n", 3:"baz " の計3単語分を削除して改行を跨ぐ
         }
     },
+    { "Basic dd command",
+        "first\n"
+        "sec┃ond\n"
+        "third\n",
+        {
+            "dd", "first\n"
+                  "┃third\n",         // カレント行を削除し、次行の行頭へ移動
+        }
+    },
+    { "dd at the last line",
+        "first\n"
+        "second\n"
+        "thi┃rd\n",
+        {
+            "dd", "first\n"
+                  "┃second\n",        // 最終行削除時は直前行の行頭へ移動
+        }
+    },
+    { "dd at the last line without trailing newline",
+        "first\n"
+        "second\n"
+        "thi┃rd",
+        {
+            "dd", "first\n"
+                  "sec┃ond",          // 末尾改行がない最終行の削除
+        }
+    },
+    { "dd on single line document",
+        "hel┃lo\n",
+        {
+            "dd", "┃",                // 1行のみの文書で dd した場合は空文書
+        }
+    },
+    { "dd with count (3dd)",
+        "┃line1\n"
+        "line2\n"
+        "line3\n"
+        "line4\n",
+        {
+            "3dd", "┃line4\n",        // 3行削除（※本体の SPR 0404 修正でパスするようになります）
+        }
+    },
+    { "dd with count exceeding remaining lines",
+        "line1\n"
+        "li┃ne2\n"
+        "line3\n",
+        {
+            "5dd", "┃line1\n",        // 残り行数以上は末尾まで削除し直前行へ
+        }
+    },
+    { "dd repeat with dot",
+        "┃line1\n"
+        "line2\n"
+        "line3\n",
+        {
+            "dd", "┃line2\n"
+                  "line3\n",
+            ".",  "┃line3\n",         // '.' でカレント行の削除を繰り返し
+        }
+    },
+    { "dd undo",
+        "first\n"
+        "sec┃ond\n"
+        "third\n",
+        {
+            "dd", "first\n"
+                  "┃third\n",
+            "u",  "first\n"
+                  "sec┃ond\n"
+                  "third\n",          // Undo で元の行・カーソル位置が復元される
+        }
+    },
+    { "dd with count undo",
+        "┃line1\n"
+        "line2\n"
+        "line3\n"
+        "line4\n",
+        {
+            "3dd", "┃line4\n",
+            "u",   "┃line1\n"
+                   "line2\n"
+                   "line3\n"
+                   "line4\n",
+        }
+    },
+    { "dd and put (paste linewise)",
+        "fi┃rst\n"
+        "second\n"
+        "third\n",
+        {
+            "dd", "┃second\n"
+                  "third\n",
+            "p",  "second\n"
+                  "┃first\n"
+                  "third\n",          // 削除行を下に行単位でペースト
+        }
+    },
     { "Basic r command",
         "a┃bc\n",
         {
