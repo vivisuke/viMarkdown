@@ -1171,7 +1171,8 @@ void do_join(QTextCursor& cursor, int rcnt) {
 			gvi.m_editor->do_deleteText(cursor);
 		}
 		cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, 1 + leadingSpaces);
-		cursor.removeSelectedText();
+		//cursor.removeSelectedText();
+		gvi.m_editor->do_deleteText(cursor);
 		bool needsSpace = true;
 		if (currentText.size() == trailingSpaces || nextText.size() == leadingSpaces) {
 			needsSpace = false;
