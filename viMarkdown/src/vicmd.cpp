@@ -2062,17 +2062,34 @@ void MainWindow::on_cmdLine_escape() {
 	//##qDebug() << "MainWindow::on_cmdLine_escape()";
 	close_cmdLine();
 }
-void MainWindow::on_cmdLine_up() {
+void MainWindow::on_cmdLine_up() {	//	コマンドライン履歴
 	//##qDebug() << "MainWindow::on_cmdLine_up()";
-	if( gvi.m_exhist_ix + 1 < gvi.m_exhist.size() ) {
-		if( gvi.m_exhist_ix == 0 ) gvi.m_exhist[0] = m_cmdLine->text();
-		m_cmdLine->setText(gvi.m_exhist[++gvi.m_exhist_ix]);
+	if( m_cmdLine->text().isEmpty() ) return;
+	QChar ch = m_cmdLine->text()[0];
+	if( ch == ':' ) {
+		if( gvi.m_exhist_ix + 1 < gvi.m_exhist.size() ) {
+			if( gvi.m_exhist_ix == 0 ) gvi.m_exhist[0] = m_cmdLine->text();
+			m_cmdLine->setText(gvi.m_exhist[++gvi.m_exhist_ix]);
+		}
+	} else if( ch == '/' || ch == '?' ) {
+		if( gvi.m_exhist_ix + 1 < m_searchHist.size() ) {
+			if( gvi.m_exhist_ix == 0 ) m_searchHist[0] = m_cmdLine->text();
+			m_cmdLine->setText(ch + m_searchHist[++gvi.m_exhist_ix]);
+		}
 	}
 }
 void MainWindow::on_cmdLine_down() {
 	//##qDebug() << "MainWindow::on_cmdLine_down()";
-	if( gvi.m_exhist_ix > 0 ) {
-		m_cmdLine->setText(gvi.m_exhist[--gvi.m_exhist_ix]);
+	if( m_cmdLine->text().isEmpty() ) return;
+	QChar ch = m_cmdLine->text()[0];
+	if( ch == ':' ) {
+		if( gvi.m_exhist_ix > 0 ) {
+			m_cmdLine->setText(gvi.m_exhist[--gvi.m_exhist_ix]);
+		}
+	} else if( ch == '/' || ch == '?' ) {
+		if( gvi.m_exhist_ix > 0 ) {
+			m_cmdLine->setText(ch + m_searchHist[--gvi.m_exhist_ix]);
+		}
 	}
 }
 
