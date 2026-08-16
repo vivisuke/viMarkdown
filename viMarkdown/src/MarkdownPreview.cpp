@@ -657,7 +657,7 @@ int indexOfComment(QStringView buf, int start) {
 }
 //void updateCharFlags(QTextBlock srcBlock);
 void MarkdownPreview::setMarkdown(QTextDocument *doc) {		//	doc: markdown ソースドキュメント
-	//##qDebug() << "MarkdownPreview::setMarkdown(): cursor.position = " << textCursor().position();
+	qDebug() << "MarkdownPreview::setMarkdown(): cursor.position = " << textCursor().position();
 	m_headingList.clear();
 	m_docWidget->m_srcHeadingBlocks.clear();
 	m_docWidget->m_prvHeadingBlocks.clear();
