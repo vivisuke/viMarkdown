@@ -1894,6 +1894,8 @@ void MainWindow::do_vi_search(const QString& text, QTextCursor& cursor, int rcnt
 	ui->action_RegExp->setChecked(g.m_regexp = true);
     docWidget->m_editor->highlightSearchText(pat);
     statusBar()->showMessage(tr("Searched: %1").arg(pat), 3000);
+	m_searchHist.push_front(pat);
+	m_searchHist.removeDuplicates();	//	重複削除
 }
 void MainWindow::on_cmdLine_enter() {
 	//##qDebug() << "MainWindow::on_cmdLine_enter()";
