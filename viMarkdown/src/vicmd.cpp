@@ -43,6 +43,9 @@ int getRepeatCount() {
 bool isSpaceChar(QChar ch) {
 	return ch == u' ' || ch == u'\t' || ch == u'\n'|| ch.unicode() == 0x2029;	//	0x2029: 改行コード
 }
+bool isNewline(QChar ch) {
+	return ch == u'\n'|| ch.unicode() == 0x2029;	//	0x2029: 改行コード
+}
 void moveLeftIfAtEol(QTextCursor& cursor) {
 	QTextBlock block = cursor.block();
 	if( cursor.position() != block.position() && cursor.position() == block.position() + block.text().size() )
@@ -713,8 +716,13 @@ bool MainWindow::do_vi_operator(QChar cmd, QTextCursor& cursor, int rcnt, DocWid
 				gvi.m_isEditCommand = true;
 				int pos = cursor.position();
 				int sz = gvi.m_editor->document()->characterCount();
-				if( cursor.position() >= gvi.m_editor->document()->characterCount() - 1 ) {
-					cursor.movePosition(QTextCursor::PreviousBlock);
+				int lastPos = gvi.m_editor->document()->characterCount() - 1;
+				if( cursor.position() >= lastPos ) {
+					if( lastPos - 1 >= 0 && isNewline(gvi.m_editor->document()->characterAt(lastPos-1)) ) {
+						cursor.movePosition(QTextCursor::PreviousBlock);
+					} else {
+						hat(cursor);
+					}
 				}
 			}
 			break;

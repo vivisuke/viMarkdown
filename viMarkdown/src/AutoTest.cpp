@@ -1672,7 +1672,7 @@ const QList<ViTestCase> viTestCases = {
         "thi┃rd",
         {
             "dd", "first\n"
-                  "sec┃ond",          // 末尾改行がない最終行の削除
+                  "┃second",          // 末尾改行がない最終行の削除
         }
     },
     { "dd on single line document",
