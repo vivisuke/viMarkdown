@@ -1814,7 +1814,7 @@ const QList<ViTestCase> viTestCases = {
     // --- カウント指定の文字単位ペースト (<num>p / <num>P) ---
 
     { "characterwise put with count (3p)",
-        "a┃c\n",
+        "a┃bc\n",
         {
             "x",  "a┃c\n",              // 'b' を削除
             "3p", "acbb┃b\n",           // 'c' の後ろに 'b' を3回ペースト（期待値を修正）
