@@ -1750,14 +1750,14 @@ const QList<ViTestCase> viTestCases = {
         "a ┃word in line\n",
         {
             "dw", "a ┃in line\n",
-            "p",  "a iword ┃n line\n",
+            "p",  "a iword┃ n line\n",
         }
     },
     { "dw and Put (characterwise P)",
         "a ┃word in line\n",
         {
             "dw", "a ┃in line\n",
-            "P",  "a word ┃in line\n",
+            "P",  "a word┃ in line\n",
         }
     },
     { "de and put (characterwise p)",
@@ -1783,7 +1783,34 @@ const QList<ViTestCase> viTestCases = {
                   "third\n",
         }
     },
-
+    { "2dd and Put (paste linewise above)",
+        "first\n"
+        "sec┃ond\n"
+        "third\n"
+        "fourth\n",
+        {
+            "2dd", "first\n"
+                   "┃fourth\n",          // "second\nthird\n" の2行を削除（カーソルは fourth の行頭）
+            "P",   "first\n"
+                   "┃second\n"          // fourth の上に2行ペースト（カーソルは挿入先頭行の行頭）
+                   "third\n"
+                   "fourth\n",
+        }
+    },
+    { "2dd and put (paste linewise below)",
+        "first\n"
+        "sec┃ond\n"
+        "third\n"
+        "fourth\n",
+        {
+            "2dd", "first\n"
+                   "┃fourth\n",          // "second\nthird\n" の2行を削除
+            "p",   "first\n"
+                   "fourth\n"
+                   "┃second\n"          // fourth の下に2行ペースト（カーソルは挿入先頭行の行頭）
+                   "third\n",
+        }
+    },
     // --- カウント指定の文字単位ペースト (<num>p / <num>P) ---
 
     { "characterwise put with count (3p)",
