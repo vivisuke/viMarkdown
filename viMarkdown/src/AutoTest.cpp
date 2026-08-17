@@ -1745,6 +1745,85 @@ const QList<ViTestCase> viTestCases = {
                   "third\n",          // 削除行を下に行単位でペースト
         }
     },
+    { "dw and put (characterwise p)",
+        "a ┃word in line\n",
+        {
+            "dw", "a ┃in line\n",       // "word " を削除（文字単位ヤンク）
+            "p",  "a iword ┃n line\n",   // カーソル直後（右）にペースト。末尾文字（空白）の上にカーソル
+        }
+    },
+    { "dw and Put (characterwise P)",
+        "a ┃word in line\n",
+        {
+            "dw", "a ┃in line\n",       // "word " を削除
+            "P",  "a word ┃in line\n",   // カーソル直前（左）にペースト。末尾文字（空白）の上にカーソル
+        }
+    },
+    { "de and put (characterwise p)",
+        "┃abc def\n",
+        {
+            "de", "┃ def\n",            // "abc" を削除
+            "l",  " ┃def\n",
+            "p",  " dab┃cef\n",          // 'd' の後ろに "abc" が入り、'c' の上にカーソル
+        }
+    },
+
+    // --- 行単位削除（dd）後の P（上に行挿入） ---
+
+    { "dd and Put (paste linewise above)",
+        "first\n"
+        "sec┃ond\n"
+        "third\n",
+        {
+            "dd", "first\n"
+                  "┃third\n",          // "second\n" を削除
+            "P",  "first\n"
+                  "┃second\n"          // カレント行（third）の上に行単位ペースト
+                  "third\n",
+        }
+    },
+
+    // --- カウント指定の文字単位ペースト (<num>p / <num>P) ---
+
+    { "characterwise put with count (3p)",
+        "a┃bc\n",
+        {
+            "x",  "a┃c\n",              // 'b' を削除
+            "3p", "abb┃bc\n",           // 'a' の後ろに 'b' を3回ペースト。最後の 'b' の上にカーソル
+        }
+    },
+    { "characterwise Put with count (3P)",
+        "a┃bc\n",
+        {
+            "x",  "a┃c\n",              // 'b' を削除
+            "3P", "abb┃bc\n",           // 'c' の手前に 'b' を3回ペースト。最後の 'b' の上にカーソル
+        }
+    },
+
+    // --- カウント指定の行単位ペースト (<num>p / <num>P) ---
+
+    { "linewise put with count (3p)",
+        "fi┃rst\n"
+        "second\n",
+        {
+            "dd", "┃second\n",          // "first\n" を削除
+            "3p", "second\n"
+                  "┃first\n"           // カレント行の下に3行ペースト（カーソルは最初の挿入行の行頭）
+                  "first\n"
+                  "first\n",
+        }
+    },
+    { "linewise Put with count (3P)",
+        "first\n"
+        "sec┃ond\n",
+        {
+            "dd", "┃first\n",           // "second\n" を削除
+            "3P", "┃second\n"          // カレント行の上に3行ペースト（カーソルは最初の挿入行の行頭）
+                  "second\n"
+                  "second\n"
+                  "first\n",
+        }
+    },
     { "Basic r command",
         "a┃bc\n",
         {
