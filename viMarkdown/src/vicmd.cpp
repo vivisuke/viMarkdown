@@ -1318,10 +1318,12 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 				} else
 					cursor.movePosition(QTextCursor::Right);
 				//cursor.insertText(gvi.m_yankBuffer.repeated(rcnt));
+				auto pos = cursor.position();
 				if( gvi.m_editor != nullptr )
 					gvi.m_editor->do_insertText(cursor, gvi.m_yankBuffer.repeated(rcnt));
 				if( gvi.m_linewiseYanked ) {	//	行単位ペースト
-					cursor.movePosition(QTextCursor::Up);
+					//cursor.movePosition(QTextCursor::Up);
+					cursor.setPosition(pos);
 					hat(cursor);
 				} else		//	文字単位ペースト
 					cursor.movePosition(QTextCursor::Left);
