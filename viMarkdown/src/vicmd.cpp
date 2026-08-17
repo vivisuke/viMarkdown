@@ -1333,7 +1333,13 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 					cursor.movePosition(QTextCursor::StartOfBlock);
 					//do_openline(cursor, true);
 				}
-				cursor.insertText(gvi.m_yankBuffer.repeated(rcnt));
+				//cursor.insertText(gvi.m_yankBuffer.repeated(rcnt));
+				gvi.m_editor->do_insertText(cursor, gvi.m_yankBuffer.repeated(rcnt));
+				if( gvi.m_linewiseYanked ) {	//	行単位ペースト
+					//cursor.movePosition(QTextCursor::Up);
+					//hat(cursor);
+				} else		//	文字単位ペースト
+					cursor.movePosition(QTextCursor::Left);
 			}
 			break;
 		case 'J':
