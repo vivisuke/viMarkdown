@@ -2,6 +2,7 @@
 #include <QTextCursor>
 #include <QTextBlock>
 #include <QLineEdit>
+#include <QComboBox>
 #include <QStatusBar>
 #include <QRegularExpression>
 #include <QDir>
@@ -1896,6 +1897,9 @@ void MainWindow::do_vi_search(const QString& text, QTextCursor& cursor, int rcnt
     statusBar()->showMessage(tr("Searched: %1").arg(pat), 3000);
 	m_searchHist.push_front(pat);
 	m_searchHist.removeDuplicates();	//	重複削除
+	m_searchCB->clear();
+    m_searchCB->addItems(m_searchHist);
+    m_searchCB->setCurrentText(srcText);
 }
 void MainWindow::on_cmdLine_enter() {
 	//##qDebug() << "MainWindow::on_cmdLine_enter()";
