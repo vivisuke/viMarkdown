@@ -690,10 +690,10 @@ bool MainWindow::do_vi_operator(QChar cmd, QTextCursor& cursor, int rcnt, DocWid
 #if 1
 			cursor.movePosition(QTextCursor::StartOfBlock);
 		    if (cursor.blockNumber() + rcnt >= doc->blockCount()) {    // 最終行を含む削除：行頭から EndOfBlock まで選択
-		        // ただし前の行の改行ごと削除するため、1つ前の行末から選択
+		        // ---ただし前の行の改行ごと削除するため、1つ前の行末から選択？？？---
 		        if (cursor.blockNumber() > 0) {
-		            cursor.movePosition(QTextCursor::PreviousBlock);
-		            cursor.movePosition(QTextCursor::EndOfBlock);
+		            //##cursor.movePosition(QTextCursor::PreviousBlock);
+		            //##cursor.movePosition(QTextCursor::EndOfBlock);
 		            cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
 		        } else {
 		            // ドキュメント全体が対象
