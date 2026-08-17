@@ -17,6 +17,8 @@ It is designed for developers and writers who love efficiency.
   Allows inserting and deleting text directly within the preview pane, not just the editor. You can complete your editing tasks in a true WYSIWYG (What You See Is What You Get) manner.
 - **Vi Keybindings (Vi Commands) Support**
   Supports vi commands, enabling fast text editing and cursor navigation without ever having to move your hands from the home row.
+- **Calendar & Daily Notes (Journaling)**
+  Create or open daily notes with a single click from the sidebar calendar. Features automatic template expansion and visual progress tracking of your ToDo tasks directly on the calendar.
 - **Powerful Grep (Global Search) Functionality**
   Instantly extract target text across multiple files or entire directories, strongly supporting efficient document search and bulk editing.
 - **Outline-based Navigation**
