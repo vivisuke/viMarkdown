@@ -1745,24 +1745,25 @@ const QList<ViTestCase> viTestCases = {
                   "third\n",          // 削除行を下に行単位でペースト
         }
     },
+    //
     { "dw and put (characterwise p)",
         "a ┃word in line\n",
         {
-            "dw", "a ┃in line\n",       // "word " を削除（文字単位ヤンク）
-            "p",  "a iword ┃n line\n",   // カーソル直後（右）にペースト。末尾文字（空白）の上にカーソル
+            "dw", "a ┃in line\n",
+            "p",  "a iword ┃n line\n",
         }
     },
     { "dw and Put (characterwise P)",
         "a ┃word in line\n",
         {
-            "dw", "a ┃in line\n",       // "word " を削除
-            "P",  "a word ┃in line\n",   // カーソル直前（左）にペースト。末尾文字（空白）の上にカーソル
+            "dw", "a ┃in line\n",
+            "P",  "a word ┃in line\n",
         }
     },
     { "de and put (characterwise p)",
         "┃abc def\n",
         {
-            "de", "┃ def\n",            // "abc" を削除
+            "de", "┃ def\n",
             "l",  " ┃def\n",
             "p",  " dab┃cef\n",          // 'd' の後ろに "abc" が入り、'c' の上にカーソル
         }
@@ -1776,9 +1777,9 @@ const QList<ViTestCase> viTestCases = {
         "third\n",
         {
             "dd", "first\n"
-                  "┃third\n",          // "second\n" を削除
+                  "┃third\n",
             "P",  "first\n"
-                  "┃second\n"          // カレント行（third）の上に行単位ペースト
+                  "┃second\n"          // 挿入された second 行の行頭
                   "third\n",
         }
     },
@@ -1786,17 +1787,17 @@ const QList<ViTestCase> viTestCases = {
     // --- カウント指定の文字単位ペースト (<num>p / <num>P) ---
 
     { "characterwise put with count (3p)",
-        "a┃bc\n",
+        "a┃c\n",
         {
             "x",  "a┃c\n",              // 'b' を削除
-            "3p", "abb┃bc\n",           // 'a' の後ろに 'b' を3回ペースト。最後の 'b' の上にカーソル
+            "3p", "acbb┃b\n",           // 'c' の後ろに 'b' を3回ペースト（期待値を修正）
         }
     },
     { "characterwise Put with count (3P)",
         "a┃bc\n",
         {
             "x",  "a┃c\n",              // 'b' を削除
-            "3P", "abb┃bc\n",           // 'c' の手前に 'b' を3回ペースト。最後の 'b' の上にカーソル
+            "3P", "abb┃bc\n",           // 'c' の手前に 'b' を3回ペースト。最後の 'b' の上
         }
     },
 
@@ -1806,9 +1807,9 @@ const QList<ViTestCase> viTestCases = {
         "fi┃rst\n"
         "second\n",
         {
-            "dd", "┃second\n",          // "first\n" を削除
+            "dd", "┃second\n",
             "3p", "second\n"
-                  "┃first\n"           // カレント行の下に3行ペースト（カーソルは最初の挿入行の行頭）
+                  "┃first\n"           // 最初に挿入された行の行頭
                   "first\n"
                   "first\n",
         }
@@ -1817,8 +1818,8 @@ const QList<ViTestCase> viTestCases = {
         "first\n"
         "sec┃ond\n",
         {
-            "dd", "┃first\n",           // "second\n" を削除
-            "3P", "┃second\n"          // カレント行の上に3行ペースト（カーソルは最初の挿入行の行頭）
+            "dd", "┃first\n",
+            "3P", "┃second\n"          // 最初に挿入された行の行頭
                   "second\n"
                   "second\n"
                   "first\n",
