@@ -99,7 +99,8 @@ void do_swap_case(QTextCursor& cursor, int rcnt) {
 		else text += buf[i];
 	}
 	cursor.setPosition(block.position() + ix9, QTextCursor::KeepAnchor);
-	cursor.insertText(text);
+	//cursor.insertText(text);
+	gvi.m_editor->do_insertText(cursor, text);
 }
 void save_preffered_x() {
 	if( gvi.m_editor != nullptr ) {
@@ -1899,7 +1900,7 @@ void MainWindow::do_vi_search(const QString& text, QTextCursor& cursor, int rcnt
 	m_searchHist.removeDuplicates();	//	重複削除
 	m_searchCB->clear();
     m_searchCB->addItems(m_searchHist);
-    m_searchCB->setCurrentText(srcText);
+    m_searchCB->setCurrentText(pat);
 }
 void MainWindow::on_cmdLine_enter() {
 	//##qDebug() << "MainWindow::on_cmdLine_enter()";
