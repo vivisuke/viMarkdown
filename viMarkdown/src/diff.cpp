@@ -73,6 +73,31 @@ void setPhysicalLine(QTextBlock &block, int ln, bool changed) {
     block.setUserState(state);
 }
 #endif
+int visualLineCount(const QTextBlock &block) {
+#if 1
+	int vc = 1;			//	表示行数
+	QTextLayout *layout = block.layout();
+	if( layout != 0 ) vc = layout->lineCount();
+	return vc;
+#else
+	QTextLayout *layout = block.layout();
+	//if( layout != 0 ) vc = layout->lineCount();
+	if( layout == nullptr ) {
+		qreal width = block.document()->textWidth();
+        if (width <= 0) {
+            return 1; // 幅が未定なら 1行扱い
+        }
+        layout->beginLayout();
+        while (true) {
+            QTextLine line = layout->createLine();
+            if (!line.isValid()) break;
+            line.setLineWidth(width);
+        }
+        layout->endLayout();
+	}
+	return qMax(1, layout->lineCount());
+#endif
+}
 //
 void MarkdownEditor::removeAllDummyLines() {
     QTextDocument *doc = document();
@@ -121,7 +146,7 @@ void MarkdownEditor::removeAllDummyLines() {
 // -------------------------------------------------------------
 void updateMapSub(QPainter &p, int x, QTextDocument* doc) {
 	QTextBlock block = doc->begin();
-	for(int y = 0; y < doc->blockCount() && block.isValid(); ++y, block=block.next()) {
+	for(int y = 0; /*y < doc->blockCount() &&*/ block.isValid(); block=block.next()) {
 		QColor col = Qt::white;		//QColor("#808080");
 		if( isDummyLine(block) ) col = QColor("#e8e8e8");
 		//else if( hasDiff(block) ) col = QColor("#ffa0a0");	//QColor("#ccffcc");	//QColor("#ffecec");
@@ -131,7 +156,11 @@ void updateMapSub(QPainter &p, int x, QTextDocument* doc) {
 			else if( d == CHANGED_LINE ) col = QColor("#ffffa0");
 		}
 		p.setPen(col);
-		p.drawLine(x, y, x+MINMAP_WIDTH/2-1, y);
+		int vc = visualLineCount(block);
+		for(int k = 0; k < vc; ++k) {
+			p.drawLine(x, y, x+MINMAP_WIDTH/2-1, y);
+			++y;
+		}
 	}
 }
 void MiniMap::updateMap(QTextDocument* doc1, QTextDocument* doc2) {
@@ -492,31 +521,6 @@ void calculateAndSetCharDiff(QTextBlock block1, QTextBlock block2, const QString
     if (block2.isValid()) {
         block2.setUserData(userData2);
     }
-}
-int visualLineCount(const QTextBlock &block) {
-#if 1
-	int vc = 1;			//	表示行数
-	QTextLayout *layout = block.layout();
-	if( layout != 0 ) vc = layout->lineCount();
-	return vc;
-#else
-	QTextLayout *layout = block.layout();
-	//if( layout != 0 ) vc = layout->lineCount();
-	if( layout == nullptr ) {
-		qreal width = block.document()->textWidth();
-        if (width <= 0) {
-            return 1; // 幅が未定なら 1行扱い
-        }
-        layout->beginLayout();
-        while (true) {
-            QTextLine line = layout->createLine();
-            if (!line.isValid()) break;
-            line.setLineWidth(width);
-        }
-        layout->endLayout();
-	}
-	return qMax(1, layout->lineCount());
-#endif
 }
 void MainWindow::do_diff() {
 	if( m_processing!=0 ) return;

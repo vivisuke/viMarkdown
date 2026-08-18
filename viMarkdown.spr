@@ -918,8 +918,8 @@ SPR# 状 P Open Close ver     Type  概要
 0911 ◎ C 08/18 08/18 03105│ToDo│表示行数取得処理を関数化
 0912 ◎ C 08/18 08/19 03105│ToDo│visualLineCount(block1)はblock1が実際にドキュメントにレイアウトされた後でないと正しい値が返ず、最初の diff では行が正しく揃わない
 0913 ◎ C 08/19 08/19 03105│ToDo│docs/ja/WhatsNewV03.md, docs/WhatsNewV03.md：diff画像を右端で折り返したものに差し替え
-0914 ● C 08/19            │ToDo│
-0915 ● C 08/19            │ToDo│
+0914 ◎ C 08/19 08/19 03105│問題│diff > MiniMap：行表示が折り返し表示対応していない
+0915 ● C 08/19            │問題│diff > MiniMap：本文部分高さが折り返し表示対応していない
 0916 ● C 08/19            │ToDo│
 0917 ● C 08/19            │ToDo│
 0918 ● C 08/19            │ToDo│
