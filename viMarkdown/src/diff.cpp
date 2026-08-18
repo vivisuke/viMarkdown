@@ -538,31 +538,41 @@ void MainWindow::do_diff() {
     int nDelete = 0, nAdd = 0;
     auto flushPending = [&](int endLn1, int endLn2) {
         if (nDelete == 0 && nAdd == 0) return;
-        if (nAdd == 0) {        // 右側（doc2）で削除された場合のみ
+        if (nAdd == 0) {        // nDelete != 0, 右側（doc2）で削除された場合のみ
             for (int ln = diffLn1; ln < endLn1; ++ln) {
                 if( ln-1 < lines1.size() )
                     do_output(QString("- %1 0 '%2'\n").arg(ln).arg(lines1[ln-1]));
 	        	setPhysicalLine(block1, ++ln1, ADDED_LINE);
+	        	int vc = 1;			//	表示行数
+	        	QTextLayout *layout = block1.layout();
+	        	if( layout != 0 ) vc = layout->lineCount();
 	        	block1.setUserData(nullptr);		//	clear userData
 	        	block1 = block1.next();
 	        	cur2.setPosition(block2.position()); 
-                cur2.insertText("\n");
-                setDummyLine(block2);   // 空になった現在のブロック（行）をダミーに設定
-	        	block2.setUserData(nullptr);		//	clear userData
-                block2 = block2.next();  // 下に押し出されたテキストが入っているブロックへ進む
+	        	for(int k = 0; k < vc; ++k) {
+	                cur2.insertText("\n");
+	                setDummyLine(block2);   // 空になった現在のブロック（行）をダミーに設定
+		        	block2.setUserData(nullptr);		//	clear userData
+	                block2 = block2.next();  // 下に押し出されたテキストが入っているブロックへ進む
+	        	}
             }
-        } else if (nDelete == 0) { // 右側（doc2）で新しく追加された場合のみ
+        } else if (nDelete == 0) { // nAdded != 0, 右側（doc2）で新しく追加された場合のみ
             for (int ln = diffLn2; ln < endLn2; ++ln) {
                 if (ln - 1 >= lines2.size()) break;
                 do_output(QString("+ 0 %1 '%2'\n").arg(ln).arg(lines2[ln-1]));
 	        	setPhysicalLine(block2, ++ln2, ADDED_LINE);
+	        	int vc = 1;			//	表示行数
+	        	QTextLayout *layout = block2.layout();
+	        	if( layout != 0 ) vc = layout->lineCount();
 	        	block2.setUserData(nullptr);		//	clear userData
 	        	block2 = block2.next();
 	        	cur1.setPosition(block1.position());
-                cur1.insertText("\n");
-                setDummyLine(block1);   // 空になった現在のブロック（行）をダミーに設定
-	        	block1.setUserData(nullptr);		//	clear userData
-                block1 = block1.next();  // 下に押し出されたテキストが入っているブロックへ進む
+	        	for(int k = 0; k < vc; ++k) {
+	                cur1.insertText("\n");
+	                setDummyLine(block1);   // 空になった現在のブロック（行）をダミーに設定
+		        	block1.setUserData(nullptr);		//	clear userData
+	                block1 = block1.next();  // 下に押し出されたテキストが入っているブロックへ進む
+	        	}
             }
         } else {	//	変更行
 			//std::vector<QChar> text1, text2;
