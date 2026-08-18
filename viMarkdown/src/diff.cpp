@@ -490,10 +490,29 @@ void calculateAndSetCharDiff(QTextBlock block1, QTextBlock block2, const QString
     }
 }
 int visualLineCount(const QTextBlock &block) {
+#if 1
 	int vc = 1;			//	表示行数
 	QTextLayout *layout = block.layout();
 	if( layout != 0 ) vc = layout->lineCount();
 	return vc;
+#else
+	QTextLayout *layout = block.layout();
+	//if( layout != 0 ) vc = layout->lineCount();
+	if( layout == nullptr ) {
+		qreal width = block.document()->textWidth();
+        if (width <= 0) {
+            return 1; // 幅が未定なら 1行扱い
+        }
+        layout->beginLayout();
+        while (true) {
+            QTextLine line = layout->createLine();
+            if (!line.isValid()) break;
+            line.setLineWidth(width);
+        }
+        layout->endLayout();
+	}
+	return qMax(1, layout->lineCount());
+#endif
 }
 void MainWindow::do_diff() {
 	if( m_processing!=0 ) return;
@@ -503,7 +522,7 @@ void MainWindow::do_diff() {
 	qDebug() << "MainWindow::do_diff()";
 	++m_processing;
 	onAction_DumpBlockUserStates();		//	dump block.userData() for Debug
-	int pos1 = docWidget->m_editor->textCursor().position();
+    int pos1 = docWidget->m_editor->textCursor().position();
     int pos2 = docWidget->m_diffview->textCursor().position();
 	//##disconnect(docWidget->m_editor, &MarkdownEditor::textChanged, this, &MainWindow::onMDTextChanged);
 	//##disconnect(docWidget->m_diffview, &MarkdownEditor::textChanged, this, &MainWindow::onMDTextChanged);
@@ -511,6 +530,12 @@ void MainWindow::do_diff() {
 	QTextDocument *doc2 = docWidget->m_diffview->document();
 	bool modified1 = doc1->isModified();
 	bool modified2 = doc2->isModified();
+#if 0
+	qreal width1 = docWidget->m_editor->viewport()->width();
+    qreal width2 = docWidget->m_diffview->width();
+    if (width1 > 0) doc1->setTextWidth(width1);
+    if (width2 > 0) doc2->setTextWidth(width2);
+#endif
     QTextCursor cur1_sv = docWidget->m_editor->textCursor();
     QTextCursor cur2_sv = docWidget->m_diffview->textCursor();
 	if( docWidget->m_editor->dummyInserted() )
