@@ -143,17 +143,17 @@ void MainWindow::do_cdy_moved(QTextCursor& cursor) {
 		//gvi.m_viCmdMode = false;
 	} else if( gvi.m_operator == 'd' || gvi.m_operator == 'y' ) {	//	d<move> or y<move>
 		if( cursor.hasSelection() ) {
-			gvi.m_yankBuffer = cursor.selectedText();
 			gvi.m_linewiseYanked = gvi.m_linewiseMoved;
+			if( gvi.m_linewiseMoved ) {
+				auto start = cursor.selectionStart();
+				auto end = cursor.selectionEnd();
+				cursor.setPosition(start);
+				cursor.movePosition(QTextCursor::StartOfBlock);
+				cursor.setPosition(end, QTextCursor::KeepAnchor);
+				cursor.movePosition(QTextCursor::NextBlock, QTextCursor::KeepAnchor);
+			}
+			gvi.m_yankBuffer = cursor.selectedText();
 			if( gvi.m_operator == 'd' ) {
-				if( gvi.m_linewiseMoved ) {
-					auto start = cursor.selectionStart();
-					auto end = cursor.selectionEnd();
-					cursor.setPosition(start);
-					cursor.movePosition(QTextCursor::StartOfBlock);
-					cursor.setPosition(end, QTextCursor::KeepAnchor);
-					cursor.movePosition(QTextCursor::NextBlock, QTextCursor::KeepAnchor);
-				}
 				if(gvi.m_editor != nullptr)
 					gvi.m_editor->do_deleteText(cursor);
 				//cursor.deleteChar();
