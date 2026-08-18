@@ -218,7 +218,7 @@ SPR# 状 P Open Close ver     Type  概要
 0215 ◎ C 05/25 05/25 03012│ToDo│struct Global から、vi 関連を ViStatus に分ける
 0216 ◎ C 05/25 05/25 03012│ToDo│do_viCmd(QString cmd, ...)：第１引数は QChar に変更
 0217 ◎ C 05/25 05/26 03013│ToDo│m_linewiseMoved フラグ追加、ヤンクバッファのは m_linewiseYanked にリネーム
-0218 ● B 05/25            │問題│dj, dk：行単位削除されない
+0218 ◎ B 05/25 08/19 03105│問題│dj, dk：行単位削除されない
 0219 ◎ C 05/26 05/26 03013│ToDo│MainWindow::do_viCmd(...) が長すぎるので、とりあえず挿入モード系コマンド処理を do_vi_insert(...) に分離
 0220 ◎ C 05/26 05/26 03013│ToDo│do_vi_operator() も分離
 0221 ◎ C 05/26 05/26 03013│ToDo│m_cdy は m_operator にリネーム？
@@ -920,7 +920,7 @@ SPR# 状 P Open Close ver     Type  概要
 0913 ◎ C 08/19 08/19 03105│ToDo│docs/ja/WhatsNewV03.md, docs/WhatsNewV03.md：diff画像を右端で折り返したものに差し替え
 0914 ◎ C 08/19 08/19 03105│問題│diff > MiniMap：行表示が折り返し表示対応していない
 0915 ◎ C 08/19 08/19 03105│問題│diff > MiniMap：本文部分高さが折り返し表示対応していない
-0916 ● C 08/19            │ToDo│
+0916 ● C 08/19            │問題│diff > MiniMap：比較先文書の画面下部分が正しく描画されていない
 0917 ● C 08/19            │ToDo│
 0918 ● C 08/19            │ToDo│
 0919 ● C 08/19            │ToDo│
