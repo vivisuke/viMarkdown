@@ -98,6 +98,15 @@ int visualLineCount(const QTextBlock &block) {
 	return qMax(1, layout->lineCount());
 #endif
 }
+int visualLineCount(QTextDocument *doc) {
+	int vc = 0;
+	QTextBlock block = doc->begin();
+	while( block.isValid() ) {
+		vc += visualLineCount(block);
+		block = block.next();
+	}
+	return vc;
+}
 //
 void MarkdownEditor::removeAllDummyLines() {
     QTextDocument *doc = document();
@@ -172,7 +181,8 @@ void MiniMap::updateMap(QTextDocument* doc1, QTextDocument* doc2) {
 	updateMapSub(p, 0, doc1);
 	updateMapSub(p, MINMAP_WIDTH/2, doc2);
 	p.setBrush(QColor("#e8e8e8"));
-	p.drawRect(0, doc1->blockCount(), MINMAP_WIDTH, ht - doc1->blockCount());
+	//p.drawRect(0, doc1->blockCount(), MINMAP_WIDTH, ht - doc1->blockCount());
+	p.drawRect(0, visualLineCount(doc1), MINMAP_WIDTH, ht - visualLineCount(doc1));
 }
 // -------------------------------------------------------------
 std::vector<QString> extractLinesFromDocument(const QTextDocument *doc) {
