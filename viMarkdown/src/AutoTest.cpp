@@ -1768,6 +1768,170 @@ const QList<ViTestCase> viTestCases = {
             "p",  " dab┃cef\n",          // 'd' の後ろに "abc" が入り、'c' の上にカーソル
         }
     },
+    // =========================================================================
+    //  dh (左方向・文字単位削除)
+    // =========================================================================
+
+    { "Basic dh command",
+        "a┃bc\n",
+        {
+            "dh", "┃bc\n",              // カーソル手前の 'a' を削除（カーソルは 'b' の上）
+        }
+    },
+    { "dh at the beginning of line",
+        "┃abc\n",
+        {
+            "dh", "┃abc\n",             // 行頭では何も削除されない
+        }
+    },
+    { "dh with count (3dh)",
+        "abcd┃efg\n",
+        {
+            "3dh", "a┃efg\n",           // 手前の 'b', 'c', 'd' の3文字を削除
+        }
+    },
+    { "dh with double count (2d2h = 4 characters)",
+        "abcdef┃g\n",
+        {
+            "2d2h", "ab┃g\n",           // 手前の 2x2=4 文字 ('c', 'd', 'e', 'f') を削除
+        }
+    },
+
+    // =========================================================================
+    //  dl (右方向・文字単位削除 / x と同等)
+    // =========================================================================
+
+    { "Basic dl command",
+        "a┃bc\n",
+        {
+            "dl", "a┃c\n",              // カレント文字 'b' を削除
+        }
+    },
+    { "dl with count (3dl)",
+        "a┃bcdefg\n",
+        {
+            "3dl", "a┃efg\n",           // 'b', 'c', 'd' の3文字を削除
+        }
+    },
+    { "dl with double count (3d2l = 6 characters)",
+        "a┃bcdefghijk\n",
+        {
+            "3d2l", "a┃hijk\n",         // 3x2=6 文字 ('b'〜'g') を削除
+        }
+    },
+    { "dl at the end of line",
+        "ab┃c\n",
+        {
+            "dl", "a┃b\n",              // 行末文字 'c' を削除（カーソルは1つ左の 'b' にスナップ）
+        }
+    },
+
+    // =========================================================================
+    //  dj (下方向・行単位削除: カレント行 + 下の行)
+    // =========================================================================
+
+    { "Basic dj command (deletes 2 lines: current and below)",
+        "first\n"
+        "sec┃ond\n"
+        "third\n"
+        "fourth\n",
+        {
+            "dj", "first\n"
+                  "┃fourth\n",          // second と third の計2行を削除
+        }
+    },
+    { "dj with count (d2j = deletes 3 lines)",
+        "first\n"
+        "sec┃ond\n"
+        "third\n"
+        "fourth\n"
+        "fifth\n",
+        {
+            "d2j", "first\n"
+                   "┃fifth\n",          // second, third, fourth の計3行（カレント+2行）を削除
+        }
+    },
+    { "dj with double count (2d2j = 4 lines down, deletes 5 lines)",
+        "line1\n"
+        "li┃ne2\n"
+        "line3\n"
+        "line4\n"
+        "line5\n"
+        "line6\n"
+        "line7\n",
+        {
+            "2d2j", "line1\n"
+                    "┃line7\n",         // line2〜line6 の計5行（カレント+4行）を削除
+        }
+    },
+    { "dj at the last line",
+        "first\n"
+        "sec┃ond\n",
+        {
+            "dj", "first\n"
+                  "sec┃ond\n",          // 下に行がないため何も削除されない
+        }
+    },
+
+    // =========================================================================
+    //  dk (上方向・行単位削除: カレント行 + 上の行)
+    // =========================================================================
+
+    { "Basic dk command (deletes 2 lines: current and above)",
+        "first\n"
+        "second\n"
+        "thi┃rd\n"
+        "fourth\n",
+        {
+            "dk", "first\n"
+                  "┃fourth\n",          // third と second の計2行を削除（カーソルは繰り上がった fourth の行頭）
+        }
+    },
+    { "dk with count (d2k = deletes 3 lines)",
+        "first\n"
+        "second\n"
+        "third\n"
+        "fou┃rth\n"
+        "fifth\n",
+        {
+            "d2k", "first\n"
+                   "┃fifth\n",          // fourth, third, second の計3行（カレント+上2行）を削除
+        }
+    },
+    { "dk at the first line",
+        "fi┃rst\n"
+        "second\n",
+        {
+            "dk", "fi┃rst\n"
+                  "second\n",           // 上に行がないため何も削除されない
+        }
+    },
+
+    // =========================================================================
+    //  d{h,j,k,l} の Undo テスト
+    // =========================================================================
+
+    { "dj undo",
+        "first\n"
+        "sec┃ond\n"
+        "third\n"
+        "fourth\n",
+        {
+            "dj", "first\n"
+                  "┃fourth\n",
+            "u",  "first\n"
+                  "┃second\n"          // Undo で2行とも一度に復元
+                  "third\n"
+                  "fourth\n",
+        }
+    },
+    { "3d2l undo",
+        "a┃bcdefghijk\n",
+        {
+            "3d2l", "a┃hijk\n",
+            "u",    "a┃bcdefghijk\n",   // Undo で6文字まとめて復元
+        }
+    },
 
     // --- 行単位削除（dd）後の P（上に行挿入） ---
 
