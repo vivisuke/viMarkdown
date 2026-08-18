@@ -489,6 +489,12 @@ void calculateAndSetCharDiff(QTextBlock block1, QTextBlock block2, const QString
         block2.setUserData(userData2);
     }
 }
+int visualLineCount(const QTextBlock &block) {
+	int vc = 1;			//	表示行数
+	QTextLayout *layout = block.layout();
+	if( layout != 0 ) vc = layout->lineCount();
+	return vc;
+}
 void MainWindow::do_diff() {
 	if( m_processing!=0 ) return;
 	DocWidget *docWidget = getCurDocWidget();
@@ -543,9 +549,7 @@ void MainWindow::do_diff() {
                 if( ln-1 < lines1.size() )
                     do_output(QString("- %1 0 '%2'\n").arg(ln).arg(lines1[ln-1]));
 	        	setPhysicalLine(block1, ++ln1, ADDED_LINE);
-	        	int vc = 1;			//	表示行数
-	        	QTextLayout *layout = block1.layout();
-	        	if( layout != 0 ) vc = layout->lineCount();
+	        	int vc = visualLineCount(block1);
 	        	block1.setUserData(nullptr);		//	clear userData
 	        	block1 = block1.next();
 	        	cur2.setPosition(block2.position()); 
@@ -561,9 +565,7 @@ void MainWindow::do_diff() {
                 if (ln - 1 >= lines2.size()) break;
                 do_output(QString("+ 0 %1 '%2'\n").arg(ln).arg(lines2[ln-1]));
 	        	setPhysicalLine(block2, ++ln2, ADDED_LINE);
-	        	int vc = 1;			//	表示行数
-	        	QTextLayout *layout = block2.layout();
-	        	if( layout != 0 ) vc = layout->lineCount();
+	        	int vc = visualLineCount(block2);
 	        	block2.setUserData(nullptr);		//	clear userData
 	        	block2 = block2.next();
 	        	cur1.setPosition(block1.position());
@@ -575,71 +577,59 @@ void MainWindow::do_diff() {
 	        	}
             }
         } else {	//	変更行
-			//std::vector<QChar> text1, text2;
 			QString text1, text2;
-			auto b1 = block1, b2 = block2;
-			for(int i = 0; i < nDelete; ++i, b1=b1.next()) {
-				if( !b1.text().isEmpty() ) {
-					//const QChar *ptr = b1.text().data();
-					//text1.insert(text1.end(), ptr, ptr + b1.text().size());
-					text1 += b1.text();
-				}
-				text1.push_back(QChar(u'\n'));
-			}
-			for(int i = 0; i < nAdd; ++i, b2=b2.next()) {
-				if( !b2.text().isEmpty() ) {
-					//const QChar *ptr = b2.text().data();
-					//text2.insert(text2.end(), ptr, ptr + b2.text().size());
-					text2 += b2.text();
-				}
-				text2.push_back(QChar(u'\n'));
-			}
-            //calculateAndSetCharDiff(block1, block2, text1, text2);
-            calculateAndSetWordDiff(block1, block2, text1, text2);
-            for (int ln = diffLn1; ln < endLn1; ++ln) {
-                //##do_output(QString("! %1 0 '%2'\n").arg(ln).arg(lines1[ln-1]));
-	        	setPhysicalLine(block1, ++ln1, CHANGED_LINE);
-	        	//const auto *userData = dynamic_cast<const DiffBlockUserData*>(block1.userData());
-                //applyInlineHighlight(block1, userData);
-	        	block1 = block1.next();
-            }
-            for (int ln = diffLn2; ln < endLn2; ++ln) {
-                //##do_output(QString("! 0 %1 '%2'\n").arg(ln).arg(lines2[ln-1]));
-	        	setPhysicalLine(block2, ++ln2, CHANGED_LINE);
-	        	//const auto *userData = dynamic_cast<const DiffBlockUserData*>(block2.userData());
-                //applyInlineHighlight(block2, userData);
-	        	block2 = block2.next();
-            }
-            int d = (endLn1 - diffLn1) - (endLn2 - diffLn2);
-            if( d > 0 ) {
-            	for(int i = 0; i < d; ++i) {
-		        	if( block2.isValid() ) {
-			        	cur2.setPosition(block2.position());
-	                    cur2.insertText("\n");
-	                    setDummyLine(block2);
-	                    block2 = block2.next();
-		        	} else {
-		        		cur2.movePosition(QTextCursor::End);
-	                    cur2.insertText("\n");
-	                    QTextBlock b = doc2->lastBlock();
-                        setDummyLine(b);
-		        	}
-            	}
-            } else if( d < 0 ) {
-            	for(int i = 0; i < -d; ++i) {
-		        	if( block1.isValid() ) {
-			        	cur1.setPosition(block1.position());
-	                    cur1.insertText("\n");
-	                    setDummyLine(block1);
-	                    block1 = block1.next();
-		        	} else {
-		        		cur1.movePosition(QTextCursor::End);
-	                    cur1.insertText("\n");
-	                    QTextBlock b = doc1->lastBlock();
-                        setDummyLine(b);
-		        	}
-            	}
-            }
+	        auto b1 = block1, b2 = block2;
+	        for (int i = 0; i < nDelete && b1.isValid(); ++i, b1 = b1.next()) {
+	            if (!b1.text().isEmpty()) {
+	                text1 += b1.text();
+	            }
+	            text1.push_back(QChar(u'\n'));
+	        }
+	        for (int i = 0; i < nAdd && b2.isValid(); ++i, b2 = b2.next()) {
+	            if (!b2.text().isEmpty()) {
+	                text2 += b2.text();
+	            }
+	            text2.push_back(QChar(u'\n'));
+	        }
+
+	        // 単語単位の差分計算とハイライト情報の設定
+	        calculateAndSetWordDiff(block1, block2, text1, text2);
+
+	        // 左側（doc1）の変更行設定と表示行数合計の算出
+	        int totalVisualLines1 = 0;
+	        for (int ln = diffLn1; ln < endLn1; ++ln) {
+	            setPhysicalLine(block1, ++ln1, CHANGED_LINE);
+	            totalVisualLines1 += visualLineCount(block1);
+	            block1 = block1.next();
+	        }
+
+	        // 右側（doc2）の変更行設定と表示行数合計の算出
+	        int totalVisualLines2 = 0;
+	        for (int ln = diffLn2; ln < endLn2; ++ln) {
+	            setPhysicalLine(block2, ++ln2, CHANGED_LINE);
+	            totalVisualLines2 += visualLineCount(block2);
+	            block2 = block2.next();
+	        }
+
+	        // 左右の表示行数の差分分だけ、少ない側にダミー行を挿入して高さを完全に一致させる
+	        int d = totalVisualLines1 - totalVisualLines2;
+	        if (d > 0) { // 左側の方が多い → 右側（doc2）に不足分のダミー行を挿入
+	            cur2.setPosition(block2.position());
+	            for (int i = 0; i < d; ++i) {
+	                cur2.insertText("\n");
+	                setDummyLine(block2);
+	                block2.setUserData(nullptr);
+	                block2 = block2.next();
+	            }
+	        } else if (d < 0) { // 右側の方が多い → 左側（doc1）に不足分のダミー行を挿入
+	            cur1.setPosition(block1.position());
+	            for (int i = 0; i < -d; ++i) {
+	                cur1.insertText("\n");
+	                setDummyLine(block1);
+	                block1.setUserData(nullptr);
+	                block1 = block1.next();
+	            }
+	        }
         }
         nDelete = nAdd = 0;
         diffLn1 = diffLn2 = INT_MAX;
