@@ -12,6 +12,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QLabel>
+#include <QTimer>
 #include "dtl/dtl.hpp"
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
@@ -246,6 +247,9 @@ void MainWindow::onAction_DiffMode(bool checked) {
 		        docWidget, &DocWidget::syncMinimapWithEditor);
         connect(bar1, &QScrollBar::valueChanged, bar2, &QScrollBar::setValue);
 		connect(bar2, &QScrollBar::valueChanged, bar1, &QScrollBar::setValue);
+		QTimer::singleShot(0, this, [this]() {
+            do_diff();
+        });
 	} else {
 		if( docWidget->m_docType == DocType::Markdown )
 			docWidget->m_editor->setHighlightMarkdown(true);
