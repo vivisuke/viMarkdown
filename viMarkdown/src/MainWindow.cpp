@@ -1006,7 +1006,7 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	QTextBlock block = diffview->document()->begin();
 	setPhysicalLine(block, 1, 0);
 	diffview->setDiffMode(true);
-	diffview->setLineWrapMode(QPlainTextEdit::NoWrap);
+	//diffview->setLineWrapMode(QPlainTextEdit::NoWrap);
 	connect(diffview, &MarkdownEditor::textChanged, this, &MainWindow::onDiffViewChanged);
 	splitter->addWidget(editor);
 	splitter->addWidget(preview);

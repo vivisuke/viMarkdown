@@ -214,7 +214,7 @@ void MainWindow::onAction_DiffWithFile() {
 	docWidget->m_editor->setHighlightDiff(true);
 	docWidget->m_diffview->setHighlightDiff(true);
 	docWidget->m_editor->setHighlightMarkdown(false);
-	docWidget->m_editor->setLineWrapMode(QPlainTextEdit::NoWrap);
+	//docWidget->m_editor->setLineWrapMode(QPlainTextEdit::NoWrap);
 	docWidget->m_editor->rehighlight();
 	docWidget->updatePanes();
     ui->action_DiffMode->setChecked(true);
@@ -232,7 +232,7 @@ void MainWindow::onAction_DiffMode(bool checked) {
 		docWidget->m_editor->setHighlightDiff(true);
 		docWidget->m_diffview->setHighlightDiff(true);
 		docWidget->m_editor->setHighlightMarkdown(false);
-		docWidget->m_editor->setLineWrapMode(QPlainTextEdit::NoWrap);
+		//docWidget->m_editor->setLineWrapMode(QPlainTextEdit::NoWrap);
 		do_diff();
 		connect(docWidget->m_editor->verticalScrollBar(), &QScrollBar::valueChanged,
             docWidget, &DocWidget::syncScrollFromLeft);
@@ -251,7 +251,7 @@ void MainWindow::onAction_DiffMode(bool checked) {
 			docWidget->m_editor->setHighlightMarkdown(true);
 		docWidget->m_editor->setHighlightDiff(false);
 		docWidget->m_diffview->setHighlightDiff(false);
-		docWidget->m_editor->setLineWrapMode(QPlainTextEdit::WidgetWidth);
+		//docWidget->m_editor->setLineWrapMode(QPlainTextEdit::WidgetWidth);
 		QTextDocument *doc1 = docWidget->m_editor->document();
 		QTextDocument *doc2 = docWidget->m_diffview->document();
 		bool modified1 = doc1->isModified();
