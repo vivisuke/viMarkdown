@@ -47,10 +47,10 @@ bool isSpaceChar(QChar ch) {
 bool isNewline(QChar ch) {
 	return ch == u'\n'|| ch.unicode() == 0x2029;	//	0x2029: 改行コード
 }
-void moveLeftIfAtEol(QTextCursor& cursor) {
+void moveLeftIfAtEol(QTextCursor& cursor, QTextCursor::MoveMode moveMode = QTextCursor::MoveAnchor) {
 	QTextBlock block = cursor.block();
 	if( cursor.position() != block.position() && cursor.position() == block.position() + block.text().size() )
-		cursor.movePosition(QTextCursor::Left);
+		cursor.movePosition(QTextCursor::Left, moveMode);
 }
 void hat(QTextCursor& cursor, QTextCursor::MoveMode moveMode = QTextCursor::MoveAnchor) {
 	cursor.movePosition(QTextCursor::StartOfBlock);
@@ -928,12 +928,12 @@ void MainWindow::do_vi_motion(QChar cmd, QTextCursor& cursor, int rcnt, DocWidge
 		//} else {
 		int offset = gvi.m_editor->getPrefferdOffset(block);
 		if( offset == INT_MAX ) {
-			cursor.setPosition(block.position() + block.text().size());
-			moveLeftIfAtEol(cursor);
+			cursor.setPosition(block.position() + block.text().size(), moveMode);
+			moveLeftIfAtEol(cursor, moveMode);
 		} else {
-			cursor.setPosition(block.position() + offset);
+			cursor.setPosition(block.position() + offset, moveMode);
 			if( block.isValid() && !block.text().isEmpty() && cursor.position() == block.position() + block.text().size() )
-				cursor.movePosition(QTextCursor::Left);		//	非空行の改行位置には移動不可
+				cursor.movePosition(QTextCursor::Left, moveMode);		//	非空行の改行位置には移動不可
 		}
 		gvi.m_linewiseMoved = true;
 		break;
@@ -950,12 +950,12 @@ void MainWindow::do_vi_motion(QChar cmd, QTextCursor& cursor, int rcnt, DocWidge
 		//} else {
 		int offset = gvi.m_editor->getPrefferdOffset(block);
 		if( offset == INT_MAX ) {
-			cursor.setPosition(block.position() + block.text().size());
-			moveLeftIfAtEol(cursor);
+			cursor.setPosition(block.position() + block.text().size(), moveMode);
+			moveLeftIfAtEol(cursor, moveMode);
 		} else {
-			cursor.setPosition(block.position() + offset);
+			cursor.setPosition(block.position() + offset, moveMode);
 			if( /*block.isValid() &&*/ !block.text().isEmpty() && cursor.position() == block.position() + block.text().size() )
-				cursor.movePosition(QTextCursor::Left);		//	非空行の改行位置には移動不可
+				cursor.movePosition(QTextCursor::Left, moveMode);		//	非空行の改行位置には移動不可
 		}
 		gvi.m_linewiseMoved = true;
 		break;
