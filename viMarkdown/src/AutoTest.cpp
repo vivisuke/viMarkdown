@@ -1400,6 +1400,112 @@ const QList<ViTestCase> viTestCases = {
             "2;", "abc def ┃abc def\n"  // 同じ方向（後方）に2回繰り返し（カラム8から左に 'a' は1つしかないため「移動しない」）
         }
     },
+    { "Basic + command",
+        "first┃ line\n"
+        "second line\n",
+        {
+            "+", "first line\n"
+                 "┃second line\n",       // 次の行の先頭に移動
+        }
+    },
+    { "+ command with indentation (skips whitespace)",
+        "first line\n"
+        "  ┃second line\n"
+        "    third line\n",
+        {
+            "+", "first line\n"
+                 "  second line\n"
+                 "    ┃third line\n",     // インデントの空白をスキップして 't' の上に移動
+        }
+    },
+    { "+ command with count (2+)",
+        "┃line1\n"
+        "line2\n"
+        "line3\n"
+        "line4\n",
+        {
+            "2+", "line1\n"
+                  "line2\n"
+                  "┃line3\n"            // 2行下の行頭に移動
+                  "line4\n",
+        }
+    },
+    { "+ command at the last line",
+        "first line\n"
+        "sec┃ond line\n",
+        {
+            "+", "first line\n"
+                 "sec┃ond line\n",       // 最終行では移動しない
+        }
+    },
+
+    // =========================================================================
+    //  - コマンド (前行の最初の非空白文字へ移動)
+    // =========================================================================
+
+    { "Basic - command",
+        "first line\n"
+        "sec┃ond line\n",
+        {
+            "-", "┃first line\n"        // 前の行の先頭に移動
+                 "second line\n",
+        }
+    },
+    { "- command with indentation (skips whitespace)",
+        "    first line\n"
+        "  second line\n"
+        "thi┃rd line\n",
+        {
+            "-", "    first line\n"
+                 "  ┃second line\n"      // インデントの空白をスキップして 's' の上に移動
+                 "third line\n",
+        }
+    },
+    { "- command with count (2-)",
+        "line1\n"
+        "line2\n"
+        "line3\n"
+        "li┃ne4\n",
+        {
+            "2-", "line1\n"
+                  "┃line2\n"            // 2行上の行頭に移動
+                  "line3\n"
+                  "line4\n",
+        }
+    },
+    { "- command at the first line",
+        "fi┃rst line\n"
+        "second line\n",
+        {
+            "-", "fi┃rst line\n"        // 1行目では移動しない
+                 "second line\n",
+        }
+    },
+
+    // =========================================================================
+    //  d+ / d- (オペレータ連携: 行単位削除)
+    // =========================================================================
+
+    { "d+ command (deletes current and next line)",
+        "first\n"
+        "sec┃ond\n"
+        "third\n"
+        "fourth\n",
+        {
+            "d+", "first\n"
+                  "┃fourth\n",          // second と third の計2行を削除 (dj と同等)
+        }
+    },
+    { "d- command (deletes current and previous line)",
+        "first\n"
+        "second\n"
+        "thi┃rd\n"
+        "fourth\n",
+        {
+            "d-", "first\n"
+                  "┃fourth\n",          // third と second の計2行を削除 (dk と同等)
+        }
+    },
 #if 1
     { "Delete character under cursor (x) - Basic",
         "a┃bc\n",
