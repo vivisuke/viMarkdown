@@ -1099,14 +1099,14 @@ doneW:
 			cursor.setPosition(block.position() + block.text().size() - 1, moveMode);
 		break;
 	case '-':
-		cursor.movePosition(QTextCursor::PreviousBlock, moveMode, rcnt);
-		hat(cursor, moveMode);
+		if( cursor.movePosition(QTextCursor::PreviousBlock, moveMode, rcnt) )
+			hat(cursor, moveMode);
 		gvi.m_linewiseMoved = true;
 		break;
 	case '\n':
 	case '+':
-		cursor.movePosition(QTextCursor::NextBlock, moveMode, rcnt);
-		hat(cursor, moveMode);
+		if( cursor.movePosition(QTextCursor::NextBlock, moveMode, rcnt) )
+			hat(cursor, moveMode);
 		gvi.m_linewiseMoved = true;
 		break;
 	case '^':

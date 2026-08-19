@@ -1432,10 +1432,10 @@ const QList<ViTestCase> viTestCases = {
     },
     { "+ command at the last line",
         "first line\n"
-        "sec┃ond line\n",
+        "sec┃ond line",
         {
             "+", "first line\n"
-                 "sec┃ond line\n",       // 最終行では移動しない
+                 "sec┃ond line",       // 最終行では移動しない
         }
     },
 
