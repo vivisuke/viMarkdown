@@ -103,7 +103,7 @@ SPR# 状 P Open Close ver     Type  概要
 0100 ◎ C 05/18 05/20 03010│ToDo│エディタ：テキストカーソルを自前描画し、カーソル色設定を反映させる？
 0101 ◎ C 05/18 07/29 03040│ToDo│SVG補完ダイアログ：マウスダブルクリックで補完確定
 0102 ● D 05/18            │ToDo│SVG 補完 > <text>：dominant-baseline="central" も追加？
-0103 ● D 05/18            │ToDo│fill="", stroke=""："" 間にカーソルがある場合は色名補完ダイアログ表示？
+0103 ◯ D 05/18 08/19      │ToDo│fill="", stroke=""："" 間にカーソルがある場合は色名補完ダイアログ表示？ → NPTF
 0104 ◎ C 05/18 05/18 03008│問題│検索ボックスに文字列を入力し、Enter を押しても検索処理が行われない（F3 を押してやっと検索される）
 0105 ◎ C 05/18 05/18 03008│ToDo│AboutDialog：powered by ..., and LunaSVG に変更 
 0106 ◎ C 05/18 05/18 03008│問題│リリースモードでビルドすると、plutovg-font.c(774): fatal error C1001: 内部コンパイラ エラーが発生
@@ -704,7 +704,7 @@ SPR# 状 P Open Close ver     Type  概要
 0699 ◎ B 07/24 07/26 03039│問題│README_ja.md, README.md を diff すると変な状態になる
 0700 ◎ C 07/24 07/25 03038│ToDo│diff表示 > MiniMap：スクロール位置を赤矩形表示
 0701 ◎ C 07/24 07/25 03038│ToDo│MiniMap：view スクロール位置、表示可能行数をメンバ変数で保持、リサイズ時に更新、update
-0702 ● C 07/24            │ToDo│MainWindow::onAction_DiffMode(), onAction_DiffWithFile()：diffモード遷移する処理を関数化
+0702 ◎ C 07/24 08/19      │ToDo│MainWindow::onAction_DiffMode(), onAction_DiffWithFile()：diffモード遷移する処理を関数化 → クローズ忘れ
 0703 ◎ C 07/25 07/25 03038│ToDo│diff表示中 > ビュー：垂直スクロールした場合、MiniMap カーソル表示位置更新
 0704 ◎ C 07/25 07/25 03038│ToDo│diff表示 > MiniMap：スクロール位置を赤矩形表示→青矩形表示に変更してみる
 0705 ◎ C 07/25 07/25 03038│ToDo│diff表示 > MiniMap：マウスクリックで垂直スクロール
@@ -735,7 +735,7 @@ SPR# 状 P Open Close ver     Type  概要
 0729 ◎ C 07/27 07/27 03039│問題│<num>D の <num> が効かない
 0730 ◎ C 07/27 07/27 03039│問題│C<Esc> のあとの Undo が効かない
 0731 ◎ C 07/27 07/27 03039│問題│2Cxyz<Esc> を実行すると、xyz が2回挿入されてしまう
-0732 ◎ C 07/28            │問題│diff表示中：r<char> で1文字上書きしても、diff再計算されない → もはや再現しない
+0732 ◎ C 07/28 08/19      │問題│diff表示中：r<char> で1文字上書きしても、diff再計算されない → もはや再現しない
 0733 ◎ C 07/28 07/28 03040│問題│r<char> の undo が動作不良
 0734 ◎ C 07/28 08/16      │問題│diff表示中：EOF行に1文字挿入すると、結果が変になる → もはや再現しない
 0735 ◎ C 07/28 07/28 03040│問題│UndoMgr::redo()：case UndoAction::ACT_REPLACE:が抜けている？
@@ -791,8 +791,8 @@ SPR# 状 P Open Close ver     Type  概要
 0785 ● C 08/03            │問題│[text](#heading) の heading 部分に半角空白があると、リンクとして認識されない
 0786 ◎ C 08/03 08/03 03042│ToDo│Tool > Diary > Today'sDiary をメニュー・ツールバーに追加
 0787 ◎ C 08/03 08/03 03043│ToDo│Today'sDiary：デフォルトディレクトリ/diary/2026/08/20260803.md 新規作成・オープン
-0788 ● D 08/03            │ToDo│Tool > Diary > This Week's Note 追加
-0789 ● D 08/03            │ToDo│Tool > Diary > Recent Diary 追加
+0788 ◯ D 08/03 08/19      │ToDo│Tool > Diary > This Week's Note 追加 → NPTF
+0789 ◯ D 08/03 08/19      │ToDo│Tool > Diary > Recent Diary 追加 → NPTF
 0790 ◎ C 08/03 08/03 03043│ToDo│Today'sDiary：/diary/年/月 ディレクトリが存在しない場合は作成
 0791 ◎ D 08/03 08/15      │ToDo│デフォルトディレクトリ/diary/diary.md が存在する場合はテンプレートとして参照 → クローズ忘れ
 0792 ◎ C 08/03 08/03 03043│ToDo│Diary > Today'sDiary：Tool から File に移動
@@ -926,12 +926,12 @@ SPR# 状 P Open Close ver     Type  概要
 0919 ◎ C 08/19 08/19 03105│問題│行末文字にカーソルがある場合、dl で１文字削除できない
 0920 ◎ C 08/19 08/19 03105│ToDo│'-' '+' テストケース追加
 0921 ◎ C 08/19 08/19 03105│ToDo│１行目で '-' コマンドを実行すると、カーソルが（非空白）行頭に移動してしまう
-0922 ● C 08/19            │ToDo│
-0923 ● C 08/19            │ToDo│
-0924 ● C 08/19            │ToDo│
-0925 ● C 08/19            │ToDo│
-0926 ● C 08/19            │ToDo│
-0927 ● C 08/19            │ToDo│
-0928 ● C 08/19            │ToDo│
-0929 ● C 08/19            │ToDo│
-0930 ● C 08/19            │ToDo│
+0922 ◎ C 08/20 08/20 03105│ToDo│設定：炎（薄・濃）表示 ToDo 件数を設定可能に
+0923 ◎ C 08/20 08/20 03105│ToDo│設定：★ 表示 ON/OFF 設定可能に
+0924 ● C 08/20            │ToDo│
+0925 ● C 08/20            │ToDo│
+0926 ● C 08/20            │ToDo│
+0927 ● C 08/20            │ToDo│
+0928 ● C 08/20            │ToDo│
+0929 ● C 08/20            │ToDo│
+0930 ● C 08/20            │ToDo│

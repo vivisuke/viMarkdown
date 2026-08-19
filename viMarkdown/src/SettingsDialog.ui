@@ -65,7 +65,7 @@
         </size>
        </property>
        <property name="currentIndex">
-        <number>0</number>
+        <number>1</number>
        </property>
        <widget class="QWidget" name="page_5">
         <widget class="QWidget" name="layoutWidget">
@@ -485,7 +485,7 @@
             <x>10</x>
             <y>15</y>
             <width>171</width>
-            <height>71</height>
+            <height>86</height>
            </rect>
           </property>
           <layout class="QFormLayout" name="formLayout_4">
@@ -594,15 +594,15 @@
              <height>40</height>
             </size>
            </property>
-           <layout class="QHBoxLayout" name="horizontalLayout_5">
-            <item>
+           <layout class="QFormLayout" name="formLayout_5">
+            <item row="0" column="0">
              <widget class="QLabel" name="label_18">
               <property name="text">
                <string>Calendar &gt; FirstDayOfWeek;</string>
               </property>
              </widget>
             </item>
-            <item>
+            <item row="0" column="1">
              <widget class="QComboBox" name="firstDayOfWeekCB">
               <property name="minimumSize">
                <size>
@@ -647,18 +647,39 @@
               </item>
              </widget>
             </item>
-            <item>
-             <spacer name="horizontalSpacer_4">
-              <property name="orientation">
-               <enum>Qt::Orientation::Horizontal</enum>
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_22">
+              <property name="text">
+               <string># of Low-Intensity Flame Displays</string>
               </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>182</width>
-                <height>20</height>
-               </size>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QSpinBox" name="numLowFire"/>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_23">
+              <property name="text">
+               <string># of High-Intensity Flame Displays</string>
               </property>
-             </spacer>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QSpinBox" name="numHighFire"/>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_24">
+              <property name="text">
+               <string>All completed tasks ★</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QCheckBox" name="allCompletedStar">
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>
@@ -751,7 +772,9 @@
   <tabstop>pushButton</tabstop>
   <tabstop>pushButton_2</tabstop>
  </tabstops>
- <resources/>
+ <resources>
+  <include location="MainWindow.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>pushButton</sender>

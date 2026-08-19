@@ -252,6 +252,9 @@ void MainWindow::load_settings() {
 	g.m_grepSubDir = settings.value(KEY_GREP_SUBDIR, false).toBool();
 	g.m_clearOutput = settings.value(KEY_CLEAR_OUTPUT, true).toBool();
 	g.m_auto_svg_completer = settings.value(KEY_AUTO_SVG_CMPL, true).toBool();
+	g.m_allCompletedStar = settings.value(KEY_ALL_COMPLETED_STAR, true).toBool();
+	g.m_numOfLowFire = settings.value(KEY_NUM_LOW_FIRE, 5).toInt();
+	g.m_numOfHighFire = settings.value(KEY_NUM_HIGH_FIRE, 10).toInt();
 	g.m_editorFontSize = settings.value(KEY_EDITOR_FONT_SIZE, 12).toInt();		//	デフォルト：12pt
 	g.m_previewFontSize = settings.value(KEY_PREVIEW_FONT_SIZE, 12).toInt();		//	デフォルト：12pt
 	g.m_activeLnColor = settings.value(KEY_ACTIVA_LINE_COLOR, QColor("#ff0000")).value<QColor>();
@@ -282,6 +285,9 @@ void MainWindow::save_settings() {
     settings.setValue(KEY_GREP_SUBDIR, g.m_grepSubDir);
     settings.setValue(KEY_CLEAR_OUTPUT, g.m_clearOutput);
     settings.setValue(KEY_AUTO_SVG_CMPL, g.m_auto_svg_completer);
+    settings.setValue(KEY_ALL_COMPLETED_STAR, g.m_allCompletedStar);
+    settings.setValue(KEY_NUM_LOW_FIRE, g.m_numOfLowFire);
+    settings.setValue(KEY_NUM_HIGH_FIRE, g.m_numOfHighFire);
     settings.setValue(KEY_EDITOR_FONT_SIZE, g.m_editorFontSize);
     settings.setValue(KEY_PREVIEW_FONT_SIZE, g.m_previewFontSize);
     settings.setValue(KEY_HEADINGS_COLOR, g.m_headingsColor);

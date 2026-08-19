@@ -20,6 +20,9 @@ SettingsDialog::SettingsDialog(QWidget *parent, int page)
 	ui->editorFontSize->setValue(g.m_editorFontSize);
 	ui->previewFontSize->setValue(g.m_previewFontSize);
 	ui->autoSvgCompleter->setChecked(g.m_auto_svg_completer);
+	ui->allCompletedStar->setChecked(g.m_allCompletedStar);
+	ui->numLowFire->setValue(g.m_numOfLowFire);
+	ui->numHighFire->setValue(g.m_numOfHighFire);
 	ui->defaultDir->setText(g.m_defaultDir);
 	ui->firstDayOfWeekCB->setCurrentIndex(g.m_firstDayOfWeek - 1);
 	updateColorButtons();
@@ -152,7 +155,10 @@ void SettingsDialog::accept() {
 	QSettings settings;
 	settings.setValue(KEY_EDITOR_FONT_SIZE, ui->editorFontSize->value());
 	settings.setValue(KEY_PREVIEW_FONT_SIZE, ui->previewFontSize->value());
+	settings.setValue(KEY_NUM_LOW_FIRE, ui->numLowFire->value());
+	settings.setValue(KEY_NUM_HIGH_FIRE, ui->numHighFire->value());
 	settings.setValue(KEY_AUTO_SVG_CMPL, g.m_auto_svg_completer = ui->autoSvgCompleter->isChecked());
+	settings.setValue(KEY_ALL_COMPLETED_STAR, g.m_auto_svg_completer = ui->allCompletedStar->isChecked());
 	settings.setValue(KEY_DEFAULT_DIR, g.m_defaultDir = ui->defaultDir->text());
 	settings.setValue(KEY_FIRST_DAY_OF_WEEK, g.m_firstDayOfWeek = ui->firstDayOfWeekCB->currentIndex()+1);
 	QDialog::accept();

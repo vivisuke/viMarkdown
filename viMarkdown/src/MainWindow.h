@@ -44,6 +44,9 @@ QT_END_NAMESPACE
 #define	KEY_COMPLETED_COLOR			u"completedColor"
 #define	KEY_PENDING_COLOR			u"pendingColor"
 #define	KEY_NOTES_ONLY_COLOR		u"notesOnlyColor"
+#define	KEY_ALL_COMPLETED_STAR		u"allCompletedStar"
+#define	KEY_NUM_LOW_FIRE			u"numLowFire"
+#define	KEY_NUM_HIGH_FIRE			u"numHighFire"
 
 enum {
     SystemDefault = 0,  // Localeに従う（OSの設定に依存）
@@ -133,12 +136,15 @@ struct Global {
 	bool	m_japanese;
 	bool	m_auto_svg_completer;	//	SVG補完ダイアログ自動表示
 	bool	m_viKeybindings;		//	vi コマンドキー割り当て有効/無効
+	bool	m_allCompletedStar;		//	タスク全完了時：★ 表示
 	//bool	m_editBlockOpen = false;
 	bool	m_searchForward = true;		//	/ or ? 検索、true for /
 	int		m_editorFontSize;
 	int		m_previewFontSize;
 	int		m_matchedPosition;		//	マッチ位置
 	int		m_firstDayOfWeek = 1;	//	週開始曜日（1 for 月曜日、2 for 火曜日、... 7 for 日曜日）
+	int		m_numOfLowFire;			//	薄炎表示 ToDo 件数
+	int		m_numOfHighFire;		//	濃炎表示 ToDo 件数
     QString	m_defaultDir;			//	（load, save) デフォルトディレクトリ
     QString	m_lastSearchedPat;		//	最新検索文字列
     //QTextCursor	m_matchedCursor;	//	一致位置カーソル
