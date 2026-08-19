@@ -53,7 +53,7 @@ void moveLeftIfAtEol(QTextCursor& cursor, QTextCursor::MoveMode moveMode = QText
 		cursor.movePosition(QTextCursor::Left, moveMode);
 }
 void hat(QTextCursor& cursor, QTextCursor::MoveMode moveMode = QTextCursor::MoveAnchor) {
-	cursor.movePosition(QTextCursor::StartOfBlock);
+	cursor.movePosition(QTextCursor::StartOfBlock, moveMode);
 	for(;;) {
 		QChar ch = cursor.document()->characterAt(cursor.position());
 		if( ch != u' ' && ch != u'\t' ) break;
@@ -157,6 +157,8 @@ void MainWindow::do_cdy_moved(QTextCursor& cursor) {
 				if(gvi.m_editor != nullptr)
 					gvi.m_editor->do_deleteText(cursor);
 				//cursor.deleteChar();
+				if( !gvi.m_linewiseMoved )
+					moveLeftIfAtEol(cursor);
 			} else {		//	y<move>
 				statusBar()->showMessage(QString("%1 charactors yanked.").arg(gvi.m_yankBuffer.size()), 5000);
 				cursor.setPosition(qMin(cursor.anchor(), cursor.position()));
@@ -983,7 +985,7 @@ void MainWindow::do_vi_motion(QChar cmd, QTextCursor& cursor, int rcnt, DocWidge
 		break;
 	case 'l':
 	case ' ': {
-		int pos = block.position() + block.text().size() - 1;
+		int pos = block.position() + block.text().size() - (moveMode == QTextCursor::MoveAnchor ? 1 : 0);
 		if( cursor.position() < pos ) {
 			rcnt = qMin(rcnt, pos - cursor.position());
 			cursor.movePosition(QTextCursor::Right, moveMode, rcnt);

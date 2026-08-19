@@ -1629,7 +1629,7 @@ const QList<ViTestCase> viTestCases = {
     { "Delete word at end of line (dw)",
         "hello ┃world\n",
         {
-            "dw", "hello ┃\n" // "world" を削除。改行(\n)は削除されず行末の空白位置にカーソルが留まる
+            "dw", "hello┃ \n" // "world" を削除。改行(\n)は削除されないが、カーソルはひとつ左に移動
         }
     },
 
@@ -1866,10 +1866,10 @@ const QList<ViTestCase> viTestCases = {
     },
     { "dj at the last line",
         "first\n"
-        "sec┃ond\n",
+        "sec┃ond",
         {
             "dj", "first\n"
-                  "sec┃ond\n",          // 下に行がないため何も削除されない
+                  "sec┃ond",          // 下に行がないため何も削除されない
         }
     },
 
