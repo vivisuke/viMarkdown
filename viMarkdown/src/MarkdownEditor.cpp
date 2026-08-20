@@ -3205,6 +3205,20 @@ int MarkdownEditor::getVisibleLineCount() const {
 //void MarkdownEditor::savePrefferedX(int x) {
 void MarkdownEditor::savePrefferedX(const QTextCursor& cursor) {
 #if 1
+	const QTextBlock block = cursor.block();
+    if (!block.isValid()) return;
+    QTextLayout *layout = block.layout();
+    if (!layout) return;
+    int offset = cursor.positionInBlock(); // cursor.position() - block.position() と同じ
+    // カーソル位置が存在する「表示上の行（QTextLine）」を取得（折り返し対応）
+    QTextLine line = layout->lineForTextPosition(offset);
+    if (!line.isValid()) return;
+    // その行の中でのカーソルのX座標（ピクセル）を取得
+    qreal cursorXInLine = line.cursorToX(offset);
+    // ドキュメント絶対座標 = ブロック位置 + 行の開始位置 + 行内カーソルX位置
+    // (※ 0.5文字分中央に寄せるならカーソル幅を微調整)
+    m_preferredX = layout->position().x() + line.x() + cursorXInLine;
+#elif 1
 	QFontMetrics fm(font());
 	const QTextBlock block = cursor.block();
 	const QString txt = block.text();
