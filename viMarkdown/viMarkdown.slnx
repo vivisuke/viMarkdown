@@ -2,5 +2,6 @@
   <Configurations>
     <Platform Name="x64" />
   </Configurations>
+  <Project Path="benchmark/benchmark.vcxproj" Id="93f8dffb-ca41-4602-9c85-50ade3148ed4" />
   <Project Path="src/viMarkdown.vcxproj" Id="febe64db-6ef0-4bc8-8dfc-f347bd0a629f" />
 </Solution>
