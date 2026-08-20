@@ -3061,9 +3061,11 @@ void MainWindow::onAction_SlideShow() {
 		QRegularExpressionMatch match = re.match(buf);
 		if (match.hasMatch()) {
 			int matchLength = match.capturedLength(); 
-			lst.push_back(buf.mid(matchLength).trimmed());
+			//lst.push_back(buf.mid(matchLength).trimmed());
+			lst.push_back(buf.trimmed());
 		}
 	}
+	qDebug() << lst;
 	SlideShow *ss = new SlideShow(this);
 	ss->setAttribute(Qt::WA_DeleteOnClose);		//	close時にメモリクリア
 	ss->startPresentation();

@@ -19,7 +19,7 @@ void CalendarWidget::paintCell(QPainter *painter, const QRect &rect, QDate date)
 		return;
 	}
 	const DayInfo &di = m_dayInfoMap[date];
-	qDebug() << "date = " << date << ", opened = " << di.m_openTodoCount << ", total = " << di.m_totalTodoCount;
+	//qDebug() << "date = " << date << ", opened = " << di.m_openTodoCount << ", total = " << di.m_totalTodoCount;
 	painter->save();
 	if( di.m_totalTodoCount > 0 ) {
         if( di.m_openTodoCount == 0 )
