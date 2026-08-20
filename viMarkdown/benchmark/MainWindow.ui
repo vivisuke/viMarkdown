@@ -51,7 +51,7 @@
     <property name="title">
      <string>&amp;Test</string>
     </property>
-    <addaction name="action_Generate10000lines"/>
+    <addaction name="action_Gen10000lines"/>
    </widget>
    <addaction name="menu_Test"/>
   </widget>
@@ -64,7 +64,7 @@
    </attribute>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
-  <action name="action_Generate10000lines">
+  <action name="action_Gen10000lines">
    <property name="text">
     <string>Generate 10000 lines</string>
    </property>
