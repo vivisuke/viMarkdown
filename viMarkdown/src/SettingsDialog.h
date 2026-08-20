@@ -22,6 +22,9 @@ protected:
 
 	void	onDefaultDir();
 
+	void onNumLowFireChanged(int);
+	void onNumHighFireChanged(int);
+	void onAllCompletedStar(bool);
 	void onEditorFontSizeChanged(int);
 	void onPreviewFontSizeChanged(int);
 	void onHeadingColorButtonClicked();

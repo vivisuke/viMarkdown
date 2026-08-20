@@ -28,6 +28,9 @@ SettingsDialog::SettingsDialog(QWidget *parent, int page)
 	updateColorButtons();
 	//QColor color("#800000");
 	connect(ui->defaultDirPB, &QPushButton::clicked, this, &SettingsDialog::onDefaultDir);
+	connect(ui->numLowFire, &QSpinBox::valueChanged, this, &SettingsDialog::onNumLowFireChanged);
+	connect(ui->numHighFire, &QSpinBox::valueChanged, this, &SettingsDialog::onNumHighFireChanged);
+	connect(ui->allCompletedStar, &QCheckBox::toggled, this, &SettingsDialog::onAllCompletedStar);
 	connect(ui->editorFontSize, &QSpinBox::valueChanged, this, &SettingsDialog::onEditorFontSizeChanged);
 	connect(ui->previewFontSize, &QSpinBox::valueChanged, this, &SettingsDialog::onPreviewFontSizeChanged);
 	connect(ui->headingsColorPB, &QPushButton::clicked, this, &SettingsDialog::onHeadingColorButtonClicked);
@@ -170,6 +173,18 @@ void SettingsDialog::pickColor(QColor &targetColor, const QString &title) {
 		updateColorButtons();
 		emit settingsChanged();
 	}
+}
+void SettingsDialog::onNumLowFireChanged(int n) {
+	g.m_numOfLowFire = n;
+	emit settingsChanged();
+}
+void SettingsDialog::onNumHighFireChanged(int n) {
+	g.m_numOfHighFire = n;
+	emit settingsChanged();
+}
+void SettingsDialog::onAllCompletedStar(bool checked) {
+	g.m_allCompletedStar = checked;
+	emit settingsChanged();
 }
 void SettingsDialog::onEditorFontSizeChanged(int sz) {
 	g.m_editorFontSize = sz;

@@ -37,7 +37,7 @@ void CalendarWidget::paintCell(QPainter *painter, const QRect &rect, QDate date)
 #endif
 			painter->fillRect(fillRect, g.m_completedColor /*QColor("#c0ffc0")*/);
         }
-        if( di.m_totalTodoCount >= 5 ) {
+        if( di.m_totalTodoCount >= g.m_numOfLowFire ) {
         	static const QPixmap firePixmap(":/MainWindow/images/fire-2.png"); 
         	static const QPixmap starPixmap(":/MainWindow/images/star.png"); 
         	if( !firePixmap.isNull() && !starPixmap.isNull() ) {
@@ -47,9 +47,10 @@ void CalendarWidget::paintCell(QPainter *painter, const QRect &rect, QDate date)
 				// 中央揃えの座標（x, y）を計算
 				int x = rect.left() + (rect.width() - scaled.width()) / 2;
 				int y = rect.top() + (rect.height() - scaled.height()) / 2;
-				if( di.m_totalTodoCount < 10 )
+				if( di.m_totalTodoCount < g.m_numOfHighFire )
 					 painter->setOpacity(0.3); 
-				painter->drawPixmap(x, y, scaled);
+				if( g.m_allCompletedStar || di.m_openTodoCount != 0 )
+					painter->drawPixmap(x, y, scaled);
 			}
         }
 	} else
