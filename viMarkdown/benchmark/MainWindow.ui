@@ -51,7 +51,11 @@
     <property name="title">
      <string>&amp;Test</string>
     </property>
+    <addaction name="action_Gen1000lines"/>
+    <addaction name="action_Gen5000lines"/>
     <addaction name="action_Gen10000lines"/>
+    <addaction name="separator"/>
+    <addaction name="action_SetMarkdown"/>
    </widget>
    <addaction name="menu_Test"/>
   </widget>
@@ -67,6 +71,21 @@
   <action name="action_Gen10000lines">
    <property name="text">
     <string>Generate 10000 lines</string>
+   </property>
+  </action>
+  <action name="action_SetMarkdown">
+   <property name="text">
+    <string>SetMarkdown</string>
+   </property>
+  </action>
+  <action name="action_Gen1000lines">
+   <property name="text">
+    <string>Generate 1000 lines</string>
+   </property>
+  </action>
+  <action name="action_Gen5000lines">
+   <property name="text">
+    <string>Generate 5000 lines</string>
    </property>
   </action>
  </widget>

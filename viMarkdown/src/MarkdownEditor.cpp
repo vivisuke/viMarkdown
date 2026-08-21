@@ -464,10 +464,12 @@ void MarkdownEditor::rehighlight() {
 		m_diffHighlighter->rehighlight();
 }
 void MarkdownEditor::updateInlineColors() {
+	bool mf = document()->isModified();		//	対処療法的処理
 	if( !m_diffMode )
 		m_highlighter->updateInlineColors();
 	else
 		m_diffHighlighter->updateInlineColors();
+	document()->setModified(mf);		//	対処療法的処理
 }
 void MarkdownEditor::updateViewportMargines() {
 	setViewportMargins(lnAreaWidth(), 0, 0, 0);
@@ -1385,6 +1387,7 @@ void MarkdownEditor::reflectWordToPeer(const QTextBlock &block, int start, int l
     ((MainWindow*)m_mainWindow)->do_diff();
 }
 void MarkdownEditor::applyStyle(const QFont &font) {
+	bool mf = document()->isModified();		//	対処療法的処理
 	setFont(font);
 	updateViewportMargines();
 	//setBoldColor(g.m_boldColor);
@@ -1392,6 +1395,7 @@ void MarkdownEditor::applyStyle(const QFont &font) {
 	rehighlight();				//	再ハイライト
 	highlightSearchText(g.m_lastSearchedPat);				//	再ハイライト
 	viewport()->update();		//	再表示
+	document()->setModified(mf);		//	対処療法的処理
 }
 void MarkdownEditor::jumpToHeading(const QString& name) {
 	QTextBlock block = document()->begin();

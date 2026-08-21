@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <QtWidgets/QMainWindow>
 #include "ui_MainWindow.h"
@@ -16,7 +16,12 @@ public:
     ~MainWindow();
 
 protected:
+    void	gen_lines(int n);
+
+    void	onAction_gen1000lines();
+    void	onAction_gen5000lines();
     void	onAction_gen10000lines();
+    void	onAction_SetMarkdown();
 
 private:
     Ui::MainWindowClass *ui;
