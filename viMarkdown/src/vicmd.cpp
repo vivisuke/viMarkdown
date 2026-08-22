@@ -1964,7 +1964,9 @@ void MainWindow::do_exCmd(const QString &text, QTextCursor& cursor) {
 	    gvi.m_rangeEnd   = totalLines;
 	} else {
 		int currentLine = cursor.block().blockNumber() + 1;
+		int nr = 0;
 		for(;;) {
+			++nr;
 			gvi.m_rangeEnd = parseLineSpec(text, ix, currentLine, totalLines, doc);
 			//##qDebug() << "line = " << gvi.m_rangeEnd;
 			if( ix == 1 ) {
@@ -1978,6 +1980,8 @@ void MainWindow::do_exCmd(const QString &text, QTextCursor& cursor) {
 			++ix;
 			gvi.m_rangeStart = gvi.m_rangeEnd;
 		}
+		if( nr == 1 )
+			gvi.m_rangeStart = gvi.m_rangeEnd;
 	}
 	if( ix >= text.size() || text[ix] == u'\n' ) {	//	:{range} Enter の場合
 		QTextBlock block = doc->findBlockByNumber(gvi.m_rangeEnd - 1);
