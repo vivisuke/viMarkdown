@@ -2058,7 +2058,8 @@ void MainWindow::do_exCmd(const QString &text, int ix, /*QString cmd, QChar nch,
 			}
 			cursor.setPosition(startPos);
 			cursor.setPosition(endPos, QTextCursor::KeepAnchor);
-			cursor.removeSelectedText();
+			//cursor.removeSelectedText();
+			gvi.m_editor->do_deleteText(cursor);
 			cursor.endEditBlock();
 			hat(cursor);
 			docWidget->m_editor->setTextCursor(cursor);
