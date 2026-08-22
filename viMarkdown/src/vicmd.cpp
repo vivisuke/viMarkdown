@@ -1233,6 +1233,8 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 	else if( w == docWidget->m_diffview ) gvi.m_editor = (MarkdownEditor*)w;
 	//else if( w == docWidget->m_preview ) gvi.m_preview = (MarkdownPreview*)w;
 	//bool isEditor = cursor.document() == docWidget->m_editor->document();
+	if( gvi.m_editor == nullptr )
+		gvi.m_editor = docWidget->m_editor;
 	assert( gvi.m_editor != nullptr );
 	bool completed = true;
 	int rcnt = getRepeatCount();

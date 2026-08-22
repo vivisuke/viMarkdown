@@ -2174,7 +2174,7 @@ const QList<ViTestCase> viTestCases = {
         }
     },
 //	ex commands
-#if 0
+#if 1
     { "Ex Range - Absolute Line Number (:num)",
         "line 1\nli┃ne 2\nline 3\nline 4\n",
         {
@@ -2225,7 +2225,7 @@ const QList<ViTestCase> viTestCases = {
         }
     },
 #endif
-#if 0
+#if 1
     { "Ex Delete - Current Line (:d)",
         "line 1\nli┃ne 2\nline 3\n",
         {
