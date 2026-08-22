@@ -17,13 +17,17 @@ public:
 
 protected:
     void	gen_lines(int n);
+    void	onEditorContentsChange(int position, int charsRemoved, int charsAdded);
 
     void	onAction_gen1000lines();
+    void	onAction_gen2000lines();
     void	onAction_gen5000lines();
     void	onAction_gen10000lines();
+    void	onAction_gen20000lines();
     void	onAction_SetMarkdown();
 
 private:
+    bool	m_processing = false;
     Ui::MainWindowClass *ui;
 };
 

@@ -204,14 +204,16 @@ bool do_fFtT(QTextCursor& cursor, QChar cmd, QChar ch, int rcnt, bool isRepeat =
 	} else
 		return false;
 }
-void do_vi_change_line(QTextCursor& cursor) {
+void do_vi_change_line(QTextCursor& cursor) {		//	for S, cc
 	cursor.beginEditBlock();	//	１文字削除とその後の文字挿入を１回でundo可能にするため
+	gvi.m_editor->openUndoBlock();
 	//g.m_editBlockOpen = true;
 	hat(cursor);
 	cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
 	if( cursor.hasSelection() ) {
 		gvi.m_yankBuffer = cursor.selectedText();
-		cursor.deleteChar();
+		//cursor.deleteChar();
+		gvi.m_editor->do_deleteText(cursor);
 	}
 	cursor.endEditBlock();
 	//gvi.m_joinEditBlock = true;

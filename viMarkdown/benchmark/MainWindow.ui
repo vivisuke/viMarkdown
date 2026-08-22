@@ -52,8 +52,10 @@
      <string>&amp;Test</string>
     </property>
     <addaction name="action_Gen1000lines"/>
+    <addaction name="action_Gen2000lines"/>
     <addaction name="action_Gen5000lines"/>
     <addaction name="action_Gen10000lines"/>
+    <addaction name="action_Gen20000lines"/>
     <addaction name="separator"/>
     <addaction name="action_SetMarkdown"/>
    </widget>
@@ -86,6 +88,16 @@
   <action name="action_Gen5000lines">
    <property name="text">
     <string>Generate 5000 lines</string>
+   </property>
+  </action>
+  <action name="action_Gen2000lines">
+   <property name="text">
+    <string>Generate 2000 lines</string>
+   </property>
+  </action>
+  <action name="action_Gen20000lines">
+   <property name="text">
+    <string>Generate 20000 lines</string>
    </property>
   </action>
  </widget>
