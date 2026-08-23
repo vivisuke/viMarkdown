@@ -385,8 +385,11 @@
    <property name="windowTitle">
     <string>CalendarBar</string>
    </property>
+   <property name="dockLocation">
+    <enum>Qt::DockWidgetArea::BottomDockWidgetArea</enum>
+   </property>
    <attribute name="dockWidgetArea">
-    <number>2</number>
+    <number>8</number>
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_4">
     <layout class="QVBoxLayout" name="verticalLayout">
