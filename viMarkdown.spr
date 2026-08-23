@@ -942,8 +942,8 @@ SPR# 状 P Open Close ver     Type  概要
 0932 ◎ A 08/23 08/23 03106│問題│自動テストを実行すると MainWindow::do_viCmd() 内でアサーションが発生する
 0933 ◎ C 08/23 08/23 03106│ToDo│ex コマンド自動テスト復活
 0934 ◎ C 08/24 08/24 03106│問題│カレンダーバーデフォルト位置は下部右の方がよい
-0935 ● C 08/24            │ToDo│
-0936 ● C 08/24            │ToDo│
+0935 ◎ C 08/24 08/24 03106│ToDo│viMarkdown help > viMarkdown独自仕様：SVGブロック説明追加
+0936 ● C 08/24            │ToDo│viMarkdown help > viMarkdown独自仕様：カレンダー・日記機能説明追加
 0937 ● C 08/24            │ToDo│
 0938 ● C 08/24            │ToDo│
 0939 ● C 08/24            │ToDo│

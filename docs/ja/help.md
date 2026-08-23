@@ -207,6 +207,29 @@ OS の言語設定（Locale）に応じた日本語 / 英語 UI の自動切り�
   - 入力例: `![ロゴ画像](https://example.com/logo.png)`
 
 ## ■ viMarkdown独自仕様
+### SVG ブロック
+SVGブロックとは、Markdown内にベクターグラフィック（SVG）コードを直接記述し、プレビュー上で図形やイラストを描画できる機能です。
+「\```svg」「\```」の間にSVGタグを記述するだけで、外部画像ファイルを用意することなくインラインで図を表示できます。
+
+> <svg width="120" height="60" viewBox="0 0 120 60">
+>   <rect x="5" y="5" width="110" height="50" rx="10" fill="#e1f5fe" stroke="#0288d1" stroke-width="2"/>
+>   <text x="60" y="35" font-size="14" text-anchor="middle" fill="#01579b">SVG Block</text>
+> </svg>
+
+```SVG
+<svg width="120" height="60" viewBox="0 0 120 60">
+  <rect x="5" y="5" width="110" height="50" rx="10" fill="#e1f5fe" stroke="#0288d1" stroke-width="2"/>
+  <text x="60" y="35" font-size="14" text-anchor="middle" fill="#01579b">SVG Block</text>
+</svg>
+```
+
+- \`\`\`svg ～ \`\`\` で囲むことで、SVGマークアップを直接記述・プレビュー表示可能
+- 外部画像ファイル（.svg/.png等）を配置・管理する手間なく、Markdownファイル単体で図を完結
+- ベクター形式のため、拡大・縮小しても解像度を損なわずに美しく表示
+- コードブロックヘッダで背景色などのスタイル属性を指定可能（例: ```` ```svg background-color: #f0f0f0; ````）
+- テキストベースの図記述のため、Gitなどのバージョン管理システムで差分（Diff）の追跡が容易
+- XMLタグ（`<rect>`, `<circle>`, `<path>`, `<text>` など）やインラインCSSスタイルの記述に完全対応
+
 ### 罫線ブロック
 - 罫線文字を使用し、下図のようなクラス図・UIモックアップ等を容易に作図可能
 ```keisen background-color: #f0f0f0;
