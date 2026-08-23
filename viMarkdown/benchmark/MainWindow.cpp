@@ -37,7 +37,8 @@ void MainWindow::gen_lines(int n) {
 		cursor.block().setUserState(US_HEADING);
 		cursor.insertText("\n");
 		for(int i = 0; i < UNIT - 1; ++i) {
-			cursor.insertText("body text body text body text body text body text body text body text  \n");
+			int ln = k*UNIT + i + 2;
+			cursor.insertText(QString("%1 body text body text body text body text body text body text body text  \n").arg(ln));
 		}
 	}
 	cursor.endEditBlock();
@@ -72,7 +73,8 @@ void MainWindow::onAction_SetMarkdown() {
     	cursor.insertMarkdown(block.text());
     	if( block.userState() == US_HEADING )
     		cursor.block().setUserState(US_HEADING);
-		cursor.insertText("\n");
+		//cursor.insertText("\n");
+		cursor.insertBlock(QTextBlockFormat(), QTextCharFormat());
 		block = block.next();
     }
     cursor.endEditBlock();
@@ -120,6 +122,7 @@ void MainWindow::onEditorContentsChange(int position, int charsRemoved, int char
 	cursor2.beginEditBlock();
 	if( oldEndBlock.isValid() ) {
         cursor2.setPosition(oldEndBlock.position(), QTextCursor::KeepAnchor);
+        qDebug() << "remove " << block2.position() << " to " << oldEndBlock.position();
     } else {
         cursor2.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
     }
@@ -129,9 +132,13 @@ void MainWindow::onEditorContentsChange(int position, int charsRemoved, int char
     bool init = true;
     while( block.isValid() ) {
         bool hdg = !block.text().isEmpty() && block.text()[0] == '#';
-        if( hdg && !init ) break;
+        if( hdg ) {
+        	block.setUserState(US_HEADING);
+        	if( !init ) break;
+        }
         init = false;
-        cursor2.insertMarkdown(block.text() + "\n");
+        cursor2.insertMarkdown(block.text());
+		cursor2.insertBlock(QTextBlockFormat(), QTextCharFormat());
         //sectionText += block.text() + "\n";
         block = block.next();
     }

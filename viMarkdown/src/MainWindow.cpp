@@ -366,7 +366,8 @@ void MainWindow::setup_tabMenu() {
 	    QAction *copyTitleAction = menu.addAction(tr("Copy Title"));
 	    QAction *selectedAction = menu.exec(tabBar->mapToGlobal(pos));
 	    if (selectedAction == closeAction) {
-	        ui->tabWidget->removeTab(index); 
+	        //ui->tabWidget->removeTab(index); 
+	        do_close();
 	    } else if (selectedAction == copyPathAction) {
 	        DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(index);
 	        if( docWidget != nullptr ) {

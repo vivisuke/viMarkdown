@@ -68,6 +68,8 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="action_SetMarkdown"/>
+   <addaction name="action_Gen1000lines"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="action_Gen10000lines">
