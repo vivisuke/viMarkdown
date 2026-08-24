@@ -80,14 +80,27 @@ void MainWindow::onAction_SetMarkdown() {
     ui->textEdit->clear();
     QTextCursor cursor = ui->textEdit->textCursor();
     cursor.beginEditBlock();
+    QString buf;
     while( block.isValid() ) {
-    	cursor.insertMarkdown(block.text());
-    	if( block.userState() == US_HEADING )
+    	//cursor.insertMarkdown(block.text());
+    	if( block.userState() == US_HEADING ) {		//	見出し行の場合
+    		if( !buf.isEmpty() ) {
+		    	cursor.insertMarkdown(buf);
+		    	buf.clear();
+				cursor.insertBlock(QTextBlockFormat(), QTextCharFormat());
+    		}
+    		cursor.insertMarkdown(block.text());
     		cursor.block().setUserState(US_HEADING);
+			cursor.insertBlock(QTextBlockFormat(), QTextCharFormat());
+    	} else {		//	見出し行でない場合
+    		buf += block.text() + "\n";
+    	}
 		//cursor.insertText("\n");
-		cursor.insertBlock(QTextBlockFormat(), QTextCharFormat());
+		//cursor.insertBlock(QTextBlockFormat(), QTextCharFormat());
 		block = block.next();
     }
+	if( !buf.isEmpty() ) 
+    	cursor.insertMarkdown(buf);
     cursor.endEditBlock();
 #else
 	auto md = ui->plainTextEdit->toPlainText();
@@ -99,6 +112,11 @@ void MainWindow::onAction_SetMarkdown() {
     qDebug() << "[Benchmark] setMarkdown completed:" << elapsedMs << "ms (" 
              << timer.nsecsElapsed() / 1000.0 << "μs)";
 }
+//	1. エディタ：文書先頭に向かって編集されたブロックの見出し行を探す → block
+//	2. プレビュー：block に対応するブロックを探す → block2
+//	3. プレビュー：block2 から次の見出し行を探す → oldEndBlock
+//	4. プレビュー：block2 ～ oldEndBlock直前までを削除
+//	5.	block ～ 次の見出し行ブロック直前までのテキストを block2 位置に insertMarkdown()
 void MainWindow::onEditorContentsChange(int position, int charsRemoved, int charsAdded) {
 	if( m_processing ) return;
 	qDebug() << "pos = " << position << ", removed = " << charsRemoved << ", added = " << charsAdded;
