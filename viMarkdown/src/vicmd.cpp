@@ -952,7 +952,7 @@ void MainWindow::do_vi_motion(QChar cmd, QTextCursor& cursor, int rcnt, DocWidge
 	}
 	case 'j': {
 		do {
-			if( !cursor.movePosition(QTextCursor::Down, moveMode, rcnt) ) break;
+			if( !cursor.movePosition(QTextCursor::NextBlock, moveMode, rcnt) ) break;
 		} while( cursor.block().isValid() && !cursor.block().isVisible() );
 		block = cursor.block();
 		assert( block.isValid() );
