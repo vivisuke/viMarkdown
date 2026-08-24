@@ -660,6 +660,7 @@ void MainWindow::do_search(const QString srcText, bool backward) {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
 	MarkdownEditor *mdEditor = docWidget->m_editor;
+	QTextCursor cursor = mdEditor->textCursor();
 	g.m_matchedPosition = -1;
 	if( !srcText.isEmpty() ) {
 		QTextDocument::FindFlags flags;
@@ -673,7 +674,7 @@ void MainWindow::do_search(const QString srcText, bool backward) {
 		else {
 			found = mdEditor->find(QRegularExpression(srcText), flags);
 		}
-		if (!found) {
+		if (!found) {	//	不一致の場合、文書先頭/末尾から検索
 	        if( !backward )
 				mdEditor->moveCursor(QTextCursor::Start);
 	        else
@@ -682,6 +683,7 @@ void MainWindow::do_search(const QString srcText, bool backward) {
 	    }
 		if (!found) {
 			//##qDebug() << "not found";
+			mdEditor->setTextCursor(cursor);
 		} else
 			g.m_matchedPosition = mdEditor->textCursor().anchor();
 	}

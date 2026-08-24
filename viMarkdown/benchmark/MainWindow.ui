@@ -58,6 +58,7 @@
     <addaction name="action_Gen20000lines"/>
     <addaction name="separator"/>
     <addaction name="action_SetMarkdown"/>
+    <addaction name="action_DumpUserState"/>
    </widget>
    <addaction name="menu_Test"/>
   </widget>
@@ -68,8 +69,9 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="action_SetMarkdown"/>
    <addaction name="action_Gen1000lines"/>
+   <addaction name="action_SetMarkdown"/>
+   <addaction name="action_DumpUserState"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="action_Gen10000lines">
@@ -100,6 +102,11 @@
   <action name="action_Gen20000lines">
    <property name="text">
     <string>Generate 20000 lines</string>
+   </property>
+  </action>
+  <action name="action_DumpUserState">
+   <property name="text">
+    <string>Dump UserState</string>
    </property>
   </action>
  </widget>

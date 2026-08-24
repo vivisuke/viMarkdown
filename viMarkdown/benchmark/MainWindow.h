@@ -25,6 +25,7 @@ protected:
     void	onAction_gen10000lines();
     void	onAction_gen20000lines();
     void	onAction_SetMarkdown();
+    void	onAction_DumpUserState();
 
 private:
     bool	m_processing = false;

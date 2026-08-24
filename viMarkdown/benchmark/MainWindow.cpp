@@ -4,7 +4,7 @@
 #include <QElapsedTimer>
 #include "MainWindow.h"
 
-const int US_HEADING = 1;
+const int US_HEADING = 2;
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -17,6 +17,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->action_Gen10000lines, &QAction::triggered, this, &MainWindow::onAction_gen10000lines);
     connect(ui->action_Gen20000lines, &QAction::triggered, this, &MainWindow::onAction_gen20000lines);
     connect(ui->action_SetMarkdown, &QAction::triggered, this, &MainWindow::onAction_SetMarkdown);
+    connect(ui->action_DumpUserState, &QAction::triggered, this, &MainWindow::onAction_DumpUserState);
 
     connect(ui->plainTextEdit->document(), &QTextDocument::contentsChange, this, &MainWindow::onEditorContentsChange);
 }
@@ -34,15 +35,25 @@ void MainWindow::gen_lines(int n) {
 	const int UNIT = 25;
 	for(int k = 0; k < n/UNIT; ++k) {
 		cursor.insertText(QString("## %1. heading").arg(k+1));
-		cursor.block().setUserState(US_HEADING);
+		//cursor.block().setUserState(US_HEADING);
 		cursor.insertText("\n");
 		for(int i = 0; i < UNIT - 1; ++i) {
 			int ln = k*UNIT + i + 2;
 			cursor.insertText(QString("%1 body text body text body text body text body text body text body text  \n").arg(ln));
+			//cursor.block().previous().setUserState(-1);
 		}
 	}
 	cursor.endEditBlock();
 	ui->plainTextEdit->setTextCursor(cursor);
+	// 2. ブロックを走査して userState を設定
+    int lineIndex = 0;
+    for (QTextBlock block = ui->plainTextEdit->document()->begin(); block.isValid(); block = block.next(), ++lineIndex) {
+        if (lineIndex % UNIT == 0) {
+            block.setUserState(US_HEADING);
+        } else {
+            block.setUserState(-1);
+        }
+    }
 	m_processing = false;
 }
 
@@ -93,6 +104,8 @@ void MainWindow::onEditorContentsChange(int position, int charsRemoved, int char
 	qDebug() << "pos = " << position << ", removed = " << charsRemoved << ", added = " << charsAdded;
 	QTextBlock block = ui->plainTextEdit->document()->findBlock(position);
 	if( !block.isValid() ) return;
+	QElapsedTimer timer;
+    timer.start();
 	while( block.userState() != US_HEADING ) {		//	文書先頭に向かって編集されたブロックの見出し行を探す
 		if( !block.previous().isValid() ) break;
 		block = block.previous();
@@ -133,7 +146,7 @@ void MainWindow::onEditorContentsChange(int position, int charsRemoved, int char
     while( block.isValid() ) {
         bool hdg = !block.text().isEmpty() && block.text()[0] == '#';
         if( hdg ) {
-        	block.setUserState(US_HEADING);
+        	cursor2.block().setUserState(US_HEADING);
         	if( !init ) break;
         }
         init = false;
@@ -158,5 +171,21 @@ void MainWindow::onEditorContentsChange(int position, int charsRemoved, int char
     cursor2.endEditBlock();
     ui->textEdit->setTextCursor(cursor2);
 
+    qint64 elapsedMs = timer.elapsed();
+    qDebug() << "[Benchmark] setMarkdown completed:" << elapsedMs << "ms (" 
+             << timer.nsecsElapsed() / 1000.0 << "μs)";
+
     m_processing = false;
+}
+void MainWindow::onAction_DumpUserState() {
+	QTextBlock block = ui->plainTextEdit->document()->begin();
+	for(int b = 0; b < 10 && block.isValid(); ++b) {
+		qDebug() << b << ": " << block.userState() << ", pos = " << block.position();
+		block = block.next();
+	}
+	block = ui->textEdit->document()->begin();
+	for(int b = 0; b < 10 && block.isValid(); ++b) {
+		qDebug() << b << ": " << block.userState() << ", pos = " << block.position();
+		block = block.next();
+	}
 }
