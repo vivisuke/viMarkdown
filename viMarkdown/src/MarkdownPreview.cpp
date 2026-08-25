@@ -1870,8 +1870,12 @@ PosContext MarkdownPreview::contextAt(int pos) {	//	pos 位置から PosContext 
 	cursor.setPosition(pos);
 	auto *doc = document();
 	QTextBlock block = doc->findBlock(pos);
+	QTextBlock block0 = block;
 	QTextTable *table = cursor.currentTable();
-	if( blockType(block) == BT_KEISEN_BLOCK ) {
+	if( blockType(block) == BT_LIST ) {
+		pc.m_anchorChar = ListBullet;
+		pc.m_offset = pos - block.position();
+	} else if( blockType(block) == BT_KEISEN_BLOCK ) {
 		//pc.m_anchorChar = QChar(U_KEISEN_BLOCK);
 		pc.m_anchorChar = pos == block.position() ? STX : EOB;
 	} else if( pos == block.position() && (table == nullptr || table->cellAt(cursor).column() == 0) ) {		//	行頭にいる場合
@@ -1981,6 +1985,15 @@ PosContext MarkdownPreview::contextAt(int pos) {	//	pos 位置から PosContext 
 					if( !block.isValid() ) break;
 				}
 				if( block.position() > pos )
+					break;
+				++count;
+			} else
+				block = block.next();
+		}
+	} else if( pc.m_anchorChar == ListBullet ) {		//	リスト行の場合
+		while( block.isValid() ) {
+			if( blockType(block) == BT_LIST ) {
+				if( block == block0 )
 					break;
 				++count;
 			} else

@@ -102,7 +102,7 @@ SPR# 状 P Open Close ver     Type  概要
 0099 ◎ C 05/18 05/18 03008│ToDo│SVG 補完：１文字キー検索
 0100 ◎ C 05/18 05/20 03010│ToDo│エディタ：テキストカーソルを自前描画し、カーソル色設定を反映させる？
 0101 ◎ C 05/18 07/29 03040│ToDo│SVG補完ダイアログ：マウスダブルクリックで補完確定
-0102 ● D 05/18            │ToDo│SVG 補完 > <text>：dominant-baseline="central" も追加？
+0102 ◎ D 05/18 08/25 03107│ToDo│SVG 補完 > <text>：dominant-baseline="central" も追加？ → クローズ忘れ
 0103 ◯ D 05/18 08/19      │ToDo│fill="", stroke=""："" 間にカーソルがある場合は色名補完ダイアログ表示？ → NPTF
 0104 ◎ C 05/18 05/18 03008│問題│検索ボックスに文字列を入力し、Enter を押しても検索処理が行われない（F3 を押してやっと検索される）
 0105 ◎ C 05/18 05/18 03008│ToDo│AboutDialog：powered by ..., and LunaSVG に変更 
@@ -946,5 +946,15 @@ SPR# 状 P Open Close ver     Type  概要
 0936 ◎ C 08/24 08/24 03106│ToDo│viMarkdown help > viMarkdown独自仕様：カレンダー・日記機能説明追加
 0937 ◎ C 08/25 08/25 03107│問題│折り返し行での j が効かない（k は大丈夫）
 0938 ● B 08/25            │問題│プレビュー：リスト行テキストが空のとき、「・」直後にカーソルがあるときの PtoE カーソル同期が動作不良
-0939 ● C 08/25            │ToDo│
-0940 ● C 08/25            │ToDo│
+0939 ◎ C 08/26 08/26 03107│ToDo│PosContext：リスト行（行頭："- "）の場合の特殊アンカー文字導入
+0940 ◎ C 08/26 08/26 03107│ToDo│MarkdownPreview::contextAt(int pos)：リスト行にいる場合は、アンカー文字を ListBullet に
+0941 ● C 08/26            │ToDo│
+0942 ● C 08/26            │ToDo│
+0943 ● C 08/26            │ToDo│
+0944 ● C 08/26            │ToDo│
+0945 ● C 08/26            │ToDo│
+0946 ● C 08/26            │ToDo│
+0947 ● C 08/26            │ToDo│
+0948 ● C 08/26            │ToDo│
+0949 ● C 08/26            │ToDo│
+0950 ● C 08/26            │ToDo│

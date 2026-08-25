@@ -94,6 +94,7 @@ const int MINMAP_WIDTH = 40;
 const QChar STX(0x0002);		//	行頭仮想文字
 const QChar ETX(0x0003);		//	行末仮想文字
 const QChar EOB(0x0017);		//	罫線ブロック末仮想文字
+const QChar ListBullet(0xe001);	//	リスト行用アンカー
 
 struct PosContext {
     QChar	m_anchorChar;			//	アンカー文字、行末の場合は QChar() かもしれない
