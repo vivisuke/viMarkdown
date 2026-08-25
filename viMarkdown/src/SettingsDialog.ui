@@ -65,7 +65,7 @@
         </size>
        </property>
        <property name="currentIndex">
-        <number>1</number>
+        <number>0</number>
        </property>
        <widget class="QWidget" name="page_5">
         <widget class="QWidget" name="layoutWidget">
@@ -73,8 +73,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>385</width>
-           <height>238</height>
+           <width>397</width>
+           <height>268</height>
           </rect>
          </property>
          <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -245,7 +245,7 @@
              <string>Preview</string>
             </property>
             <layout class="QFormLayout" name="formLayout_2">
-             <item row="1" column="0">
+             <item row="2" column="0">
               <widget class="QLabel" name="label_3">
                <property name="text">
                 <string>Table Header color:</string>
@@ -255,7 +255,7 @@
                </property>
               </widget>
              </item>
-             <item row="1" column="1">
+             <item row="2" column="1">
               <widget class="QPushButton" name="CSVHeaderPB">
                <property name="maximumSize">
                 <size>
@@ -268,7 +268,7 @@
                </property>
               </widget>
              </item>
-             <item row="2" column="0">
+             <item row="3" column="0">
               <widget class="QLabel" name="label_4">
                <property name="text">
                 <string>Table Zebra-1 color:</string>
@@ -278,7 +278,7 @@
                </property>
               </widget>
              </item>
-             <item row="2" column="1">
+             <item row="3" column="1">
               <widget class="QPushButton" name="CSVZebra1PB">
                <property name="maximumSize">
                 <size>
@@ -291,7 +291,7 @@
                </property>
               </widget>
              </item>
-             <item row="3" column="0">
+             <item row="4" column="0">
               <widget class="QLabel" name="label_5">
                <property name="text">
                 <string>Table Zebra-2 color:</string>
@@ -301,7 +301,7 @@
                </property>
               </widget>
              </item>
-             <item row="3" column="1">
+             <item row="4" column="1">
               <widget class="QPushButton" name="CSVZebra2PB">
                <property name="maximumSize">
                 <size>
@@ -314,14 +314,14 @@
                </property>
               </widget>
              </item>
-             <item row="4" column="0">
+             <item row="5" column="0">
               <widget class="QLabel" name="label_12">
                <property name="text">
                 <string>Quote color:</string>
                </property>
               </widget>
              </item>
-             <item row="4" column="1">
+             <item row="5" column="1">
               <widget class="QPushButton" name="quotePB">
                <property name="maximumSize">
                 <size>
@@ -334,21 +334,21 @@
                </property>
               </widget>
              </item>
-             <item row="5" column="0">
+             <item row="6" column="0">
               <widget class="QLabel" name="label_13">
                <property name="text">
                 <string>Code block color:</string>
                </property>
               </widget>
              </item>
-             <item row="6" column="0">
+             <item row="7" column="0">
               <widget class="QLabel" name="label_14">
                <property name="text">
                 <string>Keisen block color:</string>
                </property>
               </widget>
              </item>
-             <item row="5" column="1">
+             <item row="6" column="1">
               <widget class="QPushButton" name="codeBlockPB">
                <property name="maximumSize">
                 <size>
@@ -361,7 +361,7 @@
                </property>
               </widget>
              </item>
-             <item row="6" column="1">
+             <item row="7" column="1">
               <widget class="QPushButton" name="keisenBlockPB">
                <property name="maximumSize">
                 <size>
@@ -391,6 +391,20 @@
                </property>
               </widget>
              </item>
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_25">
+               <property name="text">
+                <string>Table Text color:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QPushButton" name="CSVTextPB">
+               <property name="text">
+                <string/>
+               </property>
+              </widget>
+             </item>
             </layout>
            </widget>
           </item>
@@ -400,9 +414,9 @@
          <property name="geometry">
           <rect>
            <x>0</x>
-           <y>244</y>
+           <y>274</y>
            <width>181</width>
-           <height>151</height>
+           <height>121</height>
           </rect>
          </property>
          <property name="title">
@@ -471,9 +485,9 @@
          <property name="geometry">
           <rect>
            <x>191</x>
-           <y>245</y>
+           <y>275</y>
            <width>191</width>
-           <height>151</height>
+           <height>121</height>
           </rect>
          </property>
          <property name="title">

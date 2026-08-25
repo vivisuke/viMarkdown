@@ -35,6 +35,7 @@ protected:
 	void onItalicColorButtonClicked();
 	void onStrikethroughColorButtonClicked();
 	void onMatchColorButtonClicked();
+	void onCSVTextColorButtonClicked();
 	void onCSVHeaderColorButtonClicked();
 	void onCSVZebraColor1ButtonClicked();
 	void onCSVZebraColor2ButtonClicked();

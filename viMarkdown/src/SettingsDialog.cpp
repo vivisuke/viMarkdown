@@ -41,6 +41,7 @@ SettingsDialog::SettingsDialog(QWidget *parent, int page)
 	connect(ui->italicColorPB, &QPushButton::clicked, this, &SettingsDialog::onItalicColorButtonClicked);
 	connect(ui->strikethroughColorPB, &QPushButton::clicked, this, &SettingsDialog::onStrikethroughColorButtonClicked);
 	connect(ui->matchColorPB, &QPushButton::clicked, this, &SettingsDialog::onMatchColorButtonClicked);
+	connect(ui->CSVTextPB, &QPushButton::clicked, this, &SettingsDialog::onCSVTextColorButtonClicked);
 	connect(ui->CSVHeaderPB, &QPushButton::clicked, this, &SettingsDialog::onCSVHeaderColorButtonClicked);
 	connect(ui->CSVZebra1PB, &QPushButton::clicked, this, &SettingsDialog::onCSVZebraColor1ButtonClicked);
 	connect(ui->CSVZebra2PB, &QPushButton::clicked, this, &SettingsDialog::onCSVZebraColor2ButtonClicked);
@@ -101,6 +102,7 @@ void SettingsDialog::updateColorButtons() {
     setColorButtonStyle(ui->italicColorPB,       g.m_italicColor);
     setColorButtonStyle(ui->strikethroughColorPB, g.m_strikethroughColor);
     setColorButtonStyle(ui->matchColorPB,        g.m_matchColor);
+    setColorButtonStyle(ui->CSVTextPB,           g.m_CSVTextColor);
     setColorButtonStyle(ui->CSVHeaderPB,         g.m_CSVHeaderColor);
     setColorButtonStyle(ui->CSVZebra1PB,         g.m_CSVZebraColor1);
     setColorButtonStyle(ui->CSVZebra2PB,         g.m_CSVZebraColor2);
@@ -217,6 +219,9 @@ void SettingsDialog::onStrikethroughColorButtonClicked() {
 }
 void SettingsDialog::onMatchColorButtonClicked() {
 	pickColor(g.m_matchColor, "Match");
+}
+void SettingsDialog::onCSVTextColorButtonClicked() {
+	pickColor(g.m_CSVTextColor, "CSV Text");
 }
 void SettingsDialog::onCSVHeaderColorButtonClicked() {
 	pickColor(g.m_CSVHeaderColor, "CSV Header");

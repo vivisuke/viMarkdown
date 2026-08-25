@@ -810,20 +810,20 @@ void insertTable(QTextCursor& cursor, const QList<QStringList> &ll, const QList<
 				}
 				QTextCursor cellCursor = cell.firstCursorPosition();
 				QTextCharFormat charFormat;
-				charFormat.setForeground(Qt::red);
+				charFormat.setForeground(g.m_CSVTextColor);
 				QTextBlockFormat blockFormat;
 				if (row == 0) {
 					QTextTableCellFormat cellFormat;
 					cellFormat.setBackground(g.m_CSVHeaderColor);
 					cell.setFormat(cellFormat);
-					charFormat.setForeground(Qt::red);
+					//charFormat.setForeground(Qt::red);
 					charFormat.setFontWeight(QFont::Bold);
 					blockFormat.setAlignment(Qt::AlignCenter); // ヘッダは中央
 				} else {
 					QTextTableCellFormat cellFormat;
 					cellFormat.setBackground((row % 2) != 0 ? g.m_CSVZebraColor1 : g.m_CSVZebraColor2);
 					cell.setFormat(cellFormat);
-					charFormat.setForeground(Qt::red);
+					//charFormat.setForeground(Qt::red);
 					charFormat.setFontWeight(QFont::Normal);
 					if( tableAlign != nullptr) {
 						if( col < tableAlign->size() && ((*tableAlign)[col] & ALIGHN_RIGHT) != 0 )

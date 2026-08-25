@@ -265,7 +265,7 @@ void MainWindow::load_settings() {
 	g.m_italicColor = settings.value(KEY_ITALIC_COLOR, QColor("#0000FF")).value<QColor>();
 	g.m_strikethroughColor = settings.value(KEY_STRIKETHROUGH_COLOR, QColor("#00ffff")).value<QColor>();
 	g.m_matchColor = settings.value(KEY_MATCH_COLOR, QColor("#ffff00")).value<QColor>();
-	g.m_tableTextColor = settings.value(KEY_TABLE_TEXT_COLOR, QColor("black")).value<QColor>();
+	g.m_CSVTextColor = settings.value(KEY_TABLE_TEXT_COLOR, QColor("black")).value<QColor>();
 	g.m_CSVHeaderColor = settings.value(KEY_CSV_HEADER_COLOR, QColor("lightblue")).value<QColor>();
 	g.m_CSVZebraColor1 = settings.value(KEY_CSV_ZEBRA_COLOR1, QColor("white")).value<QColor>();
 	g.m_CSVZebraColor2 = settings.value(KEY_CSV_ZEBRA_COLOR2, QColor("lightyellow")).value<QColor>();
@@ -296,7 +296,7 @@ void MainWindow::save_settings() {
     settings.setValue(KEY_ITALIC_COLOR, g.m_italicColor);
     settings.setValue(KEY_STRIKETHROUGH_COLOR, g.m_strikethroughColor);
     settings.setValue(KEY_MATCH_COLOR, g.m_matchColor);
-    settings.setValue(KEY_TABLE_TEXT_COLOR, g.m_tableTextColor);
+    settings.setValue(KEY_TABLE_TEXT_COLOR, g.m_CSVTextColor);
     settings.setValue(KEY_CSV_HEADER_COLOR, g.m_CSVHeaderColor);
     settings.setValue(KEY_CSV_ZEBRA_COLOR1, g.m_CSVZebraColor1);
     settings.setValue(KEY_CSV_ZEBRA_COLOR2, g.m_CSVZebraColor2);

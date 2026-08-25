@@ -156,7 +156,7 @@ struct Global {
 	QColor	m_italicColor;
 	QColor	m_strikethroughColor;
 	QColor	m_matchColor;			//	検索マッチ背景色
-	QColor	m_tableTextColor;		//	表テキスト色
+	QColor	m_CSVTextColor;		//	表テキスト色
 	QColor	m_CSVHeaderColor;
 	QColor	m_CSVZebraColor1;		//	本体奇数行
 	QColor	m_CSVZebraColor2;		//	本体偶数行
