@@ -548,7 +548,7 @@ SPR# 状 P Open Close ver     Type  概要
 0545 ◎ C 07/01 08/02 03031│ToDo│とりあえず、２つの文書で dtl を使って diff を計算し、結果をアウトプットに表示してみる？
 0546 ◎ C 07/01 08/12 03102│ToDo│diff モード：折り畳み vi コマンド禁止（h, zc, zM, za）
 0547 ◎ C 07/02 07/02 03031│ToDo│diff モードに切りかわったときに、全展開
-0548 ● D 07/02            │ToDo│diff モード：スプリッターは移動不可に（常に 1:1 幅）？
+0548 ◯ D 07/02 08/25      │ToDo│diff モード：スプリッターは移動不可に（常に 1:1 幅）？ → 折り畳み表示に変更したので、もう必要性が無くなった
 0549 ◎ C 07/02 07/02 03031│ToDo│diff モード > ヘッダ部分：QLabel を２つ設置
 0550 ◎ C 07/02 07/02 03031│ToDo│MainWindow::newTabWidget()：MarkdownEditor* を生成している部分を別関数にし、行数を減らす
 0551 ◎ C 07/02 07/02 03031│ToDo│MainWindow::newTabWidget()：MarkdownPreview* を生成している部分も別関数にし、行数を減らす
