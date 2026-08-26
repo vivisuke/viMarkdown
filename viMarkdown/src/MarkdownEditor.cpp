@@ -1596,8 +1596,19 @@ int MarkdownEditor::findPosition(const PosContext &context) {
 	}
 	if( block.isValid() ) {
 		if( ch == ListBullet ) {
-			int pos = block.position() + 2;		//	2 for "- "
-			return pos + context.m_offset;
+			int ix = 2;		//	2 for "- "
+			const BlockData* data = getBlockData(block);
+			int offset = context.m_offset;
+			// 先頭に装飾記号がある場合（例: - **hoge**）のスキップ
+			while( ix < data->m_charFlags.size() && data->m_charFlags[ix] == PCF_EMPHASIZED )
+				++ix;
+			while(offset > 0 && ix < data->m_charFlags.size() ) {
+				++ix;
+				--offset;
+				while( ix < data->m_charFlags.size() && data->m_charFlags[ix] == PCF_EMPHASIZED )
+					++ix;
+			}
+			return block.position() + ix;
 		}
 		int pos = block.position() + ix + offset + context.m_offset;
 		if( blockType(block) == BT_CSV_BLOCK ) {

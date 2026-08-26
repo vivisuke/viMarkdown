@@ -57,7 +57,7 @@ SPR# 状 P Open Close ver     Type  概要
 0054 ◎ C 05/09 05/09 03004│ToDo│SVG補完：path 追加
 0055 ◎ C 05/09 05/09 03004│ToDo│SVG補完ダイアログ：Home, End で最初、最後を選択
 0056 ◎ C 05/09 05/09 03004│問題│SVG補完ダイアログ：現補完候補が見えるよう自動スクロールすべき
-0057 ● D 05/09            │ToDo│SVG補完ダイアログ：PageUp, PageDown でスクロール
+0057 ◯ D 05/09 08/26      │ToDo│SVG補完ダイアログ：PageUp, PageDown でスクロール → 必須ではないのでNPTFとする
 0058 ◎ C 05/09 07/29 03040│ToDo│SVG補完ダイアログ：マウスクリックで補完候補選択
 0059 ● D 05/09            │ToDo│QSvgRenderer renderer(buf.toUtf8()); がエラーの場合：XMLパースしてエラー表示？
 0060 ◎ C 05/10 05/10 03005│問題│SVGブロックがあると、SVGブロック直後の空行にエディタカーソルがあると、プレビューカーソルが空行の次に移動してしまう
@@ -950,8 +950,8 @@ SPR# 状 P Open Close ver     Type  概要
 0940 ◎ C 08/26 08/26 03107│ToDo│MarkdownPreview::contextAt(int pos)：リスト行にいる場合は、アンカー文字を ListBullet に
 0941 ◎ C 08/26 08/26 03107│ToDo│MarkdownEditor::findPosition(const PosContext &context)：ListBullet 対応
 0942 ◎ C 08/26 08/26 03107│ToDo│MarkdownPreview::contextAt(int pos)：ZWSP 直後の場合は、ひとつ左に移動
-0943 ● C 08/26            │ToDo│
-0944 ● C 08/26            │ToDo│
+0943 ◎ C 08/26 08/27 03107│問題│リスト行にボールド等があると、PtoE カーソル同期が動作不良
+0944 ● C 08/26            │問題│"1. hoge\n1. " をエディタに入力すると、２行目が "2. 1. " となってしまう
 0945 ● C 08/26            │ToDo│
 0946 ● C 08/26            │ToDo│
 0947 ● C 08/26            │ToDo│
