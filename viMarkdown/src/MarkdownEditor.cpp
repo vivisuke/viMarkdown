@@ -1470,6 +1470,13 @@ int MarkdownEditor::findPosition(const PosContext &context) {
 			ix = 0;
 			continue;
 		}
+		if( ch == ListBullet ) {
+			if( blockType(block) == BT_LIST ) {
+				if( --nth == 0 ) break;
+			}
+			block = block.next();
+			continue;
+		}
 		if( ch == QChar(U_KEISEN_BLOCK) ) {
 			if( blockType(block) == BT_KEISEN_BEGIN ) {
 				if( --nth == 0 ) break;
@@ -1588,6 +1595,10 @@ int MarkdownEditor::findPosition(const PosContext &context) {
 		isPrevLineEmpty = isLineEmpty;
 	}
 	if( block.isValid() ) {
+		if( ch == ListBullet ) {
+			int pos = block.position() + 2;		//	2 for "- "
+			return pos + context.m_offset;
+		}
 		int pos = block.position() + ix + offset + context.m_offset;
 		if( blockType(block) == BT_CSV_BLOCK ) {
 			pos = qMin(pos, block.position() + block.text().size());

@@ -945,11 +945,11 @@ SPR# 状 P Open Close ver     Type  概要
 0935 ◎ C 08/24 08/24 03106│ToDo│viMarkdown help > viMarkdown独自仕様：SVGブロック説明追加
 0936 ◎ C 08/24 08/24 03106│ToDo│viMarkdown help > viMarkdown独自仕様：カレンダー・日記機能説明追加
 0937 ◎ C 08/25 08/25 03107│問題│折り返し行での j が効かない（k は大丈夫）
-0938 ● B 08/25            │問題│プレビュー：リスト行テキストが空のとき、「・」直後にカーソルがあるときの PtoE カーソル同期が動作不良
+0938 ◎ B 08/25 08/26 03107│問題│プレビュー：リスト行テキストが空のとき、「・」直後にカーソルがあるときの PtoE カーソル同期が動作不良
 0939 ◎ C 08/26 08/26 03107│ToDo│PosContext：リスト行（行頭："- "）の場合の特殊アンカー文字導入
 0940 ◎ C 08/26 08/26 03107│ToDo│MarkdownPreview::contextAt(int pos)：リスト行にいる場合は、アンカー文字を ListBullet に
-0941 ● C 08/26            │ToDo│
-0942 ● C 08/26            │ToDo│
+0941 ◎ C 08/26 08/26 03107│ToDo│MarkdownEditor::findPosition(const PosContext &context)：ListBullet 対応
+0942 ◎ C 08/26 08/26 03107│ToDo│MarkdownPreview::contextAt(int pos)：ZWSP 直後の場合は、ひとつ左に移動
 0943 ● C 08/26            │ToDo│
 0944 ● C 08/26            │ToDo│
 0945 ● C 08/26            │ToDo│

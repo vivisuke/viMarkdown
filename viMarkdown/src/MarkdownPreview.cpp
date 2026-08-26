@@ -1873,8 +1873,11 @@ PosContext MarkdownPreview::contextAt(int pos) {	//	pos 位置から PosContext 
 	QTextBlock block0 = block;
 	QTextTable *table = cursor.currentTable();
 	if( blockType(block) == BT_LIST ) {
+		//auto ch = doc->characterAt(pos-1);
 		pc.m_anchorChar = ListBullet;
 		pc.m_offset = pos - block.position();
+		if( pc.m_offset == 1 && doc->characterAt(pos-1) == ZWSP )
+			pc.m_offset = 0;
 	} else if( blockType(block) == BT_KEISEN_BLOCK ) {
 		//pc.m_anchorChar = QChar(U_KEISEN_BLOCK);
 		pc.m_anchorChar = pos == block.position() ? STX : EOB;
@@ -1996,8 +1999,8 @@ PosContext MarkdownPreview::contextAt(int pos) {	//	pos 位置から PosContext 
 				if( block == block0 )
 					break;
 				++count;
-			} else
-				block = block.next();
+			}
+			block = block.next();
 		}
 	} else {
 		for (int i = block.position(); i < pos; ++i) {
