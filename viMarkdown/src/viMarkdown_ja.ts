@@ -23,7 +23,7 @@
         <location filename="x64/Debug/qt/uic/ui_GrepDialog.h" line="142"/>
         <location filename="x64/Release/qt/uic/ui_GrepDialog.h" line="142"/>
         <source>Search Text:</source>
-        <translation type="unfinished">検索文字列：</translation>
+        <translation>検索文字列：</translation>
     </message>
     <message>
         <location filename="GrepDialog.ui" line="45"/>
@@ -44,28 +44,28 @@
         <location filename="x64/Debug/qt/uic/ui_GrepDialog.h" line="145"/>
         <location filename="x64/Release/qt/uic/ui_GrepDialog.h" line="145"/>
         <source>Ignore Case</source>
-        <translation type="unfinished"></translation>
+        <translation>大文字・小文字同一視</translation>
     </message>
     <message>
         <location filename="GrepDialog.ui" line="95"/>
         <location filename="x64/Debug/qt/uic/ui_GrepDialog.h" line="146"/>
         <location filename="x64/Release/qt/uic/ui_GrepDialog.h" line="146"/>
         <source>Regexp</source>
-        <translation type="unfinished"></translation>
+        <translation>正規表現</translation>
     </message>
     <message>
         <location filename="GrepDialog.ui" line="102"/>
         <location filename="x64/Debug/qt/uic/ui_GrepDialog.h" line="147"/>
         <location filename="x64/Release/qt/uic/ui_GrepDialog.h" line="147"/>
         <source>Clear Output</source>
-        <translation type="unfinished"></translation>
+        <translation>アウトプットクリア</translation>
     </message>
     <message>
         <location filename="GrepDialog.ui" line="109"/>
         <location filename="x64/Debug/qt/uic/ui_GrepDialog.h" line="148"/>
         <location filename="x64/Release/qt/uic/ui_GrepDialog.h" line="148"/>
         <source>Grep SubDir</source>
-        <translation type="unfinished"></translation>
+        <translation>サブディレクトリ検索</translation>
     </message>
 </context>
 <context>
@@ -572,7 +572,7 @@ Do you want to save your changes?</source>
         <location filename="x64/Debug/qt/uic/ui_MainWindow.h" line="1114"/>
         <location filename="x64/Release/qt/uic/ui_MainWindow.h" line="1114"/>
         <source>&amp;Navi</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">ナビ(&amp;N)</translation>
     </message>
     <message>
         <location filename="MainWindow.ui" line="347"/>
