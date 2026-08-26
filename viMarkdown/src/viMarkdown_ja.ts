@@ -319,7 +319,7 @@ Do you want to save your changes?</source>
         <location filename="x64/Debug/qt/uic/ui_MainWindow.h" line="1101"/>
         <location filename="x64/Release/qt/uic/ui_MainWindow.h" line="1101"/>
         <source>&amp;Diary</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">日記 (&amp;D)</translation>
     </message>
     <message>
         <location filename="MainWindow.ui" line="99"/>
@@ -1519,7 +1519,7 @@ Do you want to save your changes?</source>
         <location filename="x64/Debug/qt/uic/ui_MainWindow.h" line="1084"/>
         <location filename="x64/Release/qt/uic/ui_MainWindow.h" line="1084"/>
         <source>Today&apos;s &amp;Diary</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">今日の日記 (&amp;D)</translation>
     </message>
     <message>
         <location filename="MainWindow.ui" line="1289"/>

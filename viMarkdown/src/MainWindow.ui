@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>701</width>
-    <height>580</height>
+    <height>586</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -76,7 +76,6 @@
       <string>&amp;Diary</string>
      </property>
      <addaction name="action_TodaysDiary"/>
-     <addaction name="action_WeeklyNote"/>
     </widget>
     <addaction name="action_New"/>
     <addaction name="action_NewTab"/>

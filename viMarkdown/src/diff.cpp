@@ -212,7 +212,7 @@ void MainWindow::diffview_open() {
 	if( fullPath.isEmpty() ) return;
 	QFile file(fullPath);
 	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-		QMessageBox::warning(this, tr("エラー"), tr("ファイルが開けません:\n%1").arg(fullPath));
+		QMessageBox::warning(this, tr("Error"), tr("Cannot open file:\n%1").arg(fullPath));
 		return;
 	}
 	QTextStream in(&file);
@@ -236,7 +236,7 @@ void MainWindow::onAction_DiffWithFile() {
 	if( fullPath.isEmpty() ) return;
 	QFile file(fullPath);
 	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-		QMessageBox::warning(this, tr("エラー"), tr("ファイルが開けません:\n%1").arg(fullPath));
+		QMessageBox::warning(this, tr("Error"), tr("Cannot open file:\n%1").arg(fullPath));
 		return;
 	}
 	QTextStream in(&file);
