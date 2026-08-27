@@ -1483,7 +1483,10 @@ void MarkdownPreview::do_numlist(QTextBlock srcBlock, QTextCursor& cursor, QStri
 		//cursor.insertText(m_lst[m_ln].remove(re_numlist) /*+ "\n"*/);
 		setBlockType(cursor.block(), BT_NUMLIST);
 		auto text = m_lst[m_ln];
-		//##text.replace(re_tailspc, "&nbsp;");
+		//##text.replace(re_tailspc, ZWSP);
+		if( text.size() > 3 && text.back() == u' ' ) {	//	"1. " 部分は無視
+			text.back() = ZWSP;
+		}
 		cursor.insertMarkdown(text + "\n");
 		if( ++m_ln >= m_lst.size() ) break;
 		srcBlock = srcBlock.next();

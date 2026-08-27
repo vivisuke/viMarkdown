@@ -565,7 +565,7 @@ Do you want to save your changes?</source>
         <location filename="x64/Debug/qt/uic/ui_MainWindow.h" line="1111"/>
         <location filename="x64/Release/qt/uic/ui_MainWindow.h" line="1111"/>
         <source>&amp;CheatSheet</source>
-        <translation type="unfinished"></translation>
+        <translation>チートシート(&amp;C)</translation>
     </message>
     <message>
         <location filename="MainWindow.ui" line="235"/>
@@ -582,7 +582,7 @@ Do you want to save your changes?</source>
         <location filename="x64/Release/qt/uic/ui_MainWindow.h" line="1044"/>
         <location filename="x64/Release/qt/uic/ui_MainWindow.h" line="1116"/>
         <source>OutputBar</source>
-        <translation type="unfinished"></translation>
+        <translation>アウトプッロバー</translation>
     </message>
     <message>
         <location filename="MainWindow.ui" line="386"/>
@@ -595,7 +595,7 @@ Do you want to save your changes?</source>
         <location filename="x64/Release/qt/uic/ui_MainWindow.h" line="1091"/>
         <location filename="x64/Release/qt/uic/ui_MainWindow.h" line="1117"/>
         <source>CalendarBar</source>
-        <translation type="unfinished"></translation>
+        <translation>カレンダーバー</translation>
     </message>
     <message>
         <location filename="MainWindow.ui" line="584"/>
@@ -1442,7 +1442,7 @@ Do you want to save your changes?</source>
         <location filename="x64/Debug/qt/uic/ui_MainWindow.h" line="1061"/>
         <location filename="x64/Release/qt/uic/ui_MainWindow.h" line="1061"/>
         <source>ColorSettings...</source>
-        <translation type="unfinished"></translation>
+        <translation>色設定...</translation>
     </message>
     <message>
         <location filename="MainWindow.ui" line="1229"/>
