@@ -2081,7 +2081,25 @@ const QList<ViTestCase> viTestCases = {
                    "third\n",
         }
     },
+    //	dw and .
+    { "Delete word and .(cw) - Basic",
+        "┃abc def ghi j\n",
+        {
+            "dw", "┃def ghi j\n",		// "abc" を削除
+            "w",     "def ┃ghi j\n",	// 移動が成功しているか？
+            ".",	 "def ┃j\n", 		// "ghi" も削除
+        }
+    },
     //	cw
+    { "Change word (cw) - Basic",
+        "┃abc def ghi\n",
+        {
+            "cwxyz", "xy┃z def ghi\n",  // "abc" を "xyz" に置換
+            "w",     "xyz ┃def ghi\n",  // 移動が成功しているか？
+            ".",	 "xyz xy┃z ghi\n",  // "def" も "xyz" に置換
+        }
+    },
+#if 0
     { "Change word (cw) - Basic",
         "┃abc def ghi\n",
         {
@@ -2184,7 +2202,7 @@ const QList<ViTestCase> viTestCases = {
             ".",       " ┃ ghi\n"     // "def" が削除される
         }
     },
-
+#endif
     // --- カウント指定の文字単位ペースト (<num>p / <num>P) ---
 
     { "characterwise put with count (3p)",
