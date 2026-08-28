@@ -1469,6 +1469,7 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 			if( gvi.m_repeatCount > 1 )
 				text = gvi.m_insertedText.repeated(gvi.m_repeatCount);
 			gvi.m_editor->do_insertText(cursor, text);
+			cursor.movePosition(QTextCursor::Left);
 			//cursor.insertText(gvi.m_insertedText.repeated(gvi.m_repeatCount));
 			//gvi.m_viCmdMode = true;
 			gvi.m_currentMode = ViMode::Normal;
