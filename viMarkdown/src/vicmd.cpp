@@ -108,6 +108,7 @@ void save_preffered_x() {
 }
 void MainWindow::do_cdy_moved(QTextCursor& cursor) {
 	assert( gvi.m_editor != nullptr );
+	if( gvi.m_operator == ' ' ) return;
 #if 0
 	if( cursor.hasSelection() && gvi.m_linewiseMoved ) {
 		int startPos = cursor.selectionStart();
@@ -130,7 +131,8 @@ void MainWindow::do_cdy_moved(QTextCursor& cursor) {
         }
 	}
 #endif
-	gvi.m_lastEditCommand = gvi.m_operator + gvi.m_lastMoveCommand;
+	if( gvi.m_isEditCommand && !gvi.m_redoing )
+		gvi.m_lastEditCommand = gvi.m_operator + gvi.m_lastMoveCommand;
 	if( gvi.m_operator == 'c' ) {		//	c<move>
 		if( cursor.hasSelection() ) {
 			//cursor.deleteChar();
