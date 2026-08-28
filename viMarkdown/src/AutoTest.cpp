@@ -2081,6 +2081,110 @@ const QList<ViTestCase> viTestCases = {
                    "third\n",
         }
     },
+    //	cw
+    { "Change word (cw) - Basic",
+        "┃abc def ghi\n",
+        {
+            "cw", "┃ def ghi\n"  // "abc" のみを削除（空白は残る）
+        }
+    },
+
+    // 2. 単語の途中からの cw
+    { "Change word (cw) - From middle of word",
+        "he┃llo world\n",
+        {
+            "cw", "he┃ world\n"  // "llo" のみを削除（空白は残る）
+        }
+    },
+
+    // 3. 1文字だけの単語での cw
+    { "Change word (cw) - Single character word",
+        "┃a b c\n",
+        {
+            "cw", "┃ b c\n"      // "a" のみを削除（空白は残る）
+        }
+    },
+
+    // 4. 空白（スペース）上からの cw
+    // （単語ではなく空白上で cw を実行した場合は、次の単語の手前までの空白が削除される）
+    { "Change word (cw) - On whitespace",
+        "abc  ┃  def\n",
+        {
+            "cw", "abc  ┃def\n"  // カーソル位置以降の空白を削除
+        }
+    },
+
+    // 5. 記号と単語の混在（記号の連続も単語扱い）
+    { "Change word (cw) - Punctuation and symbols",
+        "┃foo->bar = 1;\n",
+        {
+            "cw", "┃->bar = 1;\n" // "foo" のみを削除
+        }
+    },
+    { "Change word (cw) - On symbols",
+        "foo┃->bar = 1;\n",
+        {
+            "cw", "foo┃bar = 1;\n" // "->" のみを削除
+        }
+    },
+
+    // 6. 単語の直後に記号が続く場合
+    { "Change word (cw) - Word followed by punctuation",
+        "┃hello, world\n",
+        {
+            "cw", "┃, world\n"   // "hello" のみを削除
+        }
+    },
+
+    // 7. 行末の単語での cw
+    { "Change word (cw) - End of line word",
+        "foo ┃bar\nnext\n",
+        {
+            "cw", "foo ┃\nnext\n" // "bar" を削除（改行は残る）
+        }
+    },
+    // 1. cw で単語を置換し、次の単語へ移動してドットリピート (.)
+    { "Change word (cw) and repeat with dot (.)",
+        "┃foo bar baz\n",
+        {
+            "cwnew<Esc>", "ne┃w bar baz\n", // "foo" を "new" に変更（Escでカーソルは末尾の'w'へ）
+            "w",          "new ┃bar baz\n", // 次の単語 "bar" の先頭へ移動
+            ".",          "new ne┃w baz\n"  // "bar" が "new" に置換される
+        }
+    },
+
+    // 2. 文字数の異なる単語に対するドットリピート（短い単語 → 長い単語）
+    { "Change word (cw) - Repeat on different length word",
+        "┃a very_long_word end\n",
+        {
+            "cwtarget<Esc>", "targe┃t very_long_word end\n", // 1文字の "a" を "target" に置換
+            "w",             "target ┃very_long_word end\n",  // 長い単語の先頭へ移動
+            ".",             "target targe┃t end\n"           // 長い単語全体が "target" に置換される
+        }
+    },
+
+    // 3. 単語の途中からの cw をドットリピート
+    // (ドットリピート時もカーソル位置から単語末尾までを置換)
+    { "Change word (cw) - Repeat from middle of word",
+        "he┃llo wo┃rld\n",
+        {
+            "cwy<Esc>", "he┃y world\n", // "llo" を "y" に置換
+            "w",        "hey ┃world\n",
+            "l",        "hey w┃orld\n", // "world" の途中に移動
+            ".",        "hey w┃y\n"     // "orld" が "y" に置換される
+        }
+    },
+
+    // 4. 文字を入力せずにEscした場合（単語の削除操作としてリピート）
+    { "Change word (cw) - Empty change repeated",
+        "┃abc def ghi\n",
+        {
+            "cw<Esc>", "┃ def ghi\n", // 何も入力せずにEsc（単語のみ削除）
+            "w",       " ┃def ghi\n", // 次の単語へ移動
+            ".",       " ┃ ghi\n"     // "def" が削除される
+        }
+    },
+
     // --- カウント指定の文字単位ペースト (<num>p / <num>P) ---
 
     { "characterwise put with count (3p)",
