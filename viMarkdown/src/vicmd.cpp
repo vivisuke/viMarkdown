@@ -131,7 +131,7 @@ void MainWindow::do_cdy_moved(QTextCursor& cursor) {
         }
 	}
 #endif
-	if( gvi.m_isEditCommand && !gvi.m_redoing )
+	if( /*gvi.m_isEditCommand &&*/ !gvi.m_redoing)
 		gvi.m_lastEditCommand = gvi.m_operator + gvi.m_lastMoveCommand;
 	if( gvi.m_operator == 'c' ) {		//	c<move>
 		if( cursor.hasSelection() ) {
