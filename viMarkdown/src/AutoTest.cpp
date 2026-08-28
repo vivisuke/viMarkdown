@@ -2081,8 +2081,17 @@ const QList<ViTestCase> viTestCases = {
                    "third\n",
         }
     },
+    //	x and .
+    { "Delete and .(x <move> .)",
+        "a┃bc def\n",
+        {
+            "x",	"a┃c def\n",		// "b" を削除
+            "w",	"ac ┃def\n",		// 移動が成功しているか？
+            ".",	"ac ┃ef\n", 		// "d" も削除
+        }
+    },
     //	dw and .
-    { "Delete word and .(cw) - Basic",
+    { "Delete word and .(dw <move> .)",
         "┃abc def ghi j\n",
         {
             "dw", "┃def ghi j\n",		// "abc" を削除
