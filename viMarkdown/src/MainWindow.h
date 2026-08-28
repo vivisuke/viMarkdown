@@ -204,6 +204,7 @@ struct ViStatus {
     int		m_rangeEnd = 1;
     int		m_exhist_ix = -1;			//	現コマンド履歴インデックス
 	QString	m_lastEditCommand;			//	最後に実行した vi 編集コマンド
+	QString	m_lastMoveCommand;			//	最後に実行した vi 移動コマンド
 	QString	m_pendingCommand;			//	入力中の vi コマンド
 	QString	m_insertedText;				//	i 等で挿入された文字列
     QString	m_yankBuffer;

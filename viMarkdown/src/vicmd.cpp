@@ -130,7 +130,8 @@ void MainWindow::do_cdy_moved(QTextCursor& cursor) {
         }
 	}
 #endif
-	if( gvi.m_operator == 'c' ) {
+	gvi.m_lastEditCommand = gvi.m_operator + gvi.m_lastMoveCommand;
+	if( gvi.m_operator == 'c' ) {		//	c<move>
 		if( cursor.hasSelection() ) {
 			//cursor.deleteChar();
 			if( gvi.m_editor != nullptr ) {
@@ -927,6 +928,7 @@ void MainWindow::do_vi_motion(QChar cmd, QTextCursor& cursor, int rcnt, DocWidge
 	QTextBlock block = cursor.block();
 	if( gvi.m_operator == 'c' && cmd == u'w' )
 		cmd = u'e';		//	cw は ce として処理
+	gvi.m_lastMoveCommand = cmd;
 	switch( cmd.unicode() ) {
 	case 'k': {
 		do {
@@ -1255,6 +1257,7 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 		}
 		return;
 	} else if( gvi.m_fFtT == 'f' || gvi.m_fFtT == 'F' || gvi.m_fFtT == 't' || gvi.m_fFtT == 'T' ) {
+		gvi.m_lastMoveCommand = QString(gvi.m_fFtT) + cmd;
 		if( do_fFtT(cursor, gvi.m_fFtT, cmd, rcnt) )
 			do_cdy_moved(cursor);
 	} else if( gvi.m_prefix == 'r' ) {
@@ -1407,7 +1410,7 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 			}
 			do_fFtT(cursor, c, gvi.m_last_fFtT_char, rcnt, true);
 			break;
-		case '.':
+		case '.':	//	redo
 			if( gvi.m_redoing || gvi.m_lastEditCommand.isEmpty() ) break;
 			//##qDebug() << "'.': gvi.m_lastEditCommand = " << gvi.m_lastEditCommand;
 			gvi.m_redoing = true;
