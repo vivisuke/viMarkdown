@@ -15,8 +15,11 @@
 "File ", "NewWin", "新規メインウィンドウ作成", "Ctrl + N"
 "File ", "NewTab", "新規タブ作成", "Ctrl + T"
 "File ", "Open", "MD文書読込", "Ctrl + O"
+"ファイル", "日記 > 今日の日記", "今日の日記ファイルを開く", 
+"ファイル", "再ロード", "現ファイルを再読込", 
 "File ", "Save", "MD文書保存", "Ctrl + S"
 "File ", "SaveAs", "MD文書別名保存", "Ctrl + Shift + S"
+"ファイル", "", "", 
 "File > Export", "PDF", "PDF出力", ""
 "File > Recent", "最近保存MDパス名", "最近のファイル読込", ""
 "File > Favoraite", "お気に入りMDパス名", "お気に入りのファイル読込", ""

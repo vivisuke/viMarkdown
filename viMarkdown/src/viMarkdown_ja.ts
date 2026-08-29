@@ -1540,7 +1540,7 @@ Do you want to save your changes?</source>
         <location filename="x64/Debug/qt/uic/ui_MainWindow.h" line="1093"/>
         <location filename="x64/Release/qt/uic/ui_MainWindow.h" line="1093"/>
         <source>SaveAll</source>
-        <translation type="unfinished"></translation>
+        <translation>全文書保存</translation>
     </message>
     <message>
         <location filename="MainWindow.ui" line="1315"/>

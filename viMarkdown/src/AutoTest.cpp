@@ -2108,6 +2108,13 @@ const QList<ViTestCase> viTestCases = {
             ".",	 "xyz xy┃z ghi\n",  // "def" も "xyz" に置換
         }
     },
+    { "Change word (cw) - Undo",
+        "┃abc def\n",
+        {
+            "cwxyz", "xy┃z def\n",  // "abc" を "xyz" に置換
+            "u",     "┃abc def\n",
+        }
+    },
 #if 0
     { "Change word (cw) - Basic",
         "┃abc def ghi\n",

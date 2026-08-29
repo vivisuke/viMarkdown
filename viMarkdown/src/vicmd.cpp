@@ -1428,9 +1428,11 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 			//buf += gvi.m_insertedText;
 			//##qDebug() << "redo buf = " << buf;
 			gvi.m_repeatCount = 0;
+			gvi.m_editor->openUndoBlock();
 			for(QChar ch: buf) {
 				do_viCmd(ch, cursor);
 			}
+			gvi.m_editor->closeUndoBlock();
 			gvi.m_redoing = false;
 			break;
 		case 'v':
