@@ -1,31 +1,31 @@
-﻿# メニュー一覧
+﻿# Menu List
 
-[README_ja](../../README_ja.md) > メニュー一覧
+[README_ja](../../README.md) > Menu List
 
-**※ ドキュメントの表示について:**
+**Note on Document Rendering:**
 > 
-> 本リポジトリのドキュメントには、viMarkdown の拡張構文（CSVブロック）が含まれています。
-> GitHub の Markdown レンダリングエンジンではサポート外のため、プレーンな CSV 形式として表示されます。
-> 正しい書式（表組み）での閲覧には、viMarkdown をご使用ください。
+> The documentation in this repository includes extended syntax (CSV blocks) specific to viMarkdown.
+> Since this is not supported by GitHub's Markdown rendering engine, it will be displayed as plain CSV text.
+> To view the documents in their intended formatting (as rendered tables), please use viMarkdown.
 
-## ファイル メニュー
+## File メニュー
 
 ```CSV
 " カテゴリ ", " 項目 ", " 説明 ", " ショートカット "
-"ファイル", "新規ウィンドウ", "新規メインウィンドウ作成", "Ctrl + N"
-"ファイル", "新規タブ", "新規タブ作成", "Ctrl + T"
-"ファイル", "開く", "MD文書読込", "Ctrl + O"
-"ファイル", "日記 > 今日の日記", "今日の日記ファイルを開く", ""
-"ファイル", "再ロード", "現ファイルを再読込", ""
-"ファイル", "保存", "MD文書保存", "Ctrl + S"
-"ファイル", "名前を付けて保存", "MD文書別名保存", "Ctrl + Shift + S"
-"ファイル", "全文書保存", "開いているすべての文書を保存", ""
-"ファイル > エクスポート", "PDF", "PDF出力", ""
-"ファイル", "閉じる", "現文書を閉じる", ""
-"ファイル > 最近使ったファイル", "最近保存MDパス名", "最近のファイル読込", ""
-"ファイル > お気に入り", "お気に入りMDパス名", "お気に入りのファイル読込", ""
-"ファイル", "印刷", "プレビュー印刷", "Ctrl + P"
-"ファイル", "終了", "メインウィンドウを閉じる", "Alt + F4"
+"File ", "NewWin", "新規メインウィンドウ作成", "Ctrl + N"
+"File ", "NewTab", "新規タブ作成", "Ctrl + T"
+"File ", "Open", "MD文書読込", "Ctrl + O"
+"ファイル", "日記 > 今日の日記", "今日の日記ファイルを開く", 
+"ファイル", "再ロード", "現ファイルを再読込", 
+"File ", "Save", "MD文書保存", "Ctrl + S"
+"File ", "SaveAs", "MD文書別名保存", "Ctrl + Shift + S"
+"ファイル", "全文書保存", "開いているすべての文書を保存", 
+"File > Export", "PDF", "PDF出力", ""
+"ファイル", "閉じる", "現文書を閉じる", 
+"File > Recent", "最近保存MDパス名", "最近のファイル読込", ""
+"File > Favoraite", "お気に入りMDパス名", "お気に入りのファイル読込", ""
+"File ", "Print", "プレビュー印刷", "Ctrl + P"
+"File ", "Exit", "メインウィンドウを閉じる", "Alt + F4"
 ```
 
 ## Edit メニュー
