@@ -972,7 +972,7 @@ SPR# 状 P Open Close ver     Type  概要
 0962 ● C 08/29            │問題│cw<text><esc> u すると、置換が一度に undo されない
 0963 ◎ C 08/29 08/29 03108│問題│File > SaveAll が日本語化されていない
 0964 ◎ C 08/29 08/29 03108│ToDo│docs/ja/menu.md > ファイル メニュー：日本語化、0.3 対応
-0965 ● C 08/29            │ToDo│
+0965 ◎ C 08/29 08/29 03108│ToDo│docs/menu.md > ファイル メニュー：英語化、0.3 対応
 0966 ● C 08/29            │ToDo│
 0967 ● C 08/29            │ToDo│
 0968 ● C 08/29            │ToDo│

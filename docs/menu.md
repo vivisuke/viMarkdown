@@ -8,24 +8,24 @@
 > Since this is not supported by GitHub's Markdown rendering engine, it will be displayed as plain CSV text.
 > To view the documents in their intended formatting (as rendered tables), please use viMarkdown.
 
-## File メニュー
+## File menu
 
 ```CSV
-" カテゴリ ", " 項目 ", " 説明 ", " ショートカット "
-"File ", "NewWin", "新規メインウィンドウ作成", "Ctrl + N"
-"File ", "NewTab", "新規タブ作成", "Ctrl + T"
-"File ", "Open", "MD文書読込", "Ctrl + O"
-"ファイル", "日記 > 今日の日記", "今日の日記ファイルを開く", 
-"ファイル", "再ロード", "現ファイルを再読込", 
-"File ", "Save", "MD文書保存", "Ctrl + S"
-"File ", "SaveAs", "MD文書別名保存", "Ctrl + Shift + S"
-"ファイル", "全文書保存", "開いているすべての文書を保存", 
-"File > Export", "PDF", "PDF出力", ""
-"ファイル", "閉じる", "現文書を閉じる", 
-"File > Recent", "最近保存MDパス名", "最近のファイル読込", ""
-"File > Favoraite", "お気に入りMDパス名", "お気に入りのファイル読込", ""
-"File ", "Print", "プレビュー印刷", "Ctrl + P"
-"File ", "Exit", "メインウィンドウを閉じる", "Alt + F4"
+" Category ", " Item ", " Description ", " Shortcut "
+"File", "New Window", "Create new main window", "Ctrl + N"
+"File", "New Tab", "Create new tab", "Ctrl + T"
+"File", "Open", "Open Markdown document", "Ctrl + O"
+"File", "Diary > Today's Diary", "Open today's diary file", ""
+"File", "Reload", "Reload current file", ""
+"File", "Save", "Save Markdown document", "Ctrl + S"
+"File", "Save As", "Save Markdown document with a new name", "Ctrl + Shift + S"
+"File", "Save All", "Save all open documents", ""
+"File > Export", "PDF", "Export as PDF", ""
+"File", "Close", "Close current document", "Ctrl + W"
+"File > Recent", "Recent Markdown Path", "Open recent file", ""
+"File > Favorites", "Favorite Markdown Path", "Open favorite file", ""
+"File", "Print", "Print preview", "Ctrl + P"
+"File", "Exit", "Close main window", "Alt + F4"
 ```
 
 ## Edit メニュー
