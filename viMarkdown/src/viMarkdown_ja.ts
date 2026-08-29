@@ -44,7 +44,7 @@
         <location filename="x64/Debug/qt/uic/ui_GrepDialog.h" line="145"/>
         <location filename="x64/Release/qt/uic/ui_GrepDialog.h" line="145"/>
         <source>Ignore Case</source>
-        <translation>大文字・小文字同一視</translation>
+        <translation>大小英文字同一視</translation>
     </message>
     <message>
         <location filename="GrepDialog.ui" line="95"/>
@@ -966,7 +966,7 @@ Do you want to save your changes?</source>
         <location filename="x64/Debug/qt/uic/ui_MainWindow.h" line="925"/>
         <location filename="x64/Release/qt/uic/ui_MainWindow.h" line="925"/>
         <source>ThinKeisen</source>
-        <translation type="unfinished"></translation>
+        <translation>細罫線</translation>
     </message>
     <message>
         <location filename="MainWindow.ui" line="896"/>
@@ -1225,7 +1225,7 @@ Do you want to save your changes?</source>
         <location filename="x64/Debug/qt/uic/ui_MainWindow.h" line="995"/>
         <location filename="x64/Release/qt/uic/ui_MainWindow.h" line="995"/>
         <source>&amp;Link</source>
-        <translation type="unfinished"></translation>
+        <translation>リンク(&L)</translation>
     </message>
     <message>
         <location filename="MainWindow.ui" line="1073"/>
@@ -1400,7 +1400,7 @@ Do you want to save your changes?</source>
         <location filename="x64/Debug/qt/uic/ui_MainWindow.h" line="1053"/>
         <location filename="x64/Release/qt/uic/ui_MainWindow.h" line="1053"/>
         <source>&amp;IgnoreCase</source>
-        <translation type="unfinished"></translation>
+        <translation>大小英文字同一視(&I)</translation>
     </message>
     <message>
         <location filename="MainWindow.ui" line="1200"/>
@@ -1498,7 +1498,7 @@ Do you want to save your changes?</source>
         <location filename="x64/Debug/qt/uic/ui_MainWindow.h" line="1078"/>
         <location filename="x64/Release/qt/uic/ui_MainWindow.h" line="1078"/>
         <source>toggle Diff Mode</source>
-        <translation type="unfinished"></translation>
+        <translation>diff モード ON/OFF</translation>
     </message>
     <message>
         <location filename="MainWindow.ui" line="1266"/>
@@ -1600,14 +1600,14 @@ Do you want to save your changes?</source>
         <location filename="x64/Debug/qt/uic/ui_ReplaceDialog.h" line="183"/>
         <location filename="x64/Release/qt/uic/ui_ReplaceDialog.h" line="183"/>
         <source>IgnoreCase</source>
-        <translation type="unfinished">大文字・小文字同一視</translation>
+        <translation>大小英文字同一視</translation>
     </message>
     <message>
         <location filename="ReplaceDialog.ui" line="74"/>
         <location filename="x64/Debug/qt/uic/ui_ReplaceDialog.h" line="184"/>
         <location filename="x64/Release/qt/uic/ui_ReplaceDialog.h" line="184"/>
         <source>Regexp</source>
-        <translation type="unfinished"></translation>
+        <translation>正規表現</translation>
     </message>
     <message>
         <location filename="ReplaceDialog.ui" line="96"/>

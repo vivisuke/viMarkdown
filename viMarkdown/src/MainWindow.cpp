@@ -2187,7 +2187,7 @@ void MainWindow::do_openDiary(QDate date) {
 	        if (templateFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
 	            QTextStream tOut(&templateFile);
 	            tOut.setEncoding(QStringConverter::Utf8);
-	            tOut << "# yyyy-MM-dd\n\n## Todo\n- [ ] \n\n## Notes\n- \n\n";
+	            tOut << "# {{yyyy-MM-dd}}\n\n## Todo\n- [ ] \n\n## Notes\n- \n\n";
 	            templateFile.close();
 	            qDebug() << "Created default template file:" << templatePath;
 	        }
@@ -2200,12 +2200,42 @@ void MainWindow::do_openDiary(QDate date) {
 	        templateFile.close();
 	    } else {
 	        // 読み込みに失敗した場合のフォールバック用デフォルト文章
-	        content = "# yyyy-MM-dd\n\n## Todo\n- [ ] \n\n## Notes\n- \n\n";
+	        content = "# {{yyyy-MM-dd}}\n\n## Todo\n- [ ] \n\n## Notes\n- \n\n";
 	    }
+	    bool converted = false;
 	    auto lst = content.split('\n');
-	    lst[0] = date.toString(lst[0]);
+	    // 1行目に "{{" が無く、"yyyy" がある場合
+	    if (!lst[0].contains("{{") && lst[0].contains("yyyy")) {
+	        // "yyyy[^ ]*" にマッチする部分を {{...}} で囲む
+	        // ※ Qtの replace では \0 が「マッチした文字列全体」を表します
+	        static const QRegularExpression legacyDateRegex(R"((yyyy.*))");
+	        lst[0].replace(legacyDateRegex, R"({{\1}})");
+	        converted = true;
+	    }
+	    //lst[0] = date.toString(lst[0]);
 	    //content = date.toString(content);
 	    content = lst.join('\n');
+	    if( converted ) {
+		    QFile templateFile(templatePath);
+		    if (templateFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+		        QTextStream out(&templateFile);
+			    out.setEncoding(QStringConverter::Utf8);
+			    out << content;
+		        templateFile.close();
+		    }
+	    }
+	    static const QRegularExpression re(R"(\{\{(.+?)\}\})");
+		auto match = re.match(content);
+		while (match.hasMatch()) {
+		    QString format = match.captured(1);           // "yyyy-MM-dd" などのテキストを取得
+		    QString dateStr = date.toString(format);      // 日付に変換
+		    
+		    // {{yyyy-MM-dd}} 全体を変換後の日付に置換
+		    content.replace(match.capturedStart(0), match.capturedLength(0), dateStr);
+		    
+		    // 置換した位置の次から再検索
+		    match = re.match(content, match.capturedStart(0) + dateStr.length());
+		}
 #if 0
         if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
             QTextStream out(&file);

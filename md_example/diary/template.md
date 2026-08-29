@@ -1,4 +1,4 @@
-# yyyy-MM-dd (ddd)
+# {{yyyy-MM-dd (ddd)}}
 
 ## Todo
 - [ ] 
