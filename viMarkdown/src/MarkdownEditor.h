@@ -236,6 +236,7 @@ public:
     bool	canRedo() const;
     void	openUndoBlock();
     void	closeUndoBlock();
+    void	closeAllUndoBlock();
     void	prohibitMergeUndo();
     int		do_undo();
     int		do_redo();

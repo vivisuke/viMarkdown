@@ -1141,6 +1141,9 @@ void MarkdownEditor::openUndoBlock() {
 void MarkdownEditor::closeUndoBlock() {
 	m_undoMgr->closeBlock();
 }
+void MarkdownEditor::closeAllUndoBlock() {
+	m_undoMgr->closeAllBlock();
+}
 void MarkdownEditor::prohibitMergeUndo() {
 	m_undoMgr->prohibitMergeUndo();
 }

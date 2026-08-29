@@ -1432,7 +1432,7 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 			for(QChar ch: buf) {
 				do_viCmd(ch, cursor);
 			}
-			gvi.m_editor->closeUndoBlock();
+			gvi.m_editor->closeAllUndoBlock();
 			gvi.m_redoing = false;
 			break;
 		case 'v':
