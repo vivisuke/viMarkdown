@@ -249,6 +249,7 @@ public:
     //using QPlainTextEdit::QPlainTextEdit;
 
     void	cut();
+    void	paste();
 
 signals:
     void	tab_pressed();

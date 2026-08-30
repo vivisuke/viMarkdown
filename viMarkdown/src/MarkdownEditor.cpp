@@ -15,6 +15,7 @@
 #include <QDir>
 #include <QStatusBar>
 #include <QMenu>
+#include <QClipboard>
 #include "MarkdownEditor.h"
 #include "MainWindow.h"
 #include "DocWidget.h"
@@ -440,6 +441,14 @@ void MarkdownEditor::cut() {
 	do_deleteText(cursor);
 	setTextCursor(cursor);
 }
+void MarkdownEditor::paste() {
+	QClipboard *clipboard = QGuiApplication::clipboard();
+	QString text = clipboard->text();
+	if( text.isEmpty() ) return;
+	QTextCursor cursor = textCursor();
+	do_insertText(cursor, text);
+	setTextCursor(cursor);
+}
 QVariant MarkdownEditor::inputMethodQuery(Qt::InputMethodQuery query) const {
 	//##qDebug() << "query = " << query;
 	if (query == Qt::ImCursorRectangle) {
@@ -859,6 +868,11 @@ void MarkdownEditor::svg_esc_pressed() {
 void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 	if (e->matches(QKeySequence::Cut)) {
         cut();
+        e->accept();
+        return;
+    }
+	if (e->matches(QKeySequence::Paste)) {
+        paste();
         e->accept();
         return;
     }
