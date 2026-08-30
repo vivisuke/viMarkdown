@@ -76,14 +76,21 @@ void do_openline(QTextCursor& cursor, bool before) {
 	if( before ) {
 		cursor.movePosition(QTextCursor::StartOfBlock);
 		//cursor.insertText("\n");
-		if( gvi.m_editor != nullptr )
-			gvi.m_editor->do_insertText(cursor, "\n");
-		cursor.movePosition(QTextCursor::PreviousBlock);
+		if( gvi.m_editor != nullptr ) {
+			auto atxt = gvi.m_editor->autoIndentText(cursor);
+			//if( !atxt.isEmpty() )
+			gvi.m_editor->do_insertText(cursor, atxt + "\n");
+			cursor.movePosition(QTextCursor::PreviousBlock);
+			cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, atxt.size());
+		}
 	} else {
 		cursor.setPosition(cursor.block().position() + cursor.block().text().size());
 		//cursor.insertText("\n");
-		if( gvi.m_editor != nullptr )
-			gvi.m_editor->do_insertText(cursor, "\n");
+		if( gvi.m_editor != nullptr ) {
+			auto atxt = gvi.m_editor->autoIndentText(cursor);
+			//if( !atxt.isEmpty() )
+			gvi.m_editor->do_insertText(cursor, "\n" + atxt);
+		}
 	}
 }
 void do_swap_case(QTextCursor& cursor, int rcnt) {
