@@ -704,13 +704,15 @@ void MarkdownEditor::insertEnter() {
 void MarkdownEditor::deleteWord() {
 	QTextCursor cursor = textCursor();
 	moveToNextWord(cursor, true);
-	cursor.deleteChar();
+	//cursor.deleteChar();
+	do_deleteText(cursor);
 	setTextCursor(cursor);
 }
 void MarkdownEditor::backSpaceWord() {
 	QTextCursor cursor = textCursor();
 	moveToPrevWord(cursor, true);
-	cursor.deleteChar();
+	//cursor.deleteChar();
+	do_deleteText(cursor);
 	setTextCursor(cursor);
 }
 const QStringList svg_tag_lst = {
