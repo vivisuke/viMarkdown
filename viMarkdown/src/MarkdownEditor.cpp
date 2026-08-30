@@ -658,15 +658,11 @@ void MarkdownEditor::moveToEndOfWord(QTextCursor& cursor, bool shift) {
 	}
 	cursor.setPosition(pos, shift ? QTextCursor::KeepAnchor : QTextCursor::MoveAnchor);
 }
-//QString MarkdownEditor::autoTextIndent(QTextBlock block) {
-//}
-void MarkdownEditor::insertEnter() {
+QString MarkdownEditor::autoIndentText(QTextCursor cursor) {
 	//static QRegularExpression re(R"(^\d[\.\)] )");
 	static QRegularExpression re(R"(^\d\. )");
 	static QRegularExpression re2(R"(^\d\) )");
-	QTextCursor cursor = this->textCursor();
-	QTextBlock currentBlock = cursor.block();
-	QString text = currentBlock.text();
+	QString text = cursor.block().text();
 	int n = 0;
 	while( n < text.length() && text[n].isSpace() ) ++n;
 	QString atxt = text.left(n);		//	オートインデントテキスト
@@ -674,9 +670,10 @@ void MarkdownEditor::insertEnter() {
 	if( mtxt == "- " || mtxt == "- [ ] " || mtxt == "- [x] " || mtxt == "- [X] " || mtxt == "1. " || mtxt == "1) " || mtxt == "> ") {
 		cursor.movePosition(QTextCursor::StartOfBlock);
 		cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
-		cursor.deleteChar();
+		//cursor.deleteChar();
+		do_deleteText(cursor);
 		atxt.clear();
-		return;
+		return atxt;
 	} else if( mtxt.startsWith("- [ ] ") )
 		atxt += "- [ ] ";
 	else if( mtxt.startsWith("- [x] ") )
@@ -691,6 +688,13 @@ void MarkdownEditor::insertEnter() {
 		atxt += "1) ";
 	else if( mtxt.startsWith("> ") )
 		atxt += "> ";
+	return atxt;
+}
+void MarkdownEditor::insertEnter() {
+	QTextCursor cursor = this->textCursor();
+	//QTextBlock currentBlock = cursor.block();
+	QString atxt = autoIndentText(cursor);
+	if( atxt.isEmpty() ) return;
 	//cursor.insertText("\n" + atxt);
 	do_insertText(cursor, "\n" + atxt);
 	setTextCursor(cursor);

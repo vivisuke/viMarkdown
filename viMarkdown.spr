@@ -979,8 +979,8 @@ SPR# 状 P Open Close ver     Type  概要
 0968 ◎ C 08/30 08/30 03108│問題│s<text><esc> 移動 . u すると、置換が一度に undo されない
 0969 ◎ C 08/30 08/30 03108│ToDo│docs/ja/menu.md > 編集(E) メニュー：日本語化、0.3 対応
 0970 ◎ C 08/30 08/30 03108│ToDo│docs/menu.md > Edit メニュー：英語化、0.3 対応
-0971 ● C 08/30            │ToDo│
-0972 ● C 08/30            │ToDo│
+0971 ◎ C 08/30 08/30 03108│ToDo│MarkdownEditor::autoIndentText(cursor) 追加
+0972 ◎ C 08/30 08/30 03108│問題│"- " 位置で Enter 入力で "- " が消えるが、undo でそれが復活しない
 0973 ● C 08/30            │ToDo│
 0974 ● C 08/30            │ToDo│
 0975 ● C 08/30            │ToDo│
