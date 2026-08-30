@@ -245,6 +245,11 @@ public:
     void	savePrefferedX(const QTextCursor&);
     int		getPrefferdOffset(const QTextBlock& block);
 
+public:
+    //using QPlainTextEdit::QPlainTextEdit;
+
+    void	cut();
+
 signals:
     void	tab_pressed();
     void	esc_pressed();

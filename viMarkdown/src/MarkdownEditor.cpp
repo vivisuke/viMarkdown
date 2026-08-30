@@ -434,6 +434,12 @@ MarkdownEditor::MarkdownEditor(const MainWindow* mainWindow, DocWidget* docWidge
 MarkdownEditor::~MarkdownEditor() {
 	delete m_undoMgr;
 }
+void MarkdownEditor::cut() {
+	copy();
+	QTextCursor cursor = textCursor();
+	do_deleteText(cursor);
+	setTextCursor(cursor);
+}
 QVariant MarkdownEditor::inputMethodQuery(Qt::InputMethodQuery query) const {
 	//##qDebug() << "query = " << query;
 	if (query == Qt::ImCursorRectangle) {
@@ -694,7 +700,7 @@ void MarkdownEditor::insertEnter() {
 	QTextCursor cursor = this->textCursor();
 	//QTextBlock currentBlock = cursor.block();
 	QString atxt = autoIndentText(cursor);
-	if( atxt.isEmpty() ) return;
+	//if( atxt.isEmpty() ) return;
 	//cursor.insertText("\n" + atxt);
 	do_insertText(cursor, "\n" + atxt);
 	setTextCursor(cursor);
@@ -851,6 +857,11 @@ void MarkdownEditor::svg_esc_pressed() {
 	m_svgCompleter = nullptr;
 }
 void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
+	if (e->matches(QKeySequence::Cut)) {
+        cut();
+        e->accept();
+        return;
+    }
 	QTextCursor cursor = this->textCursor();
 	if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) {		//	改行入力
 		if( gvi.m_currentMode == ViMode::Normal ) {
