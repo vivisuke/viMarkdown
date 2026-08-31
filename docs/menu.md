@@ -60,14 +60,16 @@
 ## Search メニュー
 
 ```CSV
-" カテゴリ ", " 項目 ", " 説明 ", " ショートカット "
-"Search", "Find", "検索ボックスにフォーカス移動", "Ctrl + F"
-"Search", "DorwardAgain", "次検索", "F3"
-"Search", "BackwardAgain", "前検索", "Shift + F3"
-"Search", "FindWord", "カーソル位置単語検索", "Ctrl + F3"
-"Search", "ClearSearchHighlight", "検索マッチ強調消去", "Alt + F3"
-"Search", "Replace...", "検索ダイアログ表示", "F4"
-```
+" Category ", " Item ", " Description ", " Shortcut "
+"Search", "Find", "Move focus to search box", "Ctrl + F"
+"Search", "ForwardAgain", "Search next", "F3"
+"Search", "BackwardAgain", "Search previous", "Shift + F3"
+"Search", "FindWord", "Search for word at cursor", "Ctrl + F3"
+"Search", "ClearHighlight", "Clear search match highlights", "Alt + F3"
+"Search", "Replace...", "Show search dialog", "F4"
+"Search", "grep...", "Find in files", "Shift + F4"
+"Search", "IgnoreCase", "Case-insensitive search", ""
+"Search", "Regexp", "Regular expression search", ""```
 
 ## View メニュー
 

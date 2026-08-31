@@ -989,7 +989,7 @@ SPR# 状 P Open Close ver     Type  概要
 0978 ● C 08/31            │問題│エディタ：右ボタンメニュー > Cut 後の undo が効かない
 0979 ● C 08/31            │ToDo│OutputBar > QPlainTextEdit：派生クラスに
 0980 ◎ C 09/01 09/01 03109│ToDo│SlideShow F5 は封印、v0.5 以降に延期
-0980 ● C 09/01            │ToDo│
+0980 ◎ C 09/01 09/01 03109│ToDo│docs/ja/menu.md, docs/menu.md：検索部分をとりあえず完成させる
 0980 ● C 09/01            │ToDo│
 0980 ● C 09/01            │ToDo│
 0980 ● C 09/01            │ToDo│
