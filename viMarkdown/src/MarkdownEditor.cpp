@@ -1327,16 +1327,29 @@ void MarkdownEditor::wheelEvent(QWheelEvent *event) {
 		MarkdownBaseEdit::wheelEvent(event);
 }
 void MarkdownEditor::contextMenuEvent(QContextMenuEvent *event) {
+	QPoint clickPos = event->pos();
+    QMenu *menu = createStandardContextMenu(clickPos); //
+    for (QAction *action : menu->actions()) {
+        auto t = action->text();
+        // 標準Cutアクションのショートカットと一致するか確認
+        if (action->shortcuts().contains(QKeySequence::Cut) || 
+            action->shortcut() == QKeySequence(QKeySequence::Cut) ||
+            t == "Cu&t" )
+        {
+            // 既存の接続を切断して this->cut() に接続
+            action->disconnect();
+            connect(action, &QAction::triggered, this, &MarkdownEditor::cut);
+            break;
+        }
+    }
 	if (!m_diffMode) {
         QPlainTextEdit::contextMenuEvent(event);    // diffモードでなければ通常のメニューを表示
         return;
     }
-	QPoint clickPos = event->pos();
     QTextCursor cursor = cursorForPosition(clickPos);
     QTextBlock block = cursor.block();
     int posInBlock = cursor.positionInBlock();
     // 標準のコンテキストメニューを生成 (コピー、ペーストなどのアクションが既に入ったメニュー)
-    QMenu *menu = createStandardContextMenu(clickPos); //
     bool isOnInsertedWord = false;
     int wordStart = -1;
     int wordLength = -1;

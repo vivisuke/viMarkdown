@@ -103,7 +103,6 @@
     <addaction name="action_OutputBar"/>
     <addaction name="action_ClearOutput"/>
     <addaction name="action_CalendarBar"/>
-    <addaction name="action_SlideShow"/>
    </widget>
    <widget class="QMenu" name="menu_Edit">
     <property name="title">
