@@ -1643,7 +1643,10 @@ int MarkdownEditor::findPosition(const PosContext &context) {
 	}
 	if( block.isValid() ) {
 		if( ch == ListBullet ) {
-			int ix = 2;		//	2 for "- "
+			auto text = block.text();
+			int ix = 0;
+			while( text[ix] == ' ' ) ++ix;
+			ix += 2;		//	2 for "- "
 			const BlockData* data = getBlockData(block);
 			int offset = context.m_offset;
 			// 先頭に装飾記号がある場合（例: - **hoge**）のスキップ
