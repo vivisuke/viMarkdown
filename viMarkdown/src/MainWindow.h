@@ -300,7 +300,7 @@ protected:
     void	addToRecentFiles(const QString& fullPath);
     void	insertSearchComboBox();
     void	do_find(bool backward=false);
-    void	do_search(const QString txt, bool backward);
+    void	do_search(const QString txt, bool backward = false);
     void	do_replace_next(const QString, const QString);
     void	do_replace_all(const QString, const QString);
     void	do_undo_replaceDlg();

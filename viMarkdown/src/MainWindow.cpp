@@ -338,8 +338,9 @@ void MainWindow::insertSearchComboBox() {
 		QString text = m_searchCB->currentText();
 		if (text.isEmpty()) return;
 		//##qDebug() << "text = " << text;
-		do_find();
-		});
+		//do_find();
+		do_search(text);
+	});
 	QSettings settings;
 	m_searchHist = settings.value("search/history").toStringList();
 	m_replaceHist = settings.value("search/replace").toStringList();
