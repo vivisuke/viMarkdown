@@ -104,6 +104,14 @@ MainWindow::MainWindow(QWidget *parent)
 	    "   background-color: rgba(0, 120, 215, 30);" // マウスホバー時も淡く反応させる
 	    "}" );
 	insertSearchComboBox();
+    auto *escShortcut = new QShortcut(QKeySequence(Qt::Key_Escape), m_searchCB);
+	escShortcut->setContext(Qt::WidgetWithChildrenShortcut);
+	connect(escShortcut, &QShortcut::activated, this, [this]() {
+	    // Esc 押下時の処理（例：エディタへフォーカスを戻す）
+		DocWidget *docWidget = getCurDocWidget();
+		if( docWidget != nullptr )
+		    docWidget->m_editor->setFocus();
+	});
 	updateSearchOptions();
 	//updateHTMLModeCheck();		//	HTML or Source チェック状態に
 	updateThinThickCheck();		//	細・太罫線モード
@@ -132,6 +140,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_blinkTimer = new QTimer(this);	// カーソル点滅用タイマーの設定 (500ms)
     connect(m_blinkTimer, &QTimer::timeout, this, &MainWindow::toggleCursor);
     m_blinkTimer->start(500);
+    //
 	QSettings settings;
 	//m_editorFontSize = settings.value(KEY_EDITOR_FONT_SIZE).toInt();
 	restore_win();
