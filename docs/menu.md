@@ -28,7 +28,7 @@
 "File", "Exit", "Close main window", "Alt + F4"
 ```
 
-## Edit メニュー
+## Edit menu
 
 ```CSV
 " Category ", " Item ", " Description ", " Shortcut "
@@ -57,7 +57,7 @@
 "Edit > Convert", "Markdown Table -> CSV", "Convert Markdown table to CSV", ""
 ```
 
-## Search メニュー
+## Search menu
 
 ```CSV
 " Category ", " Item ", " Description ", " Shortcut "
@@ -69,40 +69,58 @@
 "Search", "Replace...", "Show search dialog", "F4"
 "Search", "grep...", "Find in files", "Shift + F4"
 "Search", "IgnoreCase", "Case-insensitive search", ""
-"Search", "Regexp", "Regular expression search", ""```
-
-## View メニュー
-
-```CSV
-" カテゴリ ", " 項目 ", " 説明 ", " ショートカット "
-"View", "OutlineBar", "アウトラインバー表示・非表示", ""
-"View", "FocusOutline", "アウトラインバーにフォーカスを移す", "Ctrl + Q"
-"View", "NextTab", "次のタブにフォーカスを移す", "Ctrl + Tab"
-"View", "PrevTab", "前のタブにフォーカスを移す", "Ctrl + Shift + Tab"
-"View", "ToggleFocus", "エディタ←→プレビューフォーカス移動", "Ctrl + \\"
-"View", "SwitchToAltFile", "直前ファイル切り替え", "Ctrl + ^"
-"View", "Back", "前履歴ファイル移動", "Alt + ←"
-"View", "Forward", "次履歴ファイル移動", "Alt + →"
-"View", "TagJump", "カーソルがリンク上にあればリンク先を開く", "F9"
+"Search", "Regexp", "Regular expression search", ""
 ```
 
-## Tool メニュー
+## View menu
 
 ```CSV
-" カテゴリ ", " 項目 ", " 説明 ", " ショートカット "
-"Tool", "KeisenMode", "罫線モード ON/OFF", "Shift + F5"
-"Tool", "ThinKeisen", "細罫線モード", ""
-"Tool", "ThickKeisen", "太罫線モード", ""
-"Tool", "OpenPrev", "カーソル行前に連結罫線空行挿入", "Shift + F7"
-"Tool", "OpenNext", "カーソル行次に連結罫線空行挿入", "F7"
+" Category ", " Item ", " Description ", " Shortcut "
+"View", "OutlineBar", "Toggle Outline Bar", ""
+"View", "FocusOutline", "Move focus to Outline Bar", "Ctrl + Q"
+"View", "OutputBar", "Toggle Output Bar", ""
+"View", "ClearOutput", "Clear output contents", ""
+"View", "CalendarBar", "Toggle Calendar Bar", ""
 ```
 
-## Other メニュー
+## Navigation menu
 
 ```CSV
-" カテゴリ ", " 項目 ", " 説明 ", " ショートカット "
-"Other", "Settings...", "[設定ダイアログ](dialogs.md#設定ダイアログ)表示", "F8"
-"Other", "Help", "ヘルプ文書表示", "F1"
-"Other", "About viMarkdown...", "About viMarkdown ダイアログ表示", ""
+" Category ", " Item ", " Description ", " Shortcut "
+"Navigation", "NextTab", "Move focus to next tab", "Ctrl + Tab"
+"Navigation", "PrevTab", "Move focus to previous tab", "Ctrl + Shift + Tab"
+"Navigation", "ToggleFocus", "Toggle focus between editor and preview", "Ctrl + \\"
+"Navigation", "SwitchToAltFile", "Switch to alternate file", "Ctrl + ^"
+"Navigation", "Back", "Navigate back in history", "Alt + ←"
+"Navigation", "Forward", "Navigate forward in history", "Alt + →"
+"Navigation", "TagJump", "Open link under cursor", "F9"
+```
+
+## Tool menu
+
+```CSV
+" Category ", " Item ", " Description ", " Shortcut "
+"Tools", "Diff", "Compare documents", "Ctrl + Alt + D"
+"Tools", "DiffWithFile", "Compare with file", ""
+"Tools", "KeisenMode", "Toggle box-drawing line mode ON/OFF", "Shift + F5"
+"Tools", "ThinKeisen", "Thin box-drawing line mode", ""
+"Tools", "ThickKeisen", "Thick box-drawing line mode", ""
+"Tools", "OpenPrev", "Insert blank line above with connected ruling lines", "Shift + F7"
+<!--"Tools", "OpenNext", "Insert blank line below with connected ruling lines", "F7"-->
+```
+
+## Other menu
+
+```CSV
+" Category ", " Item ", " Description ", " Shortcut "
+"Other", "Language...", "Show language settings dialog", ""
+"Other", "Settings...", "Show [Settings Dialog](dialogs.md#設定ダイアログ)", "F8"
+"Other", "Color Settings...", "Show color settings dialog", ""
+"Other", "vi Keybindings", "Enable/Disable vi commands", ""
+"Other", "Help", "Show help document", "F1"
+"Other > Cheat Sheet", "Markdown", "Show Markdown cheat sheet", ""
+"Other > Cheat Sheet", "vi", "Show vi cheat sheet", ""
+"Other > Test", "etc", "Various debug tests", ""
+"Other", "About viMarkdown...", "Show About viMarkdown dialog", ""
 ```
 
