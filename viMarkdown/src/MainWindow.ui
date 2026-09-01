@@ -369,6 +369,7 @@
        <property name="font">
         <font>
          <family>ＭＳ ゴシック</family>
+         <pointsize>12</pointsize>
         </font>
        </property>
        <property name="readOnly">
