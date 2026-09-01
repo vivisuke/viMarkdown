@@ -164,7 +164,8 @@ Grepped &apos;%1&apos; in *.md under &apos;%2&apos;.
         <location filename="MainWindow.cpp" line="867"/>
         <source>The document &apos;%1&apos; has been modified.
 Do you want to save your changes ?</source>
-        <translation type="unfinished"></translation>
+        <translation>ドキュメント「%1」は変更されています。
+変更内容を保存しますか？</translation>
     </message>
     <message>
         <location filename="MainWindow.cpp" line="975"/>
