@@ -1650,12 +1650,12 @@ int MarkdownEditor::findPosition(const PosContext &context) {
 			const BlockData* data = getBlockData(block);
 			int offset = context.m_offset;
 			// 先頭に装飾記号がある場合（例: - **hoge**）のスキップ
-			while( ix < data->m_charFlags.size() && data->m_charFlags[ix] == PCF_EMPHASIZED )
+			while( ix < data->m_charFlags.size() && data->m_charFlags[ix] >= PCF_NOT_VISIBLE )
 				++ix;
 			while(offset > 0 && ix < data->m_charFlags.size() ) {
 				++ix;
 				--offset;
-				while( ix < data->m_charFlags.size() && data->m_charFlags[ix] == PCF_EMPHASIZED )
+				while( ix < data->m_charFlags.size() && data->m_charFlags[ix] >= PCF_NOT_VISIBLE )
 					++ix;
 			}
 			return block.position() + ix;
