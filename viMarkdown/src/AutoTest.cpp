@@ -1951,7 +1951,7 @@ const QList<ViTestCase> viTestCases = {
         "second line\n",
         {
             "o", "    first indented line\n"
-                 "    ┃\n"
+                 "   ┃ \n" // 4つ目の空白文字の上にカーソル
                  "second line\n",
         }
     },
@@ -1960,7 +1960,7 @@ const QList<ViTestCase> viTestCases = {
         "    second indented ┃line\n",
         {
             "O", "first line\n"
-                 "    ┃\n"
+                 "   ┃ \n" // 4つ目の空白文字の上にカーソル
                  "    second indented line\n",
         }
     },
@@ -1969,7 +1969,7 @@ const QList<ViTestCase> viTestCases = {
         "- second item\n",
         {
             "o", "- first item\n"
-                 "- ┃\n"
+                 "-┃ \n" // 末尾の空白文字の上にカーソル
                  "- second item\n",
         }
     },
@@ -1978,7 +1978,7 @@ const QList<ViTestCase> viTestCases = {
         "- second ┃item\n",
         {
             "O", "- first item\n"
-                 "- ┃\n"
+                 "-┃ \n" // 末尾の空白文字の上にカーソル
                  "- second item\n",
         }
     },
@@ -1987,7 +1987,7 @@ const QList<ViTestCase> viTestCases = {
         "next line\n",
         {
             "o", "  - nested child\n"
-                 "  - ┃\n"
+                 "  -┃ \n" // 末尾の空白文字の上にカーソル
                  "next line\n",
         }
     },
@@ -1996,7 +1996,7 @@ const QList<ViTestCase> viTestCases = {
         "  - nested ┃child\n",
         {
             "O", "first line\n"
-                 "  - ┃\n"
+                 "  -┃ \n" // 末尾の空白文字の上にカーソル
                  "  - nested child\n",
         }
     },
@@ -2005,12 +2005,94 @@ const QList<ViTestCase> viTestCases = {
         "- item two\n",
         {
             "o", "- item one\n"
-                 "- ┃\n"
+                 "-┃ \n"
                  "- item two\n",
-            "u", "- item ┃one\n"
+            "u", "- item on┃e\n" // Undo後は直前行の末尾文字（'e'）の上に着地する
                  "- item two\n",
         }
     },
+    // --- 1. 基本動作（行結合・空白挿入・インデント削除） ---
+    { "Join lines (J) - Basic",
+        "┃hello\nworld\n",
+        {
+            "J", "hello┃ world\n" // 2行をスペース1つ挟んで結合し、結合位置へカーソル移動
+        }
+    },
+    { "Join lines (J) - Trim indentation",
+        "┃foo\n    bar\n\tbaz\n",
+        {
+            "J", "foo┃ bar\n\tbaz\n", // 次行の先頭スペースを除去してスペース1つで結合
+            "J", "foo bar┃ baz\n"     // 次行の先頭タブを除去してスペース1つで結合
+        }
+    },
+    { "Join lines (J) - Trailing space on first line",
+        "┃hello \nworld\n",
+        {
+            "J", "hello ┃world\n" // 前行末尾に空白がある場合は二重にスペースを追加しない
+        }
+    },
+    // --- 2. 空行との結合 ---
+    { "Join lines (J) - Next line is empty",
+        "┃first\n\nsecond\n",
+        {
+            "J", "first┃\nsecond\n" // 次の空行を削除して結合（余分な空白は付与しない）
+        }
+    },
+    { "Join lines (J) - Current line is empty",
+        "┃\n  second\n",
+        {
+            "J", "┃second\n" // 現在の空行と次行のインデントを詰めて結合
+        }
+    },
+    // --- 3. 連続結合・カウント指定 ---
+    { "Join lines (J) - Consecutive joins",
+        "┃line1\nline2\nline3\n",
+        {
+            "J", "line1┃ line2\nline3\n", // 1行目と2行目を結合
+            "J", "line1 line2┃ line3\n"  // 続けて3行目を結合
+        }
+    },
+    { "Join lines (J) - With count (3J)",
+        "┃line1\nline2\nline3\nline4\n",
+        {
+            "3J", "line1 line2┃ line3\nline4\n" // 3行まとめて結合
+        }
+    },
+    { "Join lines (J) - Count exceeds buffer lines",
+        "┃line1\nline2\nline3\n",
+        {
+            "10J", "line1 line2┃ line3\n" // バッファ終端まで結合して停止
+        }
+    },
+    // --- 4. 境界値（最終行・1行バッファ） ---
+    { "Join lines (J) - Last line (No-op)",
+        "line1\n┃line2\n",
+        {
+            "J", "line1\n┃line2\n" // 最終行では何も起きず状態を維持
+        }
+    },
+    { "Join lines (J) - Single line buffer (No-op)",
+        "┃single line\n",
+        {
+            "J", "┃single line\n" // 1行のみのバッファでは何もしない
+        }
+    },
+    // --- 5. ドットリピート & Undo ---
+    { "Join lines (J) - Dot repeat",
+        "┃1\n2\n3\n4\n",
+        {
+            "J", "1┃ 2\n3\n4\n", // 1行目と2行目を結合
+            ".", "1 2┃ 3\n4\n"   // ドットリピートで3行目を結合
+        }
+    },
+    { "Join lines (J) - Undo",
+        "┃foo\nbar\n",
+        {
+            "J", "foo┃ bar\n", // 結合
+            "u", "┃foo\nbar\n"  // アンドゥで元の複数行に復元
+        }
+    },
+    //----------------------------------------------------------------------
 	// 1. 単純な dw
     { "Delete word (dw) - Basic",
         "┃abc def ghi\n",
@@ -2019,7 +2101,6 @@ const QList<ViTestCase> viTestCases = {
             "dw", "┃ghi\n"     // "def " を削除、カーソルは "ghi" の先頭へ
         }
     },
-
     // 2. <num>dw, d<num>w, <num>d<num>w
     { "Delete word with counts (2dw, d2w, 2d2w)",
         "┃w1 w2 w3 w4 w5 w6 w7 w8 w9\n",
@@ -2029,7 +2110,6 @@ const QList<ViTestCase> viTestCases = {
             "2d2w", "┃w9\n"                   // 2×2=4単語 ("w5 w6 w7 w8 ") を削除
         }
     },
-
     // 3. 行末単語の dw
     { "Delete word at end of line (dw)",
         "hello ┃world\n",
@@ -2037,7 +2117,6 @@ const QList<ViTestCase> viTestCases = {
             "dw", "hello┃ \n" // "world" を削除。改行(\n)は削除されないが、カーソルはひとつ左に移動
         }
     },
-
     // 4. 改行にカーソルがある場合の dw
     { "Delete word on newline (dw)",
         "first\n┃\nsecond\n",
@@ -2045,7 +2124,6 @@ const QList<ViTestCase> viTestCases = {
             "dw", "first\n┃second\n" // 改行文字(\n)自体が削除され、下の行と連結される
         }
     },
-
     // 5. 行をまたぐ <num>dw
     { "Delete words across lines (<num>dw)",
         "┃foo bar\nbaz qux\n",
@@ -2414,7 +2492,7 @@ const QList<ViTestCase> viTestCases = {
             "u",     "┃abc def\n",
         }
     },
-#if 0
+#if 1
     { "Change word (cw) - Basic",
         "┃abc def ghi\n",
         {
@@ -2608,6 +2686,93 @@ const QList<ViTestCase> viTestCases = {
         "あ┃いう\n",
         {
             "rえ", "あ┃えう\n",     // マルチバイト文字の置換
+        }
+    },
+    //----------------------------------------------------------------------
+    // --- 1. 基本的な 1 文字削除 (x) の Undo / Redo ---
+    { "Undo/Redo - Character delete (x)",
+        "┃abc\n",
+        {
+            "x", "┃bc\n",  // 'a' を削除
+            "u", "┃abc\n", // アンドゥで復元（カーソルは元の位置へ）
+            "U", "┃bc\n"   // リドゥで再度削除
+        }
+    },
+    // --- 2. 単語削除 (dw) の Undo / Redo ---
+    { "Undo/Redo - Delete word (dw)",
+        "┃foo bar baz\n",
+        {
+            "dw", "┃bar baz\n", // "foo " を削除
+            "u",  "┃foo bar baz\n", // アンドゥで "foo " が復元
+            "U",  "┃bar baz\n"      // リドゥで再び削除
+        }
+    },
+    // --- 3. 行削除 (dd) の Undo / Redo ---
+    { "Undo/Redo - Delete line (dd)",
+        "line1\n┃line2\nline3\n",
+        {
+            "dd", "line1\n┃line3\n",      // 2行目を削除
+            "u",  "line1\n┃line2\nline3\n", // アンドゥで行が復元
+            "U",  "line1\n┃line3\n"       // リドゥで再び削除
+        }
+    },
+    // --- 4. 行結合 (J) の Undo / Redo ---
+    { "Undo/Redo - Join lines (J)",
+        "┃hello\nworld\n",
+        {
+            "J", "hello┃ world\n", // 行結合
+            "u", "┃hello\nworld\n", // アンドゥで元の2行に分割復元
+            "U", "hello┃ world\n"  // リドゥで再度結合
+        }
+    },
+
+    // --- 5. 複数回の連続 Undo と 連続 Redo ---
+    { "Undo/Redo - Multiple steps",
+        "┃abcde\n",
+        {
+            "x", "┃bcde\n", // 1回目削除 ('a')
+            "x", "┃cde\n",  // 2回目削除 ('b')
+            "x", "┃de\n",   // 3回目削除 ('c')
+            "u", "┃cde\n",  // 1段階戻る
+            "u", "┃bcde\n", // 2段階戻る
+            "u", "┃abcde\n",// 初期状態まで戻る
+            "U", "┃bcde\n", // 1段階進む
+            "U", "┃cde\n",  // 2段階進む
+            "U", "┃de\n"    // 3段階進む（最新へ）
+        }
+    },
+    // --- 6. Undo 後に新しい編集を行った場合の履歴破棄（新しいブランチ） ---
+    { "Undo/Redo - Branching history",
+        "┃abcdef\n",
+        {
+            "x", "┃bcdef\n", // 'a' を削除
+            "u", "┃abcdef\n", // アンドゥで戻る
+            "dw", "┃\n",     // アンドゥした状態で別の編集 (行全体を単語削除)
+            "U", "┃\n"       // 元の 'a' 削除のリドゥ履歴は破棄されているため変化なし
+        }
+    },
+    // --- 7. 境界値（履歴の最古・最新での No-op） ---
+    { "Undo/Redo - Initial state undo (No-op)",
+        "┃initial text\n",
+        {
+            "u", "┃initial text\n" // 変更履歴がない状態での Undo は何も起きない
+        }
+    },
+    { "Undo/Redo - Latest state redo (No-op)",
+        "┃abc\n",
+        {
+            "x", "┃bc\n",
+            "U", "┃bc\n" // 最新状態での Redo は何も起きない
+        }
+    },
+    // --- 8. カウント指定 (2u, 2U) ※対応している場合 ---
+    { "Undo/Redo - With count (2u, 2U)",
+        "┃12345\n",
+        {
+            "x",  "┃2345\n", // '1' 削除
+            "x",  "┃345\n",  // '2' 削除
+            "2u", "┃12345\n", // 2回分まとめてアンドゥ
+            "2U", "┃345\n"   // 2回分まとめてリドゥ
         }
     },
 //	ex commands
