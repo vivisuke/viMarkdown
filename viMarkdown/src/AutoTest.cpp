@@ -2011,7 +2011,8 @@ const QList<ViTestCase> viTestCases = {
                  "- item two\n",
         }
     },
-    // --- 1. 基本動作（行結合・空白挿入・インデント削除） ---
+    //----------------------------------------------------------------------
+	// --- 1. 基本動作（行結合・空白挿入・インデント削除） ---
     { "Join lines (J) - Basic",
         "┃hello\nworld\n",
         {
@@ -2028,9 +2029,10 @@ const QList<ViTestCase> viTestCases = {
     { "Join lines (J) - Trailing space on first line",
         "┃hello \nworld\n",
         {
-            "J", "hello ┃world\n" // 前行末尾に空白がある場合は二重にスペースを追加しない
+            "J", "hello┃ world\n" // 前行末尾に空白がある場合、余分な空白は追加せず既存空白の位置にカーソル
         }
     },
+
     // --- 2. 空行との結合 ---
     { "Join lines (J) - Next line is empty",
         "┃first\n\nsecond\n",
@@ -2055,26 +2057,26 @@ const QList<ViTestCase> viTestCases = {
     { "Join lines (J) - With count (3J)",
         "┃line1\nline2\nline3\nline4\n",
         {
-            "3J", "line1 line2┃ line3\nline4\n" // 3行まとめて結合
+            "3J", "line1┃ line2 line3\nline4\n" // 3行まとめて結合（カーソルは最初の結合点）
         }
     },
     { "Join lines (J) - Count exceeds buffer lines",
         "┃line1\nline2\nline3\n",
         {
-            "10J", "line1 line2┃ line3\n" // バッファ終端まで結合して停止
+            "10J", "line1┃ line2 line3" // バッファ終端まで結合して停止（カーソルは最初の結合点）
         }
     },
-    // --- 4. 境界値（最終行・1行バッファ） ---
+    // --- 4. 境界値（最終行・1行バッファ：末尾改行なしでテスト） ---
     { "Join lines (J) - Last line (No-op)",
-        "line1\n┃line2\n",
+        "line1\n┃line2",
         {
-            "J", "line1\n┃line2\n" // 最終行では何も起きず状態を維持
+            "J", "line1\n┃line2" // 最終行では何も起きず状態を維持
         }
     },
     { "Join lines (J) - Single line buffer (No-op)",
-        "┃single line\n",
+        "┃single line",
         {
-            "J", "┃single line\n" // 1行のみのバッファでは何もしない
+            "J", "┃single line" // 1行のみのバッファでは何もしない
         }
     },
     // --- 5. ドットリピート & Undo ---
@@ -2089,7 +2091,7 @@ const QList<ViTestCase> viTestCases = {
         "┃foo\nbar\n",
         {
             "J", "foo┃ bar\n", // 結合
-            "u", "┃foo\nbar\n"  // アンドゥで元の複数行に復元
+            "u", "fo┃o\nbar\n"  // アンドゥで元の行の末尾文字位置に復元
         }
     },
     //----------------------------------------------------------------------
@@ -2504,7 +2506,7 @@ const QList<ViTestCase> viTestCases = {
     { "Change word (cw) - From middle of word",
         "he┃llo world\n",
         {
-            "cw", "he┃ world\n"  // "llo" のみを削除（空白は残る）
+            "cw", "h┃e world\n"  // "llo" のみを削除（空白は残る）
         }
     },
 
@@ -2601,60 +2603,60 @@ const QList<ViTestCase> viTestCases = {
     { "Change line (cc) - Basic",
         "┃old line\n",
         {
-            "ccnew line\x1b", "new lin┃e\n" // 行全体を置き換えて Esc で抜ける
+            "ccnew line", "new lin    ┃e\n" // 行全体を置き換えて Esc で抜ける
         }
     },
     { "Substitute line (S) - Basic",
         "┃old line\n",
         {
-            "Snew line\x1b", "new lin┃e\n" // S は cc と同等に動作する
+            "Snew line", "new lin    ┃e\n" // S は cc と同等に動作する
         }
     },
     // --- 2. カーソルが行の途中にある場合（行全体の変更） ---
     { "Change line (cc) - Cursor in middle of line",
         "foo ┃bar baz\n",
         {
-            "cctest\x1b", "tes┃t\n" // カーソル位置に関係なく行全体が置き換わる
+            "cctest", "tes    ┃t\n" // カーソル位置に関係なく行全体が置き換わる
         }
     },
     // --- 3. インデントの保持（Autoindent 挙動） ---
     { "Change line (cc) - Preserve leading whitespace",
         "    ┃indented text\n",
         {
-            "cchello\x1b", "    hell┃o\n" // 先頭のインデント（空白4つ）を維持して置換
+            "cchello", "    hell    ┃o\n" // 先頭のインデント（空白4つ）を維持して置換
         }
     },
     { "Substitute line (S) - Preserve tab indentation",
         "\t┃tab indented\n",
         {
-            "Shello\x1b", "\thell┃o\n" // タブインデントを維持して置換
+            "Shello", "\thell    ┃o\n" // タブインデントを維持して置換
         }
     },
     // --- 4. 空行での実行 ---
     { "Change line (cc) - On empty line",
         "line1\n┃\nline3\n",
         {
-            "ccinserted\x1b", "line1\ninserte┃d\nline3\n" // 空行への入力
+            "ccinserted", "line1\ninserte    ┃d\nline3\n" // 空行への入力
         }
     },
     // --- 5. カウント指定 (2cc / 2S: 複数行を1行に置換) ---
     { "Change line (cc) - With count (2cc)",
         "┃line1\nline2\nline3\n",
         {
-            "2ccreplaced\x1b", "replace┃d\nline3\n" // 2行分を削除して1行に置き換える
+            "2ccreplaced", "replace    ┃d\nline3\n" // 2行分を削除して1行に置き換える
         }
     },
     { "Substitute line (S) - With count (3S)",
         "┃line1\nline2\nline3\nline4\n",
         {
-            "3Snew\x1b", "ne┃w\nline4\n" // 3行分を削除して1行に置き換える
+            "3Snew", "ne    ┃w\nline4\n" // 3行分を削除して1行に置き換える
         }
     },
     // --- 6. ドットリピート (.) 連携 ---
     { "Change line (cc) - Dot repeat",
         "┃first\nsecond\nthird\n",
         {
-            "ccchanged\x1b", "change┃d\nsecond\nthird\n", // 1行目を置換
+            "ccchanged", "change    ┃d\nsecond\nthird\n", // 1行目を置換
             "j.",            "changed\nchange┃d\nthird\n"   // 次の行へ移動してドットリピート
         }
     },
@@ -2662,7 +2664,7 @@ const QList<ViTestCase> viTestCases = {
     { "Change line (cc) - Undo and Redo",
         "┃original text\n",
         {
-            "ccupdated\x1b", "update┃d\n",      // 行置換
+            "ccupdated", "update    ┃d\n",      // 行置換
             "u",             "┃original text\n", // アンドゥで元の行テキストに復元
             "U",             "update┃d\n"       // リドゥで再度置換
         }

@@ -1183,12 +1183,14 @@ doneW:
 }
 void do_join(QTextCursor& cursor, int rcnt) {
 	assert( gvi.m_editor != nullptr );
+	auto cur0 = cursor;
 	QTextDocument *doc = cursor.document();
 	int joins = (rcnt <= 1) ? 1 : (rcnt - 1);
 	if( gvi.m_editor != nullptr )
 		gvi.m_editor->openUndoBlock();
 	cursor.beginEditBlock();
 	int finalCursorPos = -1;
+	int njoined = 0;
 	for (int i = 0; i < joins; ++i) {
 		cursor.movePosition(QTextCursor::EndOfBlock);
 		QTextBlock nextBlock = cursor.block().next();
@@ -1231,10 +1233,13 @@ void do_join(QTextCursor& cursor, int rcnt) {
 				finalCursorPos--; // 挿入したスペースの上にカーソルを合わせるため1文字左へ
 			}
 		}
+		++njoined;
 	}
 	gvi.m_editor->closeUndoBlock();
 	cursor.endEditBlock();
-	if (finalCursorPos >= 0)
+	if( njoined == 0 )
+		cursor = cur0;
+	else if (finalCursorPos >= 0)
 		cursor.setPosition(finalCursorPos);
 }
 void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
