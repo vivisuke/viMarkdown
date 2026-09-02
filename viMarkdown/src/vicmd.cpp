@@ -496,8 +496,8 @@ void MainWindow::do_prefix_cmd(QChar cmd, QTextCursor& cursor, int rcnt, DocWidg
 			} else {
 				block = doc->findBlockByNumber(gvi.m_repeatCount - 1);
 				cursor.setPosition(block.position());
-				hat(cursor);
 			}
+			hat(cursor);
 			break;
 		}
 		break;
