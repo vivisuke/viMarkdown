@@ -1689,7 +1689,7 @@ const QList<ViTestCase> viTestCases = {
         "first ┃second third\n"
         "second line\n",
         {
-            "D", "first ┃ \n" // ※または "first┃ \n" (削除後の行末文字へカーソル移動)
+            "D", "first┃ \n" // 末尾の空白文字の上にカーソルが乗る
                  "second line\n",
         }
     },
@@ -1739,7 +1739,7 @@ const QList<ViTestCase> viTestCases = {
         "first ┃second third\n"
         "second line\n",
         {
-            "D", "first ┃ \n"
+            "D", "first┃ \n"
                  "second line\n",
             "u", "first ┃second third\n"
                  "second line\n",
@@ -1747,14 +1747,14 @@ const QList<ViTestCase> viTestCases = {
     },
     { "D command repeat with dot",
         "abc┃def\n"
-        "123┃456\n",
+        "123456\n",
         {
             "D", "ab┃c\n"
                  "123456\n",
             "j", "abc\n"
-                 "123┃456\n",
+                 "12┃3456\n", // j移動後のカーソル位置（カラム2）
             ".", "abc\n"
-                 "12┃3\n",
+                 "1┃2\n",
         }
     },
     { "D command with count (2D: deletes current cursor to next line end)",
@@ -1762,10 +1762,11 @@ const QList<ViTestCase> viTestCases = {
         "third fourth\n"
         "fifth line\n",
         {
-            "2D", "first ┃ \n" // Vim仕様: カレント行カーソル位置〜次行末まで削除
+            "2D", "first┃ \n"
                   "fifth line\n",
         }
     },
+    //----------------------------------------------------------------------
 	{ "Basic i command", "┃\n",
         {
             "iabc", "ab┃c\n", // 空行での基本挿入（Escにより末尾の 'c' から1文字左にスナップ）
@@ -1906,7 +1907,110 @@ const QList<ViTestCase> viTestCases = {
             "2Cxyz", "axy┃z\nghi\n", // 2行分（現在の行のカーソルから次の行の末尾まで）を削除して置換
         }
     },
-    
+    // -------------------------------------------------------------------------
+    // o / O (Open line) Commands
+    // -------------------------------------------------------------------------
+    { "Basic o command (open line below)",
+        "first ┃line\n"
+        "second line\n",
+        {
+            "o", "first line\n"
+                 "┃\n"
+                 "second line\n",
+        }
+    },
+    { "Basic O command (open line above)",
+        "first line\n"
+        "second ┃line\n",
+        {
+            "O", "first line\n"
+                 "┃\n"
+                 "second line\n",
+        }
+    },
+    { "o command at the last line",
+        "first line\n"
+        "last ┃line\n",
+        {
+            "o", "first line\n"
+                 "last line\n"
+                 "┃\n",
+        }
+    },
+    { "O command at the first line",
+        "first ┃line\n"
+        "second line\n",
+        {
+            "O", "┃\n"
+                 "first line\n"
+                 "second line\n",
+        }
+    },
+    { "o command with whitespace autoindent",
+        "    first indented ┃line\n"
+        "second line\n",
+        {
+            "o", "    first indented line\n"
+                 "    ┃\n"
+                 "second line\n",
+        }
+    },
+    { "O command with whitespace autoindent",
+        "first line\n"
+        "    second indented ┃line\n",
+        {
+            "O", "first line\n"
+                 "    ┃\n"
+                 "    second indented line\n",
+        }
+    },
+    { "o command with Markdown list item (- hoge)",
+        "- first ┃item\n"
+        "- second item\n",
+        {
+            "o", "- first item\n"
+                 "- ┃\n"
+                 "- second item\n",
+        }
+    },
+    { "O command with Markdown list item (- hoge)",
+        "- first item\n"
+        "- second ┃item\n",
+        {
+            "O", "- first item\n"
+                 "- ┃\n"
+                 "- second item\n",
+        }
+    },
+    { "o command with nested Markdown list item (  - child)",
+        "  - nested ┃child\n"
+        "next line\n",
+        {
+            "o", "  - nested child\n"
+                 "  - ┃\n"
+                 "next line\n",
+        }
+    },
+    { "O command with nested Markdown list item (  - child)",
+        "first line\n"
+        "  - nested ┃child\n",
+        {
+            "O", "first line\n"
+                 "  - ┃\n"
+                 "  - nested child\n",
+        }
+    },
+    { "o command undo",
+        "- item ┃one\n"
+        "- item two\n",
+        {
+            "o", "- item one\n"
+                 "- ┃\n"
+                 "- item two\n",
+            "u", "- item ┃one\n"
+                 "- item two\n",
+        }
+    },
 	// 1. 単純な dw
     { "Delete word (dw) - Basic",
         "┃abc def ghi\n",
