@@ -912,7 +912,6 @@ const QList<ViTestCase> viTestCases = {
 	//{ "Move cursor right",	"h┃ello\n", {"l", "he┃llo\n", "l", "hel┃lo\n", "l", "hell┃o\n", } },
 	//{ "Move cursor left",	"h┃ello\n", {"h", "┃hello\n", "h", "┃hello\n", } },
 	//{ "Visual mode",		"h┃ello\n", {"v", "h《┃e》llo\n", "l", "h《e┃l》lo\n", } },
-#if 1
 #if 1		//	h j k l
 	// 下移動 (j) の基本動作と最終行での境界制御
     { "Move cursor down (j)",
@@ -1683,7 +1682,90 @@ const QList<ViTestCase> viTestCases = {
 	    }
 	},
 #endif
-#endif
+	// -------------------------------------------------------------------------
+    // D (Delete to end of line) Commands
+    // -------------------------------------------------------------------------
+    { "Basic D command (delete from cursor to end of line)",
+        "first ┃second third\n"
+        "second line\n",
+        {
+            "D", "first ┃ \n" // ※または "first┃ \n" (削除後の行末文字へカーソル移動)
+                 "second line\n",
+        }
+    },
+    { "D command in middle of word",
+        "abc┃def ghi\n"
+        "next line\n",
+        {
+            "D", "ab┃c\n"
+                 "next line\n",
+        }
+    },
+    { "D command at start of line (clears line content, keeps newline)",
+        "┃first line\n"
+        "second line\n",
+        {
+            "D", "┃\n"
+                 "second line\n",
+        }
+    },
+    { "D command at end of line (deletes last character)",
+        "first lin┃e\n"
+        "second line\n",
+        {
+            "D", "first li┃n\n"
+                 "second line\n",
+        }
+    },
+    { "D command on empty line (no-op)",
+        "first line\n"
+        "┃\n"
+        "third line\n",
+        {
+            "D", "first line\n"
+                 "┃\n"
+                 "third line\n",
+        }
+    },
+    { "D command with Japanese multibyte characters",
+        "あいう┃えおかき\n"
+        "二行目\n",
+        {
+            "D", "あい┃う\n"
+                 "二行目\n",
+        }
+    },
+    { "D command undo",
+        "first ┃second third\n"
+        "second line\n",
+        {
+            "D", "first ┃ \n"
+                 "second line\n",
+            "u", "first ┃second third\n"
+                 "second line\n",
+        }
+    },
+    { "D command repeat with dot",
+        "abc┃def\n"
+        "123┃456\n",
+        {
+            "D", "ab┃c\n"
+                 "123456\n",
+            "j", "abc\n"
+                 "123┃456\n",
+            ".", "abc\n"
+                 "12┃3\n",
+        }
+    },
+    { "D command with count (2D: deletes current cursor to next line end)",
+        "first ┃second\n"
+        "third fourth\n"
+        "fifth line\n",
+        {
+            "2D", "first ┃ \n" // Vim仕様: カレント行カーソル位置〜次行末まで削除
+                  "fifth line\n",
+        }
+    },
 	{ "Basic i command", "┃\n",
         {
             "iabc", "ab┃c\n", // 空行での基本挿入（Escにより末尾の 'c' から1文字左にスナップ）
