@@ -494,8 +494,12 @@ void MainWindow::do_prefix_cmd(QChar cmd, QTextCursor& cursor, int rcnt, DocWidg
 			if( gvi.m_repeatCount == 0 ) {
 				cursor.movePosition(QTextCursor::Start);
 			} else {
-				block = doc->findBlockByNumber(gvi.m_repeatCount - 1);
-				cursor.setPosition(block.position());
+				if( !(block = doc->findBlockByNumber(gvi.m_repeatCount - 1)).isValid() ) {
+					cursor.movePosition(QTextCursor::End);
+					if( cursor.block().text().isEmpty() )
+						cursor.movePosition(QTextCursor::PreviousBlock);
+				} else
+					cursor.setPosition(block.position());
 			}
 			hat(cursor);
 			break;
