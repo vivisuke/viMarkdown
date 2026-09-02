@@ -1481,6 +1481,119 @@ const QList<ViTestCase> viTestCases = {
                  "second line\n",
         }
     },
+    // -------------------------------------------------------------------------
+    // G / gg (Line Jump) Commands
+    // -------------------------------------------------------------------------
+    { "Basic G command (jump to last line)",
+        "┃first line\n"
+        "second line\n"
+        "third line\n",
+        {
+            "G", "first line\n"
+                 "second line\n"
+                 "┃third line\n",
+        }
+    },
+    { "G command with indentation (skips leading whitespace)",
+        "first ┃line\n"
+        "second line\n"
+        "    third indented line\n",
+        {
+            "G", "first line\n"
+                 "second line\n"
+                 "    ┃third indented line\n",
+        }
+    },
+    { "G command on the last line (stays at last line)",
+        "first line\n"
+        "second ┃line\n",
+        {
+            "G", "first line\n"
+                 "┃second line\n",
+        }
+    },
+    { "Basic gg command (jump to first line)",
+        "first line\n"
+        "second line\n"
+        "thi┃rd line\n",
+        {
+            "gg", "┃first line\n"
+                  "second line\n"
+                  "third line\n",
+        }
+    },
+    { "gg command with indentation (skips leading whitespace)",
+        "    first indented line\n"
+        "second line\n"
+        "thi┃rd line\n",
+        {
+            "gg", "    ┃first indented line\n"
+                  "second line\n"
+                  "third line\n",
+        }
+    },
+    { "gg command on the first line (stays at first line)",
+        "first ┃line\n"
+        "second line\n",
+        {
+            "gg", "┃first line\n"
+                  "second line\n",
+        }
+    },
+    { "1G command (jump to first line)",
+        "first line\n"
+        "second line\n"
+        "thi┃rd line\n",
+        {
+            "1G", "┃first line\n"
+                  "second line\n"
+                  "third line\n",
+        }
+    },
+    { "G with line number ([num]G)",
+        "first line\n"
+        "second line\n"
+        "third line\n"
+        "fou┃rth line\n",
+        {
+            "2G", "first line\n"
+                  "┃second line\n"
+                  "third line\n"
+                  "fourth line\n",
+        }
+    },
+    { "[num]G exceeding line count (clamps to last line)",
+        "┃first line\n"
+        "second line\n"
+        "third line\n",
+        {
+            "100G", "first line\n"
+                    "second line\n"
+                    "┃third line\n",
+        }
+    },
+    { "[num]gg (jump to specific line with gg)",
+        "┃first line\n"
+        "second line\n"
+        "third line\n"
+        "fourth line\n",
+        {
+            "3gg", "first line\n"
+                   "second line\n"
+                   "┃third line\n"
+                   "fourth line\n",
+        }
+    },
+    { "[num]gg exceeding line count (clamps to last line)",
+        "┃first line\n"
+        "second line\n"
+        "third line\n",
+        {
+            "50gg", "first line\n"
+                    "second line\n"
+                    "┃third line\n",
+        }
+    },
 
     // =========================================================================
     //  d+ / d- (オペレータ連携: 行単位削除)
