@@ -1377,6 +1377,7 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 			}
 			break;
 		case 'J':
+			gvi.m_isEditCommand = true;
 			do_join(cursor, rcnt);
 			break;
 		case 'u': {
