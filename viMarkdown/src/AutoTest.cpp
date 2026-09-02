@@ -2596,8 +2596,79 @@ const QList<ViTestCase> viTestCases = {
         }
     },
 #endif
+    //----------------------------------------------------------------------
+    // --- 1. 基本動作 (cc / S での行置換) ---
+    { "Change line (cc) - Basic",
+        "┃old line\n",
+        {
+            "ccnew line\x1b", "new lin┃e\n" // 行全体を置き換えて Esc で抜ける
+        }
+    },
+    { "Substitute line (S) - Basic",
+        "┃old line\n",
+        {
+            "Snew line\x1b", "new lin┃e\n" // S は cc と同等に動作する
+        }
+    },
+    // --- 2. カーソルが行の途中にある場合（行全体の変更） ---
+    { "Change line (cc) - Cursor in middle of line",
+        "foo ┃bar baz\n",
+        {
+            "cctest\x1b", "tes┃t\n" // カーソル位置に関係なく行全体が置き換わる
+        }
+    },
+    // --- 3. インデントの保持（Autoindent 挙動） ---
+    { "Change line (cc) - Preserve leading whitespace",
+        "    ┃indented text\n",
+        {
+            "cchello\x1b", "    hell┃o\n" // 先頭のインデント（空白4つ）を維持して置換
+        }
+    },
+    { "Substitute line (S) - Preserve tab indentation",
+        "\t┃tab indented\n",
+        {
+            "Shello\x1b", "\thell┃o\n" // タブインデントを維持して置換
+        }
+    },
+    // --- 4. 空行での実行 ---
+    { "Change line (cc) - On empty line",
+        "line1\n┃\nline3\n",
+        {
+            "ccinserted\x1b", "line1\ninserte┃d\nline3\n" // 空行への入力
+        }
+    },
+    // --- 5. カウント指定 (2cc / 2S: 複数行を1行に置換) ---
+    { "Change line (cc) - With count (2cc)",
+        "┃line1\nline2\nline3\n",
+        {
+            "2ccreplaced\x1b", "replace┃d\nline3\n" // 2行分を削除して1行に置き換える
+        }
+    },
+    { "Substitute line (S) - With count (3S)",
+        "┃line1\nline2\nline3\nline4\n",
+        {
+            "3Snew\x1b", "ne┃w\nline4\n" // 3行分を削除して1行に置き換える
+        }
+    },
+    // --- 6. ドットリピート (.) 連携 ---
+    { "Change line (cc) - Dot repeat",
+        "┃first\nsecond\nthird\n",
+        {
+            "ccchanged\x1b", "change┃d\nsecond\nthird\n", // 1行目を置換
+            "j.",            "changed\nchange┃d\nthird\n"   // 次の行へ移動してドットリピート
+        }
+    },
+    // --- 7. Undo / Redo 連携 ---
+    { "Change line (cc) - Undo and Redo",
+        "┃original text\n",
+        {
+            "ccupdated\x1b", "update┃d\n",      // 行置換
+            "u",             "┃original text\n", // アンドゥで元の行テキストに復元
+            "U",             "update┃d\n"       // リドゥで再度置換
+        }
+    },
+    //----------------------------------------------------------------------
     // --- カウント指定の文字単位ペースト (<num>p / <num>P) ---
-
     { "characterwise put with count (3p)",
         "a┃bc\n",
         {
