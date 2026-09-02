@@ -1129,15 +1129,15 @@ doneW:
 		do_match_paren(cursor);
 		break;
 	case 'G':
-		if( gvi.m_repeatCount == 0 ) {
+		if( gvi.m_repeatCount == 0 || !(block = doc->findBlockByNumber(gvi.m_repeatCount - 1)).isValid() ) {
 			cursor.movePosition(QTextCursor::End);
 			if( cursor.block().text().isEmpty() )
 				cursor.movePosition(QTextCursor::PreviousBlock);
 		} else {
-			block = doc->findBlockByNumber(gvi.m_repeatCount - 1);
+			//block = doc->findBlockByNumber(gvi.m_repeatCount - 1);
 			cursor.setPosition(block.position());
-			hat(cursor);
 		}
+		hat(cursor);
 		break;
 	case 'H':
 		do_vi_H(cursor, rcnt, docWidget);
