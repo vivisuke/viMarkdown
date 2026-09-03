@@ -1950,8 +1950,8 @@ const QList<ViTestCase> viTestCases = {
         "    first indented ┃line\n"
         "second line\n",
         {
-            "o", "    first indented line\n"
-                 "   ┃ \n" // 4つ目の空白文字の上にカーソル
+            "oX", "    first indented line\n"
+                 "    ┃X\n" // 挿入文字最後の文字の上にカーソル
                  "second line\n",
         }
     },
@@ -1959,8 +1959,8 @@ const QList<ViTestCase> viTestCases = {
         "first line\n"
         "    second indented ┃line\n",
         {
-            "O", "first line\n"
-                 "   ┃ \n" // 4つ目の空白文字の上にカーソル
+            "OX", "first line\n"
+                 "    ┃X\n" // 4つ目の空白文字の上にカーソル
                  "    second indented line\n",
         }
     },
