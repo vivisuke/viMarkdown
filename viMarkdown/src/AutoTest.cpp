@@ -1968,8 +1968,8 @@ const QList<ViTestCase> viTestCases = {
         "- first ┃item\n"
         "- second item\n",
         {
-            "o", "- first item\n"
-                 "-┃ \n" // 末尾の空白文字の上にカーソル
+            "oXXX", "- first item\n"
+                 "- XX┃X\n" // 末尾文字の上にカーソル
                  "- second item\n",
         }
     },
@@ -1977,8 +1977,8 @@ const QList<ViTestCase> viTestCases = {
         "- first item\n"
         "- second ┃item\n",
         {
-            "O", "- first item\n"
-                 "-┃ \n" // 末尾の空白文字の上にカーソル
+            "OXXX", "- first item\n"
+                 "- XX┃X\n" // 末尾文字の上にカーソル
                  "- second item\n",
         }
     },
@@ -1986,8 +1986,8 @@ const QList<ViTestCase> viTestCases = {
         "  - nested ┃child\n"
         "next line\n",
         {
-            "o", "  - nested child\n"
-                 "  -┃ \n" // 末尾の空白文字の上にカーソル
+            "oXYZ", "  - nested child\n"
+                 "  - XY┃Z\n" // 末尾の空白文字の上にカーソル
                  "next line\n",
         }
     },
@@ -1995,8 +1995,8 @@ const QList<ViTestCase> viTestCases = {
         "first line\n"
         "  - nested ┃child\n",
         {
-            "O", "first line\n"
-                 "  -┃ \n" // 末尾の空白文字の上にカーソル
+            "OXYZ", "first line\n"
+                 "  - XY┃Z\n" // 末尾の空白文字の上にカーソル
                  "  - nested child\n",
         }
     },
@@ -2004,8 +2004,8 @@ const QList<ViTestCase> viTestCases = {
         "- item ┃one\n"
         "- item two\n",
         {
-            "o", "- item one\n"
-                 "-┃ \n"
+            "oX", "- item one\n"
+                 "- ┃X\n"
                  "- item two\n",
             "u", "- item on┃e\n" // Undo後は直前行の末尾文字（'e'）の上に着地する
                  "- item two\n",
