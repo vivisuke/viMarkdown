@@ -708,7 +708,7 @@ QString MarkdownEditor::autoIndentText(QTextCursor cursor) {
 void MarkdownEditor::insertEnter() {
 	QTextCursor cursor = this->textCursor();
 	//QTextBlock currentBlock = cursor.block();
-	QString atxt = autoIndentText(cursor);
+	QString atxt = gvi.m_autotext = autoIndentText(cursor);
 	//if( atxt.isEmpty() ) return;
 	//cursor.insertText("\n" + atxt);
 	do_insertText(cursor, "\n" + atxt);

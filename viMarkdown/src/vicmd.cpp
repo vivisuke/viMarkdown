@@ -73,11 +73,12 @@ void do_r(QChar ch, QTextCursor& cursor, int rcnt) {
 }
 void do_openline(QTextCursor& cursor, bool before) {
 	assert( gvi.m_editor != nullptr );
+	gvi.m_autotext.clear();
 	if( before ) {
 		cursor.movePosition(QTextCursor::StartOfBlock);
 		//cursor.insertText("\n");
 		if( gvi.m_editor != nullptr ) {
-			auto atxt = gvi.m_editor->autoIndentText(cursor);
+			auto atxt = gvi.m_autotext = gvi.m_editor->autoIndentText(cursor);
 			//if( !atxt.isEmpty() )
 			gvi.m_editor->do_insertText(cursor, atxt + "\n");
 			cursor.movePosition(QTextCursor::PreviousBlock);
@@ -87,7 +88,7 @@ void do_openline(QTextCursor& cursor, bool before) {
 		cursor.setPosition(cursor.block().position() + cursor.block().text().size());
 		//cursor.insertText("\n");
 		if( gvi.m_editor != nullptr ) {
-			auto atxt = gvi.m_editor->autoIndentText(cursor);
+			auto atxt = gvi.m_autotext = gvi.m_editor->autoIndentText(cursor);
 			//if( !atxt.isEmpty() )
 			gvi.m_editor->do_insertText(cursor, "\n" + atxt);
 		}
@@ -1543,18 +1544,21 @@ void MainWindow::exitInsertMode(QTextCursor& cursor) {
 			if( gvi.m_editor != nullptr )
 				gvi.m_editor->do_insertText(cursor, txt);
 		}
-		if( gvi.m_editor != nullptr )
-			gvi.m_editor->closeUndoBlock();
 		gvi.m_insRepCount = 1;
 	}
 	//if( g.m_editBlockOpen ) {
 	//	//cursor.endEditBlock();
 	//	g.m_editBlockOpen = false;
 	//}
-	if( /*!gvi.m_insertedText.isEmpty() &&*/ cursor.position() > cursor.block().position()) {
-		cursor.movePosition(QTextCursor::Left);
+	if( !gvi.m_autotext.isEmpty() && cursor.block().text() == gvi.m_autotext ) {
+		cursor.movePosition(QTextCursor::StartOfBlock, QTextCursor::KeepAnchor);
+		gvi.m_editor->do_deleteText(cursor);
+	} else if( /*!gvi.m_insertedText.isEmpty() &&*/ cursor.position() > cursor.block().position()) {
+		cursor.movePosition(QTextCursor::Left);			//	１カラム左に移動
 		//##this->setTextCursor(cursor);
 	}
+	if( gvi.m_editor != nullptr )
+		gvi.m_editor->closeAllUndoBlock();
 	//##setOverwriteMode(false);
 	gvi.m_currentMode = ViMode::Normal;
 	//gvi.m_viCmdMode = true;
