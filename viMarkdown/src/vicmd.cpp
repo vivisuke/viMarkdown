@@ -214,11 +214,13 @@ bool do_fFtT(QTextCursor& cursor, QChar cmd, QChar ch, int rcnt, bool isRepeat =
 	} else
 		return false;
 }
-void do_vi_change_line(QTextCursor& cursor) {		//	for S, cc
+void do_vi_change_line(QTextCursor& cursor, int &rcnt) {		//	for S, cc
 	cursor.beginEditBlock();	//	１文字削除とその後の文字挿入を１回でundo可能にするため
 	gvi.m_editor->openUndoBlock();
 	//g.m_editBlockOpen = true;
 	hat(cursor);
+	if( rcnt > 1 )
+		cursor.movePosition(QTextCursor::NextBlock, QTextCursor::KeepAnchor, rcnt - 1);
 	cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
 	if( cursor.hasSelection() ) {
 		gvi.m_yankBuffer = cursor.selectedText();
@@ -227,8 +229,11 @@ void do_vi_change_line(QTextCursor& cursor) {		//	for S, cc
 	}
 	cursor.endEditBlock();
 	//gvi.m_joinEditBlock = true;
+	//gvi.m_repeatCount = 0;
+	//gvi.m_insRepCount = 1;
 	gvi.m_currentMode = ViMode::Insert;
 	//gvi.m_viCmdMode = false;
+	rcnt = 1;
 }
 void MainWindow::do_vi_insert(QChar cmd, QTextCursor& cursor, int rcnt) {
 	assert( gvi.m_editor != nullptr );
@@ -253,7 +258,7 @@ void MainWindow::do_vi_insert(QChar cmd, QTextCursor& cursor, int rcnt) {
 		}
 		break;
 	case 'S':		//	行を消して挿入モードへ
-		do_vi_change_line(cursor);
+		do_vi_change_line(cursor, rcnt);
 		break;
 	case 's':
 		//cursor.beginEditBlock();	//	文字削除とその後の文字挿入を１回でundo可能にするため
@@ -710,7 +715,7 @@ bool MainWindow::do_vi_operator(QChar cmd, QTextCursor& cursor, int rcnt, DocWid
 	if( gvi.m_operator == cmd ) {		//	cc dd yy gg zz << >> の場合
 		switch( cmd.unicode() ) {
 		case 'c':	//	cc
-			do_vi_change_line(cursor);
+			do_vi_change_line(cursor, rcnt);
 			break;
 		case 'd':	//	dd
 #if 1
