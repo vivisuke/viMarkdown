@@ -432,6 +432,7 @@ void MainWindow::do_vi_delete(QChar cmd, QTextCursor& cursor, int rcnt) {		//	x 
 	gvi.m_isEditCommand = true;
 }
 void do_yank_line(QTextCursor& cursor, int rcnt) {
+	auto pos = cursor.position();
 	cursor.movePosition(QTextCursor::StartOfBlock);
 	cursor.movePosition(QTextCursor::NextBlock, QTextCursor::KeepAnchor, rcnt);
 	if( cursor.hasSelection() ) {
@@ -440,6 +441,7 @@ void do_yank_line(QTextCursor& cursor, int rcnt) {
 		gvi.m_linewiseYanked = true;
 		cursor.clearSelection();
 	}
+	cursor.setPosition(pos);
 }
 int heading_level(QTextBlock block) {
 	QString text = block.text().trimmed();
@@ -1557,7 +1559,8 @@ void MainWindow::exitInsertMode(QTextCursor& cursor) {
 	//}
 	if( !gvi.m_autotext.isEmpty() && cursor.block().text() == gvi.m_autotext ) {
 		cursor.movePosition(QTextCursor::StartOfBlock, QTextCursor::KeepAnchor);
-		gvi.m_editor->do_deleteText(cursor);
+		if(gvi.m_editor != nullptr)
+			gvi.m_editor->do_deleteText(cursor);
 	} else if( /*!gvi.m_insertedText.isEmpty() &&*/ cursor.position() > cursor.block().position()) {
 		cursor.movePosition(QTextCursor::Left);			//	１カラム左に移動
 		//##this->setTextCursor(cursor);
