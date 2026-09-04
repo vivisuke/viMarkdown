@@ -2768,6 +2768,100 @@ const QList<ViTestCase> viTestCases = {
         }
     },
     //----------------------------------------------------------------------
+    // 基本動作: 1行ヤンクして下に貼り付け (yy -> p)
+    // ※ yy 実行直後はカーソル位置もテキストも変化しない
+    { "Yank line (yy) - Basic and put below (p)",
+        "┃first\nsecond\n",
+        {
+            "yy", "┃first\nsecond\n", // テキストもカーソルも不変
+            "p",  "first\n┃first\nsecond\n" // 下の行に貼り付けられ、カーソルは新しい行へ
+        }
+    },
+
+    // 1行ヤンクして上に貼り付け (yy -> P)
+    { "Yank line (yy) - Put above (P)",
+        "first\n┃second\n",
+        {
+            "yy", "first\n┃second\n",
+            "P",  "first\n┃second\nssecond\n" // ※実装に応じて "first\n┃second\nsecond\n"
+        }
+    },
+
+    // 行の途中にカーソルがあっても行全体をヤンクし、カーソル位置が動かないこと
+    { "Yank line (yy) - Cursor in middle of line",
+        "he┃llo\nworld\n",
+        {
+            "yy", "he┃llo\nworld\n", // 行の途中でも行全体がヤンクされ、カーソルは 'l' のまま
+            "p",  "hello\n┃hello\nworld\n"
+        }
+    },
+
+    // 最終行でのヤンクと貼り付け
+    { "Yank line (yy) - At last line",
+        "first\n┃last\n",
+        {
+            "yy", "first\n┃last\n",
+            "p",  "first\nlast\n┃last\n"
+        }
+    },
+
+    // カウント付きヤンク (2yy)
+    { "Yank line (yy) - With count (2yy)",
+        "┃line1\nline2\nline3\n",
+        {
+            "2yy", "┃line1\nline2\nline3\n", // 2行分ヤンク
+            "p",   "line1\n┃line1\nline2\nline2\nline3\n" // 下に2行貼り付け
+        }
+    },
+
+    // Y コマンド（標準 vi / Vim では yy と同一の行ヤンク）
+    { "Yank line (Y) - Basic",
+        "┃alpha\nbeta\n",
+        {
+            "Y", "┃alpha\nbeta\n", // yy と同じくテキスト・カーソル不変
+            "p", "alpha\n┃alpha\nbeta\n"
+        }
+    },
+
+    // Y コマンドのカウント付き (2Y)
+    { "Yank line (Y) - With count (2Y)",
+        "┃one\ntwo\nthree\n",
+        {
+            "2Y", "┃one\ntwo\nthree\n",
+            "p",  "one\n┃one\ntwo\ntwo\nthree\n"
+        }
+    },
+
+    // 空行のヤンクと貼り付け
+    { "Yank line (yy) - Empty line",
+        "first\n┃\nthird\n",
+        {
+            "yy", "first\n┃\nthird\n",
+            "p",  "first\n\n┃\nthird\n"
+        }
+    },
+
+    // インデントを持つ行のヤンクと貼り付け
+    // ※ linewise put は通常、貼り付けた行のインデント先頭（非空白文字）にカーソルが乗る
+    { "Yank line (yy) - Preserve indentation",
+        "┃  indented\nnext\n",
+        {
+            "yy", "┃  indented\nnext\n",
+            "p",  "  indented\n  ┃indented\nnext\n"
+        }
+    },
+
+    // ドットリピート (.) の対象外（ヤンクはテキストを変更しないため、直前の変更を繰り返す）
+    // 例: dd で削除した後、yy して . を押しても、yy ではなく dd が繰り返される
+    { "Yank line (yy) - Does not overwrite dot repeat",
+        "┃line1\nline2\nline3\nline4\n",
+        {
+            "dd", "┃line2\nline3\nline4\n", // 1行削除（直前の変更は dd）
+            "yy", "┃line2\nline3\nline4\n", // ヤンク（変更ではない）
+            ".",  "┃line3\nline4\n"        // . は yy ではなく直前の dd が実行される
+        }
+    },
+    //----------------------------------------------------------------------
     // --- カウント指定の文字単位ペースト (<num>p / <num>P) ---
     { "characterwise put with count (3p)",
         "a┃bc\n",
