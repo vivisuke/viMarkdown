@@ -2990,6 +2990,7 @@ void MainWindow::onAction_TestViCommands() {
 		gvi.m_currentMode = ViMode::Normal;
 		gvi.m_vMode = u' ';
 		do_output(viTestCases[i].m_name + ": ");
+		editor->initUndoMgr();
 		QTextCursor cursor = editor->textCursor();
 		cursor.movePosition(QTextCursor::Start);
 		cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);

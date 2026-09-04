@@ -1160,6 +1160,9 @@ void MarkdownEditor::do_deleteText(QTextCursor &cursor) {
 	}
 	emit canUndoRedoChanged();
 }
+void MarkdownEditor::initUndoMgr() {
+	m_undoMgr->init();
+}
 bool MarkdownEditor::canUndo() const {
 	return m_undoMgr->canUndo();
 }
