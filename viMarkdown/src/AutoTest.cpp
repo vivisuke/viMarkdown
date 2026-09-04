@@ -2783,7 +2783,7 @@ const QList<ViTestCase> viTestCases = {
         "first\n┃second\n",
         {
             "yy", "first\n┃second\n",
-            "P",  "first\n┃second\nssecond\n" // ※実装に応じて "first\n┃second\nsecond\n"
+            "P",  "first\n┃second\nsecond\n" // ※実装に応じて "first\n ┃second\nsecond\n"
         }
     },
 
