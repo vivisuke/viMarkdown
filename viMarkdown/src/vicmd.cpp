@@ -1345,6 +1345,7 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 			break;
 		case '~':
 			do_swap_case(cursor, rcnt);		//	大文字・小文字反転
+			moveLeftIfAtEol(cursor);
 			gvi.m_isEditCommand = true;
 			break;
 		case 'Y':
