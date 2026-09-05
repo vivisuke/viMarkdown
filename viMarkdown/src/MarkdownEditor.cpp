@@ -3249,19 +3249,22 @@ void MarkdownEditor::lnAreaMouseMoveEvent(QMouseEvent *event) {
 		}
 	}
 
-	QTextCursor cursor = cursorForPosition(QPoint(0, (int)pos.y()));
+	QTextCursor cursor = cursorForPosition(QPoint(0, (int)pos.y()));	//	クリック位置
 	int cbn = cursor.blockNumber();
 	if( cbn == m_curBlockNum ) return;
 	m_curBlockNum = cbn;
-	if( cbn >= m_anchorBlockNum ) {
-		cursor.movePosition(QTextCursor::NextBlock);	// 次行先頭移動
-		//if( m_isCursorAboveAnchor )
-			cursor.setPosition(m_anchorStartPosition, QTextCursor::KeepAnchor);
-		//else
-		//	cursor.setPosition(m_selStart, QTextCursor::KeepAnchor);
+	if( cbn >= m_anchorBlockNum ) {		//	アンカーより下（文書末方向）
+		//QTextBlock anchBlock = document()->findBlockByNumber(m_anchorBlockNum);		//	アンカーブロック
+		//QTextCursor cur0(anchBlock);
+		if( cursor.block() == document()->lastBlock() ) {	//	EOF行の場合
+			cursor.movePosition(QTextCursor::End); // 文書末尾に移動
+		} else {
+			cursor.movePosition(QTextCursor::NextBlock);	// 次行先頭移動
+		}
+		cursor.setPosition(m_anchorStartPosition, QTextCursor::KeepAnchor);
 		m_selEnd = cursor.selectionEnd();
 		m_isCursorAboveAnchor = false;
-	} else {
+	} else {		//	アンカーより上（文書先頭方向）
 		cursor.movePosition(QTextCursor::StartOfBlock);	// 行頭移動
 		cursor.setPosition(m_selEnd, QTextCursor::KeepAnchor);
 		m_selStart = cursor.selectionStart();
