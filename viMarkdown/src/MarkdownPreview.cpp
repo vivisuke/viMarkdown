@@ -681,12 +681,16 @@ void MarkdownPreview::setMarkdown(QTextDocument *doc) {		//	doc: markdown ソー
 	cursor.beginEditBlock();
 	cursor.movePosition(QTextCursor::Start);
 	m_lst = mdtext.split(u'\n');
+	insertMarkdown(doc, cursor, m_lst);
+	m_processing = false;
+}
+void MarkdownPreview::insertMarkdown(QTextDocument *doc, QTextCursor& cursor, const QStringList& lst) {
 	//m_nEmptyLines = 0;
 	m_inComment = false;
 	QTextBlock srcBlock0;
-	for(m_ln = 0; m_ln < m_lst.size(); ++m_ln) {
+	for(m_ln = 0; m_ln < lst.size(); ++m_ln) {
 		bool bComment = false;		//	コメントがあった
-		//QString buf = m_lst[m_ln];
+		//QString buf = lst[m_ln];
 		QTextBlock srcBlock = doc->findBlockByNumber(m_ln);
 		if( !srcBlock.isVisible() ) continue;
 		if (!srcBlock.isValid()) break;
@@ -741,7 +745,7 @@ void MarkdownPreview::setMarkdown(QTextDocument *doc) {		//	doc: markdown ソー
 		//BlockData *data = getBlockData(srcBlock, /*init=*/true);	//	初期化
 		//BlockData *data = getBlockData(srcBlock);
 		BlockData *data2 = nullptr;
-		if( m_ln + 1 < m_lst.size() && srcBlock.next().isValid())
+		if( m_ln + 1 < lst.size() && srcBlock.next().isValid())
 			data2 = getBlockData(srcBlock.next());
 		if( buf.startsWith('#') ) {
 			do_body(srcBlock0, cursor);
@@ -767,7 +771,7 @@ void MarkdownPreview::setMarkdown(QTextDocument *doc) {		//	doc: markdown ソー
 		} else if( buf.startsWith("```") ) {
 			do_body(srcBlock0, cursor);
 			do_code(srcBlock, cursor);
-		} else if( isTableLine(buf0, buf, m_tableTokens /*, data*/) && m_ln + 1 < m_lst.size() && isTableHyphenLine(m_lst[m_ln+1], m_tableAlign, data2) ) {
+		} else if( isTableLine(buf0, buf, m_tableTokens /*, data*/) && m_ln + 1 < lst.size() && isTableHyphenLine(lst[m_ln+1], m_tableAlign, data2) ) {
 			do_body(srcBlock0, cursor);
 			do_table(srcBlock, cursor);
 		} else {
@@ -787,7 +791,6 @@ void MarkdownPreview::setMarkdown(QTextDocument *doc) {		//	doc: markdown ソー
 	QTextBlock srcBlock = doc->findBlockByNumber(m_bodyLineNum);
 	do_body(srcBlock, cursor, true);
 	cursor.endEditBlock();
-	m_processing = false;
 	//##qDebug() << "MarkdownPreview::setMarkdown(): cursor.position = " << textCursor().position();
 }
 void insertTable(QTextCursor& cursor, const QList<QStringList> &ll, const QList<QByteArray> &lba,
