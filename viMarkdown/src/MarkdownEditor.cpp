@@ -3261,9 +3261,10 @@ void MarkdownEditor::lnAreaMouseMoveEvent(QMouseEvent *event) {
 		} else {
 			cursor.movePosition(QTextCursor::NextBlock);	// 次行先頭移動
 		}
-		cursor.setPosition(m_anchorStartPosition, QTextCursor::KeepAnchor);
-		m_selEnd = cursor.selectionEnd();
+		cursor.setPosition(m_anchorStartPosition, QTextCursor::KeepAnchor);		//	アンカー行先頭までを選択
+		//m_selEnd = cursor.selectionEnd();
 		m_isCursorAboveAnchor = false;
+	//} else if(cbn == m_anchorBlockNum) {
 	} else {		//	アンカーより上（文書先頭方向）
 		cursor.movePosition(QTextCursor::StartOfBlock);	// 行頭移動
 		cursor.setPosition(m_selEnd, QTextCursor::KeepAnchor);
