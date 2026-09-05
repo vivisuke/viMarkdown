@@ -3199,8 +3199,8 @@ void MarkdownEditor::lnAreaMousePressEvent(QMouseEvent *event) {
 	QTextCursor cursor = cursorForPosition(QPoint(0, (int)pos.y()));
 	QTextBlock block = cursor.block();
 	if( m_diffMode && pos.x() < m_charWidth*2 &&
-		(isDummyLine(block) && (!block.previous().isValid() || !isDummyLine(block.previous()))) ||
-		(hasDiff(block) && (!block.previous().isValid() || !hasDiff(block.previous()))) )
+		((isDummyLine(block) && (!block.previous().isValid() || !isDummyLine(block.previous()))) ||
+		(hasDiff(block) && (!block.previous().isValid() || !hasDiff(block.previous())))) )
 	{
 		applyDiffBlock(block);
 		return;
