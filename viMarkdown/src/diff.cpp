@@ -196,7 +196,7 @@ std::vector<QString> extractLinesFromDocument(const QTextDocument *doc) {
     for (QTextBlock block = doc->begin(); block.isValid(); block = block.next()) {
         lines.push_back(block.text() /*+u'\n'*/);
     }
-    lines.back() += QChar(0xffff);
+    //##lines.back() += QChar(0xffff);
     return lines;
 }
 void MainWindow::diffview_open() {
@@ -548,12 +548,6 @@ void MainWindow::do_diff() {
 	QTextDocument *doc2 = docWidget->m_diffview->document();
 	bool modified1 = doc1->isModified();
 	bool modified2 = doc2->isModified();
-#if 0
-	qreal width1 = docWidget->m_editor->viewport()->width();
-    qreal width2 = docWidget->m_diffview->width();
-    if (width1 > 0) doc1->setTextWidth(width1);
-    if (width2 > 0) doc2->setTextWidth(width2);
-#endif
     QTextCursor cur1_sv = docWidget->m_editor->textCursor();
     QTextCursor cur2_sv = docWidget->m_diffview->textCursor();
 	if( docWidget->m_editor->dummyInserted() )
