@@ -3208,7 +3208,11 @@ void MarkdownEditor::lnAreaMousePressEvent(QMouseEvent *event) {
 	if( pos.x() < m_lnAreaWidget->width() - m_charWidth*2 ) {			//	非折り畳みマークより左をクリック
 		cursor.movePosition(QTextCursor::StartOfBlock);			 // 行頭へ移動
 		m_anchorStartPosition = cursor.position();
-		cursor.movePosition(QTextCursor::NextBlock, QTextCursor::KeepAnchor); // 次行先頭まで選択
+		if( cursor.block() == document()->lastBlock() ) {	//	EOF行の場合
+			//qDebug() << "last block";
+			cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor); // 文書末尾まで選択
+		} else
+			cursor.movePosition(QTextCursor::NextBlock, QTextCursor::KeepAnchor); // 次行先頭まで選択
 		m_selStart = cursor.selectionStart();
 		m_selEnd = cursor.selectionEnd();
 		m_curBlockNum = m_anchorBlockNum = cursor.blockNumber();
