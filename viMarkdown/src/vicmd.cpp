@@ -662,17 +662,24 @@ bool MainWindow::do_cdy(QChar cmd, QTextCursor& cursor) {
 				//gvi.m_joinEditBlock = true;
 				//gvi.m_viCmdMode = false;
 				gvi.m_currentMode = ViMode::Insert;
+				gvi.m_vMode = u' ';
+				gvi.m_editor->highlightVText(cursor);
 				return true;
 			case 'd':	//	選択状態で d
 				gvi.m_yankBuffer = cursor.selectedText();
 				//cursor.deleteChar();
 				if( gvi.m_editor != nullptr )
 					gvi.m_editor->do_deleteText(cursor);
+				gvi.m_vMode = u' ';
+				gvi.m_editor->highlightVText(cursor);
 				return true;
 			case 'y':	//	選択状態で y
 				gvi.m_yankBuffer = cursor.selectedText();
 				statusBar()->showMessage(QString("%1 charactors yanked.").arg(gvi.m_yankBuffer.size()), 5000);
 				cursor.setPosition(cursor.selectionStart());
+				cursor.clearSelection();
+				gvi.m_vMode = u' ';
+				gvi.m_editor->highlightVText(cursor);
 				return true;
 			}
 		}
