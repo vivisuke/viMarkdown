@@ -63,6 +63,7 @@ public:
 	//	  rehighlight(); // これを呼ぶことでドキュメント全体の highlightBlock が再実行される
 	//}
 	void updateInlineColors() {
+		QSignalBlocker blocker(document());		//	contntsChane() が呼ばれないようにするおまじない
 		m_boldItalicFormat.setForeground(g.m_boldItalicColor);
 		m_boldFormat.setForeground(g.m_boldColor);
 		m_italicFormat.setForeground(g.m_italicColor);

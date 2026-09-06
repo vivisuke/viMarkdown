@@ -12,6 +12,7 @@
 #include <QXmlStreamReader>
 #include <qpainter.h>
 #include <QStatusBar>
+#include <QElapsedTimer>
 #include <assert.h>
 #include "MarkdownPreview.h"
 #include "MainWindow.h"
@@ -658,6 +659,8 @@ int indexOfComment(QStringView buf, int start) {
 //void updateCharFlags(QTextBlock srcBlock);
 void MarkdownPreview::setMarkdown(QTextDocument *doc) {		//	doc: markdown ソースドキュメント
 	qDebug() << "MarkdownPreview::setMarkdown(): cursor.position = " << textCursor().position();
+	QElapsedTimer timer;
+    timer.start();
 	m_headingList.clear();
 	m_docWidget->m_srcHeadingBlocks.clear();
 	m_docWidget->m_prvHeadingBlocks.clear();
@@ -683,6 +686,9 @@ void MarkdownPreview::setMarkdown(QTextDocument *doc) {		//	doc: markdown ソー
 	m_lst = mdtext.split(u'\n');
 	insertMarkdown(doc, cursor, m_lst);
 	m_processing = false;
+    qint64 elapsedMs = timer.elapsed();
+    qDebug() << "[Benchmark] setMarkdown completed:" << elapsedMs << "ms (" 
+             << timer.nsecsElapsed() / 1000.0 << "μs)";
 }
 void MarkdownPreview::insertMarkdown(QTextDocument *doc, QTextCursor& cursor, const QStringList& lst) {
 	//m_nEmptyLines = 0;
