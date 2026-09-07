@@ -87,6 +87,7 @@ protected:
     void	dropEvent(QDropEvent *e) override {
     	e->ignore();
     }
+    QMimeData *createMimeDataFromSelection() const override;
     void	inputMethodEvent(QInputMethodEvent *event) override;
 
     void	onAction_Cut();

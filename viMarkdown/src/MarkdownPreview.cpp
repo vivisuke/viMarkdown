@@ -13,6 +13,7 @@
 #include <qpainter.h>
 #include <QStatusBar>
 #include <QElapsedTimer>
+#include <QMimeData>
 #include <assert.h>
 #include "MarkdownPreview.h"
 #include "MainWindow.h"
@@ -89,6 +90,18 @@ MarkdownPreview::MarkdownPreview(const MainWindow *mainWindow, DocWidget *docWid
     //m_blinkTimer = new QTimer(this);	// カーソル点滅用タイマーの設定 (500ms)
     //connect(m_blinkTimer, &QTimer::timeout, this, &MarkdownPreview::toggleCursor);
     //m_blinkTimer->start(500);
+}
+QMimeData *MarkdownPreview::createMimeDataFromSelection() const
+{
+    // まず通常の MIME データ（HTML 形式などを含む）を生成
+    QMimeData *mimeData = QTextEdit::createMimeDataFromSelection();
+    // 純粋な選択文字列を取得（段落区切り文字 U+2029 があれば通常の改行に置換）
+    QString plainText = textCursor().selectedText();
+    plainText.replace(QChar::ParagraphSeparator, '\n');
+    // クリップボードのプレーンテキストを純粋な選択文字列で上書き！
+    mimeData = new QMimeData();
+    mimeData->setText(plainText);
+    return mimeData;
 }
 void MarkdownPreview::inputMethodEvent(QInputMethodEvent *event) {
 	m_isComposing = !event->preeditString().isEmpty();
@@ -541,6 +554,8 @@ void MarkdownPreview::mouseDoubleClickEvent(QMouseEvent *e) {
 	cursor.setPosition(start);
 	cursor.setPosition(end, QTextCursor::KeepAnchor);
 	setTextCursor(cursor);
+	//qDebug() << "selection start = " << start << ", end = " << end;
+	//qDebug() << "characterAt(" << start << ") = " << document()->characterAt(start);
 }
 #if 1
 void MarkdownPreview::wheelEvent(QWheelEvent *event) {
