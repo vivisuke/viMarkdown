@@ -2540,6 +2540,7 @@ void MarkdownEditor::onContentsChanged(int position, int charsRemoved, int chars
 	if( m_ignoreContentsChanged ) return;
 	if( m_processing || (charsRemoved == 0 && charsAdded == 0) ) return;
 	if (m_isComposing) return;		//	IME変換中
+	if( m_mainWindow->is_opening_file() ) return;		//	ファイルオープン処理中
 	m_processing = true;
 	//##qDebug() << "MarkdownEditor::onContentsChanged()";
 	//##qDebug() << "pos = " << position << ", removed = " << charsRemoved << ", added = " << charsAdded;

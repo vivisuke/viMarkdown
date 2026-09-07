@@ -1952,6 +1952,7 @@ bool MainWindow::do_open(const QString& title0, const QString& fullPath, const Q
 		return true;
 	}
 	m_opening_file = true;
+	//docWidget->m_opening = true;
 	QFile file(fullPath);
 	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
 		QMessageBox::warning(this, tr("Error"), tr("Cannot open file:\n%1").arg(fullPath));
@@ -1971,6 +1972,7 @@ bool MainWindow::do_open(const QString& title0, const QString& fullPath, const Q
 	title.remove(QRegularExpression("\\.md$"));
 	do_open_sub(title, fullPath, name, content, withBOM, encoding, readOnly);
 	m_opening_file = false;
+	//docWidget->m_opening = false;
 	return true;
 }
 void MainWindow::do_open_sub(const QString& title, const QString& fullPath, const QString name,

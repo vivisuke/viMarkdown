@@ -262,6 +262,7 @@ public:
     void	exitInsertMode(QTextCursor& cursor);
     void	do_diff();
     void	close_cmdLine();
+    bool	is_opening_file() const { return m_opening_file; }
 
 protected:
     void	load_settings();

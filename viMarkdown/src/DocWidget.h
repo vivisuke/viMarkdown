@@ -142,6 +142,7 @@ public:
 	bool	m_hasSaved = false;		//	保存直後
 	bool	m_withBOM = true;		//	BOM付き
 	bool	m_readOnly = false;
+	bool	m_opening = false;
 	bool	m_isSyncingScroll = false;		// 再入防止フラグ
 	QStringConverter::Encoding m_encoding = QStringConverter::Utf8;
 	QString	m_title;				//	タブタイトル
