@@ -134,6 +134,8 @@ public:
     void	syncMinimapWithEditor(int value);
     void	syncEditorWithMinimap(int value);
 
+    void	onEditorContentsChange(int, int, int);
+
 public:
 	DocType		m_docType = DocType::Markdown;
 	//bool	m_modified = false;		//	編集＆未保存状態

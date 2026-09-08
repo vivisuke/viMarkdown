@@ -355,6 +355,7 @@ DocWidget::DocWidget(const QString& title, const QString& fullPath, QWidget *par
 	, m_fullPath(fullPath)
 	, QWidget(parent)
 {
+	//connect(this, &DocWidget:onEditorContentsChange);
 }
 void DocWidget::updatePanes() {
 	if( m_diffMode ) {
@@ -481,4 +482,8 @@ void DocWidget::syncMinimapWithEditor(int value) {
 }
 void DocWidget::syncEditorWithMinimap(int value) {
 	m_editor->verticalScrollBar()->setValue(value);
+}
+void DocWidget::onEditorContentsChange(int pos, int, int) {
+	qDebug() << "DocWidget::onEditorContentsChange(" << pos << ")";
+	if( m_editor == nullptr || m_preview == nullptr ) return;
 }

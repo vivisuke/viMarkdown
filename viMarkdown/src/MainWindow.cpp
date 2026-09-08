@@ -1016,6 +1016,7 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	QSplitter *splitter = new QSplitter(Qt::Horizontal, docWidget);
 	MarkdownEditor *editor = newEditor(docWidget, splitter, readOnly);
 	MarkdownPreview *preview = newPreview(docWidget, splitter, readOnly);
+	connect(editor->document(), &QTextDocument::contentsChange, docWidget, &DocWidget::onEditorContentsChange);
 	MiniMap *minimap = docWidget->m_minimap = new MiniMap(splitter);
 	minimap->m_docWidget = docWidget;
 	minimap->setFixedWidth(MINMAP_WIDTH);
