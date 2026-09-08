@@ -449,6 +449,7 @@ protected:
     //void	onAction_DumpCharFlags();
     void	onAction_DumpBlockUserData();
     void	onAction_DumpBlockUserStates();
+    void	onAction_DumpHeaderBlocks();
     void	onAction_RunPTS();
     void	onAction_Exit();
 

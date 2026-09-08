@@ -832,6 +832,18 @@ void MainWindow::onAction_DumpBlockUserStates() {
 	//cursor.insertText(txt);
 	//docWidget->m_editor->setTextCursor(cursor);
 }
+void MainWindow::onAction_DumpHeaderBlocks() {
+	DocWidget *docWidget = getCurDocWidget();
+	if( docWidget == nullptr ) return;
+	do_output("\nm_srcHeadingBlocks[]:\n");
+	for(int i = 1; i < docWidget->m_srcHeadingBlocks.size(); ++i) {
+		do_output(QString::number(docWidget->m_srcHeadingBlocks[i]) + "\n");
+	}
+	do_output("m_prvHeadingBlocks[]:\n");
+	for(int i = 1; i < docWidget->m_prvHeadingBlocks.size(); ++i) {
+		do_output(QString::number(docWidget->m_prvHeadingBlocks[i]) + "\n");
+	}
+}
 static QString g_script_1 = R"(
 	TYPE "hoge"
 	#CRLF

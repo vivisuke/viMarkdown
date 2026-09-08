@@ -183,6 +183,7 @@
      <addaction name="action_DumpBlockUserStates"/>
      <addaction name="action_RunPTS"/>
      <addaction name="action_TestViCommands"/>
+     <addaction name="action_DumpHeaderBlocks"/>
     </widget>
     <widget class="QMenu" name="menu_CheatSheet">
      <property name="title">
@@ -1312,6 +1313,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+W</string>
+   </property>
+  </action>
+  <action name="action_DumpHeaderBlocks">
+   <property name="text">
+    <string>DumpHeaderBlocks</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Alt+H</string>
    </property>
   </action>
  </widget>
