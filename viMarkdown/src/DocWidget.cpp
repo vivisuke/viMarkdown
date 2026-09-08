@@ -4,6 +4,8 @@
 #include "DocWidget.h"
 #include "MarkdownPreview.h"
 
+uchar blockType(const QTextBlock &block);
+
 void MiniMap::mousePressEvent(QMouseEvent *event) {
 	m_mousePressed = true;
 	auto pos = event->position();
@@ -483,7 +485,13 @@ void DocWidget::syncMinimapWithEditor(int value) {
 void DocWidget::syncEditorWithMinimap(int value) {
 	m_editor->verticalScrollBar()->setValue(value);
 }
-void DocWidget::onEditorContentsChange(int pos, int, int) {
-	qDebug() << "DocWidget::onEditorContentsChange(" << pos << ")";
+void DocWidget::onEditorContentsChange(int pos, int charsRemoved, int charsAdded) {
+	qDebug() << "DocWidget::onEditorContentsChange(" << pos << ", rmv: " << charsRemoved << ", add: " << charsAdded << ")";
 	if( m_editor == nullptr || m_preview == nullptr ) return;
+	QTextBlock block = m_editor->document()->findBlock(pos);
+	//	undone: 最初からブロック行の場合＆非ブロック行になった場合対応
+	while( block.isValid() && blockType(block) != BT_HEADING )
+		block = block.previous();
+	QTextBlock edBlock = block.isValid() ? block : m_editor->document()->begin();
+	qDebug() << "edBlock.position() = " << edBlock.position();
 }
