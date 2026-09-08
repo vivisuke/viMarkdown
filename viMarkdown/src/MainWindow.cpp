@@ -1374,6 +1374,7 @@ void MainWindow::onTextInsertedAtPreview(QString txt) {
 	//##qDebug() << "MainWindow::onTextInsertedAtPreview(" << txt << ")";
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
+	if( docWidget->m_incrementalUpdating ) return;
 	m_edittingInPreview = true;
 	QTextCursor cursor = docWidget->m_editor->textCursor();
 	//m_processing = true;
@@ -1392,6 +1393,7 @@ void MainWindow::onTextInsertedAtPreview(QString txt) {
 void MainWindow::onTextRemovedAtPreview(int charsRemoved) {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
+	if( docWidget->m_incrementalUpdating ) return;
 	QTextCursor cursor = docWidget->m_editor->textCursor();
 	cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, charsRemoved);
 	cursor.removeSelectedText();
@@ -1400,6 +1402,7 @@ void MainWindow::onTextRemovedAtPreview(int charsRemoved) {
 void MainWindow::onDel_pressed(bool ctrl) {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
+	if( docWidget->m_incrementalUpdating ) return;
 	QTextCursor cursor = docWidget->m_editor->textCursor();
 	if( cursor.hasSelection() ) {
 		//cursor.deleteChar();

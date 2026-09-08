@@ -489,41 +489,57 @@ void DocWidget::syncEditorWithMinimap(int value) {
 }
 void DocWidget::onEditorContentsChange(int pos, int charsRemoved, int charsAdded) {
 	qDebug() << "DocWidget::onEditorContentsChange(" << pos << ", rmv: " << charsRemoved << ", add: " << charsAdded << ")";
+	qDebug() << "=== DOC RAW TEXT ===";
+    qDebug().noquote() << m_editor->document()->toPlainText();
+    qDebug() << "====================";
+	QTextBlock b = m_editor->document()->begin();
+	while( b.isValid() ) {
+		qDebug() << "'" << b.text() << "'";
+		b = b.next();
+	}
+    qDebug() << "====================";
 	if( m_editor == nullptr || m_preview == nullptr ) return;
 	if( m_mainWindow->is_opening_file() ) return;
-	QTextBlock block = m_editor->document()->findBlock(pos);
-	//	undone: 最初からブロック行の場合＆非ブロック行になった場合対応
-	while( block.isValid() && blockType(block) != BT_HEADING )
-		block = block.previous();
-	QTextBlock edBlock = block.isValid() ? block : m_editor->document()->begin();
-	qDebug() << "edBlock.position() = " << edBlock.position();
-	int i = 1;		//	ブロックインデックス
-	QTextBlock pvBlock = m_preview->document()->begin();		//	edBlock に対応するプレビュー block
-	if( edBlock.position() != 0 ) {		//	edBlock が文書先頭でない場合
-		int bn = edBlock.blockNumber();
-		for(; i < m_srcHeadingBlocks.size(); ++i) {
-			if( m_srcHeadingBlocks[i] >= bn ) break;
+	QTimer::singleShot(0, this, [this, pos]() {
+		m_incrementalUpdating = true;
+		QTextBlock block = m_editor->document()->findBlock(pos);
+		//	undone: 最初からブロック行の場合＆非ブロック行になった場合対応
+		while( block.isValid() && blockType(block) != BT_HEADING )
+			block = block.previous();
+		QTextBlock edBlock = block.isValid() ? block : m_editor->document()->begin();
+		qDebug() << "edBlock.position() = " << edBlock.position();
+		int i = 1;		//	ブロックインデックス
+		QTextBlock pvBlock = m_preview->document()->begin();		//	edBlock に対応するプレビュー block
+		if( edBlock.position() != 0 ) {		//	edBlock が文書先頭でない場合
+			int bn = edBlock.blockNumber();
+			for(; i < m_srcHeadingBlocks.size(); ++i) {
+				if( m_srcHeadingBlocks[i] >= bn ) break;
+			}
+			pvBlock = m_preview->document()->findBlockByNumber(m_prvHeadingBlocks[i]);
 		}
-		pvBlock = m_preview->document()->findBlockByNumber(m_prvHeadingBlocks[i]);
-	}
-	qDebug() << "pvBlock.position() = " << pvBlock.position();
-	QTextBlock pvEndBlock = i+1 < m_prvHeadingBlocks .size() ? m_preview->document()->findBlockByNumber(m_prvHeadingBlocks[i+1]) : m_preview->document()->end();
-	qDebug() << "pvEndBlock.position() = " << pvEndBlock.position() << ", isValid(): " << pvEndBlock.isValid();
-	QTextCursor cursor(pvBlock);
-	if( pvEndBlock.isValid() )
-		cursor.setPosition(pvEndBlock.position(), QTextCursor::KeepAnchor);
-	else
-		cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
-	qDebug() << "hasSelection: " << cursor.hasSelection();
-	cursor.removeSelectedText();
-	m_preview->setTextCursor(cursor);
-	//
-	QStringList lst;
-	block = edBlock;
-	lst << block.text();
-	while( (block = block.next()).isValid() ) {
-		if( blockType(block) == BT_HEADING ) break;
+		qDebug() << "pvBlock.position() = " << pvBlock.position();
+		QTextBlock pvEndBlock = i+1 < m_prvHeadingBlocks .size() ? m_preview->document()->findBlockByNumber(m_prvHeadingBlocks[i+1]) : m_preview->document()->end();
+		qDebug() << "pvEndBlock.position() = " << pvEndBlock.position() << ", isValid(): " << pvEndBlock.isValid();
+		QTextCursor cursor(pvBlock);
+		if( pvEndBlock.isValid() )
+			cursor.setPosition(pvEndBlock.position(), QTextCursor::KeepAnchor);
+		else
+			cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
+		qDebug() << "hasSelection: " << cursor.hasSelection();
+		cursor.removeSelectedText();
+		m_preview->setTextCursor(cursor);
+		//
+#if 1
+		QStringList lst;
+		block = edBlock;
 		lst << block.text();
-	}
-	m_preview->insertMarkdown(m_editor->document(), cursor, lst);
+		while( (block = block.next()).isValid() ) {
+			if( blockType(block) == BT_HEADING ) break;
+			lst << block.text();
+		}
+		qDebug() << "lst: " << lst;
+		m_preview->insertMarkdown(m_editor->document(), cursor, lst);
+#endif
+		m_incrementalUpdating = true;
+	});
 }
