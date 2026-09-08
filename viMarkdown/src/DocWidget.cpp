@@ -1,5 +1,6 @@
 ﻿#include <QTextBlock>
 #include <QRegularExpression>
+#include <QElapsedTimer>
 #include "MarkdownEditor.h"
 #include "DocWidget.h"
 #include "MarkdownPreview.h"
@@ -488,6 +489,7 @@ void DocWidget::syncEditorWithMinimap(int value) {
 	m_editor->verticalScrollBar()->setValue(value);
 }
 void DocWidget::onEditorContentsChange(int pos, int charsRemoved, int charsAdded) {
+#if 0
 	qDebug() << "DocWidget::onEditorContentsChange(" << pos << ", rmv: " << charsRemoved << ", add: " << charsAdded << ")";
 	qDebug() << "=== DOC RAW TEXT ===";
     qDebug().noquote() << m_editor->document()->toPlainText();
@@ -498,9 +500,12 @@ void DocWidget::onEditorContentsChange(int pos, int charsRemoved, int charsAdded
 		b = b.next();
 	}
     qDebug() << "====================";
+#endif
+	QElapsedTimer timer;
+    timer.start();
 	if( m_editor == nullptr || m_preview == nullptr ) return;
 	if( m_mainWindow->is_opening_file() ) return;
-	QTimer::singleShot(0, this, [this, pos]() {
+	//##QTimer::singleShot(0, this, [this, pos]() {
 		m_incrementalUpdating = true;
 		QTextBlock block = m_editor->document()->findBlock(pos);
 		//	undone: 最初からブロック行の場合＆非ブロック行になった場合対応
@@ -542,5 +547,8 @@ void DocWidget::onEditorContentsChange(int pos, int charsRemoved, int charsAdded
 		m_preview->insertMarkdown(m_editor->document(), cursor, lst);
 #endif
 		m_incrementalUpdating = true;
-	});
+	//##});
+    qint64 elapsedMs = timer.elapsed();
+    qDebug() << "[Benchmark] setMarkdown completed:" << elapsedMs << "ms (" 
+             << timer.nsecsElapsed() / 1000.0 << "μs)";
 }
