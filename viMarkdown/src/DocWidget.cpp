@@ -494,4 +494,13 @@ void DocWidget::onEditorContentsChange(int pos, int charsRemoved, int charsAdded
 		block = block.previous();
 	QTextBlock edBlock = block.isValid() ? block : m_editor->document()->begin();
 	qDebug() << "edBlock.position() = " << edBlock.position();
+	QTextBlock pvBlock = m_preview->document()->begin();		//	edBlock に対応するプレビュー block
+	if( edBlock.position() != 0 ) {		//	edBlock が文書先頭でない場合
+		int i = 0;
+		for(; i < m_srcHeadingBlocks.size(); ++i) {
+			if( m_srcHeadingBlocks[i] >= edBlock.blockNumber() ) break;
+		}
+		pvBlock = m_preview->document()->findBlockByNumber(m_prvHeadingBlocks[i]);
+	}
+	qDebug() << "pvBlock.position() = " << pvBlock.position();
 }
