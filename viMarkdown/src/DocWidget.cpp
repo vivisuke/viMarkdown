@@ -497,7 +497,7 @@ void DocWidget::onEditorContentsChange(int pos, int charsRemoved, int charsAdded
 		block = block.previous();
 	QTextBlock edBlock = block.isValid() ? block : m_editor->document()->begin();
 	qDebug() << "edBlock.position() = " << edBlock.position();
-	int i = 0;		//	ブロックインデックス
+	int i = 1;		//	ブロックインデックス
 	QTextBlock pvBlock = m_preview->document()->begin();		//	edBlock に対応するプレビュー block
 	if( edBlock.position() != 0 ) {		//	edBlock が文書先頭でない場合
 		int bn = edBlock.blockNumber();
@@ -509,4 +509,12 @@ void DocWidget::onEditorContentsChange(int pos, int charsRemoved, int charsAdded
 	qDebug() << "pvBlock.position() = " << pvBlock.position();
 	QTextBlock pvEndBlock = i+1 < m_prvHeadingBlocks .size() ? m_preview->document()->findBlockByNumber(m_prvHeadingBlocks[i+1]) : m_preview->document()->end();
 	qDebug() << "pvEndBlock.position() = " << pvEndBlock.position() << ", isValid(): " << pvEndBlock.isValid();
+	QTextCursor cursor(pvBlock);
+	if( pvEndBlock.isValid() )
+		cursor.setPosition(pvEndBlock.position(), QTextCursor::KeepAnchor);
+	else
+		cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
+	qDebug() << "hasSelection: " << cursor.hasSelection();
+	cursor.removeSelectedText();
+	m_preview->setTextCursor(cursor);
 }

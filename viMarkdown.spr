@@ -1037,5 +1037,15 @@ SPR# 状 P Open Close ver     Type  概要
 1026 ◎ C 09/08 09/08 03111│ToDo│編集時 > プレビュー：edBlock に対応するブロックを探す → pvBlock
 1027 ◎ C 09/08 09/08 03111│ToDo│編集時 > プレビュー：pvBlock から次の見出し行を探す → pvEndBlock
 1028 ◎ C 09/08 09/08 03111│ToDo│編集時：setMarkdown() をコールしない or すぐにリターン
-1029 ● C 09/08            │ToDo│
+1029 ◎ C 09/08 09/08 03111│ToDo│編集時 > プレビュー：pvBlock ～ pvEndBlock直前までを削除
 1030 ● C 09/08            │ToDo│
+1031 ● C 09/08            │ToDo│
+1032 ● C 09/08            │ToDo│
+1033 ● C 09/08            │ToDo│
+1034 ● C 09/08            │ToDo│
+1035 ● C 09/08            │ToDo│
+1036 ● C 09/08            │ToDo│
+1037 ● C 09/08            │ToDo│
+1038 ● C 09/08            │ToDo│
+1039 ● C 09/08            │ToDo│
+1040 ● C 09/08            │ToDo│
