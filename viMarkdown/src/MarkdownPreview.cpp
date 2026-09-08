@@ -138,6 +138,7 @@ void MarkdownPreview::onCursorPosChanged() {
 }
 void MarkdownPreview::onContentsChanged(int position, int charsRemoved, int charsAdded) {
 	if( m_processing ) return;
+	if( m_docWidget->m_incrementalUpdating ) return;
 	if (m_isComposing) {		//	IME変換中
 		if( !m_commitString.isEmpty() )		//	確定文字列がある場合
 			emit textInserted(m_commitString);
