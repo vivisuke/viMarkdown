@@ -700,6 +700,7 @@ void MarkdownPreview::setMarkdown(QTextDocument *doc) {		//	doc: markdown ソー
 	cursor.movePosition(QTextCursor::Start);
 	m_lst = mdtext.split(u'\n');
 	insertMarkdown(doc, cursor, m_lst);
+	cursor.endEditBlock();
 	m_processing = false;
     qint64 elapsedMs = timer.elapsed();
     qDebug() << "[Benchmark] setMarkdown completed:" << elapsedMs << "ms (" 
@@ -811,7 +812,7 @@ void MarkdownPreview::insertMarkdown(QTextDocument *doc, QTextCursor& cursor, co
 	}
 	QTextBlock srcBlock = doc->findBlockByNumber(m_bodyLineNum);
 	do_body(srcBlock, cursor, true);
-	cursor.endEditBlock();
+	//cursor.endEditBlock();
 	//##qDebug() << "MarkdownPreview::setMarkdown(): cursor.position = " << textCursor().position();
 }
 void insertTable(QTextCursor& cursor, const QList<QStringList> &ll, const QList<QByteArray> &lba,

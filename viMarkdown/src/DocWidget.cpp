@@ -517,4 +517,13 @@ void DocWidget::onEditorContentsChange(int pos, int charsRemoved, int charsAdded
 	qDebug() << "hasSelection: " << cursor.hasSelection();
 	cursor.removeSelectedText();
 	m_preview->setTextCursor(cursor);
+	//
+	QStringList lst;
+	block = edBlock;
+	lst << block.text();
+	while( (block = block.next()).isValid() ) {
+		if( blockType(block) == BT_HEADING ) break;
+		lst << block.text();
+	}
+	m_preview->insertMarkdown(m_editor->document(), cursor, lst);
 }

@@ -1038,7 +1038,7 @@ SPR# 状 P Open Close ver     Type  概要
 1027 ◎ C 09/08 09/08 03111│ToDo│編集時 > プレビュー：pvBlock から次の見出し行を探す → pvEndBlock
 1028 ◎ C 09/08 09/08 03111│ToDo│編集時：setMarkdown() をコールしない or すぐにリターン
 1029 ◎ C 09/08 09/08 03111│ToDo│編集時 > プレビュー：pvBlock ～ pvEndBlock直前までを削除
-1030 ● C 09/08            │ToDo│
+1030 ◎ C 09/08 09/08 03111│ToDo│編集時 > edBlock ～ 次の見出し行直前までのテキストを pvBlock 位置に insertMarkdown()
 1031 ● C 09/08            │ToDo│
 1032 ● C 09/08            │ToDo│
 1033 ● C 09/08            │ToDo│
