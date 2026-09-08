@@ -1042,7 +1042,7 @@ SPR# 状 P Open Close ver     Type  概要
 1031 ◎ C 09/08 09/08 03111│ToDo│#define INCREMENTAL_UPDATE 0/1 でインクリメンタル更新処理 ON/OFF 可能に
 1032 ◎ B 09/08 09/08 03111│問題│見出し＋本文1行だけの文書の本文に文字挿入すると、エディタ内容が不正になる
 1033 ◎ C 09/08 09/08 03111│ToDo│DocWidget::m_incrementalUpdating : bool を導入し、処理中は同期処理禁止
-1034 ● C 09/08            │ToDo│
+1034 ◎ C 09/08 09/08 03111│問題│差分更新中は、PtoE カーソル位置同期処理禁止
 1035 ● C 09/08            │ToDo│
 1036 ● C 09/08            │ToDo│
 1037 ● C 09/08            │ToDo│

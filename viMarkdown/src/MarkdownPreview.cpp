@@ -114,6 +114,7 @@ void MarkdownPreview::inputMethodEvent(QInputMethodEvent *event) {
 void MarkdownPreview::onAction_Cut() {
 }
 void MarkdownPreview::onCursorPosChanged() {
+	if( m_docWidget->m_incrementalUpdating ) return;
 	QTextCursor cursor = this->textCursor();
 	m_lastCurBlockText = cursor.block().text();
 	viewport()->update();	//	強制再描画
