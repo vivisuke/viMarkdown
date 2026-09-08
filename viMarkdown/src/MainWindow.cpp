@@ -2989,7 +2989,7 @@ void MainWindow::onMDTextChanged() {
 	//##if( docWidget->m_diffMode )
 	//##	do_diff();
 #if 1
-	if( !mdEditor->isComposing() && !docWidget->m_diffMode ) {
+	if( !mdEditor->isComposing() && !docWidget->m_diffMode && is_opening_file() ) {
 		int scrollPos = docWidget->m_preview->verticalScrollBar()->value();
 		docWidget->m_editor->setProcessing(true);
 		docWidget->m_preview->setMarkdown(mdEditor->document());
