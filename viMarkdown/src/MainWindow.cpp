@@ -1005,7 +1005,7 @@ void MainWindow::updateHTMLModeCheck() {
 }
 #endif
 DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPath, bool readOnly) {
-	auto *docWidget = new DocWidget(title, fullPath);
+	auto *docWidget = new DocWidget(this, title, fullPath);
 	QFileInfo fi(fullPath);
 	if( fullPath.isEmpty() || fi.suffix().toLower() == "md" || fi.suffix().toLower() == "markdown" )
 		docWidget->m_docType = DocType::Markdown;

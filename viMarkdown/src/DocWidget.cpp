@@ -3,6 +3,7 @@
 #include "MarkdownEditor.h"
 #include "DocWidget.h"
 #include "MarkdownPreview.h"
+#include "MainWindow.h"
 
 uchar blockType(const QTextBlock &block);
 
@@ -352,8 +353,9 @@ void updateCharFlags(QTextBlock srcBlock) {
 	}
 }
 //----------------------------------------------------------------------
-DocWidget::DocWidget(const QString& title, const QString& fullPath, QWidget *parent)
-	: m_title(title)
+DocWidget::DocWidget(MainWindow* mw, const QString& title, const QString& fullPath, QWidget *parent)
+	: m_mainWindow(mw)
+	, m_title(title)
 	, m_fullPath(fullPath)
 	, QWidget(parent)
 {
@@ -488,19 +490,23 @@ void DocWidget::syncEditorWithMinimap(int value) {
 void DocWidget::onEditorContentsChange(int pos, int charsRemoved, int charsAdded) {
 	qDebug() << "DocWidget::onEditorContentsChange(" << pos << ", rmv: " << charsRemoved << ", add: " << charsAdded << ")";
 	if( m_editor == nullptr || m_preview == nullptr ) return;
+	if( m_mainWindow->is_opening_file() ) return;
 	QTextBlock block = m_editor->document()->findBlock(pos);
 	//	undone: 最初からブロック行の場合＆非ブロック行になった場合対応
 	while( block.isValid() && blockType(block) != BT_HEADING )
 		block = block.previous();
 	QTextBlock edBlock = block.isValid() ? block : m_editor->document()->begin();
 	qDebug() << "edBlock.position() = " << edBlock.position();
+	int i = 0;		//	ブロックインデックス
 	QTextBlock pvBlock = m_preview->document()->begin();		//	edBlock に対応するプレビュー block
 	if( edBlock.position() != 0 ) {		//	edBlock が文書先頭でない場合
-		int i = 0;
+		int bn = edBlock.blockNumber();
 		for(; i < m_srcHeadingBlocks.size(); ++i) {
-			if( m_srcHeadingBlocks[i] >= edBlock.blockNumber() ) break;
+			if( m_srcHeadingBlocks[i] >= bn ) break;
 		}
 		pvBlock = m_preview->document()->findBlockByNumber(m_prvHeadingBlocks[i]);
 	}
 	qDebug() << "pvBlock.position() = " << pvBlock.position();
+	QTextBlock pvEndBlock = i+1 < m_prvHeadingBlocks .size() ? m_preview->document()->findBlockByNumber(m_prvHeadingBlocks[i+1]) : m_preview->document()->end();
+	qDebug() << "pvEndBlock.position() = " << pvEndBlock.position() << ", isValid(): " << pvEndBlock.isValid();
 }

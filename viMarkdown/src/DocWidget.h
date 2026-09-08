@@ -17,6 +17,7 @@
 //const int MINMAP_WIDTH = 40;
 
 //class QPlainTextEdit;
+class MainWindow;
 class MarkdownEditor;
 class QTextEdit;
 class MarkdownPreview;
@@ -113,7 +114,7 @@ public:
 class DocWidget : public QWidget
 {
 public:
-	DocWidget(const QString& title, const QString& fullPath, QWidget* parent = nullptr);
+	DocWidget(MainWindow*, const QString& title, const QString& fullPath, QWidget* parent = nullptr);
 
 	bool	isModified() const;
 	void	setModified(bool);
@@ -151,6 +152,7 @@ public:
 	QString	m_fullPath;
 	//QPixmap				*m_mmPixmap = nullptr;	//	ミニマップ用画像
 	QFrame				*m_headerWidget = nullptr;
+	MainWindow			*m_mainWindow;
 	MarkdownEditor		*m_editor = nullptr;	//	マークダウンエディタへのポインタ
 	MarkdownPreview		*m_preview = nullptr;	//	マークダウンプレビューワへのポインタ
 	MiniMap				*m_minimap = nullptr;
