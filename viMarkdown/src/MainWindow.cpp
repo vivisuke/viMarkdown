@@ -1016,7 +1016,9 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	QSplitter *splitter = new QSplitter(Qt::Horizontal, docWidget);
 	MarkdownEditor *editor = newEditor(docWidget, splitter, readOnly);
 	MarkdownPreview *preview = newPreview(docWidget, splitter, readOnly);
+#if INCREMENTAL_UPDATE
 	connect(editor->document(), &QTextDocument::contentsChange, docWidget, &DocWidget::onEditorContentsChange);
+#endif
 	MiniMap *minimap = docWidget->m_minimap = new MiniMap(splitter);
 	minimap->m_docWidget = docWidget;
 	minimap->setFixedWidth(MINMAP_WIDTH);
@@ -2989,7 +2991,12 @@ void MainWindow::onMDTextChanged() {
 	//##if( docWidget->m_diffMode )
 	//##	do_diff();
 #if 1
-	if( !mdEditor->isComposing() && !docWidget->m_diffMode && is_opening_file() ) {
+#if INCREMENTAL_UPDATE
+	if( !mdEditor->isComposing() && !docWidget->m_diffMode && is_opening_file() )
+#else
+	if( !mdEditor->isComposing() && !docWidget->m_diffMode )
+#endif
+	{
 		int scrollPos = docWidget->m_preview->verticalScrollBar()->value();
 		docWidget->m_editor->setProcessing(true);
 		docWidget->m_preview->setMarkdown(mdEditor->document());

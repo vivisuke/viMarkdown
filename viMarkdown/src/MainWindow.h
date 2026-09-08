@@ -13,6 +13,8 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindowClass; };
 QT_END_NAMESPACE
 
+#define		INCREMENTAL_UPDATE	0		//	インクリメンタル更新（差分更新）処理有効
+
 #define		PREVIEW_VICMD		0
 
 #define	KEY_VI_KEYBINDINGS			u"viKeybindings"

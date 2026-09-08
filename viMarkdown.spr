@@ -1039,7 +1039,7 @@ SPR# 状 P Open Close ver     Type  概要
 1028 ◎ C 09/08 09/08 03111│ToDo│編集時：setMarkdown() をコールしない or すぐにリターン
 1029 ◎ C 09/08 09/08 03111│ToDo│編集時 > プレビュー：pvBlock ～ pvEndBlock直前までを削除
 1030 ◎ C 09/08 09/08 03111│ToDo│編集時 > edBlock ～ 次の見出し行直前までのテキストを pvBlock 位置に insertMarkdown()
-1031 ● C 09/08            │ToDo│
+1031 ◎ C 09/08 09/08 03111│ToDo│#define INCREMENTAL_UPDATE 0/1 でインクリメンタル更新処理 ON/OFF 可能に
 1032 ● C 09/08            │ToDo│
 1033 ● C 09/08            │ToDo│
 1034 ● C 09/08            │ToDo│
