@@ -2932,7 +2932,7 @@ void MainWindow::updateOutlineTree() {
 	parents[0] = item0;
 	const QStringList &lst = docWidget->m_preview->getHeadings();
 	const vector<int>& hLineNum = docWidget->getSrcHeadingsBlocks();
-	for(int i = 0; i != lst.size(); ++i) {
+	for(int i = 0; i != lst.size() && i < hLineNum.size()-1; ++i) {
 		QTreeWidgetItem *item2 = new QTreeWidgetItem();
 		//bool ok;
 		//int val = lst[i].toInt(&ok, 10);

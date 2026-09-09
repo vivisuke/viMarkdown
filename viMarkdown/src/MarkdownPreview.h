@@ -26,7 +26,7 @@ public:
 
 public:
     bool	isProcessing() const { return m_processing; }
-    void	insertMarkdown(class QTextDocument*, QTextCursor&, const QStringList&);
+    void	insertMarkdown(class QTextDocument*, int, const QStringList&, QTextCursor&);
     void	setMarkdown(class QTextDocument*);
     const QStringList&	getHeadings() const { return m_headingList; }
     //const std::vector<int>&	getSrcHeadingsBlocks() const { return m_srcHeadingBlocks; }

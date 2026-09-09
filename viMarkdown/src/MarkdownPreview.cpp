@@ -701,21 +701,24 @@ void MarkdownPreview::setMarkdown(QTextDocument *doc) {		//	doc: markdown ソー
 	cursor.beginEditBlock();
 	cursor.movePosition(QTextCursor::Start);
 	m_lst = mdtext.split(u'\n');
-	insertMarkdown(doc, cursor, m_lst);
+	insertMarkdown(doc, 0, m_lst, cursor);
 	cursor.endEditBlock();
 	m_processing = false;
     qint64 elapsedMs = timer.elapsed();
     qDebug() << "[Benchmark] setMarkdown completed:" << elapsedMs << "ms (" 
              << timer.nsecsElapsed() / 1000.0 << "μs)";
 }
-void MarkdownPreview::insertMarkdown(QTextDocument *doc, QTextCursor& cursor, const QStringList& lst) {
+//	doc:	エディタ側ドキュメントへのポインタ
+//	cursor:	プレビュー側挿入位置
+//	lst:	挿入テキストリスト
+void MarkdownPreview::insertMarkdown(QTextDocument *doc, int bn0, const QStringList& lst, QTextCursor& cursor) {
 	//m_nEmptyLines = 0;
 	m_inComment = false;
 	QTextBlock srcBlock0;
 	for(m_ln = 0; m_ln < lst.size(); ++m_ln) {
 		bool bComment = false;		//	コメントがあった
 		//QString buf = lst[m_ln];
-		QTextBlock srcBlock = doc->findBlockByNumber(m_ln);
+		QTextBlock srcBlock = doc->findBlockByNumber(bn0 + m_ln);
 		if( !srcBlock.isVisible() ) continue;
 		if (!srcBlock.isValid()) break;
 		QString buf = srcBlock.text();

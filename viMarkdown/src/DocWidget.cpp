@@ -1,6 +1,7 @@
 ﻿#include <QTextBlock>
 #include <QRegularExpression>
 #include <QElapsedTimer>
+#include <algorithm>
 #include "MarkdownEditor.h"
 #include "DocWidget.h"
 #include "MarkdownPreview.h"
@@ -535,6 +536,9 @@ void DocWidget::onEditorContentsChange(int pos, int charsRemoved, int charsAdded
 		cursor.removeSelectedText();
 		m_preview->setTextCursor(cursor);
 		//
+		auto itr = std::lower_bound(m_srcHeadingBlocks.begin() + 1, m_srcHeadingBlocks.end(), edBlock.blockNumber());
+		if( itr != m_srcHeadingBlocks.end() && *itr == edBlock.blockNumber() )
+			m_srcHeadingBlocks.erase(itr);
 #if 1
 		QStringList lst;
 		block = edBlock;
@@ -544,11 +548,11 @@ void DocWidget::onEditorContentsChange(int pos, int charsRemoved, int charsAdded
 			lst << block.text();
 		}
 		qDebug() << "lst: " << lst;
-		m_preview->insertMarkdown(m_editor->document(), cursor, lst);
+		m_preview->insertMarkdown(m_editor->document(), edBlock.blockNumber(), lst, cursor);
 #endif
 		m_incrementalUpdating = true;
 	//##});
     qint64 elapsedMs = timer.elapsed();
-    qDebug() << "[Benchmark] setMarkdown completed:" << elapsedMs << "ms (" 
+    qDebug() << "[Benchmark] incremental update completed:" << elapsedMs << "ms (" 
              << timer.nsecsElapsed() / 1000.0 << "μs)";
 }
