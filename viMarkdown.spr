@@ -1050,7 +1050,7 @@ SPR# 状 P Open Close ver     Type  概要
 1038 ◎ C 09/09 09/09 03111│ToDo│DocWidget::onEditorContentsChange()：処理時間を計測・表示
 1039 ◎ C 09/09 09/09 03111│ToDo│Test > DumpHeaderBlocks 追加
 1040 ◎ C 09/09 09/09 03111│問題│MarkdownPreview::do_heading_sub()：m_prvHeadingBlocks に push_back() している → 直後見出し行直前に挿入すべき
-1041 ● C 09/09            │問題│エディタ：(見出し行＋本文) * 2 の最初のブロックに文字入力すると、ヘッダブロック行番号配列の内容が不正になる
+1041 ◎ C 09/09 09/10 03111│問題│エディタ：(見出し行＋本文) * 2 の最初のブロックに文字入力すると、ヘッダブロック行番号配列の内容が不正になる
 1042 ◎ C 09/09 09/09 03111│問題│MarkdownPreview::do_heading_sub()：m_srcHeadingBlocks に push_back() している → 直後見出し行直前に挿入すべき
 1043 ◎ C 09/10 09/10 03111│ToDo│MarkdownPreview::insertMarkdown()：引数に、エディタ側ソース開始ブロック番号追加
 1044 ● C 09/10            │ToDo│
