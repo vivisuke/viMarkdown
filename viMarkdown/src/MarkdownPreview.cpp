@@ -1050,6 +1050,7 @@ void MarkdownPreview::do_heading_sub(QTextCursor& cursor, QString buf, int h, in
 	}
 #endif
 	setBlockType(cursor.block(), BT_HEADING);
+	auto hbnum = cursor.blockNumber();
 #if 1
 	cursor.insertMarkdown(QString(h, u'#') + u' ' + buf /*+ "\n"*/);		//	改行を付加すると、２行になってしまう
 	//cursor.insertMarkdown(QString(h, u'#') + u' ' + buf + "\n");		//	改行を付加し、２行に
@@ -1080,10 +1081,20 @@ void MarkdownPreview::do_heading_sub(QTextCursor& cursor, QString buf, int h, in
 	cursor.mergeBlockFormat(blockFormat);
 	cursor.insertBlock(QTextBlockFormat(), QTextCharFormat());		//	新規ブロック
 #endif
-	m_docWidget->m_prvHeadingBlocks.push_back(cursor.blockNumber()-1);	//	プレビュー 見出し行 行番号
+	//m_docWidget->m_prvHeadingBlocks.push_back(cursor.blockNumber()-1);	//	プレビュー 見出し行 行番号
+	auto itr0 = m_docWidget->m_prvHeadingBlocks.begin() + 1;
+	auto itr9 = m_docWidget->m_prvHeadingBlocks.end();
+	auto it = std::lower_bound(itr0, itr9, hbnum);
+	m_docWidget->m_prvHeadingBlocks.insert(it, hbnum);
 	QString text = block.text();
 	m_headingList.push_back(QChar(u'0'+h) + text.remove("^ +"));
-	m_docWidget->m_srcHeadingBlocks.push_back(ln);
+	//m_docWidget->m_srcHeadingBlocks.push_back(ln);
+	{
+		auto itr0 = m_docWidget->m_srcHeadingBlocks.begin() + 1;
+		auto itr9 = m_docWidget->m_srcHeadingBlocks.end();
+		auto it = std::lower_bound(itr0, itr9, ln);
+		m_docWidget->m_srcHeadingBlocks.insert(it, ln);
+	}
 	//m_nEmptyLines = 0;
 }
 void MarkdownPreview::do_CSV(QTextBlock& srcBlock, QTextCursor& cursor) {		//	cursor: プレビューカーソル
