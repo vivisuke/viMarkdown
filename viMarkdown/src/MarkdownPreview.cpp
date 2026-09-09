@@ -715,10 +715,11 @@ void MarkdownPreview::insertMarkdown(QTextDocument *doc, int bn0, const QStringL
 	//m_nEmptyLines = 0;
 	m_inComment = false;
 	QTextBlock srcBlock0;
-	for(m_ln = 0; m_ln < lst.size(); ++m_ln) {
+	for(int l = 0; l < lst.size(); ++l) {
+		m_ln = bn0 + l;
 		bool bComment = false;		//	コメントがあった
 		//QString buf = lst[m_ln];
-		QTextBlock srcBlock = doc->findBlockByNumber(bn0 + m_ln);
+		QTextBlock srcBlock = doc->findBlockByNumber(m_ln);
 		if( !srcBlock.isVisible() ) continue;
 		if (!srcBlock.isValid()) break;
 		QString buf = srcBlock.text();
