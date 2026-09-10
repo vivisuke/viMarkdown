@@ -2500,7 +2500,8 @@ void MarkdownEditor::convert_CSV_MarkdownTable() {
 	}
 	cursor.setPosition(startPosition);
 	cursor.setPosition(endPosition, QTextCursor::KeepAnchor);
-	cursor.insertText(mdtext);
+	//cursor.insertText(mdtext);
+	do_insertText(cursor, mdtext);
 	setTextCursor(cursor);
 }
 void MarkdownEditor::convert_MarkdownTable_CSV() {
@@ -2533,7 +2534,8 @@ void MarkdownEditor::convert_MarkdownTable_CSV() {
 	endPosition = block.position();
 	cursor.setPosition(startPosition);
 	cursor.setPosition(endPosition, QTextCursor::KeepAnchor);
-	cursor.insertText(mdtext + "```\n");
+	//cursor.insertText(mdtext + "```\n");
+	do_insertText(cursor, mdtext + "```\n");
 	setTextCursor(cursor);
 }
 void MarkdownEditor::onContentsChanged(int position, int charsRemoved, int charsAdded) {
