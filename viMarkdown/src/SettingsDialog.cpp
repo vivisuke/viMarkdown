@@ -163,7 +163,7 @@ void SettingsDialog::accept() {
 	settings.setValue(KEY_NUM_LOW_FIRE, ui->numLowFire->value());
 	settings.setValue(KEY_NUM_HIGH_FIRE, ui->numHighFire->value());
 	settings.setValue(KEY_AUTO_SVG_CMPL, g.m_auto_svg_completer = ui->autoSvgCompleter->isChecked());
-	settings.setValue(KEY_ALL_COMPLETED_STAR, g.m_auto_svg_completer = ui->allCompletedStar->isChecked());
+	settings.setValue(KEY_ALL_COMPLETED_STAR, g.m_allCompletedStar = ui->allCompletedStar->isChecked());
 	settings.setValue(KEY_DEFAULT_DIR, g.m_defaultDir = ui->defaultDir->text());
 	settings.setValue(KEY_FIRST_DAY_OF_WEEK, g.m_firstDayOfWeek = ui->firstDayOfWeekCB->currentIndex()+1);
 	QDialog::accept();
