@@ -101,7 +101,7 @@ protected:
 
     void	do_body(QTextBlock srcBlock, QTextCursor&, bool = false);
     void	do_body_sub(QTextCursor&, const QString&);
-    void	do_table(QTextBlock&, QTextCursor&);
+    void	do_table(int, QTextBlock&, QTextCursor&);
     bool	do_underlineHeading(QTextCursor&, QString buf);
     void	do_heading(QTextBlock&, QTextCursor&, QString buf);
     void	do_heading_sub(QTextCursor&, QString buf, int h, int ln);
@@ -115,7 +115,7 @@ protected:
 
 private:
     int		m_ix;					//	insertMarkdown > 何行目を処理中か
-    int		m_ln;
+    //int		m_ln;
     int		m_nSpaces;
     //int		m_nEmptyLines = 0;		//	本文最後の空行数
     bool	m_hasBody = false;		//	do_body() で空文以外を出力したか？
