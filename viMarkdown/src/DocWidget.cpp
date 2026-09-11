@@ -548,7 +548,7 @@ void DocWidget::onEditorContentsChange(int pos, int charsRemoved, int charsAdded
 			lst << block.text();
 		}
 		qDebug() << "lst: " << lst;
-		m_preview->insertMarkdown(m_editor->document(), edBlock.blockNumber(), lst, cursor);
+		m_preview->insertMarkdown(m_editor->document(), edBlock.blockNumber(), lst.size(), cursor);
 #endif
 		m_incrementalUpdating = true;
 	//##});

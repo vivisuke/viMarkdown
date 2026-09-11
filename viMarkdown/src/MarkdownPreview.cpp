@@ -701,7 +701,7 @@ void MarkdownPreview::setMarkdown(QTextDocument *doc) {		//	doc: markdown ソー
 	cursor.beginEditBlock();
 	cursor.movePosition(QTextCursor::Start);
 	m_lst = mdtext.split(u'\n');
-	insertMarkdown(doc, 0, m_lst, cursor);
+	insertMarkdown(doc, 0, m_lst.size(), cursor);
 	cursor.endEditBlock();
 	m_processing = false;
     qint64 elapsedMs = timer.elapsed();
@@ -711,14 +711,14 @@ void MarkdownPreview::setMarkdown(QTextDocument *doc) {		//	doc: markdown ソー
 //	doc:	エディタ側ドキュメントへのポインタ
 //	cursor:	プレビュー側挿入位置
 //	lst:	挿入テキストリスト
-void MarkdownPreview::insertMarkdown(QTextDocument *doc, int bn0, const QStringList& lst, QTextCursor& cursor) {
+void MarkdownPreview::insertMarkdown(QTextDocument *doc, int bn0, int nBlocks, /*const QStringList& lst,*/ QTextCursor& cursor) {
 	//m_nEmptyLines = 0;
 	m_inComment = false;
 	QTextBlock srcBlock0;
-	for(int l = 0; l < lst.size(); ++l) {
-		m_ln = bn0 + l;
+	for(int ln = 0; ln < nBlocks; ++ln) {
+		m_ln = bn0 + ln;
 		bool bComment = false;		//	コメントがあった
-		//QString buf = lst[m_ln];
+		//QString buf = lst[ln];
 		QTextBlock srcBlock = doc->findBlockByNumber(m_ln);
 		if( !srcBlock.isVisible() ) continue;
 		if (!srcBlock.isValid()) break;
@@ -773,7 +773,7 @@ void MarkdownPreview::insertMarkdown(QTextDocument *doc, int bn0, const QStringL
 		//BlockData *data = getBlockData(srcBlock, /*init=*/true);	//	初期化
 		//BlockData *data = getBlockData(srcBlock);
 		BlockData *data2 = nullptr;
-		if( m_ln + 1 < lst.size() && srcBlock.next().isValid())
+		if( ln + 1 < nBlocks && srcBlock.next().isValid())
 			data2 = getBlockData(srcBlock.next());
 		if( buf.startsWith('#') ) {
 			do_body(srcBlock0, cursor);
@@ -799,7 +799,9 @@ void MarkdownPreview::insertMarkdown(QTextDocument *doc, int bn0, const QStringL
 		} else if( buf.startsWith("```") ) {
 			do_body(srcBlock0, cursor);
 			do_code(srcBlock, cursor);
-		} else if( isTableLine(buf0, buf, m_tableTokens /*, data*/) && m_ln + 1 < lst.size() && isTableHyphenLine(lst[m_ln+1], m_tableAlign, data2) ) {
+		} else if( isTableLine(buf0, buf, m_tableTokens /*, data*/) && ln + 1 < nBlocks &&
+					isTableHyphenLine(srcBlock.next().text(), m_tableAlign, data2) )
+		{
 			do_body(srcBlock0, cursor);
 			do_table(srcBlock, cursor);
 		} else {
