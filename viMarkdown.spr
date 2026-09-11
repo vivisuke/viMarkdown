@@ -1060,9 +1060,9 @@ SPR# 状 P Open Close ver     Type  概要
 									原因：m_ln, ln の取り扱いがよろしくない
 1048 ◎ C 09/11 09/12 03111│ToDo│MarkdownPreview::insertMarkdown()：QStringList &lst は削除し、nBlocks 追加？
 1049 ◎ C 09/11 09/12 03111│問題│GFM表があると、表のあとに表ソーステキストが表示される
-1050 ● C 09/12            │問題│MarkdownPreview::setMarkdown()：m_lst にマークダウンテキストをいったん格納せず、srcBlock.text() を参照すべき
+1050 ◎ C 09/12 09/12 03111│問題│MarkdownPreview::setMarkdown()：m_lst にマークダウンテキストをいったん格納せず、srcBlock.text() を参照すべき
 1051 ◎ C 09/12 09/12 03111│問題│CSV表出力が不正になっている
-1052 ● C 09/12            │問題│
+1052 ● A 09/12            │問題│インクリメンタル更新モードにすると、クラッシュした
 1053 ● C 09/12            │問題│
 1054 ● C 09/12            │問題│
 1055 ● C 09/12            │問題│

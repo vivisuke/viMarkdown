@@ -105,12 +105,12 @@ protected:
     bool	do_underlineHeading(QTextCursor&, QString buf);
     void	do_heading(QTextBlock&, QTextCursor&, QString buf);
     void	do_heading_sub(QTextCursor&, QString buf, int h, int ln);
-    void	do_list(QTextBlock srcBlock, QTextCursor&, QString buf);
-    void	do_numlist(QTextBlock srcBlock, QTextCursor&, QString buf);
-    void	do_quote(QTextBlock&, QTextCursor&, QString buf);
-    void	do_code(QTextBlock, QTextCursor&);
-    void	do_keisen_block(QTextBlock&, QTextCursor&);
-    void	do_SVG(QTextBlock&, QTextCursor&);
+    void	do_list(int bn0, int nBlocks, QTextBlock srcBlock, QTextCursor&, QString buf);
+    void	do_numlist(int bn0, int nBlocks, QTextBlock srcBlock, QTextCursor&, QString buf);
+    void	do_quote(int bn0, int nBlocks, QTextBlock&, QTextCursor&, QString buf);
+    void	do_code(int, int, QTextBlock, QTextCursor&);
+    void	do_keisen_block(int, int, QTextBlock&, QTextCursor&);
+    void	do_SVG(int, int, QTextBlock&, QTextCursor&);
     void	do_CSV(int, int, QTextBlock&, QTextCursor&);
 
 private:
@@ -129,7 +129,7 @@ private:
     //QString	m_bodyText;
     int		m_bodyLineNum = -1;		//	m_bodyList に入っている最初の行のソース行番号
     QStringList	m_bodyList;
-	QStringList	m_lst;
+	//QStringList	m_lst;
 	QStringList	m_headingList;		//	見出しレベル（'1'～'9'）＋見出し文字列
 	//std::vector<int>	m_srcHeadingBlocks;		//	各見出し行 ブロック番号（0 org.）in マークダウンソース
 	//std::vector<int>	m_prvHeadingBlocks;		//	各見出し行 ブロック番号（0 org.）in マークダウンプレビューワ

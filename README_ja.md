@@ -99,7 +99,7 @@
 
 ### QtCreator (CMake) on MacOS / Windows / Linux
 Qt Creator と CMake を使用したマルチプラットフォームでのビルドにも対応しています。
-※ 2026年６月：shigmas\-san がビルドエラーを対処し、Linux環境でもビルド可能にしてくださいました（感謝）。
+※ 2026年６月：shigmas 氏がビルドエラーを対処し、Linux環境でもビルド可能にしてくださいました（感謝）。
 ~~※ 2026年4月現在、Windows 11 および MacOS 環境でのビルドを確認済みです。Linux 環境は未検証のため、ビルド時にエラーが発生する可能性があります。~~
 
 **Qt Creator でのビルド手順:**

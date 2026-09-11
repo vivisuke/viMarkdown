@@ -699,8 +699,8 @@ void MarkdownPreview::setMarkdown(QTextDocument *doc) {		//	doc: markdown ソー
 	QTextCursor cursor(this->document());
 	cursor.beginEditBlock();
 	cursor.movePosition(QTextCursor::Start);
-	QString mdtext = doc->toPlainText();
-	m_lst = mdtext.split(u'\n');
+	//QString mdtext = doc->toPlainText();
+	//m_lst = mdtext.split(u'\n');
 	insertMarkdown(doc, 0, doc->lineCount(), cursor);
 	cursor.endEditBlock();
 	m_processing = false;
@@ -779,25 +779,25 @@ void MarkdownPreview::insertMarkdown(QTextDocument *doc, int bn0, int nBlocks, /
 			do_heading(srcBlock, cursor, buf);
 		} else if( re_list.match(buf).hasMatch() ) {
 			do_body(srcBlock0, cursor);
-			do_list(srcBlock, cursor, buf);		//	"- " or "- [ ] "
+			do_list(bn0, nBlocks, srcBlock, cursor, buf);		//	"- " or "- [ ] "
 		} else if( re_numlist.match(buf).hasMatch() ) {
 			do_body(srcBlock0, cursor);
-			do_numlist(srcBlock, cursor, buf);
+			do_numlist(bn0, nBlocks, srcBlock, cursor, buf);
 		} else if( buf.startsWith("> ") ) {
 			do_body(srcBlock0, cursor);
-			do_quote(srcBlock, cursor, buf);
+			do_quote(bn0, nBlocks, srcBlock, cursor, buf);
 		} else if( buf.startsWith("```CSV", Qt::CaseInsensitive) ) {
 			do_body(srcBlock0, cursor);
 			do_CSV(bn0, nBlocks, srcBlock, cursor);
 		} else if( buf.startsWith("```keisen", Qt::CaseInsensitive) ) {
 			do_body(srcBlock0, cursor);
-			do_keisen_block(srcBlock, cursor);
+			do_keisen_block(bn0, nBlocks, srcBlock, cursor);
 		} else if( buf.startsWith("```SVG", Qt::CaseInsensitive) ) {
 			do_body(srcBlock0, cursor);
-			do_SVG(srcBlock, cursor);
+			do_SVG(bn0, nBlocks, srcBlock, cursor);
 		} else if( buf.startsWith("```") ) {
 			do_body(srcBlock0, cursor);
-			do_code(srcBlock, cursor);
+			do_code(bn0, nBlocks, srcBlock, cursor);
 		} else if( isTableLine(buf0, buf, m_tableTokens /*, data*/) && m_ix + 1 < nBlocks &&
 					isTableHyphenLine(srcBlock.next().text(), m_tableAlign, data2) )
 		{
@@ -920,20 +920,20 @@ void MarkdownPreview::do_table(int bn0, int nBlocks, QTextBlock& srcBlock, QText
 		assert( srcBlock.isValid() );
 		BlockData *data = getBlockData(srcBlock, true);
 		if( inComment ) {
-			if( m_lst[m_ix++].indexOf("-->") >= 0 )		//	とりあえず --> 以降は無視
+			if( (srcBlock = srcBlock.next()).isValid() && srcBlock.text().indexOf("-->") >= 0 )		//	とりあえず --> 以降は無視
 				inComment = false;
-			srcBlock = srcBlock.next();
+			++m_ix;
 			continue;
 		}
-		if( m_lst[m_ix].startsWith("<!--") ) {		//	とりあえず行頭の <!-- のみ認識
+		if( srcBlock.text().startsWith("<!--") ) {		//	とりあえず行頭の <!-- のみ認識
 			inComment = true;
 			continue;
 		}
 		//data = getBlockData(srcBlock);
 		auto t1 = srcBlock.text();
-		auto t2 = m_lst[m_ix];
-		assert( srcBlock.text() == m_lst[m_ix] );
-		if( !isTableLine(m_lst[m_ix], m_lst[m_ix], m_tableTokens, data) ) break;
+		auto t2 = srcBlock.text();
+		//assert( srcBlock.text() == m_lst[m_ix] );
+		if( !isTableLine(srcBlock.text(), srcBlock.text(), m_tableTokens, data) ) break;
 		ll.push_back(m_tableTokens);
 		max_clmn = qMax(max_clmn, m_tableTokens.size());
 		setBlockType(srcBlock, BT_TABLE);
@@ -1141,12 +1141,13 @@ void MarkdownPreview::do_CSV(int bn0, int nBlocks, QTextBlock& srcBlock, QTextCu
 	cursor.endEditBlock();
 	//++m_ln;
 }
-void MarkdownPreview::do_keisen_block(QTextBlock& srcBlock, QTextCursor& cursor) {
+void MarkdownPreview::do_keisen_block(int bn0, int nBlocks, QTextBlock& srcBlock, QTextCursor& cursor) {
+	QTextBlock block0 = srcBlock;
 	setBlockType(srcBlock, BT_KEISEN_BEGIN);
 	BlockData *data = getBlockData(srcBlock);
 	data->m_charFlags.fill(PCF_KEISEN);
 	srcBlock.setUserData(data);
-	QStringView buf = m_lst[m_ix].mid(QString("```keisen").size());
+	QStringView buf = srcBlock.text().mid(QString("```keisen").size());
 	QColor bgcolor = g.m_keisenBlockColor;
 	QColor color("black");
 	for(;;) {
@@ -1174,11 +1175,10 @@ void MarkdownPreview::do_keisen_block(QTextBlock& srcBlock, QTextCursor& cursor)
 	font.setPointSizeF(12);
 	QFontMetrics fm(font);
 	int width = 100;
-	int m_ln0 = m_ix + 1;
-	while( ++m_ix < m_lst.size() && !m_lst[m_ix].startsWith("```") ) {
-		srcBlock = srcBlock.next();
+	int ix0 = m_ix + 1;
+	while( ++m_ix < nBlocks && (srcBlock = srcBlock.next()).isValid() && !srcBlock.text().startsWith("```") ) {
 		setBlockType(srcBlock, BT_KEISEN_BLOCK);
-		width = qMax(width, fm.horizontalAdvance(m_lst[m_ix])+10);
+		width = qMax(width, fm.horizontalAdvance(srcBlock.text())+10);
 	}
 	srcBlock = srcBlock.next();
 	if( srcBlock.isValid() ) {
@@ -1189,15 +1189,18 @@ void MarkdownPreview::do_keisen_block(QTextBlock& srcBlock, QTextCursor& cursor)
 	}
 	int lineHeight = fm.lineSpacing(); // 行の間隔（高さ＋行間）
 	
-	int height = lineHeight * (m_ix - m_ln0);
+	int height = lineHeight * (m_ix - ix0);
 	QImage img(width, height, QImage::Format_RGB32);
 	img.fill(bgcolor);
 	QPainter painter(&img);
 	painter.setRenderHint(QPainter::Antialiasing);
 	painter.setFont(font);
 	painter.setPen(color);
-	for(int i = 0; i < m_ix - m_ln0; ++i)
-		painter.drawText(5, lineHeight*i+fm.height(), m_lst[m_ln0+i]);
+	QTextBlock b = block0.next();
+	for(int i = 0; i < m_ix - ix0; ++i) {
+		painter.drawText(5, lineHeight*i+fm.height(), b.text());
+		b = b.next();
+	}
 	painter.end();
 	//
 	//cursor.insertBlock();
@@ -1209,7 +1212,7 @@ void MarkdownPreview::do_keisen_block(QTextBlock& srcBlock, QTextCursor& cursor)
 	cursor.insertBlock();
 	//cursor.setBlockFormat(QTextBlockFormat());		//	トップマージンリセット
 }
-void MarkdownPreview::do_SVG(QTextBlock& srcBlock, QTextCursor& cursor) {
+void MarkdownPreview::do_SVG(int bn0, int nBlocks, QTextBlock& srcBlock, QTextCursor& cursor) {
 	setBlockType(srcBlock, BT_SVG_BEGIN);
 	BlockData *data = getBlockData(srcBlock);
 	data->m_charFlags.fill(PCF_SVG);
@@ -1219,10 +1222,10 @@ void MarkdownPreview::do_SVG(QTextBlock& srcBlock, QTextCursor& cursor) {
 	int height = 200;
 	bool inSvgTag = false;
 	QString svg;
-	while( ++m_ix < m_lst.size() && !m_lst[m_ix].startsWith("```") ) {
-		srcBlock = srcBlock.next();
+	while( ++m_ix < nBlocks && (srcBlock = srcBlock.next()).isValid() && !srcBlock.text().startsWith("```") ) {
+		//srcBlock = srcBlock.next();
 		setBlockType(srcBlock, BT_SVG_BLOCK);
-		QString t = m_lst[m_ix].trimmed();
+		QString t = srcBlock.text().trimmed();
 #if 0
 		if( t.startsWith("<svg", Qt::CaseInsensitive) ) {
 			QXmlStreamReader reader(t);
@@ -1309,7 +1312,7 @@ void MarkdownPreview::do_SVG(QTextBlock& srcBlock, QTextCursor& cursor) {
 	cursor.insertBlock();
 #endif
 }
-void MarkdownPreview::do_code(QTextBlock srcBlock, QTextCursor& cursor) {
+void MarkdownPreview::do_code(int bn0, int nBlocks, QTextBlock srcBlock, QTextCursor& cursor) {
 #if 0
 	if( m_isPrevLineEmpty ) {
 		cursor.insertBlock();
@@ -1323,12 +1326,11 @@ void MarkdownPreview::do_code(QTextBlock srcBlock, QTextCursor& cursor) {
 	srcBlock.setUserData(data);
 	QStringList lst;
 	QString buf;
-	while( ++m_ix < m_lst.size() && !m_lst[m_ix].startsWith("```") ) {
-		srcBlock = srcBlock.next();
+	while( ++m_ix < nBlocks && (srcBlock = srcBlock.next()).isValid() && !srcBlock.text().startsWith("```") ) {
 		setBlockType(srcBlock, BT_CODE_BLOCK);
 		if( !buf.isEmpty() ) buf += "\n";
-		buf += m_lst[m_ix];
-		lst += m_lst[m_ix];
+		buf += srcBlock.text();
+		lst += srcBlock.text();
 	}
 	if( (srcBlock = srcBlock.next()).isValid() ) {
 		setBlockType(srcBlock, BT_CODE_BLOCK_END);
@@ -1393,7 +1395,7 @@ void MarkdownPreview::do_code(QTextBlock srcBlock, QTextCursor& cursor) {
 	//--m_ln;
 	//m_nEmptyLines = 0;
 }
-void MarkdownPreview::do_quote(QTextBlock &srcBlock, QTextCursor& cursor, QString buf) {
+void MarkdownPreview::do_quote(int bn0, int nBlocks, QTextBlock &srcBlock, QTextCursor& cursor, QString buf) {
 #if 0
 	if( m_isPrevLineEmpty ) {
 		cursor.insertBlock();
@@ -1406,11 +1408,10 @@ void MarkdownPreview::do_quote(QTextBlock &srcBlock, QTextCursor& cursor, QStrin
 	srcBlock.setUserData(data);
 	//QString buf0 = buf + "\n";
 	buf = buf.mid(2);
-	while( ++m_ix < m_lst.size() ) {
-		if( !m_lst[m_ix].startsWith("> ") ) break;
-		buf += "\n" + m_lst[m_ix].mid(2);
+	while( ++m_ix < nBlocks && (srcBlock = srcBlock.next()).isValid() ) {
+		if( !srcBlock.text().startsWith("> ") ) break;
+		buf += "\n" + srcBlock.text().mid(2);
 		//buf0 += m_lst[m_ix] + "\n";
-		srcBlock = srcBlock.next();
 		BlockData* data = getBlockData(srcBlock);
 		data->m_charFlags[0] = data->m_charFlags[1] = PCF_QUOTE;	//	"> " 固定
 		srcBlock.setUserData(data);
@@ -1467,13 +1468,13 @@ void MarkdownPreview::do_quote(QTextBlock &srcBlock, QTextCursor& cursor, QStrin
 	--m_ix;
 	//m_nEmptyLines = 0;
 }
-void MarkdownPreview::do_numlist(QTextBlock srcBlock, QTextCursor& cursor, QString buf) {
+void MarkdownPreview::do_numlist(int bn0, int nBlocks, QTextBlock srcBlock, QTextCursor& cursor, QString buf) {
 #if 1	//	insertMarkdown() を使用せず QTextListFormat を適用
 	cursor.beginEditBlock();
 	QTextListFormat listFormat;
 	listFormat.setStyle(QTextListFormat::ListDecimal); // 1. 2. 3. の連番リスト
 	auto *list = cursor.createList(listFormat);
-	auto match = re_numlist.match(m_lst[m_ix]);
+	auto match = re_numlist.match(srcBlock.text());
 	while( match.hasMatch() ) {
 		updateCharFlags(srcBlock);
 		setBlockType(srcBlock, BT_NUMLIST);
@@ -1484,15 +1485,15 @@ void MarkdownPreview::do_numlist(QTextBlock srcBlock, QTextCursor& cursor, QStri
 		//QTextBlock b = list->item(list->count() - 1);
 		//cursor.insertText(m_lst[m_ln].remove(re_numlist) /*+ "\n"*/);
 		setBlockType(cursor.block(), BT_NUMLIST);
-		auto text = m_lst[m_ix];
+		auto text = srcBlock.text();
 		//##text.replace(re_tailspc, ZWSP);
 		if( text.size() > 3 && text.back() == u' ' ) {	//	"1. " 部分は無視
 			text.back() = ZWSP;
 		}
 		cursor.insertMarkdown(text + "\n");
-		if( ++m_ix >= m_lst.size() ) break;
+		if( ++m_ix >= nBlocks ) break;
 		srcBlock = srcBlock.next();
-		match = re_numlist.match(m_lst[m_ix]);
+		match = re_numlist.match(srcBlock.text());
 		if( !match.hasMatch() ) break;
 		cursor.insertBlock();
 	}
@@ -1527,7 +1528,7 @@ void MarkdownPreview::do_numlist(QTextBlock srcBlock, QTextCursor& cursor, QStri
 	--m_ix;
 	//m_nEmptyLines = 0;
 }
-void MarkdownPreview::do_list(QTextBlock srcBlock, QTextCursor& cursor, QString buf) {
+void MarkdownPreview::do_list(int bn0, int nBlocks, QTextBlock srcBlock, QTextCursor& cursor, QString buf) {
 	//if( m_nEmptyLines >= 1 )
 	//	cursor.insertBlock();			//	新規ブロック
 #if 0
@@ -1556,12 +1557,12 @@ void MarkdownPreview::do_list(QTextBlock srcBlock, QTextCursor& cursor, QString 
 				data->m_charFlags[i] = PCF_LIST_MARK;
 			srcBlock.setUserData(data);
 			setBlockType(srcBlock, BT_CHECKBOX);
-			if( ++m_ix >= m_lst.size() ) break;
-			match = re_checkbox.match(m_lst[m_ix]);
+			if( ++m_ix >= nBlocks ) break;
+			match = re_checkbox.match(srcBlock.text());
 			if( !match.hasMatch() ) break;
 			srcBlock = srcBlock.next();
 			//data = getBlockData(srcBlock);
-			buf += u'\n' + m_lst[m_ix];
+			buf += u'\n' + srcBlock.text();
 			//buf.replace(re_tailspc, "&nbsp;");
 			++n_item;
 		}
@@ -1588,9 +1589,9 @@ void MarkdownPreview::do_list(QTextBlock srcBlock, QTextCursor& cursor, QString 
 		//printCharFlags(srcBlock);
 		bool isPrevlist = true;
 		//bool spc2Prev = false;
-		while( ++m_ix < m_lst.size() ) {
+		while( ++m_ix < nBlocks ) {
 			srcBlock = srcBlock.next();
-			QString text = m_lst[m_ix];
+			QString text = srcBlock.text();
 			if( text.isEmpty() ) break;		//	空行だった場合
 			auto mch = re_list.match(text);
 			if( mch.hasMatch() ) {	//	リスト行
