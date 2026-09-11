@@ -1332,6 +1332,24 @@ void MarkdownEditor::wheelEvent(QWheelEvent *event) {
 void MarkdownEditor::contextMenuEvent(QContextMenuEvent *event) {
 	QPoint clickPos = event->pos();
     QMenu *menu = createStandardContextMenu(clickPos); //
+#if 1
+    QAction *cutAction = menu->findChild<QAction *>("edit-cut");
+    // 見つからない場合のフォールバック（ショートカットで探索）
+    if (!cutAction) {
+        for (QAction *action : menu->actions()) {
+            if (action->shortcut() == QKeySequence::Cut) {
+                cutAction = action;
+                break;
+            }
+        }
+    }
+	if (cutAction) {
+        cutAction->disconnect(); // デフォルトの QPlainTextEdit::cut への接続を解除
+        connect(cutAction, &QAction::triggered, this, &MarkdownEditor::cut);
+    }
+	menu->exec(event->globalPos());
+    delete menu;
+#else
     for (QAction *action : menu->actions()) {
         auto t = action->text();
         // 標準Cutアクションのショートカットと一致するか確認
@@ -1345,6 +1363,7 @@ void MarkdownEditor::contextMenuEvent(QContextMenuEvent *event) {
             break;
         }
     }
+#endif
 	if (!m_diffMode) {
         QPlainTextEdit::contextMenuEvent(event);    // diffモードでなければ通常のメニューを表示
         return;
