@@ -114,6 +114,7 @@ protected:
     void	do_CSV(QTextBlock&, QTextCursor&);
 
 private:
+    int		m_ix;					//	insertMarkdown > 何行目を処理中か
     int		m_ln;
     int		m_nSpaces;
     //int		m_nEmptyLines = 0;		//	本文最後の空行数

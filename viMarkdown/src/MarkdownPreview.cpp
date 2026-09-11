@@ -715,10 +715,10 @@ void MarkdownPreview::insertMarkdown(QTextDocument *doc, int bn0, int nBlocks, /
 	//m_nEmptyLines = 0;
 	m_inComment = false;
 	QTextBlock srcBlock0;
-	for(int ln = 0; ln < nBlocks; ++ln) {
-		m_ln = bn0 + ln;
+	for(m_ix = 0; m_ix < nBlocks; ++m_ix) {
+		m_ln = bn0 + m_ix;
 		bool bComment = false;		//	コメントがあった
-		//QString buf = lst[ln];
+		//QString buf = lst[m_ix];
 		QTextBlock srcBlock = doc->findBlockByNumber(m_ln);
 		if( !srcBlock.isVisible() ) continue;
 		if (!srcBlock.isValid()) break;
@@ -773,7 +773,7 @@ void MarkdownPreview::insertMarkdown(QTextDocument *doc, int bn0, int nBlocks, /
 		//BlockData *data = getBlockData(srcBlock, /*init=*/true);	//	初期化
 		//BlockData *data = getBlockData(srcBlock);
 		BlockData *data2 = nullptr;
-		if( ln + 1 < nBlocks && srcBlock.next().isValid())
+		if( m_ix + 1 < nBlocks && srcBlock.next().isValid())
 			data2 = getBlockData(srcBlock.next());
 		if( buf.startsWith('#') ) {
 			do_body(srcBlock0, cursor);
@@ -799,7 +799,7 @@ void MarkdownPreview::insertMarkdown(QTextDocument *doc, int bn0, int nBlocks, /
 		} else if( buf.startsWith("```") ) {
 			do_body(srcBlock0, cursor);
 			do_code(srcBlock, cursor);
-		} else if( isTableLine(buf0, buf, m_tableTokens /*, data*/) && ln + 1 < nBlocks &&
+		} else if( isTableLine(buf0, buf, m_tableTokens /*, data*/) && m_ix + 1 < nBlocks &&
 					isTableHyphenLine(srcBlock.next().text(), m_tableAlign, data2) )
 		{
 			do_body(srcBlock0, cursor);
@@ -1116,13 +1116,13 @@ void MarkdownPreview::do_CSV(QTextBlock& srcBlock, QTextCursor& cursor) {		//	cu
 	bool commented = false;		//	行単位でコメントアウトされた
 	QStringList fields;
 	QByteArray ba;
-	while( ++m_ln < m_lst.size() && !m_lst[m_ln].startsWith("```") ) {
+	while( ++m_ix < m_lst.size() && !m_lst[m_ix].startsWith("```") ) {
 		srcBlock = srcBlock.next();
 		setBlockType(srcBlock, BT_CSV_BLOCK);
 		data = getBlockData(srcBlock);
-		assert(srcBlock.text() == m_lst[m_ln]);
+		assert(srcBlock.text() == m_lst[m_ix]);
 		assert(srcBlock.text().size() == data->m_charFlags.size());
-		inQuotes = parseCsvLine(fields, ba, m_lst[m_ln], inQuotes, inComment, commented, data);
+		inQuotes = parseCsvLine(fields, ba, m_lst[m_ix], inQuotes, inComment, commented, data);
 		if( !inQuotes && !inComment && !commented ) {
 			max_clmn = qMax(max_clmn, fields.size());
 			ll.push_back(fields);
