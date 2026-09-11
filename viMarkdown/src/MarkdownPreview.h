@@ -101,7 +101,7 @@ protected:
 
     void	do_body(QTextBlock srcBlock, QTextCursor&, bool = false);
     void	do_body_sub(QTextCursor&, const QString&);
-    void	do_table(int, QTextBlock&, QTextCursor&);
+    void	do_table(int, int, QTextBlock&, QTextCursor&);
     bool	do_underlineHeading(QTextCursor&, QString buf);
     void	do_heading(QTextBlock&, QTextCursor&, QString buf);
     void	do_heading_sub(QTextCursor&, QString buf, int h, int ln);
@@ -111,7 +111,7 @@ protected:
     void	do_code(QTextBlock, QTextCursor&);
     void	do_keisen_block(QTextBlock&, QTextCursor&);
     void	do_SVG(QTextBlock&, QTextCursor&);
-    void	do_CSV(QTextBlock&, QTextCursor&);
+    void	do_CSV(int, int, QTextBlock&, QTextCursor&);
 
 private:
     int		m_ix;					//	insertMarkdown > 何行目を処理中か
