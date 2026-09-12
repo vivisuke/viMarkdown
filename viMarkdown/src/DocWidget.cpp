@@ -362,6 +362,8 @@ DocWidget::DocWidget(MainWindow* mw, const QString& title, const QString& fullPa
 	, QWidget(parent)
 {
 	//connect(this, &DocWidget:onEditorContentsChange);
+	m_srcHeadingBlocks.push_back(0);
+	m_prvHeadingBlocks.push_back(0);
 }
 void DocWidget::updatePanes() {
 	if( m_diffMode ) {
@@ -532,9 +534,11 @@ void DocWidget::onEditorContentsChange(int pos, int charsRemoved, int charsAdded
 		else
 			cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
 		qDebug() << "hasSelection: " << cursor.hasSelection();
-		m_prvHeadingBlocks.erase(m_prvHeadingBlocks.begin() + i);
-		cursor.removeSelectedText();
-		m_preview->setTextCursor(cursor);
+		if( cursor.hasSelection() ) {
+			m_prvHeadingBlocks.erase(m_prvHeadingBlocks.begin() + i);
+			cursor.removeSelectedText();
+			m_preview->setTextCursor(cursor);
+		}
 		//
 		auto itr = std::lower_bound(m_srcHeadingBlocks.begin() + 1, m_srcHeadingBlocks.end(), edBlock.blockNumber());
 		if( itr != m_srcHeadingBlocks.end() && *itr == edBlock.blockNumber() )
