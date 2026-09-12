@@ -450,7 +450,34 @@ void MarkdownEditor::paste() {
 	setTextCursor(cursor);
 }
 QVariant MarkdownEditor::inputMethodQuery(Qt::InputMethodQuery query) const {
-	//##qDebug() << "query = " << query;
+	qDebug() << "query = " << query;
+#if 0
+#if 1
+	if (query == Qt::ImCursorRectangle || query == Qt::ImAnchorRectangle) {
+        // 1. 基底クラスからカーソル矩形を取得 (148, 4 ...)
+        QRectF r = QPlainTextEdit::inputMethodQuery(query).toRectF();
+        // 2. viewport の MainWindow 内の位置（アウトラインバー幅やメニュー・タブの高さ）を取得
+        QPoint offset = viewport()->mapTo(window(), QPoint(0, 0));
+        // 3. オフセットを足して「ウィンドウ全体におけるカーソル位置」に変換
+        r.translate(offset);
+        return r;
+    }
+#elif 1
+	if (query == Qt::ImCursorRectangle || query == Qt::ImAnchorRectangle) {
+        // cursorRect() は viewport 内の座標
+        QVariant baseVal = QPlainTextEdit::inputMethodQuery(query);
+        QRectF r = cursorRect();
+        qDebug() << "--- ImCursorRectangle ---";
+        qDebug() << "baseVal   :" << baseVal;
+        qDebug() << "cursorRect:" << r;
+        qDebug() << "viewport pos:" << viewport()->pos();
+
+        QPointF posInWindow = viewport()->mapTo(window(), r.topLeft());
+        r.moveTopLeft(posInWindow);
+
+        return r;
+    }
+#else
 	if (query == Qt::ImCursorRectangle) {
         // 現在のカーソル位置の矩形（Viewport相対座標）をOSに伝える
         //return cursorRect();
@@ -470,6 +497,8 @@ QVariant MarkdownEditor::inputMethodQuery(Qt::InputMethodQuery query) const {
         //##qDebug() << "pos = " << r;
         return r;
     }
+#endif
+#endif
 	return QPlainTextEdit::inputMethodQuery(query);
 }
 void MarkdownEditor::rehighlight() {
