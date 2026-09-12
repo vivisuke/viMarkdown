@@ -535,7 +535,8 @@ void DocWidget::onEditorContentsChange(int pos, int charsRemoved, int charsAdded
 			cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
 		qDebug() << "hasSelection: " << cursor.hasSelection();
 		if( cursor.hasSelection() ) {
-			m_prvHeadingBlocks.erase(m_prvHeadingBlocks.begin() + i);
+			if( i < m_prvHeadingBlocks.size() )
+				m_prvHeadingBlocks.erase(m_prvHeadingBlocks.begin() + i);
 			cursor.removeSelectedText();
 			m_preview->setTextCursor(cursor);
 		}
