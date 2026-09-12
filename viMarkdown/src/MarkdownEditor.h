@@ -267,6 +267,7 @@ protected:
     void	keyPressEvent(QKeyEvent *e) override;
     void	mouseReleaseEvent(QMouseEvent *event) override;
     void	mouseDoubleClickEvent(QMouseEvent *e) override;
+    void	mouseMoveEvent(QMouseEvent *e) override;
     void	wheelEvent(QWheelEvent *event) override;
     void	dragEnterEvent(QDragEnterEvent *event) override;
     void	dropEvent(QDropEvent *event) override;
@@ -312,6 +313,9 @@ private:
 	bool	m_isCursorAboveAnchor = false;		//	アンカーから上（ドキュメント先頭方向）に向かって選択されている
 	bool	m_diffMode = false;
 	bool	m_dummyInserted = false;		//	ダミー行が挿入された
+	bool	m_mouseDoubleClicked = false;	//	ダブルクリック→単語単位選択処理中
+	int		m_anchorStart;					//	ダブルクリック位置
+	int		m_anchorEnd;
 	int		m_anchorStartPosition = 0;
 	int		m_anchorBlockNum = 0;
 	int		m_curBlockNum = 0;

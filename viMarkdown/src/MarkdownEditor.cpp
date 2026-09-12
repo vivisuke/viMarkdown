@@ -1252,6 +1252,7 @@ void MarkdownEditor::make_link() {
 	setTextCursor(cursor);
 }
 void MarkdownEditor::mouseReleaseEvent(QMouseEvent *event) {
+	m_mouseDoubleClicked = false;
 	if( (event->modifiers() & Qt::ControlModifier) != 0 ) {
 		auto pos = event->position();
 		QTextCursor cursor = cursorForPosition(pos.toPoint());
@@ -1314,11 +1315,32 @@ void MarkdownEditor::getWordStartEnd(QTextCursor cursor, int& start, int& end) {
 }
 #endif
 void MarkdownEditor::mouseDoubleClickEvent(QMouseEvent *e) {
+	qDebug() << "MarkdownEditor::mouseDoubleClickEvent()";
+	m_mouseDoubleClicked = true;
 	QTextCursor cursor = cursorForPosition(e->pos());
 	//int start, end;
 	//getWordStartEnd(cursor, start, end);
 	selectWordAt(cursor);
 	setTextCursor(cursor);
+	m_anchorStart = cursor.selectionStart();
+	m_anchorEnd = cursor.selectionEnd();
+}
+void MarkdownEditor::mouseMoveEvent(QMouseEvent *e) {
+	if( m_mouseDoubleClicked ) {
+		QTextCursor curmvd = cursorForPosition(e->pos());
+		selectWordAt(curmvd);
+		QTextCursor cur = textCursor();
+		if( curmvd.selectionStart() < m_anchorStart ) {
+			cur.setPosition(m_anchorEnd);
+			cur.setPosition(curmvd.selectionStart(), QTextCursor::KeepAnchor);
+		} else {
+			cur.setPosition(m_anchorStart);
+			cur.setPosition(curmvd.selectionEnd(), QTextCursor::KeepAnchor);
+		}
+		setTextCursor(cur);
+		return;
+	}
+	QPlainTextEdit::mouseMoveEvent(e);
 }
 void MarkdownEditor::wheelEvent(QWheelEvent *event) {
 	//##qDebug() << "MarkdownEditor::wheelEvent()";
