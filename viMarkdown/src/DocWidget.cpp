@@ -508,6 +508,7 @@ void DocWidget::onEditorContentsChange(int pos, int charsRemoved, int charsAdded
     timer.start();
 	if( m_editor == nullptr || m_preview == nullptr ) return;
 	if( m_mainWindow->is_opening_file() ) return;
+	QTextCursor cur0 = m_editor->textCursor();
 	//##QTimer::singleShot(0, this, [this, pos]() {
 		m_incrementalUpdating = true;
 		QTextBlock block = m_editor->document()->findBlock(pos);
@@ -557,6 +558,8 @@ void DocWidget::onEditorContentsChange(int pos, int charsRemoved, int charsAdded
 #endif
 		m_incrementalUpdating = true;
 	//##});
+	m_editor->setTextCursor(cur0);
+	m_editor->syncPreviewCursorFromEditor();
     qint64 elapsedMs = timer.elapsed();
     qDebug() << "[Benchmark] incremental update completed:" << elapsedMs << "ms (" 
              << timer.nsecsElapsed() / 1000.0 << "μs)";
