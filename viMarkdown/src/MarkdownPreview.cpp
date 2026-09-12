@@ -1553,7 +1553,7 @@ void MarkdownPreview::do_list(int bn0, int nBlocks, QTextBlock srcBlock, QTextCu
 				buf += ZWSP;	//	ゼロ幅空白文字
 			updateCharFlags(srcBlock);
 			BlockData* data = getBlockData(srcBlock);
-			for(int i = 0; i < match.capturedLength(); ++i)
+			for(int i = 0; i < match.capturedLength() && i < data->m_charFlags.size(); ++i)
 				data->m_charFlags[i] = PCF_LIST_MARK;
 			srcBlock.setUserData(data);
 			setBlockType(srcBlock, BT_CHECKBOX);
