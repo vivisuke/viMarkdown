@@ -13,7 +13,7 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindowClass; };
 QT_END_NAMESPACE
 
-#define		INCREMENTAL_UPDATE	0		//	インクリメンタル更新（差分更新）処理有効
+#define		INCREMENTAL_UPDATE	1		//	インクリメンタル更新（差分更新）処理有効
 
 #define		PREVIEW_VICMD		0
 
@@ -450,6 +450,8 @@ protected:
     void	onAction_DumpBlockUserData();
     void	onAction_DumpBlockUserStates();
     void	onAction_DumpHeaderBlocks();
+    void	onAction_InsertFront();
+    void	onAction_InsertBack();
     void	onAction_RunPTS();
     void	onAction_Exit();
 

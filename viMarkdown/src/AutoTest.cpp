@@ -24,6 +24,7 @@
 #include <QTextTable>
 #include <QRegularExpression>
 #include <QStatusBar>
+#include <QElapsedTimer>
 #include "ver.h"
 #include "MainWindow.h"
 #include "DocWidget.h"
@@ -843,6 +844,44 @@ void MainWindow::onAction_DumpHeaderBlocks() {
 	for(int i = 0; i < docWidget->m_prvHeadingBlocks.size(); ++i) {
 		do_output(QString::number(docWidget->m_prvHeadingBlocks[i]) + "\n");
 	}
+}
+const int N_LOOP = 1000;
+const QString g_text = "body text body text body text body text body text body text body text body text \n";
+void MainWindow::onAction_InsertFront() {
+	DocWidget *docWidget = getCurDocWidget();
+	if( docWidget == nullptr ) return;
+	QElapsedTimer timer;
+    timer.start();
+    QTextCursor cursor = docWidget->m_preview->textCursor();
+    cursor.beginEditBlock();
+    for(int i = 0; i < N_LOOP; ++i) {
+        cursor.movePosition(QTextCursor::Start);
+        cursor.insertText(g_text);
+    }
+    cursor.endEditBlock();
+    docWidget->m_preview->setTextCursor(cursor);
+    qint64 elapsedMs = timer.elapsed();
+    //qDebug() << QString("[Benchmark] Insert Front * %1:").arg(N_LOOP) << elapsedMs << "ms (" 
+    //         << timer.nsecsElapsed() / 1000.0 << "μs)";
+    do_output(QString("[Benchmark] Insert Front * %1: %2ms\n").arg(N_LOOP).arg(elapsedMs));
+}
+void MainWindow::onAction_InsertBack() {
+	DocWidget *docWidget = getCurDocWidget();
+	if( docWidget == nullptr ) return;
+	QElapsedTimer timer;
+    timer.start();
+    QTextCursor cursor = docWidget->m_preview->textCursor();
+    cursor.beginEditBlock();
+    for(int i = 0; i < N_LOOP; ++i) {
+	    cursor.movePosition(QTextCursor::End);
+	    cursor.insertText(g_text);
+    }
+	cursor.endEditBlock();
+	docWidget->m_preview->setTextCursor(cursor);
+    qint64 elapsedMs = timer.elapsed();
+    //qDebug() << QString("[Benchmark] Insert Front * %1:").arg(N_LOOP) << elapsedMs << "ms (" 
+    //         << timer.nsecsElapsed() / 1000.0 << "μs)";
+    do_output(QString("[Benchmark] Insert Front * %1: %2ms\n").arg(N_LOOP).arg(elapsedMs));
 }
 static QString g_script_1 = R"(
 	TYPE "hoge"

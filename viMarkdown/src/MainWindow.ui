@@ -192,6 +192,13 @@
      <addaction name="action_MarkdownCheatSheet"/>
      <addaction name="action_ViCheatSheet"/>
     </widget>
+    <widget class="QMenu" name="menu_Benchmark">
+     <property name="title">
+      <string>&amp;Benchmark</string>
+     </property>
+     <addaction name="action_InsertFront"/>
+     <addaction name="action_InsertBack"/>
+    </widget>
     <addaction name="action_Language"/>
     <addaction name="action_Settings"/>
     <addaction name="action_ColorSettings"/>
@@ -199,6 +206,7 @@
     <addaction name="action_Help"/>
     <addaction name="menu_CheatSheet"/>
     <addaction name="menu_Test"/>
+    <addaction name="menu_Benchmark"/>
     <addaction name="action_AboutViMarkdown"/>
     <addaction name="separator"/>
    </widget>
@@ -1321,6 +1329,16 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Alt+H</string>
+   </property>
+  </action>
+  <action name="action_InsertFront">
+   <property name="text">
+    <string>Insert&amp;Front</string>
+   </property>
+  </action>
+  <action name="action_InsertBack">
+   <property name="text">
+    <string>Insert&amp;Back</string>
    </property>
   </action>
  </widget>

@@ -450,7 +450,7 @@ void MarkdownEditor::paste() {
 	setTextCursor(cursor);
 }
 QVariant MarkdownEditor::inputMethodQuery(Qt::InputMethodQuery query) const {
-	qDebug() << "query = " << query;
+	//qDebug() << "query = " << query;
 #if 0
 #if 1
 	if (query == Qt::ImCursorRectangle || query == Qt::ImAnchorRectangle) {
