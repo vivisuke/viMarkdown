@@ -535,6 +535,7 @@ void DocWidget::onEditorContentsChange(int pos, int charsRemoved, int charsAdded
 		else
 			cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
 		qDebug() << "hasSelection: " << cursor.hasSelection();
+		cursor.beginEditBlock();
 		if( cursor.hasSelection() ) {
 			if( i < m_prvHeadingBlocks.size() )
 				m_prvHeadingBlocks.erase(m_prvHeadingBlocks.begin() + i);
@@ -554,10 +555,9 @@ void DocWidget::onEditorContentsChange(int pos, int charsRemoved, int charsAdded
 			lst << block.text();
 		}
 		qDebug() << "lst: " << lst;
-		cursor.beginEditBlock();
 		m_preview->insertMarkdown(m_editor->document(), edBlock.blockNumber(), lst.size(), cursor);
-		cursor.endEditBlock();
 #endif
+		cursor.endEditBlock();
 		m_incrementalUpdating = true;
 	//##});
 	m_editor->setTextCursor(cur0);

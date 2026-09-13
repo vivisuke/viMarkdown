@@ -583,7 +583,7 @@ Do you want to save your changes?</source>
         <location filename="x64/Release/qt/uic/ui_MainWindow.h" line="1044"/>
         <location filename="x64/Release/qt/uic/ui_MainWindow.h" line="1116"/>
         <source>OutputBar</source>
-        <translation>アウトプッロバー</translation>
+        <translation>アウトプットバー</translation>
     </message>
     <message>
         <location filename="MainWindow.ui" line="386"/>
