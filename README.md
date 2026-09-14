@@ -90,7 +90,8 @@ This project is primarily developed and tested on Windows 11 using Visual Studio
 
 ### Qt Creator (CMake) on macOS / Windows / Linux
 Multi-platform builds using Qt Creator and CMake are also supported.
-*Note: As of April 2025, builds have been verified on Windows 11 and macOS. The Linux environment is currently untested, so build errors may occur.*
+*Note: As of June 2026, shigmas-san addressed the build errors and enabled building in a Linux environment (thanks!).
+~~*Note: As of April 2026, builds have been verified on Windows 11 and macOS. The Linux environment is currently untested, so build errors may occur.*~~
 
 **Build Steps for Qt Creator:**
 1. Clone this repository.

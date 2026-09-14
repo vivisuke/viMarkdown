@@ -563,6 +563,6 @@ void DocWidget::onEditorContentsChange(int pos, int charsRemoved, int charsAdded
 	m_editor->setTextCursor(cur0);
 	m_editor->syncPreviewCursorFromEditor();
     qint64 elapsedMs = timer.elapsed();
-    qDebug() << "[Benchmark] incremental update completed:" << elapsedMs << "ms (" 
+    qDebug() << "[Benchmark] onEditorContentsChange() > incremental update completed:" << elapsedMs << "ms (" 
              << timer.nsecsElapsed() / 1000.0 << "μs)";
 }

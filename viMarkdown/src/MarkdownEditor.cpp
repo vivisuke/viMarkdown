@@ -16,6 +16,7 @@
 #include <QStatusBar>
 #include <QMenu>
 #include <QClipboard>
+#include <QElapsedTimer>
 #include "MarkdownEditor.h"
 #include "MainWindow.h"
 #include "DocWidget.h"
@@ -1137,7 +1138,12 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 	}
 	if( !txt.isEmpty() && (e->modifiers() & Qt::ControlModifier) == 0 ) {
 		qDebug() << "doc->isUndoRedoEnabled() = " << document()->isUndoRedoEnabled();
+		QElapsedTimer timer;
+	    timer.start();
 		do_insertText(cursor, txt);
+	    qint64 elapsedMs = timer.elapsed();
+	    qDebug() << "[Benchmark] do_insertText():" << elapsedMs << "ms (" 
+	             << timer.nsecsElapsed() / 1000.0 << "μs)";
 		return;
 	}
 	MarkdownBaseEdit::keyPressEvent(e);	// 通常キーは通常通りの処理
@@ -2657,9 +2663,9 @@ void MarkdownEditor::onContentsChanged(int position, int charsRemoved, int chars
 			}
 		}
 	}
-	updateInlineColors();
+	//##updateInlineColors();
 	//rehighlight();
-	highlightSearchText(g.m_lastSearchedPat);
+	//##highlightSearchText(g.m_lastSearchedPat);
 	//syncEditorCursorFromPreview();
 	m_processing = false;
 }
