@@ -2091,6 +2091,7 @@ void MainWindow::do_exCmd(const QString &text, int ix, /*QString cmd, QChar nch,
 		if( arg.isEmpty() ) {
 			onAction_Save();
 		} else {
+			do_save(arg);
 		}
 	} else if( is_match(cmd, "d(elete") ) {
 		QTextBlock startBlock = doc->findBlockByNumber(gvi.m_rangeStart - 1);
