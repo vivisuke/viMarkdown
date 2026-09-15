@@ -140,16 +140,16 @@ CharType getCharType(QChar ch) {
 
 class LnAreaWidget : public QWidget {
 public:
-	LnAreaWidget(QWidget *parent = nullptr) : QWidget(parent) {}
+	LnAreaWidget(QWidget *parent = nullptr) : QWidget(parent) {
+		setMouseTracking(true);
+	}
 
 protected:
 	void paintEvent(QPaintEvent *event) override {
 		QPainter painter(this);
 		QRect rc = event->rect();
-		//rc.setWidth(rc.width());
 		QColor bgColor = this->palette().color(QPalette::Window);
 		painter.fillRect(rc, bgColor);
-		//painter.fillRect(rc, QColor("lightgray"));
 		MarkdownEditor *mdEditor = (MarkdownEditor*)parent();
 		mdEditor->lnAreaPaintEvent(event);
 	}
@@ -3208,6 +3208,11 @@ void MarkdownEditor::lnAreaPaintEvent(QPaintEvent *event) {
 		bottom = top + (int) blockBoundingRect(block).height();
 		++blockNumber;
 	}
+	if( m_foldlineY1 >= 0 && m_foldlineY2 >= 0 ) {
+		painter.setPen(Qt::black);
+		int x = m_lnAreaWidget->width() - charWidth + 2;
+		painter.drawLine(x, m_foldlineY1, x, m_foldlineY2);
+	}
 	if( !isReadOnly() ) {
 		//	行カーソル描画
 		QRect rect = cursorRect();
@@ -3308,8 +3313,38 @@ void MarkdownEditor::lnAreaMousePressEvent(QMouseEvent *event) {
 	}
 }
 void MarkdownEditor::lnAreaMouseMoveEvent(QMouseEvent *event) {
-	if( !m_lnAreaPressed ) return;
 	auto pos = event->position();
+	QTextCursor cursor = cursorForPosition(QPoint(0, (int)pos.y()));
+	QTextBlock block = cursor.block();
+	int y1 = -1, y2 = -1;
+	if( !m_diffMode && block.isValid() && !is_folded(block) && is_foldable(block) &&
+		 m_lnAreaWidget->width() - m_charWidth*2 <= pos.x() ) 
+	{
+		//	折り畳み可能ブロックの▼上
+		//qDebug() << "to draw foldable line";
+		auto startBlock = block;
+		auto lastBlock = block;
+		int lvl = heading_level(block);
+		while( (block = block.next()).isValid() ) {
+			int l2 = heading_level(block);
+			if( l2 != 0 && l2 <= lvl )
+				break;
+			lastBlock = block;
+		}
+		if( lastBlock != startBlock ) {
+			QRectF startRect = blockBoundingGeometry(startBlock).translated(contentOffset());
+            y1 = (int)startRect.bottom();
+            QRectF lastRect = blockBoundingGeometry(lastBlock).translated(contentOffset());
+            y2 = (int)lastRect.bottom();
+		}
+	}
+	if( m_foldlineY1 != y1 || m_foldlineY2 != y2 ) {
+		m_foldlineY1 = y1;
+		m_foldlineY2 = y2;
+		m_lnAreaWidget->update();
+	}
+	if( !m_lnAreaPressed ) return;
+	//auto pos = event->position();
 	int y = (int)pos.y();
 	// === 1. 画面上下外に出た場合の自動スクロール処理 ===
 	QScrollBar *vBar = verticalScrollBar();
@@ -3328,7 +3363,7 @@ void MarkdownEditor::lnAreaMouseMoveEvent(QMouseEvent *event) {
 		}
 	}
 
-	QTextCursor cursor = cursorForPosition(QPoint(0, (int)pos.y()));	//	クリック位置
+	//QTextCursor cursor = cursorForPosition(QPoint(0, (int)pos.y()));	//	クリック位置
 	int cbn = cursor.blockNumber();
 	if( cbn == m_curBlockNum ) return;
 	m_curBlockNum = cbn;

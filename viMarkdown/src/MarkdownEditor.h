@@ -324,6 +324,8 @@ private:
 	int		m_linkClickedPos = -1;			//	リンククリック位置
 	int		m_charWidth = 0;
 	int		m_preferredX = -1;				//	保存カーソル位置
+	int		m_foldlineY1 = -1;				//	折り畳み範囲線ｙ座標
+	int		m_foldlineY2 = -1;
 	//QTimer	*m_blinkTimer;
     //bool	m_cursorVisible = true;
 	QString	m_lastCurBlockText;				//	事前のカーソルブロックテキスト
