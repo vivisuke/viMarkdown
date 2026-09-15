@@ -2056,9 +2056,11 @@ void MainWindow::do_exCmd(const QString &text, QTextCursor& cursor) {
 	//do_exCmd(cmd, cursor, doc, docWidget);
 }
 void MainWindow::do_exCmd(const QString &text, int ix, /*QString cmd, QChar nch,*/ QTextCursor &cursor, QTextDocument*doc, DocWidget* docWidget) {
-	QString cmd;
+	QString cmd, arg;
 	while( ix < text.size() && text[ix].isLetter() ) cmd += text[ix++];
 	QChar nch = ix < text.size() ? text[ix] : u'\0';
+	if( ix < text.size() )
+		arg = text.mid(ix+1).trimmed();
 	//QChar nch;
 	//if( cmd.endsWith(u'!') ) {
 	//	nch = u'!';
@@ -2076,7 +2078,7 @@ void MainWindow::do_exCmd(const QString &text, int ix, /*QString cmd, QChar nch,
 			QDir::setCurrent(g.m_defaultDir);
 			do_output(QString("\ncurrent directory: %1\n").arg(QDir::currentPath()));
 		}
-	} else if( is_match(text, "e(dit") ) {
+	} else if( is_match(cmd, "e(dit") ) {
 		if( nch == u'\0')
 			onAction_Open();
 		else {
