@@ -2079,15 +2079,19 @@ void MainWindow::do_exCmd(const QString &text, int ix, /*QString cmd, QChar nch,
 			do_output(QString("\ncurrent directory: %1\n").arg(QDir::currentPath()));
 		}
 	} else if( is_match(cmd, "e(dit") ) {
-		if( nch == u'\0')
+		//if( nch == u'\0')
+		if( arg.isEmpty() )
 			onAction_Open();
 		else {
-			QString arg = gvi.m_cmdArg.trimmed();
+			//QString arg = gvi.m_cmdArg.trimmed();
 			//QString arg = text.mid(ix).trimmed();
 			do_open("", arg);
 		}
 	} else if( is_match(cmd, "w(rite") ) {
-		onAction_Save();
+		if( arg.isEmpty() ) {
+			onAction_Save();
+		} else {
+		}
 	} else if( is_match(cmd, "d(elete") ) {
 		QTextBlock startBlock = doc->findBlockByNumber(gvi.m_rangeStart - 1);
 		QTextBlock endBlock = doc->findBlockByNumber(gvi.m_rangeEnd - 1);

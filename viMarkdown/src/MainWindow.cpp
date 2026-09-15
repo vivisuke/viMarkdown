@@ -2052,6 +2052,11 @@ void MainWindow::do_save(bool fDialog, int ix) {
 		if( !oldFullPath.isEmpty() && oldFullPath != fullPath )		//	ファイル名変更
 			m_watcher->removePath(oldFullPath);
 	}
+	do_save(fullPath);
+}
+void MainWindow::do_save(const QString& fullPath) {
+	DocWidget *docWidget = getCurDocWidget();
+	if( docWidget == nullptr ) return;
 	addToRecentFiles(fullPath);
 	docWidget->m_saving = true;
 	m_watcher->removePath(fullPath);		//	一旦ウォッチリストから外す
@@ -2065,6 +2070,7 @@ void MainWindow::do_save(bool fDialog, int ix) {
 		file.close();
 		//QMessageBox::information(nullptr, "成功", "ファイルが保存されました:\n" + fullPath);
 		docWidget->setModified(false);		//	保存済み
+		int ix = ui->tabWidget->currentIndex();
 		ui->tabWidget->setTabText(ix, docWidget->m_title);
 		m_watcher->addPath(fullPath);
 		docWidget->m_hasSaved = true;		//	保存済み for 自動更新
