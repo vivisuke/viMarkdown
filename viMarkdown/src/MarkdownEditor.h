@@ -178,6 +178,7 @@ public:
 	int lnAreaWidth() const {
         return fontMetrics().horizontalAdvance('9') * LN_WIDTH;
     }
+	void	calcY(QTextBlock, int&, int&);
 	void	updateViewportMargines();
 	void	scrollToTop(const QTextCursor &cursor);
 	//{

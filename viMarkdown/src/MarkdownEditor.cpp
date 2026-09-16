@@ -3283,6 +3283,23 @@ void MarkdownEditor::applyDiffBlock(QTextBlock block) {
     m_docWidget->m_diffview->setProcessing(false);
     ((MainWindow*)m_mainWindow)->do_diff();
 }
+void MarkdownEditor::calcY(QTextBlock block, int &y1, int &y2) {
+	auto startBlock = block;
+	auto lastBlock = block;
+	int lvl = heading_level(block);
+	while( (block = block.next()).isValid() ) {
+		int l2 = heading_level(block);
+		if( l2 != 0 && l2 <= lvl )
+			break;
+		lastBlock = block;
+	}
+	if( lastBlock != startBlock ) {
+		QRectF startRect = blockBoundingGeometry(startBlock).translated(contentOffset());
+        y1 = (int)startRect.bottom();
+        QRectF lastRect = blockBoundingGeometry(lastBlock).translated(contentOffset());
+        y2 = (int)lastRect.bottom();
+	}
+}
 void MarkdownEditor::lnAreaMousePressEvent(QMouseEvent *event) {
 	auto pos = event->position();
 	QTextCursor cursor = cursorForPosition(QPoint(0, (int)pos.y()));
@@ -3312,6 +3329,13 @@ void MarkdownEditor::lnAreaMousePressEvent(QMouseEvent *event) {
 		if( block.isValid() ) {
 			if( is_folded(block) ) {
 				do_unfold(block);
+				int y1 = -1, y2 = -1;
+				calcY(block, y1, y2);
+				if( m_foldlineY1 != y1 || m_foldlineY2 != y2 ) {
+					m_foldlineY1 = y1;
+					m_foldlineY2 = y2;
+					m_lnAreaWidget->update();
+				}
 			} else if( is_foldable(block) ) {
 				do_fold(block);
 				m_foldlineY1 = m_foldlineY2 = -1;
@@ -3330,21 +3354,7 @@ void MarkdownEditor::lnAreaMouseMoveEvent(QMouseEvent *event) {
 	{
 		//	折り畳み可能ブロックの▼上
 		//qDebug() << "to draw foldable line";
-		auto startBlock = block;
-		auto lastBlock = block;
-		int lvl = heading_level(block);
-		while( (block = block.next()).isValid() ) {
-			int l2 = heading_level(block);
-			if( l2 != 0 && l2 <= lvl )
-				break;
-			lastBlock = block;
-		}
-		if( lastBlock != startBlock ) {
-			QRectF startRect = blockBoundingGeometry(startBlock).translated(contentOffset());
-            y1 = (int)startRect.bottom();
-            QRectF lastRect = blockBoundingGeometry(lastBlock).translated(contentOffset());
-            y2 = (int)lastRect.bottom();
-		}
+		calcY(block, y1, y2);
 	}
 	if( m_foldlineY1 != y1 || m_foldlineY2 != y2 ) {
 		m_foldlineY1 = y1;
