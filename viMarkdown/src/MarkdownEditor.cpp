@@ -165,6 +165,10 @@ protected:
 		MarkdownEditor* mdEditor = (MarkdownEditor*)parent();
 		mdEditor->lnAreaMouseReleaseEvent(event);
 	}
+	void leaveEvent(QEvent *event) override {
+		MarkdownEditor* mdEditor = (MarkdownEditor*)parent();
+		mdEditor->lnAreaLeaveEvent(event);
+	}
 };
 
 const int KEISEN_CODE_BEGIN = 0x2500;
@@ -3209,7 +3213,7 @@ void MarkdownEditor::lnAreaPaintEvent(QPaintEvent *event) {
 		++blockNumber;
 	}
 	if( m_foldlineY1 >= 0 && m_foldlineY2 >= 0 ) {
-		painter.setPen(Qt::black);
+		painter.setPen(Qt::blue);
 		int x = m_lnAreaWidget->width() - charWidth + 2;
 		painter.drawLine(x, m_foldlineY1, x, m_foldlineY2);
 		painter.drawLine(x, m_foldlineY2, x+charWidth, m_foldlineY2);
@@ -3306,9 +3310,9 @@ void MarkdownEditor::lnAreaMousePressEvent(QMouseEvent *event) {
 		m_lnAreaPressed = true;
 	} else if( !m_diffMode ) {
 		if( block.isValid() ) {
-			if( is_folded(block) )
+			if( is_folded(block) ) {
 				do_unfold(block);
-			else if( is_foldable(block) ) {
+			} else if( is_foldable(block) ) {
 				do_fold(block);
 				m_foldlineY1 = m_foldlineY2 = -1;
 				m_lnAreaWidget->update();
@@ -3393,6 +3397,10 @@ void MarkdownEditor::lnAreaMouseMoveEvent(QMouseEvent *event) {
 }
 void MarkdownEditor::lnAreaMouseReleaseEvent(QMouseEvent *event) {
 	m_lnAreaPressed = false;
+}
+void MarkdownEditor::lnAreaLeaveEvent(QEvent *event) {
+	m_foldlineY1 = m_foldlineY2 = -1;
+	m_lnAreaWidget->update();
 }
 void MarkdownEditor::resizeEvent(QResizeEvent *event) {
 	MarkdownBaseEdit::resizeEvent(event);

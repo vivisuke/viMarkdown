@@ -174,6 +174,7 @@ public:
 	void	lnAreaMousePressEvent(QMouseEvent *event);
 	void	lnAreaMouseMoveEvent(QMouseEvent *event);
 	void	lnAreaMouseReleaseEvent(QMouseEvent *event);
+	void	lnAreaLeaveEvent(QEvent *event);
 	int lnAreaWidth() const {
         return fontMetrics().horizontalAdvance('9') * LN_WIDTH;
     }
