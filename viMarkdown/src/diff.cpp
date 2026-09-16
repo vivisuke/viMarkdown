@@ -225,8 +225,8 @@ void MainWindow::diffview_open() {
 	docWidget->m_diffview->setPlainText(content);
 }
 void MainWindow::onAction_DiffWithFile() {
-	DocWidget *docWidget = getCurDocWidget();
-	if( docWidget == nullptr ) return;
+	//DocWidget *docWidget = getCurDocWidget();
+	//if( docWidget == nullptr ) return;
 	QString fullPath = QFileDialog::getOpenFileName(
 		this,
 		"select diff file",			// ダイアログのタイトル
@@ -234,6 +234,11 @@ void MainWindow::onAction_DiffWithFile() {
 		"markdown file (*.md *.markdown);;text file(*.txt);;all(*.*)"	// フィルター
 	);
 	if( fullPath.isEmpty() ) return;
+	do_diff(fullPath);
+}
+void MainWindow::do_diff(const QString &fullPath) {
+	DocWidget *docWidget = getCurDocWidget();
+	if( docWidget == nullptr ) return;
 	QFile file(fullPath);
 	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
 		QMessageBox::warning(this, tr("Error"), tr("Cannot open file:\n%1").arg(fullPath));

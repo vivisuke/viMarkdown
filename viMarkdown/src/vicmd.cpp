@@ -1671,9 +1671,9 @@ bool is_match(const QString &cmd, const QString &pat) {
 	while( i < cmd.size() && k < pat.size() ) {
 		if( pat[k] == '(' ) {
 			paren = true;
-			//++k;
-			//continue;
-			break;
+			++k;
+			continue;
+			//break;
 		}
 		if( cmd[i++] != pat[k++] ) return false;	//	不一致
 	}
@@ -2148,7 +2148,10 @@ void MainWindow::do_exCmd(const QString &text, int ix, /*QString cmd, QChar nch,
 	} else if( is_match(cmd, "di(ff") ) {
 		DocWidget *docWidget = getCurDocWidget();
 		if( docWidget == nullptr ) return;
-		onAction_DiffMode(!docWidget->m_diffMode);
+		if( arg.isEmpty() )
+			onAction_DiffMode(!docWidget->m_diffMode);
+		else
+			do_diff(arg);
 	} else {
 		statusBar()->showMessage(tr("illegal command."), 5000);
 	}

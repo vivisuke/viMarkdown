@@ -263,6 +263,7 @@ public:
     void	onChangePreviewFontSize(int);
     void	exitInsertMode(QTextCursor& cursor);
     void	do_diff();
+    void	do_diff(const QString &fullPath);
     void	close_cmdLine();
     bool	is_opening_file() const { return m_opening_file; }
 
