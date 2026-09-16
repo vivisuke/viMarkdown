@@ -3212,6 +3212,7 @@ void MarkdownEditor::lnAreaPaintEvent(QPaintEvent *event) {
 		painter.setPen(Qt::black);
 		int x = m_lnAreaWidget->width() - charWidth + 2;
 		painter.drawLine(x, m_foldlineY1, x, m_foldlineY2);
+		painter.drawLine(x, m_foldlineY2, x+charWidth, m_foldlineY2);
 	}
 	if( !isReadOnly() ) {
 		//	行カーソル描画
@@ -3307,8 +3308,11 @@ void MarkdownEditor::lnAreaMousePressEvent(QMouseEvent *event) {
 		if( block.isValid() ) {
 			if( is_folded(block) )
 				do_unfold(block);
-			else if( is_foldable(block) )
+			else if( is_foldable(block) ) {
 				do_fold(block);
+				m_foldlineY1 = m_foldlineY2 = -1;
+				m_lnAreaWidget->update();
+			}
 		}
 	}
 }
