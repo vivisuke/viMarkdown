@@ -84,5 +84,11 @@ void OutputView::keyPressEvent(QKeyEvent *e) {
 		selectAll();
 		return;
 	}
+	if (e->key() == Qt::Key_Escape) {
+		QTextCursor cursor = textCursor();
+		cursor.clearSelection();
+		setTextCursor(cursor);
+		return;
+	}
 	QPlainTextEdit::keyPressEvent(e);
 }
