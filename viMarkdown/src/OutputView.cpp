@@ -68,7 +68,7 @@ bool OutputView::event(QEvent *e)
 {
     if (e->type() == QEvent::ShortcutOverride) {
         QKeyEvent *ke = static_cast<QKeyEvent*>(e);
-        if (ke->matches(QKeySequence::Copy)) {
+        if (ke->matches(QKeySequence::Copy) || ke->matches(QKeySequence::SelectAll)) {
             e->accept(); // ★「このショートカットは私が処理します」とQtに宣言
             return true;
         }
@@ -78,6 +78,10 @@ bool OutputView::event(QEvent *e)
 void OutputView::keyPressEvent(QKeyEvent *e) {
 	if (e->key() == Qt::Key_C && (e->modifiers() & Qt::ControlModifier) != 0 ) {
 		copy();
+		return;
+	}
+	if (e->key() == Qt::Key_A && (e->modifiers() & Qt::ControlModifier) != 0 ) {
+		selectAll();
 		return;
 	}
 	QPlainTextEdit::keyPressEvent(e);
