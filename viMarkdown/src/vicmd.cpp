@@ -1665,7 +1665,7 @@ int parseLineSpec(const QString &text, int &i, int currentLine, int totalLines, 
 //	pat: "q(uit" の場合、"q", "qu", "qui", "quit" でマッチ、"qx" は不一致
 //	pat: "quit" の場合、"quit" のみがマッチ
 bool is_match(const QString &cmd, const QString &pat) {
-	gvi.m_cmdArg.clear();
+	//gvi.m_cmdArg.clear();
 	int i = 0, k = 0;
 	bool paren = false;		//	'(' フラグ
 	while( i < cmd.size() && k < pat.size() ) {
@@ -1682,8 +1682,8 @@ bool is_match(const QString &cmd, const QString &pat) {
 	if( k == pat.size() || (k < pat.size() && pat[k] == '(') || paren ) {	//	次が '(' または既に発見
 		while( i < cmd.size() - 1 && cmd[i] != ' ' ) ++i;
 		while( i < cmd.size() - 1 && cmd[i] == ' ' ) ++i;
-		if( i < cmd.size() - 1 )
-			gvi.m_cmdArg = cmd.mid(i);
+		//if( i < cmd.size() - 1 )
+		//	gvi.m_cmdArg = cmd.mid(i);
 		return true;
 	} else
 		return false;
