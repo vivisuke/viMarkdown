@@ -64,6 +64,17 @@ void OutputView::mouseDoubleClickEvent(QMouseEvent *e) {
 	qDebug() << "path = " << path;
 	emit do_open(path, ln-1);
 }
+bool OutputView::event(QEvent *e)
+{
+    if (e->type() == QEvent::ShortcutOverride) {
+        QKeyEvent *ke = static_cast<QKeyEvent*>(e);
+        if (ke->matches(QKeySequence::Copy)) {
+            e->accept(); // ★「このショートカットは私が処理します」とQtに宣言
+            return true;
+        }
+    }
+    return QPlainTextEdit::event(e);
+}
 void OutputView::keyPressEvent(QKeyEvent *e) {
 	if (e->key() == Qt::Key_C && (e->modifiers() & Qt::ControlModifier) != 0 ) {
 		copy();
