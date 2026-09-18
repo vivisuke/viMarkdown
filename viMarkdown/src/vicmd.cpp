@@ -547,13 +547,16 @@ void MainWindow::do_prefix_cmd(QChar cmd, QTextCursor& cursor, int rcnt, DocWidg
 			if (!block.isValid()) break;
 			if( is_folded(block) )
 				do_unfold(block);
-			else if( is_foldable(block) )
+			else if( is_foldable(block) ) {
 				do_fold(block);
+				docWidget->m_editor->clearFoldLine();
+			}
 			onMDTextChanged();
 			break;
 		case 'c':		//	zc
 			if( docWidget->m_diffMode ) break;
 			do_fold(block);
+			docWidget->m_editor->clearFoldLine();
 			onMDTextChanged();
 			break;
 		case 'o':		//	zo
@@ -565,8 +568,10 @@ void MainWindow::do_prefix_cmd(QChar cmd, QTextCursor& cursor, int rcnt, DocWidg
 			if( docWidget->m_diffMode ) break;
 			block = doc->begin();
 			while( block.isValid() ) {
-				if( blockType(block) == BT_HEADING && block.isVisible() )
+				if( blockType(block) == BT_HEADING && block.isVisible() ) {
 					do_fold(block);
+					docWidget->m_editor->clearFoldLine();
+				}
 				block = block.next();
 			}
 			onMDTextChanged();
