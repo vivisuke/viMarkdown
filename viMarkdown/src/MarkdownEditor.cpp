@@ -3218,8 +3218,10 @@ void MarkdownEditor::lnAreaPaintEvent(QPaintEvent *event) {
 	if( m_foldlineY1 >= 0 && m_foldlineY2 >= 0 ) {
 		painter.setPen(Qt::blue);
 		int x = m_lnAreaWidget->width() - charWidth + 2;
-		painter.drawLine(x, m_foldlineY1, x, m_foldlineY2);
-		painter.drawLine(x, m_foldlineY2, x+charWidth, m_foldlineY2);
+		int offset = contentOffset().y();
+		//int offset = verticalScrollBar()->value();
+		painter.drawLine(x, m_foldlineY1 + offset, x, m_foldlineY2 + offset);
+		painter.drawLine(x, m_foldlineY2 + offset, x+charWidth, m_foldlineY2 + offset);
 	}
 	if( !isReadOnly() ) {
 		//	行カーソル描画
@@ -3297,9 +3299,9 @@ void MarkdownEditor::calcY(QTextBlock block, int &y1, int &y2) {
 		lastBlock = block;
 	}
 	if( lastBlock != startBlock ) {
-		QRectF startRect = blockBoundingGeometry(startBlock).translated(contentOffset());
+		QRectF startRect = blockBoundingGeometry(startBlock);
         y1 = (int)startRect.bottom();
-        QRectF lastRect = blockBoundingGeometry(lastBlock).translated(contentOffset());
+        QRectF lastRect = blockBoundingGeometry(lastBlock);
         y2 = (int)lastRect.bottom();
 	}
 }
