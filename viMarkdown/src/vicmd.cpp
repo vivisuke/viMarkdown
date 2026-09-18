@@ -545,9 +545,10 @@ void MainWindow::do_prefix_cmd(QChar cmd, QTextCursor& cursor, int rcnt, DocWidg
 		case 'a':		//	za
 			if( docWidget->m_diffMode ) break;
 			if (!block.isValid()) break;
-			if( is_folded(block) )
+			if( is_folded(block) ) {
 				do_unfold(block);
-			else if( is_foldable(block) ) {
+				docWidget->m_editor->drawFoldLine(cursor, block);
+			} else if( is_foldable(block) ) {
 				do_fold(block);
 				docWidget->m_editor->clearFoldLine();
 			}
@@ -562,6 +563,7 @@ void MainWindow::do_prefix_cmd(QChar cmd, QTextCursor& cursor, int rcnt, DocWidg
 		case 'o':		//	zo
 			if( docWidget->m_diffMode ) break;
 			do_unfold(block);
+			docWidget->m_editor->drawFoldLine(cursor, block);
 			onMDTextChanged();
 			break;
 		case 'M':		//	zM	すべて折り畳み
@@ -580,8 +582,10 @@ void MainWindow::do_prefix_cmd(QChar cmd, QTextCursor& cursor, int rcnt, DocWidg
 			if( docWidget->m_diffMode ) break;
 			block = doc->begin();
 			while( block.isValid() ) {
-				if( blockType(block) == BT_HEADING )
+				if( blockType(block) == BT_HEADING ) {
 					do_unfold(block);
+					docWidget->m_editor->drawFoldLine(cursor, block);
+				}
 				block = block.next();
 			}
 			onMDTextChanged();
