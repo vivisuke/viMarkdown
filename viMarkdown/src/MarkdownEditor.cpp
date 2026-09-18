@@ -2802,15 +2802,7 @@ void MarkdownEditor::onCursorPosChanged() {
 	} else {	//	diff モード
 		syncDiffViewCursorFromEditor();
 	}
-	int y1 = -1, y2 = -1;
-	if( cursor.position() == block.position() && !is_folded(block) && is_foldable(block) ) {
-		calcY(block, y1, y2);
-	}
-	if( m_foldlineY1 != y1 || m_foldlineY2 != y2 ) {
-		m_foldlineY1 = y1;
-		m_foldlineY2 = y2;
-		m_lnAreaWidget->update();
-	}
+	drawFoldLine(cursor, block);
 #if 0
 #ifdef Q_OS_WIN
 	QRect r = cursorRect();
@@ -3311,9 +3303,20 @@ void MarkdownEditor::calcY(QTextBlock block, int &y1, int &y2) {
         y2 = (int)lastRect.bottom();
 	}
 }
-void MarkdownEditor::clearFoldableLine() {
+void MarkdownEditor::clearFoldLine() {
 	m_foldlineY1 = m_foldlineY2 = -1;
 	m_lnAreaWidget->update();
+}
+void MarkdownEditor::drawFoldLine(QTextCursor cursor, QTextBlock block) {
+	int y1 = -1, y2 = -1;
+	if( cursor.position() == block.position() && !is_folded(block) && is_foldable(block) ) {
+		calcY(block, y1, y2);
+	}
+	if( m_foldlineY1 != y1 || m_foldlineY2 != y2 ) {
+		m_foldlineY1 = y1;
+		m_foldlineY2 = y2;
+		m_lnAreaWidget->update();
+	}
 }
 void MarkdownEditor::lnAreaMousePressEvent(QMouseEvent *event) {
 	auto pos = event->position();

@@ -179,7 +179,8 @@ public:
         return fontMetrics().horizontalAdvance('9') * LN_WIDTH;
     }
 	void	calcY(QTextBlock, int&, int&);
-	void	clearFoldableLine();
+	void	clearFoldLine();
+	void	drawFoldLine(QTextCursor, QTextBlock);
 	void	updateViewportMargines();
 	void	scrollToTop(const QTextCursor &cursor);
 	//{
