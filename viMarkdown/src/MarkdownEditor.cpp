@@ -2802,11 +2802,22 @@ void MarkdownEditor::onCursorPosChanged() {
 	} else {	//	diff モード
 		syncDiffViewCursorFromEditor();
 	}
+	int y1 = -1, y2 = -1;
+	if( cursor.position() == block.position() && !is_folded(block) && is_foldable(block) ) {
+		calcY(block, y1, y2);
+	}
+	if( m_foldlineY1 != y1 || m_foldlineY2 != y2 ) {
+		m_foldlineY1 = y1;
+		m_foldlineY2 = y2;
+		m_lnAreaWidget->update();
+	}
+#if 0
 #ifdef Q_OS_WIN
 	QRect r = cursorRect();
     // ビューポート座標 → ウィジェット座標
     QPoint pos = viewport()->mapTo(this, r.bottomLeft());
     setImePosition(this, pos);
+#endif
 #endif
 }
 int MarkdownEditor::getVisualLineNumber(const QTextCursor &cursor) const {
@@ -3299,6 +3310,10 @@ void MarkdownEditor::calcY(QTextBlock block, int &y1, int &y2) {
         QRectF lastRect = blockBoundingGeometry(lastBlock).translated(contentOffset());
         y2 = (int)lastRect.bottom();
 	}
+}
+void MarkdownEditor::clearFoldableLine() {
+	m_foldlineY1 = m_foldlineY2 = -1;
+	m_lnAreaWidget->update();
 }
 void MarkdownEditor::lnAreaMousePressEvent(QMouseEvent *event) {
 	auto pos = event->position();

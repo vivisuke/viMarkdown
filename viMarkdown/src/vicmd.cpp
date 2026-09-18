@@ -1005,10 +1005,12 @@ void MainWindow::do_vi_motion(QChar cmd, QTextCursor& cursor, int rcnt, DocWidge
 	case 'h':
 		if( cursor.position() == block.position() ) {		//	行頭にいる場合
 			if( !docWidget->m_diffMode ) {
-				if( is_folded(block) )
+				if( is_folded(block) ) {
 					do_unfold(block);
-				else if( is_foldable(block) )
+				} else if( is_foldable(block) ) {
 					do_fold(block);
+					docWidget->m_editor->clearFoldableLine();
+				}
 			}
 		} else {
 			rcnt = qMin(rcnt, cursor.position() - block.position());	//	行頭対応
