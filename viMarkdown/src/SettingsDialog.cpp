@@ -1,6 +1,7 @@
 ﻿#include <QSettings>
 #include <QColorDialog>
 #include <QFileDialog>
+#include <QMessageBox>
 #include "MainWindow.h"
 #include "SettingsDialog.h"
 
@@ -157,6 +158,15 @@ void SettingsDialog::updateColorButtons() {
 }
 
 void SettingsDialog::accept() {
+	auto path = ui->defaultDir->text();
+	QDir dir(path);
+    if (!path.isEmpty() && !dir.exists()) {
+        QMessageBox::warning(
+            this,
+            tr("Error"),
+            tr("The specified directory does not exist:\n'%1'\n").arg(path));
+        return;
+    }
 	QSettings settings;
 	settings.setValue(KEY_EDITOR_FONT_SIZE, ui->editorFontSize->value());
 	settings.setValue(KEY_PREVIEW_FONT_SIZE, ui->previewFontSize->value());
