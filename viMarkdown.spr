@@ -398,7 +398,7 @@ SPR# 状 P Open Close ver     Type  概要
 0394 ◎ C 06/13 06/13 03022│ToDo│とりあえず固定のスライドタイトルページ表示
 0395 ◎ C 06/14 06/14 03022│ToDo│<svg...> パース：width="100%" height="100%" viewbox="0 0 800 600" 対応 
 0396 ◎ C 06/14 06/15 03023│問題│折り畳まれた見出し行を dd で削除すると、非表示になっている本文が延々非表示になり、行番号が不正になる
-0397 ● C 06/14            │問題│折り畳まれた見出し行末尾改行を削除した場合は、折り畳み解除した方がよい？
+0397 ◎ D 06/14 09/20      │問題│折り畳まれた見出し行末尾改行を削除した場合は、折り畳み解除した方がよい？ → 現在の動作でも問題無い
 0398 ◎ C 06/14 06/14 03022│ToDo│Esc 押下：選択解除＆v モード解除
 0399 ◎ C 06/14 08/25 03107│ToDo│Global::m_tableTextColor 追加
 0400 ◎ C 06/14 06/14 03022│ToDo│CMakeLists.txt：SlideShow.h, ,cpp 追加
@@ -433,7 +433,7 @@ SPR# 状 P Open Close ver     Type  概要
 0429 ◎ C 06/15 06/17 03024│ToDo│ex コマンドを処理する vi_excmd(const QString&, ...) 実装
 0430 ◎ C 06/17 06/17 03024│問題│:g/pat/cmd が :%g/pat/cmd として処理されない
 0431 ◎ C 06/17 06/17 03024│問題│:{range}g/pat/cmd：cmd に g は指定不可に
-0432 ● C 06/17            │問題│:g/pat/d ：最初のマッチ行しか削除されない
+0432 ◎ C 06/17 09/20 03113│問題│:g/pat/d ：最初のマッチ行しか削除されない
 0433 ◎ C 06/17 06/17 03024│ToDo│Test > vi：X テスト追加
 0434 ◎ C 06/17 06/17 03024│ToDo│Test > vi：:{range}d テスト追加
 0435 ◎ C 06/17 06/17 03024│ToDo│MainWindow::onAction_TestViCommands()：ex コマンドテスト対応
@@ -790,6 +790,7 @@ SPR# 状 P Open Close ver     Type  概要
 0783 ◎ C 08/02 08/02 03042│問題│xu を実行すると、カーソルが右に移動してしまう
 0784 ◎ C 08/03 08/04 03043│ToDo│F1 で表示される help.md に「ver 0.3 の新機能（What's New）」追加
 0785 ● C 08/03            │問題│[text](#heading) の heading 部分に半角空白があると、リンクとして認識されない
+									メモ：insertMarkdown() がそもそもサポートしていない
 0786 ◎ C 08/03 08/03 03042│ToDo│Tool > Diary > Today'sDiary をメニュー・ツールバーに追加
 0787 ◎ C 08/03 08/03 03043│ToDo│Today'sDiary：デフォルトディレクトリ/diary/2026/08/20260803.md 新規作成・オープン
 0788 ◯ D 08/03 08/19      │ToDo│Tool > Diary > This Week's Note 追加 → NPTF

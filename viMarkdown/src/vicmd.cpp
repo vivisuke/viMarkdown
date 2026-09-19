@@ -1842,14 +1842,26 @@ void MainWindow::do_global(const QString &text, int ix, QTextCursor& cursor, QTe
         block = block.next();
     }
     //	コマンド実行
-    block = doc->findBlockByNumber(startIdx);
-    while (block.isValid() && block.blockNumber() <= endIdx) {
-        if( blockGFlag(block) ) {
-        	gvi.m_rangeStart = gvi.m_rangeEnd = block.blockNumber() + 1;
-        	int ix = 0;
-        	do_exCmd(cmd, ix, cursor, doc, docWidget);
-        }
-        block = block.next();
+    if( is_match(cmd, "d(elete") ) {
+	    block = doc->findBlockByNumber(endIdx);
+	    while (block.isValid() && block.blockNumber() >= startIdx) {
+	        if( blockGFlag(block) ) {
+	        	gvi.m_rangeStart = gvi.m_rangeEnd = block.blockNumber() + 1;
+	        	int ix = 0;
+	        	do_exCmd(cmd, ix, cursor, doc, docWidget);
+	        }
+	        block = block.previous();
+	    }
+    } else {
+	    block = doc->findBlockByNumber(startIdx);
+	    while (block.isValid() && block.blockNumber() <= endIdx) {
+	        if( blockGFlag(block) ) {
+	        	gvi.m_rangeStart = gvi.m_rangeEnd = block.blockNumber() + 1;
+	        	int ix = 0;
+	        	do_exCmd(cmd, ix, cursor, doc, docWidget);
+	        }
+	        block = block.next();
+	    }
     }
 }
 void MainWindow::do_subst(const QString &text, int ix, QTextDocument* doc) {
