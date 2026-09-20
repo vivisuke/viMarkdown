@@ -916,7 +916,7 @@ Do you want to save your changes?</source>
         <location filename="x64/Debug/qt/uic/ui_MainWindow.h" line="927"/>
         <location filename="x64/Release/qt/uic/ui_MainWindow.h" line="927"/>
         <source>AlignCenter</source>
-        <translation type="unfinished"></translation>
+        <translation>中央揃え</translation>
     </message>
     <message>
         <location filename="MainWindow.ui" line="861"/>
