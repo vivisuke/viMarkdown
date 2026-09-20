@@ -1994,8 +1994,10 @@ void MainWindow::do_open_sub(const QString& title, const QString& fullPath, cons
 	m_watcher->addPath(fullPath);
 
 	DocWidget *docWidget = getCurDocWidget();
-	if( docWidget != nullptr )
+	if( docWidget != nullptr ) {
 		docWidget->m_editor->jumpToHeading(name);
+		docWidget->m_editor->rehighlight();
+	}
 	addToRecentFiles(fullPath);
 	close_empty_doc();
 }
