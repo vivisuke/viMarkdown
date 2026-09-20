@@ -1842,6 +1842,7 @@ void MainWindow::do_global(const QString &text, int ix, QTextCursor& cursor, QTe
         block = block.next();
     }
     //	コマンド実行
+    gvi.m_editor->openUndoBlock();
     if( is_match(cmd, "d(elete") ) {
 	    block = doc->findBlockByNumber(endIdx);
 	    while (block.isValid() && block.blockNumber() >= startIdx) {
@@ -1863,6 +1864,7 @@ void MainWindow::do_global(const QString &text, int ix, QTextCursor& cursor, QTe
 	        block = block.next();
 	    }
     }
+    gvi.m_editor->closeUndoBlock();
 }
 void MainWindow::do_subst(const QString &text, int ix, QTextDocument* doc) {
 	QString pat;

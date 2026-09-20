@@ -934,6 +934,7 @@ struct ViTestCase {
 
 const QList<ViTestCase> viTestCases = {
 #if 0
+#if 0
     { "Basic i command",
         "┃\n",
         {
@@ -3091,8 +3092,9 @@ const QList<ViTestCase> viTestCases = {
             "2U", "┃345\n"   // 2回分まとめてリドゥ
         }
     },
+#endif
 //	ex commands
-#if 0
+#if 1
     { "Ex Range - Absolute Line Number (:num)",
         "line 1\nli┃ne 2\nline 3\nline 4\n",
         {
@@ -3249,17 +3251,9 @@ void MainWindow::onAction_TestViCommands() {
 				do_viCmd(cmd_text[i], cursor);
 				if( gvi.m_currentMode == ViMode::Insert ) {
 					auto txt = gvi.m_insertedText = cmd_text.mid(i+1);
-					//if( gvi.m_insRepCount > 1 ) {
-					//	//qDebug() << "gvi.m_insRepCount = " << gvi.m_insRepCount;
-					//	txt = txt.repeated(gvi.m_insRepCount-1);
-					//}
-					//cursor.insertText(txt);
 					editor->openUndoBlock();
 					editor->do_insertText(cursor, txt);
 					exitInsertMode(cursor);
-					//if( cursor.position() > cursor.block().position())
-					//	cursor.movePosition(QTextCursor::Left);
-					//gvi.m_currentMode = ViMode::Normal;
 					break;
 				} else if( gvi.m_currentMode == ViMode::CommandLine ) {
 					if( cmd_text[i] == u':' )
