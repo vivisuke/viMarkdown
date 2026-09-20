@@ -1714,9 +1714,9 @@ EX
   :w[rite]  save                          :q[uit]/!   quit / force quit
   :{n}      jump to line n                :{r}d[elete] delete range
   :{r}p     print lines                   :{r}P       print with line nums
-  :{r}s/pat/rep/[g]  substitute           :{r}g/pat/cmd  global execution *
-  :{r}nu[mber]       number lines         :{r}n[ext]     next file *
-  :w filename        save as *            Up/Down     command history  
+  :{r}s/pat/rep/[g]  substitute           :{r}g/pat/cmd  global execution
+  :{r}nu[mber]       number lines         :w filename        save as
+  Up/Down     command history  
  
   Range {r} modifiers:
     {num}   line num         .  current line     $  last line
