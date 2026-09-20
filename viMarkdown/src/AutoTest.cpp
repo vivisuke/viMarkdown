@@ -933,7 +933,7 @@ struct ViTestCase {
 };
 
 const QList<ViTestCase> viTestCases = {
-#if 0
+#if 1
 #if 0
     { "Basic i command",
         "┃\n",
@@ -1489,11 +1489,9 @@ const QList<ViTestCase> viTestCases = {
                  "sec┃ond line",       // 最終行では移動しない
         }
     },
-
     // =========================================================================
     //  - コマンド (前行の最初の非空白文字へ移動)
     // =========================================================================
-
     { "Basic - command",
         "first line\n"
         "sec┃ond line\n",
@@ -1645,11 +1643,9 @@ const QList<ViTestCase> viTestCases = {
                     "┃third line\n",
         }
     },
-
     // =========================================================================
     //  d+ / d- (オペレータ連携: 行単位削除)
     // =========================================================================
-
     { "d+ command (deletes current and next line)",
         "first\n"
         "sec┃ond\n"
@@ -1828,7 +1824,6 @@ const QList<ViTestCase> viTestCases = {
             "~", "HEL┃lo\n"  // 'l' -> 'L', カーソルは右隣の 'l' へ
         }
     },
-
     // 大文字から小文字への変換
     { "Toggle case (~) - Uppercase to lowercase",
         "┃WORLD\n",
@@ -1837,7 +1832,6 @@ const QList<ViTestCase> viTestCases = {
             "~", "wo┃RLD\n"  // 'O' -> 'o'
         }
     },
-
     // 行末での挙動: 変換されるが、改行(\n)には乗らないためカーソルはその文字に留まる
     { "Toggle case (~) - End of line",
         "a┃b\n",
@@ -1846,7 +1840,6 @@ const QList<ViTestCase> viTestCases = {
             "~", "a┃b\n"    // 再び実行すると 'b' に戻り、カーソルは留まる
         }
     },
-
     // 記号・数字・空白: 大文字小文字がない文字は変化せず、カーソルのみ右へ進む
     { "Toggle case (~) - Non-alphabet characters",
         "┃1. a\n",
@@ -1857,7 +1850,6 @@ const QList<ViTestCase> viTestCases = {
             "~", "1. ┃A\n"  // 'a' -> 'A'、行末のため 'A' に留まる
         }
     },
-
     // 日本語（マルチバイト文字）: 変化せずカーソルのみ右へ進む
     { "Toggle case (~) - Multibyte characters",
         "┃あa\n",
@@ -1866,7 +1858,6 @@ const QList<ViTestCase> viTestCases = {
             "~", "あ┃A\n"  // 'a' -> 'A'、行末のため留まる
         }
     },
-
     // カウント付き実行 ([num]~)
     { "Toggle case (~) - With count",
         "┃hello world\n",
@@ -1875,7 +1866,6 @@ const QList<ViTestCase> viTestCases = {
             "2~", "HELLO┃ world\n"  // 2文字反転してカーソルは空白 ' ' へ
         }
     },
-
     // カウントが行末を超える場合: 行末の文字まで反転して、行末文字でストップする
     { "Toggle case (~) - Count exceeds line end",
         "he┃llo\n",
@@ -1883,7 +1873,6 @@ const QList<ViTestCase> viTestCases = {
             "10~", "heLL┃O\n" // 行末まで全て反転し、最後の文字 'O' に留まる
         }
     },
-
     // 空行での挙動: 何も起きない（No-op）
     { "Toggle case (~) - Empty line",
         "┃\n",
@@ -1891,7 +1880,6 @@ const QList<ViTestCase> viTestCases = {
             "~", "┃\n"
         }
     },
-
     // ドットリピート (.)
     { "Toggle case (~) - Dot repeat",
         "┃abc\n",
@@ -1901,7 +1889,6 @@ const QList<ViTestCase> viTestCases = {
             ".", "AB┃C\n" // 行末に到達
         }
     },
-
     // Undo / Redo
     { "Toggle case (~) - Undo and Redo",
         "┃abc\n",
@@ -2176,7 +2163,6 @@ const QList<ViTestCase> viTestCases = {
             "J", "hello┃ world\n" // 前行末尾に空白がある場合、余分な空白は追加せず既存空白の位置にカーソル
         }
     },
-
     // --- 2. 空行との結合 ---
     { "Join lines (J) - Next line is empty",
         "┃first\n\nsecond\n",
@@ -2236,6 +2222,119 @@ const QList<ViTestCase> viTestCases = {
         {
             "J", "foo┃ bar\n", // 結合
             "u", "fo┃o\nbar\n"  // アンドゥで元の行の末尾文字位置に復元
+        }
+    },
+    // Indent (>>) and Unindent (<<)
+    // --- >> 基本動作 ---
+    { "Indent line (>>) - Basic",
+        "┃hello\n",
+        {
+            ">>", "  ┃hello\n" // 半角スペース2個挿入、カーソルは最初の非空白文字へ
+        }
+    },
+    { "Indent line (>>) - Cursor in middle of line",
+        "he┃llo\n",
+        {
+            ">>", "  ┃hello\n" // 行の途中にカーソルがあっても非空白文字の先頭へ移動
+        }
+    },
+    { "Indent line (>>) - Preserve existing indent",
+        "  ┃hello\n",
+        {
+            ">>", "    ┃hello\n" // 2スペースから4スペースへ追加インデント
+        }
+    },
+
+    // --- >> カウント付き ---
+    { "Indent line with count (2>>)",
+        "┃aaa\nbbb\nccc\n",
+        {
+            "2>>", "  ┃aaa\n  bbb\nccc\n" // カレント行と次行の計2行をインデント
+        }
+    },
+    { "Indent line with count (3>>)",
+        "aaa\n┃bbb\nccc\nddd\n",
+        {
+            "3>>", "aaa\n  ┃bbb\n  ccc\n  ddd\n" // カレント行から3行インデント
+        }
+    },
+
+    // --- >> Undo / Redo ---
+    { "Indent line (>>) - Undo and Redo",
+        "┃hello\n",
+        {
+            ">>", "  ┃hello\n",
+            "u",  "┃hello\n",   // Undoで元の位置に戻る
+            "U",  "  ┃hello\n"  // Redoで再びインデント
+        }
+    },
+    { "Indent line with count (2>>) - Undo and Redo",
+        "┃aaa\nbbb\n",
+        {
+            "2>>", "  ┃aaa\n  bbb\n",
+            "u",   "┃aaa\nbbb\n",
+            "U",   "  ┃aaa\n  bbb\n"
+        }
+    },
+
+    // --- >> ドットリピート ---
+    { "Indent line (>>) - Dot repeat",
+        "┃hello\n",
+        {
+            ">>", "  ┃hello\n",
+            ".",  "    ┃hello\n" // 同じ行でドットリピートしてさらにインデント
+        }
+    },
+
+    // --- << 基本動作 ---
+    { "Unindent line (<<) - Basic",
+        "  ┃hello\n",
+        {
+            "<<", "┃hello\n" // 半角スペース2個削除
+        }
+    },
+    { "Unindent line (<<) - Already at column 0 (No-op)",
+        "┃hello\n",
+        {
+            "<<", "┃hello\n" // インデントがない場合は何も変化しない
+        }
+    },
+    { "Unindent line (<<) - Odd spaces (1 space left)",
+        " ┃hello\n",
+        {
+            "<<", "┃hello\n" // インデント幅（2）未満のスペース（1個）はすべて削除されて0個に
+        }
+    },
+    { "Unindent line (<<) - Deep indent",
+        "    ┃hello\n",
+        {
+            "<<", "  ┃hello\n" // 4スペースから2スペースへ
+        }
+    },
+
+    // --- << カウント付き ---
+    { "Unindent line with count (2<<)",
+        "    ┃aaa\n  bbb\nccc\n",
+        {
+            "2<<", "  ┃aaa\nbbb\nccc\n" // 2行まとめてアンインデント
+        }
+    },
+
+    // --- << Undo / Redo ---
+    { "Unindent line (<<) - Undo and Redo",
+        "  ┃hello\n",
+        {
+            "<<", "┃hello\n",
+            "u",  "  ┃hello\n",
+            "U",  "┃hello\n"
+        }
+    },
+    { "Unindent line with count (2<<) - Undo and Redo",
+        "  ┃aaa\n  bbb\n",
+        {
+            "2<<", "┃aaa\nbbb\n",
+            "u",   "  ┃aaa\n  bbb\n",
+            "U",   "┃aaa\nbbb\n"
         }
     },
     //----------------------------------------------------------------------
@@ -2400,7 +2499,6 @@ const QList<ViTestCase> viTestCases = {
     // =========================================================================
     //  dh (左方向・文字単位削除)
     // =========================================================================
-
     { "Basic dh command",
         "a┃bc\n",
         {
@@ -2425,11 +2523,8 @@ const QList<ViTestCase> viTestCases = {
             "2d2h", "ab┃g\n",           // 手前の 2x2=4 文字 ('c', 'd', 'e', 'f') を削除
         }
     },
-
-    // =========================================================================
     //  dl (右方向・文字単位削除 / x と同等)
     // =========================================================================
-
     { "Basic dl command",
         "a┃bc\n",
         {
@@ -2454,11 +2549,9 @@ const QList<ViTestCase> viTestCases = {
             "dl", "a┃b\n",              // 行末文字 'c' を削除（カーソルは1つ左の 'b' にスナップ）
         }
     },
-
     // =========================================================================
     //  dj (下方向・行単位削除: カレント行 + 下の行)
     // =========================================================================
-
     { "Basic dj command (deletes 2 lines: current and below)",
         "first\n"
         "sec┃ond\n"
@@ -2501,11 +2594,9 @@ const QList<ViTestCase> viTestCases = {
                   "sec┃ond",          // 下に行がないため何も削除されない
         }
     },
-
     // =========================================================================
     //  dk (上方向・行単位削除: カレント行 + 上の行)
     // =========================================================================
-
     { "Basic dk command (deletes 2 lines: current and above)",
         "first\n"
         "second\n"
@@ -2535,11 +2626,9 @@ const QList<ViTestCase> viTestCases = {
                   "second\n",           // 上に行がないため何も削除されない
         }
     },
-
     // =========================================================================
     //  d{h,j,k,l} の Undo テスト
     // =========================================================================
-
     { "dj undo",
         "first\n"
         "sec┃ond\n"
@@ -2561,9 +2650,7 @@ const QList<ViTestCase> viTestCases = {
             "u",    "a┃bcdefghijk\n",   // Undo で6文字まとめて復元
         }
     },
-
     // --- 行単位削除（dd）後の P（上に行挿入） ---
-
     { "dd and Put (paste linewise above)",
         "first\n"
         "sec┃ond\n"
@@ -3033,6 +3120,7 @@ const QList<ViTestCase> viTestCases = {
             "U",  "line1\n┃line3\n"       // リドゥで再び削除
         }
     },
+#if 0		//	NPTF for v0.3, v0.4
     // --- 4. 行結合 (J) の Undo / Redo ---
     { "Undo/Redo - Join lines (J)",
         "┃hello\nworld\n",
@@ -3042,6 +3130,7 @@ const QList<ViTestCase> viTestCases = {
             "U", "hello┃ world\n"  // リドゥで再度結合
         }
     },
+#endif
 
     // --- 5. 複数回の連続 Undo と 連続 Redo ---
     { "Undo/Redo - Multiple steps",
@@ -3094,7 +3183,7 @@ const QList<ViTestCase> viTestCases = {
     },
 #endif
 //	ex commands
-#if 1
+#if 0
     { "Ex Range - Absolute Line Number (:num)",
         "line 1\nli┃ne 2\nline 3\nline 4\n",
         {

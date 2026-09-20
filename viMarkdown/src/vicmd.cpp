@@ -818,7 +818,8 @@ bool MainWindow::do_vi_operator(QChar cmd, QTextCursor& cursor, int rcnt, DocWid
 			//	docWidget->m_preview->centerCursor();
 			break;
 #endif
-		case '>':	//	>>
+		case '>': {	//	>>
+			int pos = cursor.position();
 			cursor.beginEditBlock();
 			for(int i = 0; i < gvi.m_opCount; ++i) {
 				onAction_Indent();
@@ -831,9 +832,13 @@ bool MainWindow::do_vi_operator(QChar cmd, QTextCursor& cursor, int rcnt, DocWid
 					docWidget->m_preview->setTextCursor(cursor);
 			}
 			cursor.endEditBlock();
+			cursor.setPosition(pos);
+			hat(cursor);
 			gvi.m_isEditCommand = true;
 			break;
-		case '<':	//	<<
+		}
+		case '<': {	//	<<
+			int pos = cursor.position();
 			cursor.beginEditBlock();
 			for(int i = 0; i < gvi.m_opCount; ++i) {
 				onAction_UnIndent();
@@ -846,8 +851,11 @@ bool MainWindow::do_vi_operator(QChar cmd, QTextCursor& cursor, int rcnt, DocWid
 					docWidget->m_preview->setTextCursor(cursor);
 			}
 			cursor.endEditBlock();
+			cursor.setPosition(pos);
+			hat(cursor);
 			gvi.m_isEditCommand = true;
 			break;
+		}
 		}
 	} else {
 #if 0
