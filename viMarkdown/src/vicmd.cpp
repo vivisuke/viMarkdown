@@ -820,6 +820,7 @@ bool MainWindow::do_vi_operator(QChar cmd, QTextCursor& cursor, int rcnt, DocWid
 #endif
 		case '>': {	//	>>
 			int pos = cursor.position();
+			docWidget->m_editor->openUndoBlock();
 			cursor.beginEditBlock();
 			for(int i = 0; i < gvi.m_opCount; ++i) {
 				onAction_Indent();
@@ -832,6 +833,7 @@ bool MainWindow::do_vi_operator(QChar cmd, QTextCursor& cursor, int rcnt, DocWid
 					docWidget->m_preview->setTextCursor(cursor);
 			}
 			cursor.endEditBlock();
+			docWidget->m_editor->closeUndoBlock();
 			cursor.setPosition(pos);
 			hat(cursor);
 			gvi.m_isEditCommand = true;
@@ -839,6 +841,7 @@ bool MainWindow::do_vi_operator(QChar cmd, QTextCursor& cursor, int rcnt, DocWid
 		}
 		case '<': {	//	<<
 			int pos = cursor.position();
+			docWidget->m_editor->openUndoBlock();
 			cursor.beginEditBlock();
 			for(int i = 0; i < gvi.m_opCount; ++i) {
 				onAction_UnIndent();
@@ -851,6 +854,7 @@ bool MainWindow::do_vi_operator(QChar cmd, QTextCursor& cursor, int rcnt, DocWid
 					docWidget->m_preview->setTextCursor(cursor);
 			}
 			cursor.endEditBlock();
+			docWidget->m_editor->closeUndoBlock();
 			cursor.setPosition(pos);
 			hat(cursor);
 			gvi.m_isEditCommand = true;
