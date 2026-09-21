@@ -2371,6 +2371,10 @@ void MainWindow::onAction_UnIndent() {
 			cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, 2);
 			//cursor.removeSelectedText();
 			mdEditor->do_deleteText(cursor);
+		} else if( currentBlock.text().startsWith(" ") ) {
+			cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, 1);
+			//cursor.removeSelectedText();
+			mdEditor->do_deleteText(cursor);
 		}
 		currentBlock = currentBlock.next();		// 次のブロックへ
 	}
