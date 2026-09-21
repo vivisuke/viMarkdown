@@ -60,6 +60,20 @@ void UndoMgr::init()
 	m_insText.clear();
 	m_delText.clear();
 }
+void UndoMgr::setFlag(uchar f) {
+	if( m_cur == 0 ) return;
+	auto ix = m_cur - 1;
+	UndoAction *ptr = m_stack[ix];
+	ptr->m_flags |= f;
+	if( (ptr->m_flags & UndoAction::FLAG_BLOCK) != 0 ) {
+		while( --ix >= 0 ) {
+			ptr = m_stack[ix];
+			ptr->m_flags |= f;
+			if( (ptr->m_flags & UndoAction::FLAG_BLOCK) != 0 )
+				break;
+		}
+	}
+}
 void UndoMgr::openBlock()
 {
 	if( ++m_blockLevel != 1 ) return;

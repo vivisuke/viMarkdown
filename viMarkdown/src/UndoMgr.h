@@ -25,6 +25,8 @@ struct UndoAction
 		FLAG_BLOCK = 1,		//	このビットが立っていれば、undo block 開始 or 終了
 		//FLAG_MODIFIED = 2,	//	モディファイフラグ
 		FLAG_BS = 2,		//	BackSpace による削除
+		FLAG_JOIN = 4,		//	for J コマンド
+		FLAS_SHIFT = 8,		//	for >> << コマンド
 	};
 	uchar	m_type;
 	uchar	m_flags;
@@ -116,6 +118,7 @@ public:
 
 public:
 	void	init();
+	void	setFlag(uchar f);
 	int		undo();
 	int		redo();
 	bool	push_back(UndoAction *);
