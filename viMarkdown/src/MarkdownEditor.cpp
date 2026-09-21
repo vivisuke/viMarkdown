@@ -3215,13 +3215,21 @@ void MarkdownEditor::lnAreaPaintEvent(QPaintEvent *event) {
 		bottom = top + (int) blockBoundingRect(block).height();
 		++blockNumber;
 	}
-	if( m_foldlineY1 >= 0 && m_foldlineY2 >= 0 ) {
+	//if( m_foldlineY1 >= 0 && m_foldlineY2 >= 0 )
+	if( m_foldBlockNumber1 >= 0 && m_foldBlockNumber2 >= 0 )
+	{
 		painter.setPen(Qt::blue);
 		int x = m_lnAreaWidget->width() - charWidth + 2;
 		int offset = contentOffset().y();
 		//int offset = verticalScrollBar()->value();
-		painter.drawLine(x, m_foldlineY1 + offset, x, m_foldlineY2 + offset);
-		painter.drawLine(x, m_foldlineY2 + offset, x+charWidth, m_foldlineY2 + offset);
+		QTextBlock startBlock = document()->findBlockByNumber(m_foldBlockNumber1);
+		QRectF startRect = blockBoundingGeometry(startBlock);
+        int y1 = (int)startRect.bottom();
+		QTextBlock endBlock = document()->findBlockByNumber(m_foldBlockNumber2);
+        QRectF lastRect = blockBoundingGeometry(endBlock);
+        int y2 = (int)lastRect.bottom();
+		painter.drawLine(x, y1 + offset, x, y2 + offset);
+		painter.drawLine(x, y2 + offset, x+charWidth, y2 + offset);
 	}
 	if( !isReadOnly() ) {
 		//	行カーソル描画
@@ -3288,6 +3296,22 @@ void MarkdownEditor::applyDiffBlock(QTextBlock block) {
     m_docWidget->m_diffview->setProcessing(false);
     ((MainWindow*)m_mainWindow)->do_diff();
 }
+void MarkdownEditor::foldableBlockNumber(QTextBlock block, int &bn1, int &bn2) {
+	bn1 = bn2 = -1;
+	auto startBlock = block;
+	auto lastBlock = block;
+	int lvl = heading_level(block);
+	while( (block = block.next()).isValid() ) {
+		int l2 = heading_level(block);
+		if( l2 != 0 && l2 <= lvl )
+			break;
+		lastBlock = block;
+	}
+	if( lastBlock != startBlock ) {
+		bn1 = startBlock.blockNumber();
+		bn2 = lastBlock.blockNumber();
+	}
+}
 void MarkdownEditor::calcY(QTextBlock block, int &y1, int &y2) {
 	auto startBlock = block;
 	auto lastBlock = block;
@@ -3306,17 +3330,25 @@ void MarkdownEditor::calcY(QTextBlock block, int &y1, int &y2) {
 	}
 }
 void MarkdownEditor::clearFoldLine() {
-	m_foldlineY1 = m_foldlineY2 = -1;
+	//m_foldlineY1 = m_foldlineY2 = -1;
+	m_foldBlockNumber1 = m_foldBlockNumber2 = -1;
 	m_lnAreaWidget->update();
 }
 void MarkdownEditor::drawFoldLine(QTextCursor cursor, QTextBlock block) {
-	int y1 = -1, y2 = -1;
+	//int y1 = -1, y2 = -1;
+	int bn1 = -1, bn2 = -1;
 	if( cursor.position() == block.position() && !is_folded(block) && is_foldable(block) ) {
-		calcY(block, y1, y2);
+		//calcY(block, y1, y2);
+		foldableBlockNumber(block, bn1, bn2);
 	}
-	if( m_foldlineY1 != y1 || m_foldlineY2 != y2 ) {
-		m_foldlineY1 = y1;
-		m_foldlineY2 = y2;
+	//if( m_foldlineY1 != y1 || m_foldlineY2 != y2 ) {
+	//	m_foldlineY1 = y1;
+	//	m_foldlineY2 = y2;
+	//	m_lnAreaWidget->update();
+	//}
+	if( m_foldBlockNumber1 != bn1 || m_foldBlockNumber2 != bn2 ) {
+		m_foldBlockNumber1 = bn1;
+		m_foldBlockNumber2 = bn2;
 		m_lnAreaWidget->update();
 	}
 }
@@ -3349,16 +3381,24 @@ void MarkdownEditor::lnAreaMousePressEvent(QMouseEvent *event) {
 		if( block.isValid() ) {
 			if( is_folded(block) ) {
 				do_unfold(block);
-				int y1 = -1, y2 = -1;
-				calcY(block, y1, y2);
-				if( m_foldlineY1 != y1 || m_foldlineY2 != y2 ) {
-					m_foldlineY1 = y1;
-					m_foldlineY2 = y2;
+				int bn1, bn2;
+				foldableBlockNumber(block, bn1, bn2);
+				if( m_foldBlockNumber1 != bn1 || m_foldBlockNumber2 != bn2 ) {
+					m_foldBlockNumber1 = bn1;
+					m_foldBlockNumber2 = bn2;
 					m_lnAreaWidget->update();
 				}
+				//int y1 = -1, y2 = -1;
+				//calcY(block, y1, y2);
+				//if( m_foldlineY1 != y1 || m_foldlineY2 != y2 ) {
+				//	m_foldlineY1 = y1;
+				//	m_foldlineY2 = y2;
+				//	m_lnAreaWidget->update();
+				//}
 			} else if( is_foldable(block) ) {
 				do_fold(block);
-				m_foldlineY1 = m_foldlineY2 = -1;
+				//m_foldlineY1 = m_foldlineY2 = -1;
+				m_foldBlockNumber1 = m_foldBlockNumber2 = -1;
 				m_lnAreaWidget->update();
 			}
 		}
@@ -3368,19 +3408,26 @@ void MarkdownEditor::lnAreaMouseMoveEvent(QMouseEvent *event) {
 	auto pos = event->position();
 	QTextCursor cursor = cursorForPosition(QPoint(0, (int)pos.y()));
 	QTextBlock block = cursor.block();
-	int y1 = -1, y2 = -1;
+	int bn1 = -1, bn2 = -1;
+	//int y1 = -1, y2 = -1;
 	if( !m_diffMode && block.isValid() && !is_folded(block) && is_foldable(block) &&
 		 m_lnAreaWidget->width() - m_charWidth*2 <= pos.x() ) 
 	{
 		//	折り畳み可能ブロックの▼上
 		//qDebug() << "to draw foldable line";
-		calcY(block, y1, y2);
+		//calcY(block, y1, y2);
+		foldableBlockNumber(block, bn1, bn2);
 	}
-	if( m_foldlineY1 != y1 || m_foldlineY2 != y2 ) {
-		m_foldlineY1 = y1;
-		m_foldlineY2 = y2;
+	if( m_foldBlockNumber1 != bn1 || m_foldBlockNumber2 != bn2 ) {
+		m_foldBlockNumber1 = bn1;
+		m_foldBlockNumber2 = bn2;
 		m_lnAreaWidget->update();
 	}
+	//if( m_foldlineY1 != y1 || m_foldlineY2 != y2 ) {
+	//	m_foldlineY1 = y1;
+	//	m_foldlineY2 = y2;
+	//	m_lnAreaWidget->update();
+	//}
 	if( !m_lnAreaPressed ) return;
 	//auto pos = event->position();
 	int y = (int)pos.y();
@@ -3429,7 +3476,8 @@ void MarkdownEditor::lnAreaMouseReleaseEvent(QMouseEvent *event) {
 	m_lnAreaPressed = false;
 }
 void MarkdownEditor::lnAreaLeaveEvent(QEvent *event) {
-	m_foldlineY1 = m_foldlineY2 = -1;
+	//m_foldlineY1 = m_foldlineY2 = -1;
+	m_foldBlockNumber1 = m_foldBlockNumber2 = -1;
 	m_lnAreaWidget->update();
 }
 void MarkdownEditor::resizeEvent(QResizeEvent *event) {

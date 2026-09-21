@@ -179,6 +179,7 @@ public:
         return fontMetrics().horizontalAdvance('9') * LN_WIDTH;
     }
 	void	calcY(QTextBlock, int&, int&);
+	void	foldableBlockNumber(QTextBlock, int&, int&);
 	void	clearFoldLine();
 	void	drawFoldLine(QTextCursor, QTextBlock);
 	void	updateViewportMargines();
@@ -328,8 +329,10 @@ private:
 	int		m_linkClickedPos = -1;			//	リンククリック位置
 	int		m_charWidth = 0;
 	int		m_preferredX = -1;				//	保存カーソル位置
-	int		m_foldlineY1 = -1;				//	折り畳み範囲線ｙ座標
-	int		m_foldlineY2 = -1;
+	//int		m_foldlineY1 = -1;				//	折り畳み範囲線ｙ座標
+	//int		m_foldlineY2 = -1;
+	int		m_foldBlockNumber1 = -1;		//	折り畳み範囲線開始ブロック番号（0 org.）
+	int		m_foldBlockNumber2 = -1;		//	折り畳み範囲線終了ブロック番号（0 org.）
 	//QTimer	*m_blinkTimer;
     //bool	m_cursorVisible = true;
 	QString	m_lastCurBlockText;				//	事前のカーソルブロックテキスト
