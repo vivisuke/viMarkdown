@@ -1202,6 +1202,9 @@ void MarkdownEditor::do_deleteText(QTextCursor &cursor) {
 void MarkdownEditor::initUndoMgr() {
 	m_undoMgr->init();
 }
+void MarkdownEditor::setActionFlag(uchar f) {
+	m_undoMgr->setFlag(f);
+}
 bool MarkdownEditor::canUndo() const {
 	return m_undoMgr->canUndo();
 }

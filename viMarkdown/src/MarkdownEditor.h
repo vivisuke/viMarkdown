@@ -239,6 +239,7 @@ public:
     void	do_insertText(QTextCursor& cursor, const QString&);		//	Undo/Redo 対象の挿入関数
     void	do_deleteText(QTextCursor& cursor);		//	Undo/Redo 対象の削除関数、選択・非選択状態対応
     void	initUndoMgr();
+    void	setActionFlag(uchar f);
     bool	canUndo() const;
     bool	canRedo() const;
     void	openUndoBlock();

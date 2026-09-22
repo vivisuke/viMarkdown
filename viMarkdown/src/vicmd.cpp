@@ -11,6 +11,7 @@
 #include "DocWidget.h"
 #include "MarkdownEditor.h"
 #include "MarkdownPreview.h"
+#include "UndoMgr.h"
 
 extern Global g;
 extern ViStatus gvi;
@@ -834,6 +835,7 @@ bool MainWindow::do_vi_operator(QChar cmd, QTextCursor& cursor, int rcnt, DocWid
 			}
 			cursor.endEditBlock();
 			docWidget->m_editor->closeUndoBlock();
+			docWidget->m_editor->setActionFlag(UndoAction::FLAS_SHIFT);
 			cursor.setPosition(pos);
 			hat(cursor);
 			gvi.m_isEditCommand = true;
@@ -855,6 +857,7 @@ bool MainWindow::do_vi_operator(QChar cmd, QTextCursor& cursor, int rcnt, DocWid
 			}
 			cursor.endEditBlock();
 			docWidget->m_editor->closeUndoBlock();
+			docWidget->m_editor->setActionFlag(UndoAction::FLAS_SHIFT);
 			cursor.setPosition(pos);
 			hat(cursor);
 			gvi.m_isEditCommand = true;
@@ -1276,6 +1279,7 @@ void do_join(QTextCursor& cursor, int rcnt) {
 	}
 	gvi.m_editor->closeUndoBlock();
 	cursor.endEditBlock();
+	gvi.m_editor->setActionFlag(UndoAction::FLAG_JOIN);
 	if( njoined == 0 )
 		cursor = cur0;
 	else if (finalCursorPos >= 0)
