@@ -1445,10 +1445,13 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 		}
 		case 'U': {
 			int pos = 0;
+			uchar f = docWidget->m_editor->redoActionFlags();
 			for(int i = 0; i < rcnt; ++i)
 				pos = docWidget->m_editor->do_redo();
 			cursor = docWidget->m_editor->textCursor();
 			cursor.setPosition(pos);
+			if( (f&UndoAction::FLAG_SHIFT) != 0 )
+				hat(cursor);
 			moveLeftIfAtEol(cursor);
 			break;
 		}
