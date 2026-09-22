@@ -1810,8 +1810,10 @@ void MainWindow::addTab(const QString &title, const QString fullPath, const QStr
 	if( !fullPath.isEmpty() ) 
 		ui->tabWidget->setTabToolTip(ix, fullPath);
 	MarkdownEditor *mdEditor = getCurDocWidget()->m_editor;
-	if( !txt.isEmpty() )
+	if( !txt.isEmpty() ) {
 		mdEditor->setPlainText(txt);
+		mdEditor->document()->setModified(false);
+	}
 	mdEditor->setFocus();
 	addTopItemToTreeWidget(title, fullPath);
 	appendToDocLoc(docWidget->m_title, docWidget->m_fullPath, mdEditor->textCursor().position());
@@ -1997,6 +1999,7 @@ void MainWindow::do_open_sub(const QString& title, const QString& fullPath, cons
 	if( docWidget != nullptr ) {
 		docWidget->m_editor->jumpToHeading(name);
 		docWidget->m_editor->rehighlight();
+		docWidget->m_editor->document()->setModified(false);
 	}
 	addToRecentFiles(fullPath);
 	close_empty_doc();
