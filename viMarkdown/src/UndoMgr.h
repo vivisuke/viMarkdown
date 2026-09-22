@@ -119,6 +119,8 @@ public:
 public:
 	void	init();
 	void	setFlag(uchar f);
+	uchar	undoActionFlags() const;
+	uchar	redoActionFlags() const;
 	int		undo();
 	int		redo();
 	bool	push_back(UndoAction *);

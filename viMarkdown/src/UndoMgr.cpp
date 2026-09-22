@@ -74,6 +74,16 @@ void UndoMgr::setFlag(uchar f) {
 		}
 	}
 }
+uchar UndoMgr::undoActionFlags() const {
+	if( !canUndo() ) return 0;
+	UndoAction *ptr = m_stack[m_cur - 1];
+	return ptr->m_flags;
+}
+uchar UndoMgr::redoActionFlags() const {
+	if( !canRedo() ) return 0;
+	UndoAction *ptr = m_stack[m_cur];
+	return ptr->m_flags;
+}
 void UndoMgr::openBlock()
 {
 	if( ++m_blockLevel != 1 ) return;

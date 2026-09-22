@@ -1239,6 +1239,8 @@ int MarkdownEditor::do_redo() {
 		m_docWidget->m_editor->removeAllDummyLines();
 		m_docWidget->m_diffview->removeAllDummyLines();
 	}
+	uchar f = m_undoMgr->redoActionFlags();
+	qDebug() << "m_undoMgr->redoActionFlags() = " << (int)f;
 	int pos = m_undoMgr->redo();
 	emit canUndoRedoChanged();
 	if( m_diffMode )
