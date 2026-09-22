@@ -1205,6 +1205,12 @@ void MarkdownEditor::initUndoMgr() {
 void MarkdownEditor::setActionFlag(uchar f) {
 	m_undoMgr->setFlag(f);
 }
+uchar MarkdownEditor::undoActionFlags() {
+	return m_undoMgr->undoActionFlags();
+}
+uchar MarkdownEditor::redoActionFlags() {
+	return m_undoMgr->redoActionFlags();
+}
 bool MarkdownEditor::canUndo() const {
 	return m_undoMgr->canUndo();
 }

@@ -240,6 +240,8 @@ public:
     void	do_deleteText(QTextCursor& cursor);		//	Undo/Redo 対象の削除関数、選択・非選択状態対応
     void	initUndoMgr();
     void	setActionFlag(uchar f);
+    uchar	undoActionFlags();
+    uchar	redoActionFlags();
     bool	canUndo() const;
     bool	canRedo() const;
     void	openUndoBlock();

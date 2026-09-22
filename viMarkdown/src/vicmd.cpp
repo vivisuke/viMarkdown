@@ -1432,10 +1432,14 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 		case 'u': {
 			docWidget->removeDummyBlocks();
 			int pos = 0;
-			for(int i = 0; i < rcnt; ++i)
+			uchar f = docWidget->m_editor->undoActionFlags();
+			for(int i = 0; i < rcnt; ++i) {
 				pos = docWidget->m_editor->do_undo();
+			}
 			cursor = docWidget->m_editor->textCursor();
 			cursor.setPosition(pos);
+			if( (f&UndoAction::FLAG_SHIFT) != 0 )
+				hat(cursor);
 			moveLeftIfAtEol(cursor);
 			break;
 		}

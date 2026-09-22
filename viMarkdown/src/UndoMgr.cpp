@@ -222,6 +222,8 @@ UndoActionReplace *UndoMgr::push_back_repText(int pos, int dsz, int isz /*, int 
 int UndoMgr::undo()
 {
 	int pos = 0;
+	int firstPos = -1;
+	ushort f0 = undoActionFlags();
 	ushort flag = 0;
 	do {
 		if( !m_cur ) return false;
@@ -262,10 +264,13 @@ int UndoMgr::undo()
 			break;
 		}
 		}
+		if( (f0&UndoAction::FLAG_SHIFT) != 0 ) {
+			if( firstPos < 0 || pos < firstPos ) firstPos = pos;
+		}
 	} while( flag );
 	
 	m_buffer->setModified(m_cur != m_savePointCur);
-	return pos;
+	return firstPos >= 0 ? firstPos : pos;
 }
 
 int UndoMgr::redo()
