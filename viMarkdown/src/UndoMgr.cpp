@@ -271,6 +271,8 @@ int UndoMgr::undo()
 int UndoMgr::redo()
 {
 	int pos = 0;
+	int firstPos = -1;
+	ushort f0 = redoActionFlags();
 	ushort flag = 0;
 	do {
 		if( (size_t)m_cur >= m_stack.size() ) return false;
@@ -311,10 +313,13 @@ int UndoMgr::redo()
 			break;
 		}
 		}
+		if( (f0&UndoAction::FLAG_SHIFT) != 0 ) {
+			if( firstPos < 0 || pos < firstPos ) firstPos = pos;
+		}
 	} while( flag );
 	
 	m_buffer->setModified(m_cur != m_savePointCur);
-	return pos;
+	return firstPos >= 0 ? firstPos : pos;
 }
 UndoActionInsert *UndoMgr::newActInsert()
 {

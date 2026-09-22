@@ -835,7 +835,7 @@ bool MainWindow::do_vi_operator(QChar cmd, QTextCursor& cursor, int rcnt, DocWid
 			}
 			cursor.endEditBlock();
 			docWidget->m_editor->closeUndoBlock();
-			docWidget->m_editor->setActionFlag(UndoAction::FLAS_SHIFT);
+			docWidget->m_editor->setActionFlag(UndoAction::FLAG_SHIFT);
 			cursor.setPosition(pos);
 			hat(cursor);
 			gvi.m_isEditCommand = true;
@@ -857,7 +857,7 @@ bool MainWindow::do_vi_operator(QChar cmd, QTextCursor& cursor, int rcnt, DocWid
 			}
 			cursor.endEditBlock();
 			docWidget->m_editor->closeUndoBlock();
-			docWidget->m_editor->setActionFlag(UndoAction::FLAS_SHIFT);
+			docWidget->m_editor->setActionFlag(UndoAction::FLAG_SHIFT);
 			cursor.setPosition(pos);
 			hat(cursor);
 			gvi.m_isEditCommand = true;

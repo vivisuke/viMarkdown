@@ -26,7 +26,7 @@ struct UndoAction
 		//FLAG_MODIFIED = 2,	//	モディファイフラグ
 		FLAG_BS = 2,		//	BackSpace による削除
 		FLAG_JOIN = 4,		//	for J コマンド
-		FLAS_SHIFT = 8,		//	for >> << コマンド
+		FLAG_SHIFT = 8,		//	for >> << コマンド
 	};
 	uchar	m_type;
 	uchar	m_flags;
