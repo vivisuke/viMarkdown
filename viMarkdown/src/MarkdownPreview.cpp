@@ -1470,6 +1470,18 @@ void MarkdownPreview::do_quote(int bn0, int nBlocks, QTextBlock &srcBlock, QText
 	--m_ix;
 	//m_nEmptyLines = 0;
 }
+void insertInlineMD(QTextCursor& cursor, const QString text) {
+	static QTextDocument tempDoc;
+	tempDoc.setMarkdown(text);
+	// 解析されたテキストと文字装飾（太字など）を取り出して、リスト内に直接挿入
+	QTextBlock block = tempDoc.begin();
+	for (auto it = block.begin(); !it.atEnd(); ++it) {
+	    QTextFragment fragment = it.fragment();
+	    if (fragment.isValid()) {
+	        cursor.insertText(fragment.text(), fragment.charFormat());
+	    }
+	}
+}
 void MarkdownPreview::do_numlist(int bn0, int nBlocks, QTextBlock srcBlock, QTextCursor& cursor, QString buf) {
 #if 1	//	insertMarkdown() を使用せず QTextListFormat を適用
 	cursor.beginEditBlock();
@@ -1502,17 +1514,7 @@ void MarkdownPreview::do_numlist(int bn0, int nBlocks, QTextBlock srcBlock, QTex
 		listFormat.setStart(++m_listNum);
 		cursor.createList(listFormat);
 #if 1
-		//	一旦別のドキュメントでリッチテキスト化
-		QTextDocument tempDoc;
-		tempDoc.setMarkdown(text.mid(match.capturedLength()));
-		// 解析されたテキストと文字装飾（太字など）を取り出して、リスト内に直接挿入
-		QTextBlock block = tempDoc.begin();
-		for (auto it = block.begin(); !it.atEnd(); ++it) {
-		    QTextFragment fragment = it.fragment();
-		    if (fragment.isValid()) {
-		        cursor.insertText(fragment.text(), fragment.charFormat());
-		    }
-		}
+		insertInlineMD(cursor, text.mid(match.capturedLength()));
 #else
 		//cursor.insertHtml("hoge<b>XYZ</b>fuga");
 		//cursor.insertText(text.mid(match.capturedLength()));
@@ -1602,6 +1604,8 @@ void MarkdownPreview::do_list(int bn0, int nBlocks, QTextBlock srcBlock, QTextCu
 		}
 #endif
 	} else {		//	リストの場合
+		QTextListFormat listFormat;
+		listFormat.setStyle(QTextListFormat::ListDisc); // "・"
 		//static QRegularExpression re(R"(^( *)- )");
 		auto mch = re_list.match(srcBlock.text());
 		if( mch.capturedLength() == srcBlock.text().size() )
@@ -1624,11 +1628,26 @@ void MarkdownPreview::do_list(int bn0, int nBlocks, QTextBlock srcBlock, QTextCu
 			auto mch = re_list.match(text);
 			if( mch.hasMatch() ) {	//	リスト行
 				++n_item;
+#if 1
+				cursor.createList(listFormat);
+				//	一旦別のドキュメントでリッチテキスト化
+				QTextDocument tempDoc;
+				tempDoc.setMarkdown(text.mid(mch.capturedLength()));
+				// 解析されたテキストと文字装飾（太字など）を取り出して、リスト内に直接挿入
+				QTextBlock block = tempDoc.begin();
+				for (auto it = block.begin(); !it.atEnd(); ++it) {
+				    QTextFragment fragment = it.fragment();
+				    if (fragment.isValid()) {
+				        cursor.insertText(fragment.text(), fragment.charFormat());
+				    }
+				}
+#else
 				buf += u'\n' + text;
-				if( mch.capturedLength() == text.size() )
+				if( mch.capturedLength() == text.size() )	//	"- " だけの場合
 					buf += ZWSP;
 				else
 					buf.replace(re_tailspc, "&nbsp;");
+#endif
 				isPrevlist = true;
 				//int length = mch.capturedLength();
 				BlockData* data = getBlockData(srcBlock);
@@ -1638,20 +1657,13 @@ void MarkdownPreview::do_list(int bn0, int nBlocks, QTextBlock srcBlock, QTextCu
 				updateCharFlags(srcBlock);
 				setBlockType(srcBlock, BT_LIST);
 				//printCharFlags(srcBlock);
-			} else {	//	非リスト行の場合
+			} else {	//	リスト行直後の非リスト行の場合
 				if( re_block.match(text).hasMatch() )	//	ブロック行の場合
 					break;
 #if 1
-				//static QRegularExpression re_headsp(R"(^ +)");
-				//buf += "<br />" + text.remove(re_headsp);
 				bool tailsp = text.endsWith(" ");
 				buf += "<br />" + text.trimmed();
 				if( tailsp ) buf += "&nbsp;";
-				//buf += u"<br />\n" + text /*+ "<br />\n"*/;
-				//if( isPrevlist )
-				//	buf += u"<br/>" + text;
-				//else
-				//	buf += u"\n" + text;
 #else
 				bool spc2 = text.endsWith("  ");
 				text = text.trimmed();
@@ -1667,8 +1679,10 @@ void MarkdownPreview::do_list(int bn0, int nBlocks, QTextBlock srcBlock, QTextCu
 	}
 	int startPos = cursor.position();
 	//setBlockType(cursor.block(), is_checkbox ? BT_CHECKBOX : BT_LIST);
-	buf.replace(re_tailspc, "&nbsp;");
-	cursor.insertMarkdown(buf);
+	if( buf.isEmpty() ) {
+		buf.replace(re_tailspc, "&nbsp;");
+		cursor.insertMarkdown(buf);
+	}
 	QTextBlock firstBlock = document()->findBlock(startPos);
 	if (firstBlock.isValid() && firstBlock.text().isEmpty()) {
 		// ブロックが空なら削除する（バックスペース的な処理）
