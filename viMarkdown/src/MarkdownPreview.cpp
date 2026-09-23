@@ -1533,7 +1533,7 @@ void MarkdownPreview::do_numlist(int bn0, int nBlocks, QTextBlock srcBlock, QTex
 	}
 	cursor.insertMarkdown(buf);
 #endif
-	cursor.insertBlock(QTextBlockFormat());
+	//cursor.insertBlock(QTextBlockFormat());
 	//cursor.insertBlock();
 	//QTextBlockFormat blockFormat;
 	//cursor.setBlockFormat(blockFormat);
