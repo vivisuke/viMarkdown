@@ -1612,13 +1612,15 @@ void MarkdownPreview::do_list(int bn0, int nBlocks, QTextBlock srcBlock, QTextCu
 		}
 #endif
 	} else {		//	リストの場合
+		static QTextListFormat::Style slist[] = {QTextListFormat::ListDisc, QTextListFormat::ListCircle, QTextListFormat::ListSquare};
 		QTextListFormat listFormat;
 		listFormat.setStyle(QTextListFormat::ListDisc); // "・"
 		//static QRegularExpression re(R"(^( *)- )");
 		auto mch = re_list.match(srcBlock.text());
 #if 1
-		int indt = nLeadingSpaces(srcBlock.text());
-		listFormat.setIndent(indt/2+1);
+		int indt = nLeadingSpaces(srcBlock.text()) / 2;
+		listFormat.setStyle(slist[indt%3]);
+		listFormat.setIndent(indt+1);
 		cursor.createList(listFormat);
 		insertInlineMD(cursor, srcBlock.text().mid(mch.capturedLength()));
 #else
@@ -1644,8 +1646,9 @@ void MarkdownPreview::do_list(int bn0, int nBlocks, QTextBlock srcBlock, QTextCu
 			if( mch.hasMatch() ) {	//	リスト行
 				++n_item;
 #if 1
-				int indt = nLeadingSpaces(text);
-				listFormat.setIndent(indt/2+1);
+				int indt = nLeadingSpaces(text) / 2;
+				listFormat.setStyle(slist[indt%3]);
+				listFormat.setIndent(indt + 1);
 				cursor.createList(listFormat);
 				insertInlineMD(cursor, text.mid(mch.capturedLength()));
 #else
