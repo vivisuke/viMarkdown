@@ -714,6 +714,7 @@ void MarkdownPreview::setMarkdown(QTextDocument *doc) {		//	doc: markdown ソー
 void MarkdownPreview::insertMarkdown(QTextDocument *doc, int bn0, int nBlocks, /*const QStringList& lst,*/ QTextCursor& cursor) {
 	//m_nEmptyLines = 0;
 	m_inComment = false;
+	m_listNum = 0;
 	QTextBlock srcBlock0;
 	for(m_ix = 0; m_ix < nBlocks; ++m_ix) {
 		bool bComment = false;		//	コメントがあった
@@ -1043,6 +1044,7 @@ void MarkdownPreview::do_heading(QTextBlock& srcBlock, QTextCursor& cursor, QStr
 	srcBlock.setUserData(data);
 	setBlockType(srcBlock, BT_HEADING);
 	do_heading_sub(cursor, buf.mid(i), h, m_ix);
+	m_listNum = 0;		//	連番リセット
 }
 void MarkdownPreview::do_heading_sub(QTextCursor& cursor, QString buf, int h, int ln) {
 	if( !cursor.atBlockStart() )
@@ -1475,6 +1477,7 @@ void MarkdownPreview::do_numlist(int bn0, int nBlocks, QTextBlock srcBlock, QTex
 	listFormat.setStyle(QTextListFormat::ListDecimal); // 1. 2. 3. の連番リスト
 	auto *list = cursor.createList(listFormat);
 	auto match = re_numlist.match(srcBlock.text());
+	//int seq = 1;
 	while( match.hasMatch() ) {
 		updateCharFlags(srcBlock);
 		setBlockType(srcBlock, BT_NUMLIST);
@@ -1490,12 +1493,21 @@ void MarkdownPreview::do_numlist(int bn0, int nBlocks, QTextBlock srcBlock, QTex
 		if( text.size() > 3 && text.back() == u' ' ) {	//	"1. " 部分は無視
 			text.back() = ZWSP;
 		}
-		cursor.insertMarkdown(text + "\n");
+		//cursor.insertMarkdown(text + "\n");
+		listFormat.setIndent(1);
+		int n = match.captured(2).toInt();
+		if( n > 1 ) m_listNum = n - 1;
+		else if( n == 0 ) m_listNum = 0;
+		//qDebug() << "n = " << n;
+		listFormat.setStart(++m_listNum);
+		cursor.createList(listFormat);
+		cursor.insertText(text.mid(match.capturedLength()));
+		cursor.insertBlock(QTextBlockFormat());
 		if( ++m_ix >= nBlocks ) break;
 		srcBlock = srcBlock.next();
 		match = re_numlist.match(srcBlock.text());
 		if( !match.hasMatch() ) break;
-		cursor.insertBlock();
+		//cursor.insertBlock(QTextBlockFormat());
 	}
 #if 0
 	QTextBlock lastBlock = list->item(list->count() - 1);
