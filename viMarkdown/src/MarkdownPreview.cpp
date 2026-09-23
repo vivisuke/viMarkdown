@@ -1706,7 +1706,7 @@ void MarkdownPreview::do_list(int bn0, int nBlocks, QTextBlock srcBlock, QTextCu
 			srcBlock2 = srcBlock2.next();
 		}
 	//}
-	cursor.insertBlock();
+	//cursor.insertBlock();
 	QTextBlockFormat blockFormat;
 	cursor.setBlockFormat(blockFormat);
 	--m_ix;
