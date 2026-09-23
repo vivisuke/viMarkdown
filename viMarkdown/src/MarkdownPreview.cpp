@@ -1528,12 +1528,11 @@ void MarkdownPreview::do_numlist(int bn0, int nBlocks, QTextBlock srcBlock, QTex
 		//cursor.insertText(text.mid(match.capturedLength()));
 		//cursor.insertMarkdown(text.mid(match.capturedLength()));
 #endif
-		cursor.insertBlock(QTextBlockFormat());
+		//cursor.insertBlock(QTextBlockFormat());
 		if( ++m_ix >= nBlocks ) break;
 		srcBlock = srcBlock.next();
 		match = re_numlist.match(srcBlock.text());
 		if( !match.hasMatch() ) break;
-		//cursor.insertBlock(QTextBlockFormat());
 	}
 #if 0
 	QTextBlock lastBlock = list->item(list->count() - 1);
