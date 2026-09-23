@@ -1501,7 +1501,23 @@ void MarkdownPreview::do_numlist(int bn0, int nBlocks, QTextBlock srcBlock, QTex
 		//qDebug() << "n = " << n;
 		listFormat.setStart(++m_listNum);
 		cursor.createList(listFormat);
-		cursor.insertText(text.mid(match.capturedLength()));
+#if 1
+		//	一旦別のドキュメントでリッチテキスト化
+		QTextDocument tempDoc;
+		tempDoc.setMarkdown(text.mid(match.capturedLength()));
+		// 解析されたテキストと文字装飾（太字など）を取り出して、リスト内に直接挿入
+		QTextBlock block = tempDoc.begin();
+		for (auto it = block.begin(); !it.atEnd(); ++it) {
+		    QTextFragment fragment = it.fragment();
+		    if (fragment.isValid()) {
+		        cursor.insertText(fragment.text(), fragment.charFormat());
+		    }
+		}
+#else
+		//cursor.insertHtml("hoge<b>XYZ</b>fuga");
+		//cursor.insertText(text.mid(match.capturedLength()));
+		//cursor.insertMarkdown(text.mid(match.capturedLength()));
+#endif
 		cursor.insertBlock(QTextBlockFormat());
 		if( ++m_ix >= nBlocks ) break;
 		srcBlock = srcBlock.next();
