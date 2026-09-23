@@ -1483,6 +1483,13 @@ void insertInlineMD(QTextCursor& cursor, const QString text) {
 	}
 	cursor.insertBlock(QTextBlockFormat());
 }
+int nLeadingSpaces(const QString& text)
+{
+    int n = 0;
+    while (n < text.size() && text[n] == u' ')
+        ++n;
+    return n;
+}
 void MarkdownPreview::do_numlist(int bn0, int nBlocks, QTextBlock srcBlock, QTextCursor& cursor, QString buf) {
 #if 1	//	insertMarkdown() を使用せず QTextListFormat を適用
 	cursor.beginEditBlock();
@@ -1610,6 +1617,8 @@ void MarkdownPreview::do_list(int bn0, int nBlocks, QTextBlock srcBlock, QTextCu
 		//static QRegularExpression re(R"(^( *)- )");
 		auto mch = re_list.match(srcBlock.text());
 #if 1
+		int indt = nLeadingSpaces(srcBlock.text());
+		listFormat.setIndent(indt/2+1);
 		cursor.createList(listFormat);
 		insertInlineMD(cursor, srcBlock.text().mid(mch.capturedLength()));
 #else
@@ -1635,6 +1644,8 @@ void MarkdownPreview::do_list(int bn0, int nBlocks, QTextBlock srcBlock, QTextCu
 			if( mch.hasMatch() ) {	//	リスト行
 				++n_item;
 #if 1
+				int indt = nLeadingSpaces(text);
+				listFormat.setIndent(indt/2+1);
 				cursor.createList(listFormat);
 				insertInlineMD(cursor, text.mid(mch.capturedLength()));
 #else
