@@ -1481,6 +1481,7 @@ void insertInlineMD(QTextCursor& cursor, const QString text) {
 	        cursor.insertText(fragment.text(), fragment.charFormat());
 	    }
 	}
+	cursor.insertBlock(QTextBlockFormat());
 }
 void MarkdownPreview::do_numlist(int bn0, int nBlocks, QTextBlock srcBlock, QTextCursor& cursor, QString buf) {
 #if 1	//	insertMarkdown() を使用せず QTextListFormat を適用
@@ -1608,10 +1609,15 @@ void MarkdownPreview::do_list(int bn0, int nBlocks, QTextBlock srcBlock, QTextCu
 		listFormat.setStyle(QTextListFormat::ListDisc); // "・"
 		//static QRegularExpression re(R"(^( *)- )");
 		auto mch = re_list.match(srcBlock.text());
+#if 1
+		cursor.createList(listFormat);
+		insertInlineMD(cursor, srcBlock.text().mid(mch.capturedLength()));
+#else
 		if( mch.capturedLength() == srcBlock.text().size() )
 			buf += ZWSP;	//	ゼロ幅空白文字
 		else
 			buf.replace(re_tailspc, "&nbsp;");
+#endif
 		BlockData* data = getBlockData(srcBlock);
 		for(int i = 0; i < mch.capturedLength(); ++i)
 			data->m_charFlags[i] = PCF_LIST_MARK;
@@ -1630,17 +1636,7 @@ void MarkdownPreview::do_list(int bn0, int nBlocks, QTextBlock srcBlock, QTextCu
 				++n_item;
 #if 1
 				cursor.createList(listFormat);
-				//	一旦別のドキュメントでリッチテキスト化
-				QTextDocument tempDoc;
-				tempDoc.setMarkdown(text.mid(mch.capturedLength()));
-				// 解析されたテキストと文字装飾（太字など）を取り出して、リスト内に直接挿入
-				QTextBlock block = tempDoc.begin();
-				for (auto it = block.begin(); !it.atEnd(); ++it) {
-				    QTextFragment fragment = it.fragment();
-				    if (fragment.isValid()) {
-				        cursor.insertText(fragment.text(), fragment.charFormat());
-				    }
-				}
+				insertInlineMD(cursor, text.mid(mch.capturedLength()));
 #else
 				buf += u'\n' + text;
 				if( mch.capturedLength() == text.size() )	//	"- " だけの場合
