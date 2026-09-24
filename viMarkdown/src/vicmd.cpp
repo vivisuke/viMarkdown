@@ -75,11 +75,12 @@ void do_r(QChar ch, QTextCursor& cursor, int rcnt) {
 void do_openline(QTextCursor& cursor, bool before) {
 	assert( gvi.m_editor != nullptr );
 	gvi.m_autotext.clear();
+	bool removed;
 	if( before ) {
 		cursor.movePosition(QTextCursor::StartOfBlock);
 		//cursor.insertText("\n");
 		if( gvi.m_editor != nullptr ) {
-			auto atxt = gvi.m_autotext = gvi.m_editor->autoIndentText(cursor);
+			auto atxt = gvi.m_autotext = gvi.m_editor->autoIndentText(cursor, removed);
 			//if( !atxt.isEmpty() )
 			gvi.m_editor->do_insertText(cursor, atxt + "\n");
 			cursor.movePosition(QTextCursor::PreviousBlock);
@@ -89,7 +90,7 @@ void do_openline(QTextCursor& cursor, bool before) {
 		cursor.setPosition(cursor.block().position() + cursor.block().text().size());
 		//cursor.insertText("\n");
 		if( gvi.m_editor != nullptr ) {
-			auto atxt = gvi.m_autotext = gvi.m_editor->autoIndentText(cursor);
+			auto atxt = gvi.m_autotext = gvi.m_editor->autoIndentText(cursor, removed);
 			//if( !atxt.isEmpty() )
 			gvi.m_editor->do_insertText(cursor, "\n" + atxt);
 		}

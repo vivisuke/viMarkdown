@@ -222,7 +222,7 @@ public:
 	void	make_link();
 	int		linkClickedPos() const { return m_linkClickedPos; }
 	bool	isComposing() const { return m_isComposing; }
-	QString	autoIndentText(QTextCursor);		//	オートインデント・テキス 文字列取得
+	QString	autoIndentText(QTextCursor, bool &removed);		//	オートインデント・テキス 文字列取得
 	void	insertEnter();		//	カーソル位置に改行挿入（＋オートテキスト・インデント）
 	void	deleteWord();
 	void	backSpaceWord();
