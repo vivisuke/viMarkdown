@@ -103,6 +103,9 @@
     <addaction name="action_OutputBar"/>
     <addaction name="action_ClearOutput"/>
     <addaction name="action_CalendarBar"/>
+    <addaction name="separator"/>
+    <addaction name="action_FoldAll"/>
+    <addaction name="action_UnfoldAll"/>
    </widget>
    <widget class="QMenu" name="menu_Edit">
     <property name="title">
@@ -1339,6 +1342,19 @@
   <action name="action_InsertBack">
    <property name="text">
     <string>Insert&amp;Back</string>
+   </property>
+  </action>
+  <action name="action_FoldAll">
+   <property name="text">
+    <string>&amp;Fold All</string>
+   </property>
+  </action>
+  <action name="action_UnfoldAll">
+   <property name="text">
+    <string>&amp;Unfold All</string>
+   </property>
+   <property name="toolTip">
+    <string>Unfold All</string>
    </property>
   </action>
  </widget>

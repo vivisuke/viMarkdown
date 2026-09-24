@@ -423,6 +423,8 @@ protected:
     void	onAction_Source(bool);
     void	onAction_OutlineBar(bool);
     void	onAction_CalendarBar(bool);
+    void	onAction_FoldAll();
+    void	onAction_UnfoldAll();
     void	onAction_FocusOutline();
     void	onAction_OutputBar(bool);
     void	onAction_ClearOutput();

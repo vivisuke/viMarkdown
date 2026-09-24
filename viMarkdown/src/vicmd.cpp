@@ -568,28 +568,10 @@ void MainWindow::do_prefix_cmd(QChar cmd, QTextCursor& cursor, int rcnt, DocWidg
 			onMDTextChanged();
 			break;
 		case 'M':		//	zM	すべて折り畳み
-			if( docWidget->m_diffMode ) break;
-			block = doc->begin();
-			while( block.isValid() ) {
-				if( blockType(block) == BT_HEADING && block.isVisible() ) {
-					do_fold(block);
-					docWidget->m_editor->clearFoldLine();
-				}
-				block = block.next();
-			}
-			onMDTextChanged();
+			onAction_FoldAll();
 			break;
 		case 'R':		//	zR	すべて展開
-			if( docWidget->m_diffMode ) break;
-			block = doc->begin();
-			while( block.isValid() ) {
-				if( blockType(block) == BT_HEADING ) {
-					do_unfold(block);
-					docWidget->m_editor->drawFoldLine(cursor, block);
-				}
-				block = block.next();
-			}
-			onMDTextChanged();
+			onAction_UnfoldAll();
 			break;
 		}
 		break;

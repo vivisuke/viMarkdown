@@ -72,6 +72,8 @@ const QStringView KEY_FAVORITE_FILES(u"favoriteFilePaths");
 uchar blockType(const QTextBlock &block);
 void setBlockType(QTextBlock block, uchar type);
 void setPhysicalLine(QTextBlock &block, int ln, int flag);
+void do_fold(QTextBlock block /*, QTextDocument *doc*/);
+void do_unfold(QTextBlock block /*, QTextDocument *doc*/);
 
 Global g;
 ViStatus gvi;
@@ -837,6 +839,8 @@ void MainWindow::setup_connections() {
 	connect(ui->action_Source, &QAction::toggled, this, &MainWindow::onAction_Source);
 	connect(ui->action_OutlineBar, &QAction::toggled, this, &MainWindow::onAction_OutlineBar);
 	connect(ui->action_CalendarBar, &QAction::toggled, this, &MainWindow::onAction_CalendarBar);
+	connect(ui->action_FoldAll, &QAction::triggered, this, &MainWindow::onAction_FoldAll);
+	connect(ui->action_UnfoldAll, &QAction::triggered, this, &MainWindow::onAction_UnfoldAll);
 	connect(ui->action_FocusOutline, &QAction::triggered, this, &MainWindow::onAction_FocusOutline);
 	connect(ui->action_OutputBar, &QAction::toggled, this, &MainWindow::onAction_OutputBar);
 	connect(ui->action_ViKeybindings, &QAction::toggled, this, &MainWindow::onAction_ViKeybindings);
@@ -2783,6 +2787,35 @@ void MainWindow::onAction_OutlineBar(bool checked) {
 }
 void MainWindow::onAction_CalendarBar(bool checked) {
 	ui->calendarBar->setVisible(checked);
+}
+void MainWindow::onAction_FoldAll() {
+	DocWidget *docWidget = getCurDocWidget();
+	if( docWidget == nullptr ) return;
+	if( docWidget->m_diffMode ) return;
+	QTextBlock block = docWidget->m_editor->document()->begin();
+	while( block.isValid() ) {
+		if( blockType(block) == BT_HEADING && block.isVisible() ) {
+			do_fold(block);
+			docWidget->m_editor->clearFoldLine();
+		}
+		block = block.next();
+	}
+	onMDTextChanged();
+}
+void MainWindow::onAction_UnfoldAll() {
+	DocWidget *docWidget = getCurDocWidget();
+	if( docWidget == nullptr ) return;
+	if( docWidget->m_diffMode ) return;
+	QTextBlock block = docWidget->m_editor->document()->begin();
+	while( block.isValid() ) {
+		if( blockType(block) == BT_HEADING ) {
+			do_unfold(block);
+			QTextCursor cursor(block);
+			docWidget->m_editor->drawFoldLine(cursor, block);
+		}
+		block = block.next();
+	}
+	onMDTextChanged();
 }
 void MainWindow::onAction_FocusOutline() {
 	DocWidget *docWidget = getCurDocWidget();

@@ -1623,6 +1623,7 @@ void MarkdownPreview::do_list(int bn0, int nBlocks, QTextBlock srcBlock, QTextCu
 		listFormat.setIndent(indt+1);
 		cursor.createList(listFormat);
 		insertInlineMD(cursor, srcBlock.text().mid(mch.capturedLength()));
+		buf.clear();
 #else
 		if( mch.capturedLength() == srcBlock.text().size() )
 			buf += ZWSP;	//	ゼロ幅空白文字
@@ -1638,6 +1639,7 @@ void MarkdownPreview::do_list(int bn0, int nBlocks, QTextBlock srcBlock, QTextCu
 		//printCharFlags(srcBlock);
 		bool isPrevlist = true;
 		//bool spc2Prev = false;
+		int indent = 0;
 		while( ++m_ix < nBlocks ) {
 			srcBlock = srcBlock.next();
 			QString text = srcBlock.text();
@@ -1646,9 +1648,9 @@ void MarkdownPreview::do_list(int bn0, int nBlocks, QTextBlock srcBlock, QTextCu
 			if( mch.hasMatch() ) {	//	リスト行
 				++n_item;
 #if 1
-				int indt = nLeadingSpaces(text) / 2;
-				listFormat.setStyle(slist[indt%3]);
-				listFormat.setIndent(indt + 1);
+				indent = nLeadingSpaces(text) / 2;
+				listFormat.setStyle(slist[indent%3]);
+				listFormat.setIndent(indent + 1);
 				cursor.createList(listFormat);
 				insertInlineMD(cursor, text.mid(mch.capturedLength()));
 #else
@@ -1672,8 +1674,14 @@ void MarkdownPreview::do_list(int bn0, int nBlocks, QTextBlock srcBlock, QTextCu
 					break;
 #if 1
 				bool tailsp = text.endsWith(" ");
-				buf += "<br />" + text.trimmed();
-				if( tailsp ) buf += "&nbsp;";
+				//cursor.insertText("\n");
+				QTextBlockFormat blockFormat = cursor.blockFormat();
+				blockFormat.setIndent(indent + 1);
+				cursor.setBlockFormat(blockFormat);
+				insertInlineMD(cursor, text.trimmed());
+				//cursor.insertBlock();
+				//buf += "<br />" + text.trimmed();
+				//if( tailsp ) buf += "&nbsp;";
 #else
 				bool spc2 = text.endsWith("  ");
 				text = text.trimmed();
