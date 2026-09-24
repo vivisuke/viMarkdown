@@ -1603,6 +1603,7 @@ void MarkdownPreview::do_list(int bn0, int nBlocks, QTextBlock srcBlock, QTextCu
 			//buf.replace(re_tailspc, "&nbsp;");
 			++n_item;
 		}
+		//buf += u'\n';
 #if 0
 		while( ++m_ln < m_lst.size() ) {
 			if( !re_checkbox.match(m_lst[m_ln]).hasMatch() ) break;
@@ -1688,9 +1689,10 @@ void MarkdownPreview::do_list(int bn0, int nBlocks, QTextBlock srcBlock, QTextCu
 	}
 	int startPos = cursor.position();
 	//setBlockType(cursor.block(), is_checkbox ? BT_CHECKBOX : BT_LIST);
-	if( buf.isEmpty() ) {
+	if( !buf.isEmpty() ) {
 		buf.replace(re_tailspc, "&nbsp;");
 		cursor.insertMarkdown(buf);
+		cursor.insertBlock();
 	}
 	QTextBlock firstBlock = document()->findBlock(startPos);
 	if (firstBlock.isValid() && firstBlock.text().isEmpty()) {
