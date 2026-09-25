@@ -661,6 +661,7 @@ void MarkdownPreview::do_body(QTextBlock srcBlock, QTextCursor& cursor, bool las
 }
 
 static QRegularExpression re_list(R"(^ *[-\*+] )");
+static QRegularExpression re_checkbox(R"(^( *)- \[[ xX]\] )");
 static QRegularExpression re_block(R"(^ *[#`\d])");
 static QRegularExpression re_numlist(R"(^(\s*)(\d+)([.)]) )");
 
@@ -778,9 +779,12 @@ void MarkdownPreview::insertMarkdown(QTextDocument *doc, int bn0, int nBlocks, /
 		if( buf.startsWith('#') ) {
 			do_body(srcBlock0, cursor);
 			do_heading(srcBlock, cursor, buf);
+		} else if( re_checkbox.match(buf).hasMatch() ) {
+			do_body(srcBlock0, cursor);
+			do_checkbox(bn0, nBlocks, srcBlock, cursor, buf);		//	"- [ ] "
 		} else if( re_list.match(buf).hasMatch() ) {
 			do_body(srcBlock0, cursor);
-			do_list(bn0, nBlocks, srcBlock, cursor, buf);		//	"- " or "- [ ] "
+			do_list(bn0, nBlocks, srcBlock, cursor, buf);			//	"- "
 		} else if( re_numlist.match(buf).hasMatch() ) {
 			do_body(srcBlock0, cursor);
 			do_numlist(bn0, nBlocks, srcBlock, cursor, buf);
@@ -1565,53 +1569,76 @@ void MarkdownPreview::do_numlist(int bn0, int nBlocks, QTextBlock srcBlock, QTex
 	--m_ix;
 	//m_nEmptyLines = 0;
 }
-void MarkdownPreview::do_list(int bn0, int nBlocks, QTextBlock srcBlock, QTextCursor& cursor, QString buf) {
-	//if( m_nEmptyLines >= 1 )
-	//	cursor.insertBlock();			//	新規ブロック
+void MarkdownPreview::do_checkbox(int bn0, int nBlocks, QTextBlock srcBlock, QTextCursor& cursor, QString buf) {
 #if 0
-	if( m_isPrevLineEmpty ) {
-		cursor.insertBlock();
-		cursor.insertText("\n");
-		m_isPrevLineEmpty = false;
+	if (cursor.block().text().isEmpty() && cursor.block().blockNumber() > 0) {	//	余分な空行を削除
+	    QTextCursor helper = cursor;
+	    helper.select(QTextCursor::BlockUnderCursor);
+	    helper.removeSelectedText();
 	}
 #endif
+	int nSpaces = m_nSpaces;
+	//if( m_nSpaces > 0 )
+	//	buf = QString(m_nSpaces, QChar(u' ')) + buf;
+	int pos = cursor.position();
+	int n_item = 1;
+	auto match = re_checkbox.match(buf);
+	QTextBlockFormat blockFormat;
+	for(;;) {
+		if( match.capturedLength() == srcBlock.text().size() )
+			buf += ZWSP;	//	ゼロ幅空白文字
+		updateCharFlags(srcBlock);
+		BlockData* data = getBlockData(srcBlock);
+		for(int i = 0; i < match.capturedLength() && i < data->m_charFlags.size(); ++i)
+			data->m_charFlags[i] = PCF_LIST_MARK;
+		srcBlock.setUserData(data);
+		setBlockType(srcBlock, BT_CHECKBOX);
+#if 0
+		cursor.insertMarkdown(buf);
+		QTextBlockFormat blockFormat = cursor.blockFormat();
+		blockFormat.setIndent(nSpaces/2);
+		cursor.setBlockFormat(blockFormat);
+		cursor.insertBlock();
+		//cursor.insertBlock(QTextBlockFormat());
+#else
+		QTextCharFormat boxFormat;
+		cursor.insertText(buf[3]==u' '?"□ ":"☒ ", boxFormat);
+		insertInlineMD(cursor, buf.mid(4));
+#endif
+		if( ++m_ix >= nBlocks ) break;
+		buf = (srcBlock = srcBlock.next()).text();
+		match = re_checkbox.match(buf);
+		if( !match.hasMatch() ) break;
+		nSpaces = match.capturedLength(1);
+		buf = buf.mid(nSpaces);
+		++n_item;
+	}
+	int startPos = cursor.position();
+	QTextBlock firstBlock = document()->findBlock(startPos);
+	if (firstBlock.isValid() && firstBlock.text().isEmpty()) {
+		// ブロックが空なら削除する（バックスペース的な処理）
+		QTextCursor helper(firstBlock);
+		helper.deleteChar(); 
+	}
+	QTextBlock srcBlock2 = document()->findBlock(pos);
+	for(int i = 0; i < n_item; ++i) {
+		srcBlock2.setUserState(BT_CHECKBOX);
+		srcBlock2 = srcBlock2.next();
+	}
+	cursor.setBlockFormat(QTextBlockFormat());
+	--m_ix;
+}
+void MarkdownPreview::do_list(int bn0, int nBlocks, QTextBlock srcBlock, QTextCursor& cursor, QString buf) {
 	if( m_nSpaces > 0 )
 		buf = QString(m_nSpaces, QChar(u' ')) + buf;
 	//buf.replace(re_tailspc, "&nbsp;");
-	static QRegularExpression re_checkbox(R"(^( *)- \[[ xX]\] )");
+	//static QRegularExpression re_checkbox(R"(^( *)- \[[ xX]\] )");
 	int pos = cursor.position();
 	int n_item = 1;
-	int ln = m_ix;
-	auto match = re_checkbox.match(buf);
-	bool is_checkbox = match.hasMatch();		//	チェックボックス（"- [ ] "）の場合
-	if( is_checkbox ) {
-		for(;;) {
-			if( match.capturedLength() == srcBlock.text().size() )
-				buf += ZWSP;	//	ゼロ幅空白文字
-			updateCharFlags(srcBlock);
-			BlockData* data = getBlockData(srcBlock);
-			for(int i = 0; i < match.capturedLength() && i < data->m_charFlags.size(); ++i)
-				data->m_charFlags[i] = PCF_LIST_MARK;
-			srcBlock.setUserData(data);
-			setBlockType(srcBlock, BT_CHECKBOX);
-			if( ++m_ix >= nBlocks ) break;
-			match = re_checkbox.match(srcBlock.text());
-			if( !match.hasMatch() ) break;
-			srcBlock = srcBlock.next();
-			//data = getBlockData(srcBlock);
-			buf += u'\n' + srcBlock.text();
-			//buf.replace(re_tailspc, "&nbsp;");
-			++n_item;
-		}
-		//buf += u'\n';
-#if 0
-		while( ++m_ln < m_lst.size() ) {
-			if( !re_checkbox.match(m_lst[m_ln]).hasMatch() ) break;
-			buf += u'\n' + m_lst[m_ln];
-			++n_item;
-		}
-#endif
-	} else {		//	リストの場合
+	//int ln = m_ix;
+	//auto match = re_checkbox.match(buf);
+	bool needNewBlock = false;
+	{		//	リストの場合
 		static QTextListFormat::Style slist[] = {QTextListFormat::ListDisc, QTextListFormat::ListCircle, QTextListFormat::ListSquare};
 		QTextListFormat listFormat;
 		listFormat.setStyle(QTextListFormat::ListDisc); // "・"
@@ -1643,6 +1670,11 @@ void MarkdownPreview::do_list(int bn0, int nBlocks, QTextBlock srcBlock, QTextCu
 		while( ++m_ix < nBlocks ) {
 			srcBlock = srcBlock.next();
 			QString text = srcBlock.text();
+			auto match = re_checkbox.match(text);
+			if( match.hasMatch() ) {	//	"- [ ] " だった場合
+				needNewBlock = true;
+				break;
+			}
 			if( text.isEmpty() ) break;		//	空行だった場合
 			auto mch = re_list.match(text);
 			if( mch.hasMatch() ) {	//	リスト行
@@ -1712,11 +1744,12 @@ void MarkdownPreview::do_list(int bn0, int nBlocks, QTextBlock srcBlock, QTextCu
 		QTextBlock srcBlock2 = document()->findBlock(pos);
 		for(int i = 0; i < n_item; ++i) {
 			//setBlockType(srcBlock, ln++);
-			srcBlock2.setUserState(is_checkbox ? BT_CHECKBOX : BT_LIST);
+			srcBlock2.setUserState(BT_LIST);
 			srcBlock2 = srcBlock2.next();
 		}
 	//}
-	//cursor.insertBlock();
+	if( needNewBlock )
+		cursor.insertBlock();
 	QTextBlockFormat blockFormat;
 	cursor.setBlockFormat(blockFormat);
 	--m_ix;

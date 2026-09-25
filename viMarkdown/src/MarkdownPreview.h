@@ -105,6 +105,7 @@ protected:
     bool	do_underlineHeading(QTextCursor&, QString buf);
     void	do_heading(QTextBlock&, QTextCursor&, QString buf);
     void	do_heading_sub(QTextCursor&, QString buf, int h, int ln);
+    void	do_checkbox(int bn0, int nBlocks, QTextBlock srcBlock, QTextCursor&, QString buf);
     void	do_list(int bn0, int nBlocks, QTextBlock srcBlock, QTextCursor&, QString buf);
     void	do_numlist(int bn0, int nBlocks, QTextBlock srcBlock, QTextCursor&, QString buf);
     void	do_quote(int bn0, int nBlocks, QTextBlock&, QTextCursor&, QString buf);
