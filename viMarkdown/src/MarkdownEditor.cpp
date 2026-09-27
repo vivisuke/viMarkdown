@@ -904,7 +904,27 @@ void MarkdownEditor::svg_esc_pressed() {
 	delete m_svgCompleter;
 	m_svgCompleter = nullptr;
 }
+#if 1
+bool MarkdownEditor::event(QEvent *event) {
+	if (event->type() == QEvent::ShortcutOverride) {
+        auto *ke = static_cast<QKeyEvent *>(event);
+
+        if (ke->key() == Qt::Key_F &&
+            (ke->modifiers() & Qt::ControlModifier) != 0 &&
+            gvi.m_currentMode == ViMode::Normal)
+        {
+        	qDebug() << "event(): ViMode::Normal && Ctrl + F";
+            event->accept();
+            return true;
+        }
+    }
+    return QPlainTextEdit::event(event);
+}
+#endif
 void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
+	auto key = e->key();
+	auto mf = (e->modifiers() & Qt::ControlModifier) != 0;
+	qDebug() << "key = " << key;
 	if (e->matches(QKeySequence::Cut)) {
         cut();
         e->accept();
@@ -1002,8 +1022,12 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 			}
 		}
 		return;
-	} else if (e->key() == Qt::Key_F ) {
-		//##qDebug() << "e->key() == Qt::Key_F";
+	//} else if ( /*gvi.m_currentMode == ViMode::Normal && */
+	//	e->key() == Qt::Key_F /* && (e->modifiers() & Qt::ControlModifier) != 0*/)		//	Ctrl + F
+	//{
+	//	qDebug() << "ViMode::Normal && Ctrl + F";
+	//	e->accept();
+	//	return;
 	} else if (e->key() == Qt::Key_Space && (e->modifiers() & Qt::ControlModifier) != 0) {
 		check_svg_completer();
 		return;

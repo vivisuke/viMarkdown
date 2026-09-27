@@ -272,6 +272,7 @@ signals:
     void	canUndoRedoChanged();
 
 protected:
+    bool	event(QEvent *event) override;
     void	keyPressEvent(QKeyEvent *e) override;
     void	mouseReleaseEvent(QMouseEvent *event) override;
     void	mouseDoubleClickEvent(QMouseEvent *e) override;
