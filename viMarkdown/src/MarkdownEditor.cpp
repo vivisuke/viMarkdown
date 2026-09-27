@@ -1098,6 +1098,7 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 			if (gvi.m_recInsertedText)
 				gvi.m_insertedText += txt;
 		} else {	//	Ctrl +
+			//cursor
 			QScrollBar *vBar = verticalScrollBar();
 			int page = vBar->pageStep();
 		    int halfPage = page / 2;
@@ -1105,18 +1106,24 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 		    //##qDebug() << "key = " << e->key();
 			switch(txt[0].unicode()) {
 			case 0x06:	//	^F:
-				//if (vBar && vBar->minimum() != vBar->maximum()) {
-				//}
 				vBar->setValue(vBar->value() + page);
+				cursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, page);
+				setTextCursor(cursor);
 				break;
 			case 0x02:	//	^B:
 				vBar->setValue(vBar->value() - page);
+				cursor.movePosition(QTextCursor::Up, QTextCursor::MoveAnchor, page);
+				setTextCursor(cursor);
 				break;
 			case 0x04:	//	^D
 				vBar->setValue(vBar->value() + halfPage);
+				cursor.movePosition(QTextCursor::Down, QTextCursor::MoveAnchor, halfPage);
+				setTextCursor(cursor);
 				break;
 			case 0x15:	//	^U
 				vBar->setValue(vBar->value() - halfPage);
+				cursor.movePosition(QTextCursor::Up, QTextCursor::MoveAnchor, halfPage);
+				setTextCursor(cursor);
 				break;
 			case 0x19:	//	^Y
 				do_redo();
