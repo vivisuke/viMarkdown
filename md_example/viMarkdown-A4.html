@@ -1,0 +1,299 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>viMarkdown 0.3 - オープンソースカンファレンス展示用チラシ</title>
+<style>
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  body {
+    font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", Meiryo, sans-serif;
+    background: #f0f2f5;
+    color: #1a1a1a;
+    line-height: 1.45;
+  }
+  .flyer {
+    width: 210mm;
+    height: 297mm;
+    margin: 0 auto;
+    background: #ffffff;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+    display: flex;
+    flex-direction: column;
+  }
+  /* ヘッダー */
+  .header {
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #0d9488 100%);
+    color: white;
+    padding: 18mm 14mm 14mm;
+    position: relative;
+  }
+  .header::after {
+    content: "";
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 8mm;
+    background: linear-gradient(to bottom right, transparent 49%, #ffffff 50%);
+  }
+  .badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.35);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    padding: 3px 12px;
+    border-radius: 20px;
+    margin-bottom: 8px;
+  }
+  .title {
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+  }
+  .title span {
+    color: #5eead4;
+  }
+  .subtitle {
+    font-size: 15px;
+    opacity: 0.92;
+    font-weight: 500;
+  }
+  .tagline {
+    margin-top: 10px;
+    font-size: 13px;
+    opacity: 0.85;
+  }
+  /* メイン */
+  .main {
+    flex: 1;
+    padding: 10mm 12mm 6mm;
+  }
+  .section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #0d9488;
+    letter-spacing: 0.12em;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title::before {
+    content: "";
+    width: 18px;
+    height: 3px;
+    background: #0d9488;
+    border-radius: 2px;
+  }
+  .features {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px 10px;
+  }
+  .feature {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 9px 11px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    transition: none;
+  }
+  .feature-icon {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, #0d9488, #0f766e);
+    color: white;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .feature-body h3 {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 2px;
+  }
+  .feature-body p {
+    font-size: 10.5px;
+    color: #475569;
+    line-height: 1.4;
+  }
+  /* フル幅の特徴（ネイティブ実装） */
+  .feature-highlight {
+    grid-column: 1 / -1;
+    background: linear-gradient(90deg, #ecfdf5 0%, #f0fdfa 100%);
+    border: 1px solid #99f6e4;
+  }
+  .feature-highlight .feature-icon {
+    background: linear-gradient(135deg, #0f172a, #1e3a5f);
+  }
+  /* フッター */
+  .footer {
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 8mm 12mm;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+  }
+  .footer-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .footer-left strong {
+    color: #5eead4;
+    font-size: 13px;
+  }
+  .footer-right {
+    text-align: right;
+    opacity: 0.9;
+  }
+  .oss-badge {
+    display: inline-block;
+    background: #0d9488;
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-top: 4px;
+  }
+  /* 印刷最適化 */
+  @media print {
+    body { background: white; }
+    .flyer {
+      box-shadow: none;
+      margin: 0;
+      width: 210mm;
+      height: 297mm;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="flyer">
+    <!-- ヘッダー -->
+    <header class="header">
+      <div class="badge">OPEN SOURCE  /  Qt6 + C++</div>
+      <h1 class="title">vi<span>Markdown</span> 3.0</h1>
+      <p class="subtitle">高速・軽量なネイティブ Markdown エディタ</p>
+      <p class="tagline">viキーバインド × リアルタイムプレビュー × 強力な文書管理機能</p>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="main">
+      <div class="section-title">主な特徴</div>
+      <div class="features">
+
+        <div class="feature">
+          <div class="feature-icon">①</div>
+          <div class="feature-body">
+            <h3>リアルタイム同期プレビュー</h3>
+            <p>入力内容が右側へ即座に反映。Markdownに不慣れでも仕上がりを見ながら直感的に執筆。</p>
+          </div>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">②</div>
+          <div class="feature-body">
+            <h3>プレビュー上で直接編集</h3>
+            <p>プレビュー画面からも文字の挿入・削除が可能。WYSIWYGで編集を完結。</p>
+          </div>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">③</div>
+          <div class="feature-body">
+            <h3>viキーバインド対応</h3>
+            <p>ホームポジションから手を離さず、テキスト編集・カーソル移動を高速に実行。</p>
+          </div>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">④</div>
+          <div class="feature-body">
+            <h3>組み込みDiff機能</h3>
+            <p>2画面で左右比較。ミニマップ表示や差分のワンクリック反映で推敲を強力支援。</p>
+          </div>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">⑤</div>
+          <div class="feature-body">
+            <h3>カレンダー連携・デイリーノート</h3>
+            <p>ワンクリックで当日ノート作成。テンプレート展開＆ToDo達成度を視覚的に追跡。</p>
+          </div>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">⑥</div>
+          <div class="feature-body">
+            <h3>強力なGrep機能</h3>
+            <p>複数ファイル・フォルダ全体から目的の記述を瞬時に抽出。効率的な検索と編集。</p>
+          </div>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">⑦</div>
+          <div class="feature-body">
+            <h3>アウトライン・ナビゲーション</h3>
+            <p>長文でも構造を把握しながら必要な箇所へ素早く移動。効率的な編集をサポート。</p>
+          </div>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">⑧</div>
+          <div class="feature-body">
+            <h3>独自ブロック &amp; SVG描画</h3>
+            <p>罫線・CSVブロックに加え、図形やダイアグラムをコードのように表現・描画。</p>
+          </div>
+        </div>
+
+        <div class="feature feature-highlight">
+          <div class="feature-icon">⑨</div>
+          <div class="feature-body">
+            <h3>Qt6 / C++ によるネイティブ実装</h3>
+            <p>Electronベースとは一線を画す、圧倒的な軽さと高速な動作を実現。起動もサクサク、リソースも最小限。</p>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- フッター -->
+    <footer class="footer">
+      <div class="footer-left">
+        <strong>viMarkdown 3.0</strong>
+        <span>Open Source Markdown Editor</span>
+        <div class="oss-badge">完全オープンソース</div>
+      </div>
+      <div class="footer-right">
+        ブースで実際に触ってみてください<br>
+        ご質問・フィードバック歓迎！
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

@@ -1,0 +1,278 @@
+﻿<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>viMarkdown 0.3 - OSC展示用チラシ</title>
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #ddd;
+    color: #20252b;
+    font-family: "Noto Sans JP", "Yu Gothic", "Meiryo", sans-serif;
+  }
+  .page {
+    width: 210mm;
+    height: 297mm;
+    margin: 0 auto;
+    background: #fff;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .hero {
+    height: 57mm;
+    padding: 10mm 12mm 8mm;
+    color: white;
+    background:
+      radial-gradient(circle at 92% 15%, rgba(255,255,255,.16), transparent 25%),
+      linear-gradient(135deg, #18232f 0%, #243c50 58%, #315f75 100%);
+    position: relative;
+  }
+  .hero::after {
+    content: "";
+    position: absolute;
+    right: 10mm;
+    bottom: -10mm;
+    width: 46mm;
+    height: 46mm;
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: 50%;
+  }
+  .eyebrow {
+    font-size: 3.2mm;
+    letter-spacing: .12em;
+    opacity: .82;
+    font-weight: 700;
+    margin-bottom: 2mm;
+  }
+  h1 {
+    margin: 0;
+    font-size: 17mm;
+    line-height: .95;
+    letter-spacing: -.04em;
+    font-weight: 800;
+  }
+  h1 span {
+    font-size: 5.1mm;
+    letter-spacing: .04em;
+    font-weight: 500;
+    margin-left: 2mm;
+    opacity: .85;
+  }
+  .tagline {
+    margin-top: 4mm;
+    font-size: 5mm;
+    line-height: 1.35;
+    font-weight: 700;
+    max-width: 145mm;
+  }
+  .sub {
+    margin-top: 2mm;
+    font-size: 3.1mm;
+    opacity: .85;
+  }
+
+  .lead {
+    padding: 7mm 12mm 4mm;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6mm;
+    align-items: center;
+  }
+  .lead-text {
+    font-size: 3.55mm;
+    line-height: 1.65;
+  }
+  .badge {
+    border: 1.2px solid #315f75;
+    border-radius: 5mm;
+    padding: 2.3mm 4mm;
+    color: #315f75;
+    font-size: 3.1mm;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .features {
+    padding: 1mm 12mm 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3.2mm 4mm;
+  }
+  .feature {
+    min-height: 30.5mm;
+    border: 1px solid #dce2e6;
+    border-radius: 3mm;
+    padding: 3.3mm 3.6mm 3.1mm;
+    background: #fafbfc;
+  }
+  .feature.major {
+    background: #f2f7f9;
+    border-color: #c6d9e1;
+  }
+  .feature h2 {
+    margin: 0 0 1.5mm;
+    font-size: 3.9mm;
+    line-height: 1.25;
+    color: #1e5368;
+  }
+  .feature p {
+    margin: 0;
+    font-size: 2.85mm;
+    line-height: 1.55;
+  }
+  .icon {
+    display: inline-flex;
+    width: 6.2mm;
+    height: 6.2mm;
+    margin-right: 1.3mm;
+    vertical-align: -1.4mm;
+    align-items: center;
+    justify-content: center;
+    border-radius: 1.5mm;
+    background: #315f75;
+    color: #fff;
+    font-size: 3.4mm;
+    font-weight: 800;
+  }
+
+  .bottom {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    min-height: 35mm;
+    padding: 5mm 12mm;
+    background: #18232f;
+    color: #fff;
+    display: grid;
+    grid-template-columns: 1fr 48mm;
+    gap: 8mm;
+    align-items: center;
+  }
+  .bottom-title {
+    font-size: 4.6mm;
+    font-weight: 800;
+    margin-bottom: 1.5mm;
+  }
+  .bottom p {
+    margin: 0;
+    font-size: 2.8mm;
+    line-height: 1.5;
+    opacity: .88;
+  }
+  .project {
+    text-align: right;
+  }
+  .project-name {
+    font-size: 5.2mm;
+    font-weight: 800;
+  }
+  .project-url {
+    margin-top: 1.5mm;
+    font-family: Consolas, "Cascadia Mono", monospace;
+    font-size: 2.45mm;
+    opacity: .8;
+  }
+  .qr-note {
+    margin-top: 2mm;
+    font-size: 2.4mm;
+    opacity: .65;
+  }
+
+  @media print {
+    html, body { background: #fff; }
+    .page { margin: 0; }
+  }
+</style>
+</head>
+<body>
+<main class="page">
+
+  <header class="hero">
+    <div class="eyebrow">OPEN SOURCE CONFERENCE / EXHIBITION</div>
+    <h1>viMarkdown <span>v0.3</span></h1>
+    <div class="tagline">書く。見る。直す。<br>Markdownを、もっと自由に。</div>
+    <div class="sub">軽快なネイティブMarkdownエディタ × viコマンド × 編集可能プレビュー</div>
+  </header>
+
+  <section class="lead">
+    <div class="lead-text">
+      viMarkdownは、Markdownを「テキストとして書く」だけでなく、
+      <strong>仕上がりを見ながら直接編集できる</strong>Markdownエディタです。
+      文書作成・推敲・検索・差分比較・日々の記録まで、ひとつの環境で。
+    </div>
+    <div class="badge">Qt6 / C++</div>
+  </section>
+
+  <section class="features">
+
+    <article class="feature major">
+      <h2><span class="icon">↔</span>リアルタイム同期プレビュー</h2>
+      <p>入力内容を右側のプレビューへ即座に反映。Markdown記法に不慣れでも、完成形を確認しながら直感的に執筆できます。</p>
+    </article>
+
+    <article class="feature major">
+      <h2><span class="icon">✎</span>プレビュー上で直接編集</h2>
+      <p>エディタだけでなくプレビューからも文字を挿入・削除。見たままの状態で編集を進められます。</p>
+    </article>
+
+    <article class="feature">
+      <h2><span class="icon">V</span>viキーバインド</h2>
+      <p>ホームポジションから手を離さず、カーソル移動や編集を高速に操作。viコマンドを使い慣れた方にも。</p>
+    </article>
+
+    <article class="feature">
+      <h2><span class="icon">Δ</span>組み込みDiff</h2>
+      <p>2つの文書を左右に並べて比較。ミニマップや差分表示、差分の反映機能で推敲・版管理を支援します。</p>
+    </article>
+
+    <article class="feature">
+      <h2><span class="icon">□</span>カレンダー &amp; デイリーノート</h2>
+      <p>カレンダーから当日のノートをワンクリックで作成・オープン。テンプレートやToDo達成状況にも対応。</p>
+    </article>
+
+    <article class="feature">
+      <h2><span class="icon">⌕</span>強力なGrep</h2>
+      <p>複数ファイルやフォルダ全体を一括検索。目的の記述を素早く見つけ、文書編集につなげられます。</p>
+    </article>
+
+    <article class="feature">
+      <h2><span class="icon">≡</span>アウトラインナビゲーション</h2>
+      <p>見出しから文書構造を把握。長文でも目的の場所へ素早く移動し、構造を意識した編集ができます。</p>
+    </article>
+
+    <article class="feature">
+      <h2><span class="icon">◇</span>独自ブロック &amp; SVG</h2>
+      <p>罫線ブロックやCSVブロックを利用可能。さらにSVGをコードのように記述して図形・ダイアグラムを表示できます。</p>
+    </article>
+
+    <article class="feature major" style="grid-column: 1 / -1; min-height: 24mm;">
+      <h2><span class="icon">C++</span>Qt6 / C++によるネイティブ実装</h2>
+      <p>Electronベースではなく、Qt6/C++でネイティブに実装。軽快な操作感を目指し、長文編集でも快適に使えるエディタを追求しています。</p>
+    </article>
+
+  </section>
+
+  <footer class="bottom">
+    <div>
+      <div class="bottom-title">Markdownを「書く道具」から「育てる道具」へ。</div>
+      <p>オープンソースで開発中。ぜひブースで実際の操作感をお試しください。</p>
+    </div>
+    <div class="project">
+      <div class="project-name">viMarkdown</div>
+      <div class="project-url">github.com/vivisuke/viMarkdown</div>
+      <div class="qr-note">※ URLからプロジェクトページへ</div>
+    </div>
+  </footer>
+
+</main>
+</body>
+</html>

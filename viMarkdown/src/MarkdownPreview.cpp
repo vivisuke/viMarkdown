@@ -59,6 +59,20 @@ static QRegularExpression re_tailspc(" +$");	//	行末半角空白列
 extern CharType getCharType(QChar ch);
 extern void drawTextCursor(QWidget *viewport, QPainter& p, QTextCursor cursor, QRect rect, QFontMetrics fontMetrics, bool hasFocus, bool);
 
+void insertInlineMD(QTextCursor& cursor, const QString text) {
+	static QTextDocument tempDoc;
+	tempDoc.setMarkdown(text);
+	// 解析されたテキストと文字装飾（太字など）を取り出して、リスト内に直接挿入
+	QTextBlock block = tempDoc.begin();
+	for (auto it = block.begin(); !it.atEnd(); ++it) {
+	    QTextFragment fragment = it.fragment();
+	    if (fragment.isValid()) {
+	        cursor.insertText(fragment.text(), fragment.charFormat());
+	    }
+	}
+	cursor.insertBlock(QTextBlockFormat());
+}
+
 MarkdownPreview::MarkdownPreview(const MainWindow *mainWindow, DocWidget *docWidget, QWidget* parent, bool readOnly)
 	: m_mainWindow(mainWindow), m_docWidget(docWidget), QTextEdit(parent)
 {
@@ -876,7 +890,8 @@ void insertTable(QTextCursor& cursor, const QList<QStringList> &ll, const QList<
 				cellCursor.setCharFormat(charFormat);
 				cellCursor.setBlockFormat(blockFormat);
 				//cellCursor.insertText(ll[row][col]);
-				cellCursor.insertMarkdown(ll[row][col]);
+				//cellCursor.insertMarkdown(ll[row][col]);
+				insertInlineMD(cellCursor, ll[row][col]);
 
 				cellCursor.setPosition(cell.firstPosition());
 				cellCursor.setPosition(cell.lastPosition(), QTextCursor::KeepAnchor);
@@ -1474,19 +1489,6 @@ void MarkdownPreview::do_quote(int bn0, int nBlocks, QTextBlock &srcBlock, QText
 	--m_ix;
 	//m_nEmptyLines = 0;
 }
-void insertInlineMD(QTextCursor& cursor, const QString text) {
-	static QTextDocument tempDoc;
-	tempDoc.setMarkdown(text);
-	// 解析されたテキストと文字装飾（太字など）を取り出して、リスト内に直接挿入
-	QTextBlock block = tempDoc.begin();
-	for (auto it = block.begin(); !it.atEnd(); ++it) {
-	    QTextFragment fragment = it.fragment();
-	    if (fragment.isValid()) {
-	        cursor.insertText(fragment.text(), fragment.charFormat());
-	    }
-	}
-	cursor.insertBlock(QTextBlockFormat());
-}
 int nLeadingSpaces(const QString& text)
 {
     int n = 0;
@@ -1601,9 +1603,21 @@ void MarkdownPreview::do_checkbox(int bn0, int nBlocks, QTextBlock srcBlock, QTe
 		cursor.insertBlock();
 		//cursor.insertBlock(QTextBlockFormat());
 #else
-		QTextCharFormat boxFormat;
-		cursor.insertText(buf[3]==u' '?"□ ":"☒ ", boxFormat);
-		insertInlineMD(cursor, buf.mid(4));
+#if 1
+		QTextListFormat listFormat;
+		cursor.createList(listFormat);
+		QTextBlockFormat blockFormat = cursor.blockFormat();
+		blockFormat.setMarker( buf[3]==u' '?QTextBlockFormat::MarkerType::Unchecked:QTextBlockFormat::MarkerType::Checked );
+		cursor.setBlockFormat(blockFormat);
+		//QTextCharFormat boxFormat;
+		//cursor.insertText(buf[3]==u' '?"□ ":"☒ ", boxFormat);
+#else
+		if( buf[3]==u' ' )
+			cursor.insertHtml("<input type=\"checkbox\"> ");
+		else
+			cursor.insertHtml("<input type=\"checkbox\" checked> ");
+#endif
+		insertInlineMD(cursor, buf.mid(6));
 #endif
 		if( ++m_ix >= nBlocks ) break;
 		buf = (srcBlock = srcBlock.next()).text();
