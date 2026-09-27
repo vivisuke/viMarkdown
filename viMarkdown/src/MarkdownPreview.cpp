@@ -1605,6 +1605,7 @@ void MarkdownPreview::do_checkbox(int bn0, int nBlocks, QTextBlock srcBlock, QTe
 #else
 #if 1
 		QTextListFormat listFormat;
+		listFormat.setStyle(QTextListFormat::ListDisc);
 		cursor.createList(listFormat);
 		QTextBlockFormat blockFormat = cursor.blockFormat();
 		blockFormat.setMarker( buf[3]==u' '?QTextBlockFormat::MarkerType::Unchecked:QTextBlockFormat::MarkerType::Checked );
