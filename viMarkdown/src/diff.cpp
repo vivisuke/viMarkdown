@@ -294,6 +294,8 @@ void MainWindow::onAction_DiffMode(bool checked) {
 		//QTimer::singleShot(0, this, [this]() {
         //    do_diff();
         //});
+		//bool b = docWidget->m_editor->document()->isModified();
+		//qDebug() << "modified = " << b;
 	} else {
 		if( docWidget->m_docType == DocType::Markdown )
 			docWidget->m_editor->setHighlightMarkdown(true);
@@ -326,8 +328,12 @@ void MainWindow::onAction_DiffMode(bool checked) {
         disconnect(bar1, &QScrollBar::valueChanged, bar2, &QScrollBar::setValue);
 		disconnect(bar2, &QScrollBar::valueChanged, bar1, &QScrollBar::setValue);
 	}
+	//bool b = docWidget->m_editor->document()->isModified();
+	//qDebug() << "modified = " << b;
 	docWidget->m_editor->rehighlight();
 	docWidget->updatePanes();
+	//b = docWidget->m_editor->document()->isModified();
+	//qDebug() << "modified = " << b;
 }
 void MainWindow::onDiffViewChanged() {	//	比較先エディタが編集された場合
 	//##qDebug() << "MainWindow::onDiffViewChanged()";

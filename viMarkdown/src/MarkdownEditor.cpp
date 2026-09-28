@@ -507,10 +507,12 @@ QVariant MarkdownEditor::inputMethodQuery(Qt::InputMethodQuery query) const {
 	return QPlainTextEdit::inputMethodQuery(query);
 }
 void MarkdownEditor::rehighlight() {
+	bool b = document()->isModified();
 	if( !m_diffMode )
 		m_highlighter->rehighlight();
 	else
 		m_diffHighlighter->rehighlight();
+	document()->setModified(b);
 }
 void MarkdownEditor::updateInlineColors() {
 	bool mf = document()->isModified();		//	対処療法的処理
