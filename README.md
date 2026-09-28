@@ -29,6 +29,7 @@ It is designed for developers and writers who love efficiency.
   Unlike Electron-based editors, this app is built natively using Qt6 and C++, delivering highly lightweight performance and outstanding responsiveness.
 ## Documents
 - [What'sNew in Ver 0.3](docs/WhatsNewV03.md)
+- [quickstart](docs/quickstart.md)
 ## License
 This app is published under a Source Available license.  
 Please refer to the [LICENSE](LICENSE) file for more details.  

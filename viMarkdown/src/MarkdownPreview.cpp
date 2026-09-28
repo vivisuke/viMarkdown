@@ -793,12 +793,12 @@ void MarkdownPreview::insertMarkdown(QTextDocument *doc, int bn0, int nBlocks, /
 		if( buf.startsWith('#') ) {
 			do_body(srcBlock0, cursor);
 			do_heading(srcBlock, cursor, buf);
-		} else if( re_checkbox.match(buf).hasMatch() ) {
+		} else if( re_checkbox.match(buf).hasMatch() ) {		//	"- [ ] "
 			do_body(srcBlock0, cursor);
-			do_checkbox(bn0, nBlocks, srcBlock, cursor, buf);		//	"- [ ] "
-		} else if( re_list.match(buf).hasMatch() ) {
+			do_checkbox(bn0, nBlocks, srcBlock, cursor, buf);
+		} else if( re_list.match(buf).hasMatch() ) {			//	"- "
 			do_body(srcBlock0, cursor);
-			do_list(bn0, nBlocks, srcBlock, cursor, buf);			//	"- "
+			do_list(bn0, nBlocks, srcBlock, cursor, buf);
 		} else if( re_numlist.match(buf).hasMatch() ) {
 			do_body(srcBlock0, cursor);
 			do_numlist(bn0, nBlocks, srcBlock, cursor, buf);
@@ -824,8 +824,14 @@ void MarkdownPreview::insertMarkdown(QTextDocument *doc, int bn0, int nBlocks, /
 			do_table(bn0, nBlocks, srcBlock, cursor);
 		} else {
 			//printCharFlags(srcBlock);
-			if( isUnderlineHeading(buf) && do_underlineHeading(cursor, buf) )
-				continue;		//	アンダーライン見出しだった場合
+			if( isUnderlineHeading(buf) ) {
+				auto prev = m_bodyList.back();
+				m_bodyList.pop_back();
+				do_body(srcBlock0, cursor);
+				m_bodyList.push_back(prev);
+				if( do_underlineHeading(cursor, buf) )
+					continue;		//	アンダーライン見出しだった場合
+			}
 			if( m_bodyList.isEmpty() ) {
 				m_bodyLineNum = bn0 + m_ix;
 				srcBlock0 = srcBlock;
