@@ -57,7 +57,33 @@ It can be used to jump to corresponding lines by double-clicking Grep search res
 ### Localization & Resource Support
 Supports automatic switching between Japanese and English UIs based on OS language settings (Locale).
 The display language can be changed at any time from the Language Dialog (takes effect after restarting), allowing all menus and dialogs to be fully localized.
+
 ## Basic Operations
+### UI Overview
+![UI Overview](screen_v03.png)
+
+- (1) Title Bar
+  Application name, Minimize / Maximize / Close buttons
+- (2) Menu Bar & Toolbar
+  Execute various actions via mouse clicks, access keys, or keyboard shortcuts.
+- (3) Outline Bar
+  - List of currently open documents
+  - Heading tree of the document; click to jump directly to the target heading.
+- (4) Document Tabs
+  Switch between multiple documents using tabs.
+  - Editor (Left Pane)
+    Edit your Markdown source text.
+  - Preview (Right Pane)
+    Displays the formatted Markdown layout.
+    - Checkboxes: Toggle state with a single mouse click.
+    - Direct editing (inserting/deleting text) is also supported.
+- (5) Output Bar
+  Displays status messages, Grep search results, SVG / custom block outputs, and input guides (such as keybindings for Ruled Line mode).
+- (6) Calendar Bar
+  Displays a monthly calendar.  
+  Click a date to create or open that day's daily note, and visually track ToDo task progress.
+- (7) Status Bar
+  Displays notifications/messages, cursor position, and character encoding.
 ## Markdown Specifications
 ## viMarkdown Original Features
 ## FAQ
