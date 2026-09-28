@@ -17,6 +17,8 @@ It is designed for developers and writers who love efficiency.
   Allows inserting and deleting text directly within the preview pane, not just the editor. You can complete your editing tasks in a true WYSIWYG (What You See Is What You Get) manner.
 - **Vi Keybindings (Vi Commands) Support**
   Supports vi commands, enabling fast text editing and cursor navigation without ever having to move your hands from the home row.
+- **Built-in Diff (File Comparison) Tool**
+  Side-by-side split comparison of different files or before-and-after edits. Features a minimap display and one-click diff merging, powerfully supporting document revision and version management.
 - **Calendar & Daily Notes (Journaling)**
   Create or open daily notes with a single click from the sidebar calendar. Features automatic template expansion and visual progress tracking of your ToDo tasks directly on the calendar.
 - **Powerful Grep (Global Search) Functionality**
@@ -29,6 +31,7 @@ It is designed for developers and writers who love efficiency.
   Unlike Electron-based editors, this app is built natively using Qt6 and C++, delivering highly lightweight performance and outstanding responsiveness.
 ## Documents
 - [What'sNew in Ver 0.3](docs/WhatsNewV03.md)
+- [Help](docs/help.md)
 - [quickstart](docs/quickstart.md)
 ## License
 This app is published under a Source Available license.  
