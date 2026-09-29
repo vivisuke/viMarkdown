@@ -1140,6 +1140,6 @@ SPR# 状 P Open Close ver     Type  概要
 1125 ◎ C 09/28 09/29 03116│問題│docs/ja/help.md > 画面説明：アウトプットバー・カレンダーバーの説明が無い
 1126 ◎ C 09/28 09/29 03116│問題│docs/help.me：画面説明が無い
 1127 ◎ C 09/29 09/29 03116│問題│docs/help.md：Markdown Specifications の説明文が無い
-1128 ● C 09/29            │問題│Key Features-org, Key Features-001 を比較すると、対応行が揃っていない
+1128 ◎ C 09/29 09/30 03116│問題│Key Features-org, Key Features-001 を比較すると、対応行が揃っていない
 1129 ◎ C 09/30 09/30 03116│問題│do_diff() が長過ぎるので適度に分割
 1130 ● C 09/30            │問題│

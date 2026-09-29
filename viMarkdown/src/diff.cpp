@@ -13,6 +13,7 @@
 #include <QMessageBox>
 #include <QLabel>
 #include <QTimer>
+#include <vector>
 #include "dtl/dtl.hpp"
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
@@ -334,7 +335,7 @@ void MainWindow::onAction_DiffMode(bool checked) {
 		docWidget->m_diffview->setHighlightDiff(true);
 		docWidget->m_editor->setHighlightMarkdown(false);
 		//docWidget->m_editor->setLineWrapMode(QPlainTextEdit::NoWrap);
-		do_diff();
+		//##do_diff();
 		connect(docWidget->m_editor->verticalScrollBar(), &QScrollBar::valueChanged,
             docWidget, &DocWidget::syncScrollFromLeft);
 	    connect(docWidget->m_diffview->verticalScrollBar(), &QScrollBar::valueChanged,
@@ -347,9 +348,9 @@ void MainWindow::onAction_DiffMode(bool checked) {
 		        docWidget, &DocWidget::syncMinimapWithEditor);
         connect(bar1, &QScrollBar::valueChanged, bar2, &QScrollBar::setValue);
 		connect(bar2, &QScrollBar::valueChanged, bar1, &QScrollBar::setValue);
-		//QTimer::singleShot(0, this, [this]() {
-        //    do_diff();
-        //});
+		QTimer::singleShot(0, this, [this]() {
+            do_diff();
+        });
 		//bool b = docWidget->m_editor->document()->isModified();
 		//qDebug() << "modified = " << b;
 	} else {
@@ -600,6 +601,15 @@ void calculateAndSetCharDiff(QTextBlock block1, QTextBlock block2, const QString
     }
 }
 //
+std::vector<int>	g_vc1, g_vc2;
+void buildVcTable(QTextDocument *doc, std::vector<int>& vc) {
+	vc.clear();
+	QTextBlock block = doc->begin();
+	while( block.isValid() ) {
+		vc.push_back(visualLineCount(block));
+		block = block.next();
+	}
+}
 void MainWindow::insertDummyLines(QTextCursor &cur, QTextBlock &block, int count) {
 	if (count <= 0) return;
     int insertPos = block.position();
@@ -685,7 +695,7 @@ void MainWindow::applyModifyHunk(
         totalVc2 += qMax(1, visualLineCount(block2));
         block2 = block2.next();
     }
-
+	qDebug() << "totalVc1 = " << totalVc1 << ", totalVc2 = " << totalVc2;
     // 高さの差をダミー行で埋める
     int d = totalVc1 - totalVc2;
     if (d > 0) {
@@ -765,6 +775,11 @@ void MainWindow::do_diff() {
     // --- 1. 前処理 ---
     QTextDocument *doc1 = docWidget->m_editor->document();
     QTextDocument *doc2 = docWidget->m_diffview->document();
+    //qreal width2 = docWidget->m_diffview->viewport()->width();
+    //doc2->setTextWidth(width2);
+    //doc2->adjustSize();
+    buildVcTable(doc1, g_vc1);
+    buildVcTable(doc2, g_vc2);
     bool modified1 = doc1->isModified();
     bool modified2 = doc2->isModified();
 
