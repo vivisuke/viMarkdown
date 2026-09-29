@@ -153,6 +153,60 @@ void MarkdownEditor::removeAllDummyLines() {
     cursor.endEditBlock(); // レイアウトを再計算して画面を更新
 }
 // -------------------------------------------------------------
+#if 0
+void updateMapSub(QPainter &p, int x, int width, QTextDocument* doc, int totalLines, int mapHeight) {
+	if (totalLines <= 0) return;
+
+	QTextBlock block = doc->begin();
+	int currentVLine = 0; // 現在のビジュアル行インデックス
+
+	while (block.isValid()) {
+		QColor col = Qt::white;
+		if (isDummyLine(block)) {
+			col = QColor("#e8e8e8");
+		} else {
+			auto d = getDiff(block);
+			if (d == ADDED_LINE) col = QColor("#ffa0a0");
+			else if (d == CHANGED_LINE) col = QColor("#ffffa0");
+		}
+
+		int vc = visualLineCount(block);
+
+		// このブロック（行）の MiniMap 上での Y 座標と高さを比率計算
+		int y1 = currentVLine * mapHeight / totalLines;
+		int y2 = (currentVLine + vc) * mapHeight / totalLines;
+		int h = qMax(1, y2 - y1); // 最低でも1pxは描画
+
+		p.fillRect(x, y1, width, h, col);
+
+		currentVLine += vc;
+		block = block.next();
+	}
+}
+
+void MiniMap::updateMap(QTextDocument* doc1, QTextDocument* doc2) {
+	auto ht = rect().height();
+	m_mapPixmap = QPixmap(MINMAP_WIDTH, ht);
+	m_mapPixmap.fill(QColor("#e8e8e8")); // 背景をデフォルト色で初期化
+
+	int totalLines1 = visualLineCount(doc1);
+	int totalLines2 = visualLineCount(doc2);
+	// 左右で大きい方の行数に合わせる（通常diffアライメントで同一のはず）
+	m_totalLines = qMax(totalLines1, totalLines2);
+
+	if (m_totalLines <= 0) return;
+
+	QPainter p(&m_mapPixmap);
+	
+	int halfW = MINMAP_WIDTH / 2;
+	// 左ペイン用 (0 〜 halfW)
+	updateMapSub(p, 0, halfW, doc1, m_totalLines, ht);
+	// 右ペイン用 (halfW 〜 MINMAP_WIDTH)
+	updateMapSub(p, halfW, MINMAP_WIDTH - halfW, doc2, m_totalLines, ht);
+
+	// ※末尾の余白塗りつぶしは不要になります（全体にスケーリングされるため）
+}
+#else
 void updateMapSub(QPainter &p, int x, QTextDocument* doc) {
 	QTextBlock block = doc->begin();
 	for(int y = 0; /*y < doc->blockCount() &&*/ block.isValid(); block=block.next()) {
@@ -184,6 +238,7 @@ void MiniMap::updateMap(QTextDocument* doc1, QTextDocument* doc2) {
 	//p.drawRect(0, doc1->blockCount(), MINMAP_WIDTH, ht - doc1->blockCount());
 	p.drawRect(0, visualLineCount(doc1), MINMAP_WIDTH, ht - visualLineCount(doc1));
 }
+#endif
 // -------------------------------------------------------------
 std::vector<QString> extractLinesFromDocument(const QTextDocument *doc) {
     std::vector<QString> lines;
@@ -544,7 +599,199 @@ void calculateAndSetCharDiff(QTextBlock block1, QTextBlock block2, const QString
         block2.setUserData(userData2);
     }
 }
+//
+void MainWindow::insertDummyLines(QTextCursor &cur, QTextBlock &block, int count) {
+	if (count <= 0) return;
+    int insertPos = block.position();
+    cur.setPosition(insertPos);
+    for (int i = 0; i < count; ++i) {
+        cur.insertText("\n");
+    }
+    // 挿入された空ブロック群をダミーに設定
+    QTextBlock dummy = cur.document()->findBlock(insertPos);
+    for (int i = 0; i < count; ++i) {
+        setDummyLine(dummy);
+        dummy = dummy.next();
+    }
+    block = dummy; // 元のテキストブロックを指すように更新
+}
+// 左側のみ存在（右側で削除）
+void MainWindow::applyDeleteHunk(
+    int diffLn, int endLn, int &ln1,
+    QTextBlock &block1, QTextBlock &block2,
+    QTextCursor &cur2, const std::vector<QString> &lines1) 
+{
+    for (int ln = diffLn; ln < endLn; ++ln) {
+        if (ln - 1 < lines1.size())
+            do_output(QString("- %1 0 '%2'\n").arg(ln).arg(lines1[ln - 1]));
+
+        setPhysicalLine(block1, ++ln1, ADDED_LINE);
+        int vc = qMax(1, visualLineCount(block1));
+        block1 = block1.next();
+
+        // 右側にダミー行を挿入
+        insertDummyLines(cur2, block2, vc);
+    }
+}
+
+// 右側のみ存在（右側で追加）
+void MainWindow::applyAddHunk(
+    int diffLn, int endLn, int &ln2,
+    QTextBlock &block1, QTextBlock &block2,
+    QTextCursor &cur1, const std::vector<QString> &lines2) 
+{
+    for (int ln = diffLn; ln < endLn; ++ln) {
+        if (ln - 1 >= lines2.size()) break;
+        do_output(QString("+ 0 %1 '%2'\n").arg(ln).arg(lines2[ln - 1]));
+
+        setPhysicalLine(block2, ++ln2, ADDED_LINE);
+        int vc = qMax(1, visualLineCount(block2));
+        block2 = block2.next();
+
+        // 左側にダミー行を挿入
+        insertDummyLines(cur1, block1, vc);
+    }
+}
+
+// 変更行（両側で異なる）
+void MainWindow::applyModifyHunk(
+    int diffLn1, int endLn1, int diffLn2, int endLn2,
+    int nDelete, int nAdd, int &ln1, int &ln2,
+    QTextBlock &block1, QTextBlock &block2,
+    QTextCursor &cur1, QTextCursor &cur2) 
+{
+    // 単語差分用テキストの抽出
+    QString text1, text2;
+    auto b1 = block1, b2 = block2;
+    for (int i = 0; i < nDelete && b1.isValid(); ++i, b1 = b1.next())
+        text1 += b1.text() + "\n";
+    for (int i = 0; i < nAdd && b2.isValid(); ++i, b2 = b2.next())
+        text2 += b2.text() + "\n";
+
+    calculateAndSetWordDiff(block1, block2, text1, text2);
+
+    // 左側の行属性設定と表示行数カウント
+    int totalVc1 = 0;
+    for (int ln = diffLn1; ln < endLn1; ++ln) {
+        setPhysicalLine(block1, ++ln1, CHANGED_LINE);
+        totalVc1 += qMax(1, visualLineCount(block1));
+        block1 = block1.next();
+    }
+
+    // 右側の行属性設定と表示行数カウント
+    int totalVc2 = 0;
+    for (int ln = diffLn2; ln < endLn2; ++ln) {
+        setPhysicalLine(block2, ++ln2, CHANGED_LINE);
+        totalVc2 += qMax(1, visualLineCount(block2));
+        block2 = block2.next();
+    }
+
+    // 高さの差をダミー行で埋める
+    int d = totalVc1 - totalVc2;
+    if (d > 0) {
+        insertDummyLines(cur2, block2, d);
+    } else if (d < 0) {
+        insertDummyLines(cur1, block1, -d);
+    }
+}
+void MainWindow::applyDiffToDocuments(
+    DocWidget *docWidget,
+    const std::vector<QString> &lines1,
+    const std::vector<QString> &lines2,
+    const dtl::Ses<QString> &ses) 
+{
+    QTextDocument *doc1 = docWidget->m_editor->document();
+    QTextDocument *doc2 = docWidget->m_diffview->document();
+    QTextBlock block1 = doc1->begin();
+    QTextBlock block2 = doc2->begin();
+    QTextCursor cur1 = docWidget->m_editor->textCursor();
+    QTextCursor cur2 = docWidget->m_diffview->textCursor();
+
+    cur1.beginEditBlock();
+    cur2.beginEditBlock();
+
+    int ln1 = 0, ln2 = 0;
+    int diffLn1 = INT_MAX, diffLn2 = INT_MAX;
+    int nDelete = 0, nAdd = 0;
+
+    auto flush = [&](int endLn1, int endLn2) {
+        if (nDelete == 0 && nAdd == 0) return;
+        if (nAdd == 0) {
+            applyDeleteHunk(diffLn1, endLn1, ln1, block1, block2, cur2, lines1);
+        } else if (nDelete == 0) {
+            applyAddHunk(diffLn2, endLn2, ln2, block1, block2, cur1, lines2);
+        } else {
+            applyModifyHunk(diffLn1, endLn1, diffLn2, endLn2, nDelete, nAdd, ln1, ln2, block1, block2, cur1, cur2);
+        }
+        nDelete = nAdd = 0;
+        diffLn1 = diffLn2 = INT_MAX;
+    };
+
+    for (const auto &item : ses.getSequence()) {
+        const QString &line = item.first;
+        dtl::elemInfo info = item.second;
+        switch (info.type) {
+        case dtl::SES_COMMON:
+            flush(info.beforeIdx, info.afterIdx);
+            do_output(QString("= %1 %2 '%3'\n").arg(info.beforeIdx).arg(info.afterIdx).arg(line));
+            setPhysicalLine(block1, ++ln1, 0);
+            block1 = block1.next();
+            setPhysicalLine(block2, ++ln2, 0);
+            block2 = block2.next();
+            break;
+        case dtl::SES_DELETE:
+            diffLn1 = qMin(diffLn1, info.beforeIdx);
+            nDelete++;
+            break;
+        case dtl::SES_ADD:
+            diffLn2 = qMin(diffLn2, info.afterIdx);
+            nAdd++;
+            break;
+        }
+    }
+    flush(doc1->blockCount() + 1, doc2->blockCount() + 1);
+
+    cur1.endEditBlock();
+    cur2.endEditBlock();
+}
 void MainWindow::do_diff() {
+#if 1
+	if (m_processing != 0) return;
+    DocWidget *docWidget = getCurDocWidget();
+    if (!docWidget || !docWidget->m_diffMode) return;
+
+    ++m_processing;
+
+    // --- 1. 前処理 ---
+    QTextDocument *doc1 = docWidget->m_editor->document();
+    QTextDocument *doc2 = docWidget->m_diffview->document();
+    bool modified1 = doc1->isModified();
+    bool modified2 = doc2->isModified();
+
+    if (docWidget->m_editor->dummyInserted())   docWidget->m_editor->removeAllDummyLines();
+    if (docWidget->m_diffview->dummyInserted()) docWidget->m_diffview->removeAllDummyLines();
+
+    std::vector<QString> lines1 = extractLinesFromDocument(doc1);
+    std::vector<QString> lines2 = extractLinesFromDocument(doc2);
+
+    // --- 2. diff 計算 ---
+    dtl::Diff<QString, std::vector<QString>> d(lines1, lines2);
+    d.compose();
+
+    // --- 3. ドキュメント反映 ---
+    applyDiffToDocuments(docWidget, lines1, lines2, d.getSes());
+
+    // --- 4. 後処理・UI更新 ---
+    docWidget->m_editor->setDummyInserted(true);
+    docWidget->m_diffview->setDummyInserted(true);
+    docWidget->m_minimap->updateMap(doc1, doc2);
+    docWidget->m_editor->rehighlight();
+    docWidget->m_diffview->rehighlight();
+    doc1->setModified(modified1);
+    doc2->setModified(modified2);
+
+    --m_processing;
+#else
 	if( m_processing!=0 ) return;
 	DocWidget *docWidget = getCurDocWidget();
 	if (docWidget == nullptr || !docWidget->m_diffMode)
@@ -599,6 +846,7 @@ void MainWindow::do_diff() {
                     do_output(QString("- %1 0 '%2'\n").arg(ln).arg(lines1[ln-1]));
 	        	setPhysicalLine(block1, ++ln1, ADDED_LINE);
 	        	int vc = visualLineCount(block1);
+	        	assert( vc > 0 );
 	        	block1.setUserData(nullptr);		//	clear userData
 	        	block1 = block1.next();
 	        	cur2.setPosition(block2.position()); 
@@ -615,6 +863,7 @@ void MainWindow::do_diff() {
                 do_output(QString("+ 0 %1 '%2'\n").arg(ln).arg(lines2[ln-1]));
 	        	setPhysicalLine(block2, ++ln2, ADDED_LINE);
 	        	int vc = visualLineCount(block2);
+	        	assert( vc > 0 );
 	        	block2.setUserData(nullptr);		//	clear userData
 	        	block2 = block2.next();
 	        	cur1.setPosition(block1.position());
@@ -733,4 +982,5 @@ void MainWindow::do_diff() {
     //docWidget->m_diffview->setTextCursor(cur2_sv);
 	//do_output(QString("pos1 = %1, pos2 = %2").arg(pos1).arg(pos2));
 	--m_processing;
+#endif
 }

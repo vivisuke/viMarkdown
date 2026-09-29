@@ -93,17 +93,38 @@ protected:
     	if (m_mapPixmap.isNull()) return;
     	QPainter p(this);
 		p.drawPixmap(0, 0, m_mapPixmap);
+#if 0
+		if (m_totalLines <= 0) return;
+		int mapH = height();
+		// スケーリング計算（行番号 → MiniMap上のY座標）
+		int y = m_firstVisibleLine * mapH / m_totalLines;
+		int h = m_visibleLines * mapH / m_totalLines;
+		
+		// ドキュメントが長大でも枠が消えないよう、最小高さを確保（例: 4px）
+		h = qMax(4, h);
+		
+		// MiniMapの下端からはみ出さないようガード
+		if (y + h > mapH) {
+			y = qMax(0, mapH - h);
+		}
+
+		int w = width() - 1;
+		p.setPen(QPen(Qt::blue, 1, Qt::SolidLine));
+		p.drawRect(0, y, w, h);
+#else
 		int y = m_firstVisibleLine;
 		int w = width() - 1;
 		int h = m_visibleLines;
 		p.setPen(QPen(Qt::blue, 1, Qt::SolidLine));
         p.drawRect(0, y, w, h);
+#endif
     }
 	void mousePressEvent(QMouseEvent *event) override;
 	void mouseReleaseEvent(QMouseEvent *event) override;
 	void mouseMoveEvent(QMouseEvent *event) override;
 public:
 	bool	m_mousePressed = false;
+	int		m_totalLines = 1;				//	総ビジュアル行数
 	int		m_firstVisibleLine = 0;			//	0 オリジン
 	int		m_visibleLines = 10;			//	ビュー表示行数
 	int		m_pressedY;
