@@ -196,7 +196,8 @@ std::vector<QString> extractLinesFromDocument(const QTextDocument *doc) {
     for (QTextBlock block = doc->begin(); block.isValid(); block = block.next()) {
         lines.push_back(block.text() /*+u'\n'*/);
     }
-    lines.back() += QChar(0xffff);
+    //lines.back() += QChar(0xffff);
+    lines.back() += QString("\n")+ QChar(0xffff);		//	改行＋EOF
     return lines;
 }
 void MainWindow::diffview_open() {

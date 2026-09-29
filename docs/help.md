@@ -84,7 +84,127 @@ The display language can be changed at any time from the Language Dialog (takes 
   Click a date to create or open that day's daily note, and visually track ToDo task progress.
 - (7) Status Bar
   Displays notifications/messages, cursor position, and character encoding.
-## Markdown Specifications
+## Markdown Syntax Specifications
+### Block Elements
+Defines structural elements on a line-by-line basis, such as headings and lists.
+
+#### Headings
+Creates document titles and section headings.  
+Place a hash symbol `#` followed by a space at the beginning of a line.  
+The number of `#` symbols (1 to 6) determines the heading level and text size.
+
+Example:
+```markdown
+# Document Title
+## Heading 1
+### Heading 2
+#### Heading 3
+```
+
+#### Unordered Lists (Bullet Lists)
+Creates a bulleted list.  
+Start the line with a hyphen `-`, plus `+`, or asterisk `*`, followed by a space.
+
+Example:
+```markdown
+- Apple
+- Orange
+```
+Result:
+- Apple
+- Orange
+
+#### Ordered Lists (Numbered Lists)
+Creates a sequential list. Start the line with a number and a period (`1.`), followed by a space.  
+*(Note: Even if you write `1.` for all items, they will automatically be numbered sequentially when displayed.)*
+
+Example:
+```markdown
+1. First step
+1. Next step
+```
+Result:
+1. First step
+2. Next step
+
+#### Task Lists (Checkboxes)
+Creates a ToDo list by placing `[ ]` (space inside) or `[x]` immediately after the list marker.
+
+Example:
+```markdown
+- [ ] Incomplete task
+- [x] Completed task
+```
+Result:
+- [ ] Incomplete task
+- [x] Completed task
+
+#### Blockquotes
+Indicates that the text is quoted from another source. Place a greater-than symbol `>` followed by a space at the beginning of the line.
+
+Example:
+```markdown
+> To be, or not to be,
+> that is the question.
+```
+Result:
+> To be, or not to be,
+> that is the question.
+
+#### Code Blocks
+Used to display source code or preformatted text.  
+Enclose the target text between lines consisting only of three backticks ( ` ``` ` ). Specifying a language name (e.g., `cpp` or `python`) right after the opening backticks enables syntax highlighting.
+
+Example:
+````markdown
+```cpp
+int main() {
+    return 0;
+}
+```
+````
+
+---
+
+### Inline Elements
+Formats specific text within a sentence, or inserts links and images.  
+These can be included inside block elements.
+
+**💡 Helpful Tip**  
+In addition to typing symbols manually, you can easily apply formatting by **selecting text and clicking toolbar icons or navigating to the menu (`Edit` > `Inline`)**.
+
+#### Bold
+Surround the text with two asterisks (`**`) or two underscores (`__`). Used to emphasize text.
+- Menu: `Edit` > `Inline` > `Bold`
+- Example: `This is **bold** text.`
+- Result: This is **bold** text.
+
+#### Italic
+Surround the text with a single asterisk (`*`) or underscore (`_`). Displays text in italics.
+- Menu: `Edit` > `Inline` > `Italic`
+- Example: `This is *italic* text.`
+- Result: This is *italic* text.
+
+#### Strikethrough
+Surround the text with two tildes (`~~`). Draws a horizontal line through the center of the text.
+- Menu: `Edit` > `Inline` > `Strikethrough`
+- Example: `This is ~~strikethrough~~ text.`
+- Result: This is ~~strikethrough~~ text.
+
+#### Inline Code
+Used to display code snippets or specific symbols literally. Surround the text with backticks ( `` ` `` ).  
+Markdown formatting characters (like `**` or `~~`) inside inline code will not be styled and will appear as raw text.
+- Example: `` `**raw bold syntax**` ``
+- Result: `**raw bold syntax**`
+
+#### Links
+Creates a hyperlink using the syntax `[Link Text](URL)`.
+- Example: `For details, visit [Google](https://google.com).`
+- Result: For details, visit [Google](https://google.com).
+
+#### Images
+Embeds an image into the document by adding an exclamation mark `!` before the link syntax: `![Alt Text](Path or URL to image)`.
+- Example: `![Logo](https://example.com/logo.png)`
 ## viMarkdown Original Features
 ## FAQ
 ## Appendix
