@@ -207,4 +207,23 @@ Embeds an image into the document by adding an exclamation mark `!` before the l
 - Example: `![Logo](https://example.com/logo.png)`
 ## viMarkdown Original Features
 ## FAQ
+```CSV
+, Questions & Answers
+**Q.**, "How can I convert a CSV block into a standard Markdown table?"
+**A.**, "Place the cursor inside the target CSV block and run **Edit > Convert > CSV -> Markdown Table** from the menu. Conversely, you can also convert standard tables into CSV blocks for management."
+**Q.**, "In Box-drawing mode (Shift + F5), drawn lines automatically connect or change their shapes."
+**A.**, "viMarkdown features an ""Auto-Join"" function that automatically determines connections in all four directions (up, down, left, right) and selects the optimal box-drawing character. To prevent unintended connections, place half-width spaces around the line or use **Ctrl + Shift + Arrow keys** to erase unwanted parts and adjust."
+**Q.**, "Why doesn't the frame shift to the right when typing text inside a box-drawing frame?"
+**A.**, "This is due to the ""Border Protection"" feature. Even when inserting or deleting characters inside a frame, it tries to maintain the position of the vertical border on the right. This allows you to edit text without breaking the layout of class diagrams or UI mockups."
+**Q.**, "The area scrolled into view in the editor is not shown in the preview."
+**A.**, "The editor and preview are **synchronized based on cursor position**. When you move the cursor (or type text) in the editor, the preview automatically scrolls to keep the corresponding heading or text within view. To switch focus between them, use **View > Toggle Focus (Ctrl + \)**."
+**Q.**, "After navigating between multiple documents, I lost track of where I was editing."
+**A.**, "Just like in a web browser, you can use **Alt + ← (Back) and Alt + → (Forward)**. This works not only for navigating between files, but also for returning after jumping to a link within the same document, fully restoring your previous cursor position."
+**Q.**, "How do I clear the search highlights (yellow)?"
+**A.**, "To clear search highlights, press **Alt + F3 (Clear Search Highlight)**."
+**Q.**, "I heard vi-like operations are supported. Which commands are available?"
+**A.**, "Basic vi keybindings (vi commands) are supported. By enabling ""Other > vi Keybindings"" from the menu, you can use various commands including basic movements (hjkl, w, b, gg, G, etc.), editing (i, a, o, d, c, y, p, r, etc.), search (/, ?, n), Ex commands (:w, :q, :s, etc.), and heading folding (za, zM, etc.). For a detailed list of supported commands, please refer to ""Other > Cheat Sheet > Vi"" in the menu."
+**Q.**, "The app becomes sluggish when editing very long documents (tens of thousands of lines or more)."
+**A.**, "Currently (v0.4 and earlier), rendering huge files may take time because **incremental parsing is not supported**. We recommend **splitting files into chunks of roughly a thousand lines** for optimal performance. You can easily navigate between split files by linking them using \[Title\](filename.md)."
+```
 ## Appendix
