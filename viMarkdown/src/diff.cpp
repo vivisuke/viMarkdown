@@ -614,6 +614,46 @@ void buildVcTable(QTextDocument *doc, std::vector<int>& vc) {
 #endif
 void MainWindow::insertDummyLines(QTextCursor &cur, QTextBlock &block, int count) {
 	if (count <= 0) return;
+#if 1
+    QTextDocument* doc = cur.document();
+	int insertPos;
+    bool atEnd = !block.isValid();
+
+    if (atEnd) {
+        // block が無効（ドキュメント末尾）の場合は、文書の終端位置に挿入
+        insertPos = doc->characterCount() - 1;
+        cur.setPosition(insertPos);
+        // 末尾に改行を入れてダミー行を作成
+        for (int i = 0; i < count; ++i) {
+            cur.insertText("\n");
+        }
+    } else {
+        // 通常は block の手前に挿入
+        insertPos = block.position();
+        cur.setPosition(insertPos);
+        for (int i = 0; i < count; ++i) {
+            cur.insertText("\n");
+        }
+    }
+
+    // 挿入された空ブロック群をダミー行に設定
+    QTextBlock dummy = doc->findBlock(insertPos);
+    if (!atEnd) {
+        for (int i = 0; i < count && dummy.isValid(); ++i) {
+            setDummyLine(dummy);
+            dummy = dummy.next();
+        }
+        block = dummy; // 押し出された元のテキストブロックを指すように更新
+    } else {
+        // 末尾に追加した場合は、新しく末尾にできたダミー行群を設定
+        dummy = dummy.next(); // 挿入した改行の次のブロックからがダミー
+        for (int i = 0; i < count && dummy.isValid(); ++i) {
+            setDummyLine(dummy);
+            dummy = dummy.next();
+        }
+        block = doc->end(); // 末尾のまま
+    }
+#else
     int insertPos = block.position();
     cur.setPosition(insertPos);
     for (int i = 0; i < count; ++i) {
@@ -626,6 +666,7 @@ void MainWindow::insertDummyLines(QTextCursor &cur, QTextBlock &block, int count
         dummy = dummy.next();
     }
     block = dummy; // 元のテキストブロックを指すように更新
+#endif
 }
 // 左側のみ存在（右側で削除）
 void MainWindow::applyDeleteHunk(
