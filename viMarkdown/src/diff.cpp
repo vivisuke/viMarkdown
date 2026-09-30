@@ -601,6 +601,7 @@ void calculateAndSetCharDiff(QTextBlock block1, QTextBlock block2, const QString
     }
 }
 //
+#if 0
 std::vector<int>	g_vc1, g_vc2;
 void buildVcTable(QTextDocument *doc, std::vector<int>& vc) {
 	vc.clear();
@@ -610,6 +611,7 @@ void buildVcTable(QTextDocument *doc, std::vector<int>& vc) {
 		block = block.next();
 	}
 }
+#endif
 void MainWindow::insertDummyLines(QTextCursor &cur, QTextBlock &block, int count) {
 	if (count <= 0) return;
     int insertPos = block.position();
@@ -778,8 +780,8 @@ void MainWindow::do_diff() {
     //qreal width2 = docWidget->m_diffview->viewport()->width();
     //doc2->setTextWidth(width2);
     //doc2->adjustSize();
-    buildVcTable(doc1, g_vc1);
-    buildVcTable(doc2, g_vc2);
+    //buildVcTable(doc1, g_vc1);
+    //buildVcTable(doc2, g_vc2);
     bool modified1 = doc1->isModified();
     bool modified2 = doc2->isModified();
 
