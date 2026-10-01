@@ -44,19 +44,16 @@ Please refer to the [LICENSE](LICENSE) file for more details.
   - **For versions below 1.0:** Planned early-bird / developer-support price of 2,000 JPY (US$15) + transaction fee (details to be finalized later).
 ## Development Phases
 
+Prototype development began in December 2025, and development is currently underway toward the release of the v0.4 stable version.
+
 |ver.| Phase | Description | Schedule |
-|----| :--- | :--- | :--- |
-|0.0.xxx| prototype | Experimental implementation | Dec 2025 – |
-|0.1.0xx| dev | Feature implementation & verification | Jan 2026 –  |
-|0.1.1xx| alpha | Bug fixes and occasional feature additions | 10 Feb 2026 – |
-|0.1.2xx| beta | Bug fixes only | 10 Mar 2026 –|
-|0.2.xxx| rc | Bug fixes only (ensuring no side effects) | 21 Apr 2026 –  |
-|0.2.xxx| Stable | Maintenance mode | End Apr 2026 – |
-|0.3.0xx|dev|Feature implementation & verification|May 2026- |
-|0.3.1xx|alpha|Bug fixes, refactoring, documentation, and minor feature additions|Aug 2026 - (**Current**)|
-|0.3.2xx|beta|Bug fixes, minor refactoring, and documentation|Oct 2026 -|
-|0.4.xxx| rc | Bug fixes only (ensuring no side effects) | Dec 2026 –  |
-|0.4.xxx| Stable | Maintenance mode | Mid Dec 2026 – |
+|---|---|---|---|
+|0.2.xxx| Stable | Maintenance mode | Late Apr 2026 – |
+|0.3.0xx| dev | Feature implementation & verification | Early May 2026 – |
+|0.3.1xx| alpha | Bug fixes, refactoring, EN/JA localization, documentation, automated test development, minor feature additions as needed | Early Aug 2026 – (**Current**) |
+|0.3.2xx| beta | Bug fixes, minor refactoring, documentation, and automated test improvements | Early Oct 2026 – |
+|0.4.0xx| rc | Only low-risk bug fixes with minimal chance of side effects | Early Dec 2026 – |
+|0.4.1xx| Stable | Maintenance mode | Mid-to-Late Dec 2026 – |
 
 \* Note: The schedule above is current and subject to change without notice at the author's sole discretion.
 ## Roadmap
