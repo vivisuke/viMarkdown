@@ -4,6 +4,7 @@
 #include <QPlainTextEdit>
 #include <QSyntaxHighlighter>
 #include <QRegularExpression>
+#include <vector>
 //#include <QTimer>
 //#include "C:\Qt\6.10.0\msvc2022_64\include\QtWidgets\qplaintextedit.h"
 #include "MainWindow.h"
@@ -254,6 +255,11 @@ public:
     void	setPrefferedX(int x) { m_preferredX = x; }
     void	savePrefferedX(const QTextCursor&);
     int		getPrefferdOffset(const QTextBlock& block);
+    std::vector<int>&	diffBlockNumbers() { return m_diffBlockNumbers; }
+    std::vector<uchar>&	diffFlags() { return m_diffFlags; }
+    void	clearNDummyLines() { m_nDummyLines = 0; }
+    int		nDummyLines() const { return m_nDummyLines; };
+    void	incNDummyLines() { m_nDummyLines += 1; }
 
 public:
     //using QPlainTextEdit::QPlainTextEdit;
@@ -337,6 +343,7 @@ private:
 	//int		m_foldlineY2 = -1;
 	int		m_foldBlockNumber1 = -1;		//	折り畳み範囲線開始ブロック番号（0 org.）
 	int		m_foldBlockNumber2 = -1;		//	折り畳み範囲線終了ブロック番号（0 org.）
+	int		m_nDummyLines = 0;				//	ダミー行数 for diff mode
 	//QTimer	*m_blinkTimer;
     //bool	m_cursorVisible = true;
 	QString	m_lastCurBlockText;				//	事前のカーソルブロックテキスト
@@ -348,5 +355,8 @@ private:
 	SvgCompleter		*m_svgCompleter = nullptr;
     DocWidget			*m_docWidget;
     const MainWindow	*m_mainWindow = nullptr;
+//public:
+	std::vector<int>	m_diffBlockNumbers;		//	diff 表示時ブロック番号（0 org. -1 for ダミー行）
+	std::vector<uchar>	m_diffFlags;
 };
 

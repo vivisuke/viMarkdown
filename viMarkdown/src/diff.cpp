@@ -30,7 +30,8 @@ bool isDummyLine(const QTextBlock &block) {
 }
 #if 1
 // 2. 行番号（1オリジン）取得（2ビット右シフトするだけ）
-int lineNumber(const QTextBlock &block) {
+int lineNumber(MarkdownEditor* editor, const QTextBlock &block) {
+    //return editor->diffBlockNumbers()[block.blockNumber()];
     return (unsigned)block.userState() >> 2;
 }
 
@@ -48,7 +49,9 @@ void setDummyLine(QTextBlock block) {
 }
 
 // 物理的な行をセットする場合
-void setPhysicalLine(QTextBlock &block, int ln, int flag) {
+void setPhysicalLine(MarkdownEditor* editor, QTextBlock &block, int ln, uchar flag) {
+    editor->diffBlockNumbers().push_back(block.blockNumber() - editor->nDummyLines());
+    editor->diffFlags().push_back(flag);
     int state = (ln << 2) | flag;
     block.setUserState(state);
 }
@@ -612,7 +615,7 @@ void buildVcTable(QTextDocument *doc, std::vector<int>& vc) {
 	}
 }
 #endif
-void MainWindow::insertDummyLines(QTextCursor &cur, QTextBlock &block, int count) {
+void MainWindow::insertDummyLines(MarkdownEditor* editor, QTextCursor &cur, QTextBlock &block, int count) {
 	if (count <= 0) return;
 #if 1
     QTextDocument* doc = cur.document();
@@ -640,6 +643,9 @@ void MainWindow::insertDummyLines(QTextCursor &cur, QTextBlock &block, int count
     QTextBlock dummy = doc->findBlock(insertPos);
     if (!atEnd) {
         for (int i = 0; i < count && dummy.isValid(); ++i) {
+            editor->incNDummyLines();
+            editor->diffBlockNumbers().push_back(DUMMY_LINE);
+            editor->diffFlags().push_back(0);
             setDummyLine(dummy);
             dummy = dummy.next();
         }
@@ -648,6 +654,9 @@ void MainWindow::insertDummyLines(QTextCursor &cur, QTextBlock &block, int count
         // 末尾に追加した場合は、新しく末尾にできたダミー行群を設定
         dummy = dummy.next(); // 挿入した改行の次のブロックからがダミー
         for (int i = 0; i < count && dummy.isValid(); ++i) {
+            editor->incNDummyLines();
+            editor->diffBlockNumbers().push_back(DUMMY_LINE);
+            editor->diffFlags().push_back(0);
             setDummyLine(dummy);
             dummy = dummy.next();
         }
@@ -669,7 +678,7 @@ void MainWindow::insertDummyLines(QTextCursor &cur, QTextBlock &block, int count
 #endif
 }
 // 左側のみ存在（右側で削除）
-void MainWindow::applyDeleteHunk(
+void MainWindow::applyDeleteHunk(DocWidget* docWidget,
     int diffLn, int endLn, int &ln1,
     QTextBlock &block1, QTextBlock &block2,
     QTextCursor &cur2, const std::vector<QString> &lines1) 
@@ -678,17 +687,17 @@ void MainWindow::applyDeleteHunk(
         if (ln - 1 < lines1.size())
             do_output(QString("- %1 0 '%2'\n").arg(ln).arg(lines1[ln - 1]));
 
-        setPhysicalLine(block1, ++ln1, ADDED_LINE);
+        setPhysicalLine(docWidget->m_editor, block1, ++ln1, ADDED_LINE);
         int vc = qMax(1, visualLineCount(block1));
         block1 = block1.next();
 
         // 右側にダミー行を挿入
-        insertDummyLines(cur2, block2, vc);
+        insertDummyLines(docWidget->m_diffview, cur2, block2, vc);
     }
 }
 
 // 右側のみ存在（右側で追加）
-void MainWindow::applyAddHunk(
+void MainWindow::applyAddHunk(DocWidget* docWidget,
     int diffLn, int endLn, int &ln2,
     QTextBlock &block1, QTextBlock &block2,
     QTextCursor &cur1, const std::vector<QString> &lines2) 
@@ -697,17 +706,17 @@ void MainWindow::applyAddHunk(
         if (ln - 1 >= lines2.size()) break;
         do_output(QString("+ 0 %1 '%2'\n").arg(ln).arg(lines2[ln - 1]));
 
-        setPhysicalLine(block2, ++ln2, ADDED_LINE);
+        setPhysicalLine(docWidget->m_diffview, block2, ++ln2, ADDED_LINE);
         int vc = qMax(1, visualLineCount(block2));
         block2 = block2.next();
 
         // 左側にダミー行を挿入
-        insertDummyLines(cur1, block1, vc);
+        insertDummyLines(docWidget->m_editor, cur1, block1, vc);
     }
 }
 
 // 変更行（両側で異なる）
-void MainWindow::applyModifyHunk(
+void MainWindow::applyModifyHunk(DocWidget* docWidget,
     int diffLn1, int endLn1, int diffLn2, int endLn2,
     int nDelete, int nAdd, int &ln1, int &ln2,
     QTextBlock &block1, QTextBlock &block2,
@@ -726,7 +735,7 @@ void MainWindow::applyModifyHunk(
     // 左側の行属性設定と表示行数カウント
     int totalVc1 = 0;
     for (int ln = diffLn1; ln < endLn1; ++ln) {
-        setPhysicalLine(block1, ++ln1, CHANGED_LINE);
+        setPhysicalLine(docWidget->m_editor, block1, ++ln1, CHANGED_LINE);
         totalVc1 += qMax(1, visualLineCount(block1));
         block1 = block1.next();
     }
@@ -734,7 +743,7 @@ void MainWindow::applyModifyHunk(
     // 右側の行属性設定と表示行数カウント
     int totalVc2 = 0;
     for (int ln = diffLn2; ln < endLn2; ++ln) {
-        setPhysicalLine(block2, ++ln2, CHANGED_LINE);
+        setPhysicalLine(docWidget->m_diffview, block2, ++ln2, CHANGED_LINE);
         totalVc2 += qMax(1, visualLineCount(block2));
         block2 = block2.next();
     }
@@ -742,9 +751,9 @@ void MainWindow::applyModifyHunk(
     // 高さの差をダミー行で埋める
     int d = totalVc1 - totalVc2;
     if (d > 0) {
-        insertDummyLines(cur2, block2, d);
+        insertDummyLines(docWidget->m_diffview, cur2, block2, d);
     } else if (d < 0) {
-        insertDummyLines(cur1, block1, -d);
+        insertDummyLines(docWidget->m_editor, cur1, block1, -d);
     }
 }
 void MainWindow::applyDiffToDocuments(
@@ -753,6 +762,10 @@ void MainWindow::applyDiffToDocuments(
     const std::vector<QString> &lines2,
     const dtl::Ses<QString> &ses) 
 {
+	docWidget->m_editor->diffBlockNumbers().clear();
+	docWidget->m_editor->clearNDummyLines();
+	docWidget->m_diffview->diffBlockNumbers().clear();
+	docWidget->m_diffview->clearNDummyLines();
     QTextDocument *doc1 = docWidget->m_editor->document();
     QTextDocument *doc2 = docWidget->m_diffview->document();
     QTextBlock block1 = doc1->begin();
@@ -770,11 +783,12 @@ void MainWindow::applyDiffToDocuments(
     auto flush = [&](int endLn1, int endLn2) {
         if (nDelete == 0 && nAdd == 0) return;
         if (nAdd == 0) {
-            applyDeleteHunk(diffLn1, endLn1, ln1, block1, block2, cur2, lines1);
+            applyDeleteHunk(docWidget, diffLn1, endLn1, ln1, block1, block2, cur2, lines1);
         } else if (nDelete == 0) {
-            applyAddHunk(diffLn2, endLn2, ln2, block1, block2, cur1, lines2);
+            applyAddHunk(docWidget, diffLn2, endLn2, ln2, block1, block2, cur1, lines2);
         } else {
-            applyModifyHunk(diffLn1, endLn1, diffLn2, endLn2, nDelete, nAdd, ln1, ln2, block1, block2, cur1, cur2);
+            applyModifyHunk(docWidget, diffLn1, endLn1, diffLn2, endLn2,
+            					nDelete, nAdd, ln1, ln2, block1, block2, cur1, cur2);
         }
         nDelete = nAdd = 0;
         diffLn1 = diffLn2 = INT_MAX;
@@ -787,9 +801,9 @@ void MainWindow::applyDiffToDocuments(
         case dtl::SES_COMMON:
             flush(info.beforeIdx, info.afterIdx);
             do_output(QString("= %1 %2 '%3'\n").arg(info.beforeIdx).arg(info.afterIdx).arg(line));
-            setPhysicalLine(block1, ++ln1, 0);
+            setPhysicalLine(docWidget->m_editor, block1, ++ln1, 0);
             block1 = block1.next();
-            setPhysicalLine(block2, ++ln2, 0);
+            setPhysicalLine(docWidget->m_diffview, block2, ++ln2, 0);
             block2 = block2.next();
             break;
         case dtl::SES_DELETE:
@@ -813,7 +827,7 @@ void MainWindow::do_diff() {
     if (!docWidget || !docWidget->m_diffMode) return;
 
     ++m_processing;
-
+    //m_diffBlockNumbers.clear();
     // --- 1. 前処理 ---
     QTextDocument *doc1 = docWidget->m_editor->document();
     QTextDocument *doc2 = docWidget->m_diffview->document();
@@ -846,6 +860,9 @@ void MainWindow::do_diff() {
     docWidget->m_diffview->rehighlight();
     doc1->setModified(modified1);
     doc2->setModified(modified2);
+
+    const auto dsn1 = docWidget->m_editor->diffBlockNumbers();
+    const auto dsn2 = docWidget->m_diffview->diffBlockNumbers();
 
     --m_processing;
 }

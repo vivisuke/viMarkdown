@@ -832,6 +832,16 @@ void MainWindow::onAction_DumpBlockUserStates() {
 	//cursor.movePosition(QTextCursor::End);
 	//cursor.insertText(txt);
 	//docWidget->m_editor->setTextCursor(cursor);
+	if( docWidget->m_diffMode ) {
+		auto vbn = docWidget->m_editor->diffBlockNumbers();
+		for(int i = 0; i != vbn.size(); ++i) {
+			do_output(QString("%1:%2\n").arg(i).arg(vbn[i]));
+		}
+		vbn = docWidget->m_diffview->diffBlockNumbers();
+		for(int i = 0; i != vbn.size(); ++i) {
+			do_output(QString("%1:%2\n").arg(i).arg(vbn[i]));
+		}
+	}
 }
 void MainWindow::onAction_DumpHeaderBlocks() {
 	DocWidget *docWidget = getCurDocWidget();

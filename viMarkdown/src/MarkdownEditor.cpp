@@ -32,7 +32,7 @@ extern Global g;
 extern ViStatus gvi;
 
 bool isDummyLine(const QTextBlock &block);
-int lineNumber(const QTextBlock &block);
+int lineNumber(MarkdownEditor* edtor, const QTextBlock &block);
 bool hasDiff(const QTextBlock &block);
 int getDiff(const QTextBlock &block);
 void removeAllDummyLines(QTextDocument *doc);
@@ -3221,7 +3221,7 @@ void MarkdownEditor::lnAreaPaintEvent(QPaintEvent *event) {
 	while (block.isValid() && top <= event->rect().bottom()) {
 		if (block.isVisible() && bottom >= event->rect().top()) {
 			if( !m_diffMode || !isDummyLine(block) ) {
-				QString number = QString::number(!m_diffMode ? blockNumber + 1 : lineNumber(block));
+				QString number = QString::number(!m_diffMode ? blockNumber + 1 : lineNumber(this, block));
 				painter.setPen(textColor); // 文字色
 				
 				// 右詰めで描画するために幅を調整（右側に2ピクセルの余白）

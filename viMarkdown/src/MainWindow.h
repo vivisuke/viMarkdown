@@ -265,10 +265,10 @@ public:
     void	exitInsertMode(QTextCursor& cursor);
     void	do_diff();
     void	do_diff(const QString &fullPath);
-    void	insertDummyLines(QTextCursor &cur, QTextBlock &block, int count);
-    void	applyDeleteHunk(int, int, int&, QTextBlock&, QTextBlock&, QTextCursor&, const std::vector<QString>&);
-    void	applyAddHunk(int, int, int&, QTextBlock&, QTextBlock&, QTextCursor&, const std::vector<QString>&);
-    void	applyModifyHunk(int, int, int, int, int, int, int&, int&, QTextBlock&, QTextBlock&, QTextCursor&, QTextCursor&);
+    void	insertDummyLines(MarkdownEditor*, QTextCursor &cur, QTextBlock &block, int count);
+    void	applyDeleteHunk(DocWidget*, int, int, int&, QTextBlock&, QTextBlock&, QTextCursor&, const std::vector<QString>&);
+    void	applyAddHunk(DocWidget*, int, int, int&, QTextBlock&, QTextBlock&, QTextCursor&, const std::vector<QString>&);
+    void	applyModifyHunk(DocWidget*, int, int, int, int, int, int, int&, int&, QTextBlock&, QTextBlock&, QTextCursor&, QTextCursor&);
     void	applyDiffToDocuments(DocWidget*, const std::vector<QString>&, const std::vector<QString>&, const dtl::Ses<QString>&);
     void	close_cmdLine();
     bool	is_opening_file() const { return m_opening_file; }

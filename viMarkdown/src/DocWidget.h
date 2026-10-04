@@ -11,6 +11,7 @@
 #define		CODE_IMAGE		0xfffc		//	プレビュー：画像アイコン
 #define		LINE_SEPARATOR	0x2028		//	リスト文字列内改行コード
 
+#define		DUMMY_LINE		(-1)		//	for m_diffBlockNumbers[]
 #define		ADDED_LINE		1
 #define		CHANGED_LINE	2
 
