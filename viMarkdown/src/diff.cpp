@@ -59,16 +59,20 @@ bool hasDiff(MarkdownEditor*editor, const QTextBlock &block) {
 }
 
 // ダミー行をセットする場合
-void setDummyLine(QTextBlock block) {
-    block.setUserState(0);
+void setDummyLine(MarkdownEditor* editor, QTextBlock block) {
+    auto vbn = editor->diffBlockNumbers();
+    if( vbn.size() < block.blockNumber() + 1 )
+    	vbn.resize(block.blockNumber() + 1);
+    vbn[block.blockNumber()] = DUMMY_LINE;
+    //block.setUserState(0);
 }
 
 // 物理的な行をセットする場合
 void setPhysicalLine(MarkdownEditor* editor, QTextBlock &block, int ln, uchar flag) {
     editor->diffBlockNumbers().push_back(block.blockNumber() - editor->nDummyLines());
     editor->diffFlags().push_back(flag);
-    int state = (ln << 2) | flag;
-    block.setUserState(state);
+    //int state = (ln << 2) | flag;
+    //block.setUserState(state);
 }
 #else
 // 2. 行番号（1オリジン）取得（1ビット右シフトするだけ）
@@ -662,7 +666,7 @@ void MainWindow::insertDummyLines(MarkdownEditor* editor, QTextCursor &cur, QTex
             editor->incNDummyLines();
             editor->diffBlockNumbers().push_back(DUMMY_LINE);
             editor->diffFlags().push_back(0);
-            setDummyLine(dummy);
+            setDummyLine(editor, dummy);
             dummy = dummy.next();
         }
         block = dummy; // 押し出された元のテキストブロックを指すように更新
@@ -673,7 +677,7 @@ void MainWindow::insertDummyLines(MarkdownEditor* editor, QTextCursor &cur, QTex
             editor->incNDummyLines();
             editor->diffBlockNumbers().push_back(DUMMY_LINE);
             editor->diffFlags().push_back(0);
-            setDummyLine(dummy);
+            setDummyLine(editor, dummy);
             dummy = dummy.next();
         }
         block = doc->end(); // 末尾のまま

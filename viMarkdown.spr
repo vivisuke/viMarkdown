@@ -1154,11 +1154,11 @@ SPR# 状 P Open Close ver     Type  概要
 1139 ◎ C 10/05 10/06 03117│問題│diff表示時：m_diffBlockNumbers, m_diffFlags 参照
 1140 ◎ C 10/05 10/06 03117│ToDo│isDummyLine()：m_diffBlockNumbers, m_diffFlags 参照にリライト
 1141 ◎ C 10/06 10/06 03117│ToDo│getDiff(), hasDiff()：m_diffFlags 参照にリライト
-1142 ● C 10/06            │ToDo│block.userState() に diff 情報格納処理部分をクリーンナップ
+1142 ◎ C 10/06 10/06 03117│ToDo│block.userState() に diff 情報格納処理部分をクリーンナップ
 1143 ◎ C 10/06 10/06 03117│問題│diff 表示状態に変えた時、折り畳み範囲線が表示されたまま
-1144 ● C 10/06            │問題│
-1145 ● C 10/06            │問題│
-1146 ● C 10/06            │問題│
+1144 ● C 10/06            │問題│diff 表示中 > a\n EOF：a 直後に b を挿入すると、カーソルが EOF 行に移動してしまう
+1145 ◎ C 10/06 10/06 03117│ToDo│setDummyLine()：m_diffBlockNumbers, m_diffFlags 更新
+1146 ● C 10/06            │問題│diff 表示中：上下スクロールすると、削除・変更行背景強調表示がずれることがある
 1147 ● C 10/06            │問題│
 1148 ● C 10/06            │問題│
 1149 ● C 10/06            │問題│
