@@ -14,6 +14,7 @@
 #include <QLabel>
 #include <QTimer>
 #include <vector>
+#include <assert.h>
 #include "dtl/dtl.hpp"
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
@@ -767,8 +768,10 @@ void MainWindow::applyDiffToDocuments(
     const std::vector<QString> &lines2,
     const dtl::Ses<QString> &ses) 
 {
+	docWidget->m_editor->diffFlags().clear();
 	docWidget->m_editor->diffBlockNumbers().clear();
 	docWidget->m_editor->clearNDummyLines();
+	docWidget->m_diffview->diffFlags().clear();
 	docWidget->m_diffview->diffBlockNumbers().clear();
 	docWidget->m_diffview->clearNDummyLines();
     QTextDocument *doc1 = docWidget->m_editor->document();
@@ -866,8 +869,12 @@ void MainWindow::do_diff() {
     doc1->setModified(modified1);
     doc2->setModified(modified2);
 
-    const auto dsn1 = docWidget->m_editor->diffBlockNumbers();
-    const auto dsn2 = docWidget->m_diffview->diffBlockNumbers();
+    const auto vbn1 = docWidget->m_editor->diffBlockNumbers();
+    const auto flg1 = docWidget->m_editor->diffFlags();
+    const auto vbn2 = docWidget->m_diffview->diffBlockNumbers();
+    const auto flg2 = docWidget->m_diffview->diffFlags();
+    assert( vbn1.size() == flg1.size() );
+    assert( vbn2.size() == flg2.size() );
 
     --m_processing;
 }

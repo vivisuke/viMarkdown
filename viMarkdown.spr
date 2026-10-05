@@ -1150,6 +1150,6 @@ SPR# 状 P Open Close ver     Type  概要
 1135 ◎ C 10/04 10/04 03117│問題│m_diffBlockNumbers[]：ダミー行数分スキップされていない
 1136 ◎ C 10/04 10/05 03117│ToDo│行番号表示：m_diffBlockNumbers[] 参照
 1137 ◎ C 10/05 10/05 03117│問題│m_diffBlockNumbers[] 内容を確認するために DumpBlocks で表示した方が良い？
-1138 ● C 10/05            │問題│
+1138 ◎ C 10/05 10/05 03117│問題│m_diffBlockNumbers, m_diffFlags サイズが一致していない
 1139 ● C 10/05            │問題│
 1140 ● C 10/05            │問題│
