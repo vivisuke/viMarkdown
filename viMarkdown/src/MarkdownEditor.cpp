@@ -31,8 +31,8 @@
 extern Global g;
 extern ViStatus gvi;
 
-bool isDummyLine(const QTextBlock &block);
-int lineNumber(MarkdownEditor* edtor, const QTextBlock &block);
+bool isDummyLine(MarkdownEditor* editor, const QTextBlock &block);
+int lineNumber(MarkdownEditor* editor, const QTextBlock &block);
 bool hasDiff(const QTextBlock &block);
 int getDiff(const QTextBlock &block);
 void removeAllDummyLines(QTextDocument *doc);
@@ -2751,7 +2751,7 @@ void MarkdownEditor::syncDiffViewCursorFromEditor() {
 	QTextBlock block1 = cur1.block();
 	QTextBlock block2 = peerView->document()->findBlockByNumber(block1.blockNumber());
 	QTextCursor cur2 = peerView->textCursor();
-	int offset = isDummyLine(block2) ? 0 : cur1.position() - block1.position();
+	int offset = isDummyLine(this, block2) ? 0 : cur1.position() - block1.position();
 	if( offset != 0 ) {
 		const auto *userData1 = dynamic_cast<const DiffBlockUserData*>(block1.userData());
 		const auto *userData2 = dynamic_cast<const DiffBlockUserData*>(block2.userData());
@@ -2982,11 +2982,11 @@ void MarkdownEditor::paintEvent(QPaintEvent *e) {
 		for (QTextBlock b = firstVisibleBlock(); b.isValid(); b = b.next()) {
 			QRectF r = blockBoundingRect(b).translated(contentOffset());
 			if (r.top() > viewport()->height()) break; // 画面外なら終了
-			if( isDummyLine(b) || hasDiff(b) ) {
+			if( isDummyLine(this, b) || hasDiff(b) ) {
 				p.setPen(Qt::transparent);
 				auto g = blockBoundingGeometry(b).translated(0, 3);
 				//g.setY(g.y() + 2);
-				p.fillRect(g, QColor(isDummyLine(b) ? "#e8e8e8" : getDiff(b) == ADDED_LINE ? "#ffecec" : "#ffffec"));
+				p.fillRect(g, QColor(isDummyLine(this, b) ? "#e8e8e8" : getDiff(b) == ADDED_LINE ? "#ffecec" : "#ffffec"));
 #if 0
 				if( getDiff(b) == CHANGED_LINE ) {
 					const auto *userData = dynamic_cast<const DiffBlockUserData*>(b.userData());
@@ -3021,7 +3021,7 @@ void MarkdownEditor::paintEvent(QPaintEvent *e) {
 		if (r.top() > viewport()->height()) break; // 画面外なら終了
 		if( !b.isVisible() ) continue;
 		// --- 改行マーク（←）の描画 ---
-		if( !m_diffMode || !isDummyLine(b) ) {
+		if( !m_diffMode || !isDummyLine(this, b) ) {
 			QTextCursor cursor(b);
 			cursor.movePosition(QTextCursor::EndOfBlock);
 			QRect cr = cursorRect(cursor);
@@ -3187,7 +3187,7 @@ void MarkdownEditor::lnAreaPaintEvent(QPaintEvent *event) {
 
 	// 画面内に見える範囲のブロックをループして描画
 	QColor textColor = this->palette().color(QPalette::Text);
-	auto drawArrow = [&](int x, int y, int w, int h, bool rightward) {
+	auto drawArrow = [&](int x, int y, int w, int h, bool rightward) {		//	折畳・展開ボタン描画
 	    // 矢印の中心座標
 	    int cx = x + w / 2;
 	    int cy = y + h / 2;
@@ -3220,7 +3220,7 @@ void MarkdownEditor::lnAreaPaintEvent(QPaintEvent *event) {
 	bool isDiffView = this == m_docWidget->m_diffview;
 	while (block.isValid() && top <= event->rect().bottom()) {
 		if (block.isVisible() && bottom >= event->rect().top()) {
-			if( !m_diffMode || !isDummyLine(block) ) {
+			if( !m_diffMode || !isDummyLine(this, block) ) {
 				QString number = QString::number(!m_diffMode ? blockNumber + 1 : lineNumber(this, block));
 				painter.setPen(textColor); // 文字色
 				
@@ -3248,7 +3248,7 @@ void MarkdownEditor::lnAreaPaintEvent(QPaintEvent *event) {
 								 Qt::AlignLeft, isDiffView ? "≪" : "≫");
 				}
 #else
-				if( isDummyLine(block) && (!block.previous().isValid() || !isDummyLine(block.previous())) ) {
+				if( isDummyLine(this, block) && (!block.previous().isValid() || !isDummyLine(this, block.previous())) ) {
 					painter.drawText(0, top, m_lnAreaWidget->width(), lineHeight,
 								 Qt::AlignLeft, isDiffView ? "≪" : "≫");
 				} else if( hasDiff(block) && (!block.previous().isValid() || !hasDiff(block.previous())) ) {
@@ -3306,20 +3306,20 @@ void MarkdownEditor::applyDiffBlock(QTextBlock block) {
 	m_docWidget->m_diffview->setProcessing(true);
 	QTextBlock b1 = block;
 	int count1 = 0;		//	差分・ダミーブロック行数
-	while (b1.isValid() && (isDummyLine(b1) || hasDiff(b1))) {
+	while (b1.isValid() && (isDummyLine(this, b1) || hasDiff(b1))) {
 		count1++;
 		b1 = b1.next();
 	}
 	QTextBlock b2 = block2;
 	int count2 = 0;		//	差分・ダミーブロック行数
-	while (b2.isValid() && (isDummyLine(b2) || hasDiff(b2))) {
+	while (b2.isValid() && (isDummyLine(this, b2) || hasDiff(b2))) {
 		count2++;
 		b2 = b2.next();
 	}
 	QStringList sourceTexts;	//	差分・ダミーブロックテキスト
     b1 = block;
     for (int i = 0; i < count1; ++i) {
-        if (!isDummyLine(b1)) {
+        if (!isDummyLine(this, b1)) {
             sourceTexts.append(b1.text());
         }
         b1 = b1.next();
@@ -3406,7 +3406,7 @@ void MarkdownEditor::lnAreaMousePressEvent(QMouseEvent *event) {
 	QTextCursor cursor = cursorForPosition(QPoint(0, (int)pos.y()));
 	QTextBlock block = cursor.block();
 	if( m_diffMode && pos.x() < m_charWidth*2 &&
-		((isDummyLine(block) && (!block.previous().isValid() || !isDummyLine(block.previous()))) ||
+		((isDummyLine(this, block) && (!block.previous().isValid() || !isDummyLine(this, block.previous()))) ||
 		(hasDiff(block) && (!block.previous().isValid() || !hasDiff(block.previous())))) )
 	{
 		applyDiffBlock(block);

@@ -86,7 +86,7 @@ public:
 		m_mapPixmap = QPixmap(width, height);
 		m_mapPixmap.fill(Qt::green);
 	}
-	void updateMap(QTextDocument* doc1, QTextDocument* doc2); 
+	void updateMap(QTextDocument* doc1, MarkdownEditor*, QTextDocument* doc2, MarkdownEditor*); 
 //signals:
 //	void vScrollValueChanged(int);
 protected:

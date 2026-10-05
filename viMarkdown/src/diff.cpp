@@ -26,8 +26,11 @@
 CharType getCharType(QChar ch);
 
 // 1. ダミー行（高さを揃えるための空行）かどうかの判定
-bool isDummyLine(const QTextBlock &block) {
-    return block.userState() == 0;
+bool isDummyLine(MarkdownEditor* editor, const QTextBlock &block) {
+    const auto &vbn = editor->diffBlockNumbers();
+    int bn = block.blockNumber();
+    return bn < vbn.size() && vbn[bn] < 0;
+    //return block.userState() == 0;
 }
 #if 1
 // 2. 行番号（1オリジン）取得（2ビット右シフトするだけ）
@@ -132,7 +135,7 @@ void MarkdownEditor::removeAllDummyLines() {
         // 削除操作によってブロックが破棄される前に、前のブロックへの参照を確保しておく
         QTextBlock prevBlock = block.previous();
 
-        if (isDummyLine(block)) {
+        if (isDummyLine(this, block)) {
             cursor.setPosition(block.position());
 
             if (block.next().isValid()) {
@@ -217,11 +220,11 @@ void MiniMap::updateMap(QTextDocument* doc1, QTextDocument* doc2) {
 	// ※末尾の余白塗りつぶしは不要になります（全体にスケーリングされるため）
 }
 #else
-void updateMapSub(QPainter &p, int x, QTextDocument* doc) {
+void updateMapSub(QPainter &p, int x, QTextDocument* doc, MarkdownEditor* editor) {
 	QTextBlock block = doc->begin();
 	for(int y = 0; /*y < doc->blockCount() &&*/ block.isValid(); block=block.next()) {
 		QColor col = Qt::white;		//QColor("#808080");
-		if( isDummyLine(block) ) col = QColor("#e8e8e8");
+		if( isDummyLine(editor, block) ) col = QColor("#e8e8e8");
 		//else if( hasDiff(block) ) col = QColor("#ffa0a0");	//QColor("#ccffcc");	//QColor("#ffecec");
 		else {
 			auto d = getDiff(block);
@@ -236,14 +239,14 @@ void updateMapSub(QPainter &p, int x, QTextDocument* doc) {
 		}
 	}
 }
-void MiniMap::updateMap(QTextDocument* doc1, QTextDocument* doc2) {
+void MiniMap::updateMap(QTextDocument* doc1, MarkdownEditor* editor1, QTextDocument* doc2, MarkdownEditor* editor2) {
 	//m_mapPixmap = QPixmap(MINMAP_WIDTH, doc1->blockCount());
 	auto ht = rect().height();
 	m_mapPixmap = QPixmap(MINMAP_WIDTH, ht);
 	QPainter p(&m_mapPixmap);
 	int x = 0;
-	updateMapSub(p, 0, doc1);
-	updateMapSub(p, MINMAP_WIDTH/2, doc2);
+	updateMapSub(p, 0, doc1, editor1);
+	updateMapSub(p, MINMAP_WIDTH/2, doc2, editor2);
 	p.setBrush(QColor("#e8e8e8"));
 	//p.drawRect(0, doc1->blockCount(), MINMAP_WIDTH, ht - doc1->blockCount());
 	p.drawRect(0, visualLineCount(doc1), MINMAP_WIDTH, ht - visualLineCount(doc1));
@@ -863,7 +866,7 @@ void MainWindow::do_diff() {
     // --- 4. 後処理・UI更新 ---
     docWidget->m_editor->setDummyInserted(true);
     docWidget->m_diffview->setDummyInserted(true);
-    docWidget->m_minimap->updateMap(doc1, doc2);
+    docWidget->m_minimap->updateMap(doc1, docWidget->m_editor, doc2, docWidget->m_diffview);
     docWidget->m_editor->rehighlight();
     docWidget->m_diffview->rehighlight();
     doc1->setModified(modified1);
