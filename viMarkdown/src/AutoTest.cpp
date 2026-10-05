@@ -832,14 +832,17 @@ void MainWindow::onAction_DumpBlockUserStates() {
 	//cursor.movePosition(QTextCursor::End);
 	//cursor.insertText(txt);
 	//docWidget->m_editor->setTextCursor(cursor);
+	do_output("\n");
 	if( docWidget->m_diffMode ) {
 		auto vbn = docWidget->m_editor->diffBlockNumbers();
+		auto flg = docWidget->m_editor->diffFlags();
 		for(int i = 0; i != vbn.size(); ++i) {
-			do_output(QString("%1:%2\n").arg(i).arg(vbn[i]));
+			do_output(QString("%1:%2 %3\n").arg(i).arg(vbn[i], 2).arg((int)flg[i]));
 		}
 		vbn = docWidget->m_diffview->diffBlockNumbers();
+		flg = docWidget->m_diffview->diffFlags();
 		for(int i = 0; i != vbn.size(); ++i) {
-			do_output(QString("%1:%2\n").arg(i).arg(vbn[i]));
+			do_output(QString("%1:%2 %3\n").arg(i).arg(vbn[i], 2).arg((int)flg[i]));
 		}
 	}
 }

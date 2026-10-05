@@ -1148,7 +1148,7 @@ SPR# 状 P Open Close ver     Type  概要
 1133 ◎ C 10/01 10/01 03116│問題│docs/help.md > Development Phases：日本語版との差異がある
 1134 ◎ C 10/03 10/04 03117│問題│diff表示時行番号情報：userState を利用せず、別途 vector<Hoge> を用意した方がよい？
 1135 ◎ C 10/04 10/04 03117│問題│m_diffBlockNumbers[]：ダミー行数分スキップされていない
-1136 ● C 10/04            │ToDo│行番号表示：m_diffBlockNumbers[] 参照
+1136 ◎ C 10/04 10/05 03117│ToDo│行番号表示：m_diffBlockNumbers[] 参照
 1137 ◎ C 10/05 10/05 03117│問題│m_diffBlockNumbers[] 内容を確認するために DumpBlocks で表示した方が良い？
 1138 ● C 10/05            │問題│
 1139 ● C 10/05            │問題│

@@ -31,8 +31,13 @@ bool isDummyLine(const QTextBlock &block) {
 #if 1
 // 2. 行番号（1オリジン）取得（2ビット右シフトするだけ）
 int lineNumber(MarkdownEditor* editor, const QTextBlock &block) {
-    //return editor->diffBlockNumbers()[block.blockNumber()];
-    return (unsigned)block.userState() >> 2;
+    auto vbn = editor->diffBlockNumbers();
+    auto ix = block.blockNumber();
+    if( ix < vbn.size() )
+	    return editor->diffBlockNumbers()[block.blockNumber()] + 1;
+    else
+    	return 0;
+    //return (unsigned)block.userState() >> 2;
 }
 
 // 3. 差分の有無（下位2ビットが 0なら差分なし）
