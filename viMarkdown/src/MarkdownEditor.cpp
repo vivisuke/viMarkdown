@@ -33,8 +33,8 @@ extern ViStatus gvi;
 
 bool isDummyLine(MarkdownEditor* editor, const QTextBlock &block);
 int lineNumber(MarkdownEditor* editor, const QTextBlock &block);
-bool hasDiff(const QTextBlock &block);
-int getDiff(const QTextBlock &block);
+bool hasDiff(MarkdownEditor* editor, const QTextBlock &block);
+int getDiff(MarkdownEditor* editor, const QTextBlock &block);
 void removeAllDummyLines(QTextDocument *doc);
 
 //extern bool parseCsvLine(QStringList &fields, const QString &line, bool inQuotes, bool &inComment, bool &commented);
@@ -2982,11 +2982,11 @@ void MarkdownEditor::paintEvent(QPaintEvent *e) {
 		for (QTextBlock b = firstVisibleBlock(); b.isValid(); b = b.next()) {
 			QRectF r = blockBoundingRect(b).translated(contentOffset());
 			if (r.top() > viewport()->height()) break; // 画面外なら終了
-			if( isDummyLine(this, b) || hasDiff(b) ) {
+			if( isDummyLine(this, b) || hasDiff(this, b) ) {
 				p.setPen(Qt::transparent);
 				auto g = blockBoundingGeometry(b).translated(0, 3);
 				//g.setY(g.y() + 2);
-				p.fillRect(g, QColor(isDummyLine(this, b) ? "#e8e8e8" : getDiff(b) == ADDED_LINE ? "#ffecec" : "#ffffec"));
+				p.fillRect(g, QColor(isDummyLine(this, b) ? "#e8e8e8" : getDiff(this, b) == ADDED_LINE ? "#ffecec" : "#ffffec"));
 #if 0
 				if( getDiff(b) == CHANGED_LINE ) {
 					const auto *userData = dynamic_cast<const DiffBlockUserData*>(b.userData());
@@ -3251,7 +3251,7 @@ void MarkdownEditor::lnAreaPaintEvent(QPaintEvent *event) {
 				if( isDummyLine(this, block) && (!block.previous().isValid() || !isDummyLine(this, block.previous())) ) {
 					painter.drawText(0, top, m_lnAreaWidget->width(), lineHeight,
 								 Qt::AlignLeft, isDiffView ? "≪" : "≫");
-				} else if( hasDiff(block) && (!block.previous().isValid() || !hasDiff(block.previous())) ) {
+				} else if( hasDiff(this, block) && (!block.previous().isValid() || !hasDiff(this, block.previous())) ) {
 					painter.drawText(0, top, m_lnAreaWidget->width(), lineHeight,
 								 Qt::AlignLeft, isDiffView ? "≪" : "≫");
 				}
@@ -3306,13 +3306,13 @@ void MarkdownEditor::applyDiffBlock(QTextBlock block) {
 	m_docWidget->m_diffview->setProcessing(true);
 	QTextBlock b1 = block;
 	int count1 = 0;		//	差分・ダミーブロック行数
-	while (b1.isValid() && (isDummyLine(this, b1) || hasDiff(b1))) {
+	while (b1.isValid() && (isDummyLine(this, b1) || hasDiff(this, b1))) {
 		count1++;
 		b1 = b1.next();
 	}
 	QTextBlock b2 = block2;
 	int count2 = 0;		//	差分・ダミーブロック行数
-	while (b2.isValid() && (isDummyLine(this, b2) || hasDiff(b2))) {
+	while (b2.isValid() && (isDummyLine(this, b2) || hasDiff(this, b2))) {
 		count2++;
 		b2 = b2.next();
 	}
@@ -3407,7 +3407,7 @@ void MarkdownEditor::lnAreaMousePressEvent(QMouseEvent *event) {
 	QTextBlock block = cursor.block();
 	if( m_diffMode && pos.x() < m_charWidth*2 &&
 		((isDummyLine(this, block) && (!block.previous().isValid() || !isDummyLine(this, block.previous()))) ||
-		(hasDiff(block) && (!block.previous().isValid() || !hasDiff(block.previous())))) )
+		(hasDiff(this, block) && (!block.previous().isValid() || !hasDiff(this, block.previous())))) )
 	{
 		applyDiffBlock(block);
 		return;

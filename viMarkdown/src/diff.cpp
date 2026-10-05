@@ -45,11 +45,17 @@ int lineNumber(MarkdownEditor* editor, const QTextBlock &block) {
 }
 
 // 3. 差分の有無（下位2ビットが 0なら差分なし）
-int getDiff(const QTextBlock &block) {
-    return (block.userState() & 0x03);
+int getDiff(MarkdownEditor*editor, const QTextBlock &block) {
+    const auto &flgs = editor->diffFlags();
+    int bn = block.blockNumber();
+    if( bn < flgs.size() )
+	    return editor->diffFlags()[block.blockNumber()];
+    else
+    	return 0;
+    //return (block.userState() & 0x03);
 }
-bool hasDiff(const QTextBlock &block) {
-	return getDiff(block) != 0;
+bool hasDiff(MarkdownEditor*editor, const QTextBlock &block) {
+	return getDiff(editor, block) != 0;
 }
 
 // ダミー行をセットする場合
@@ -227,7 +233,7 @@ void updateMapSub(QPainter &p, int x, QTextDocument* doc, MarkdownEditor* editor
 		if( isDummyLine(editor, block) ) col = QColor("#e8e8e8");
 		//else if( hasDiff(block) ) col = QColor("#ffa0a0");	//QColor("#ccffcc");	//QColor("#ffecec");
 		else {
-			auto d = getDiff(block);
+			auto d = getDiff(editor, block);
 			if( d == ADDED_LINE ) col = QColor("#ffa0a0");
 			else if( d == CHANGED_LINE ) col = QColor("#ffffa0");
 		}

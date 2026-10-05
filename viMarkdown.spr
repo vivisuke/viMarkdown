@@ -1151,9 +1151,9 @@ SPR# 状 P Open Close ver     Type  概要
 1136 ◎ C 10/04 10/05 03117│ToDo│行番号表示：m_diffBlockNumbers[] 参照
 1137 ◎ C 10/05 10/05 03117│問題│m_diffBlockNumbers[] 内容を確認するために DumpBlocks で表示した方が良い？
 1138 ◎ C 10/05 10/05 03117│問題│m_diffBlockNumbers, m_diffFlags サイズが一致していない
-1139 ● C 10/05            │問題│diff表示時：m_diffBlockNumbers, m_diffFlags 参照
-1140 ◎ C 10/05 10/06 03117│ToDo│isDummyLine()：m_diffBlockNumbers, m_diffFlags 参照
-1141 ● C 10/05            │問題│
+1139 ◎ C 10/05 10/06 03117│問題│diff表示時：m_diffBlockNumbers, m_diffFlags 参照
+1140 ◎ C 10/05 10/06 03117│ToDo│isDummyLine()：m_diffBlockNumbers, m_diffFlags 参照にリライト
+1141 ◎ C 10/05 10/06 03117│ToDo│getDiff(), hasDiff()：m_diffFlags 参照にリライト
 1142 ● C 10/05            │問題│
 1143 ● C 10/05            │問題│
 1144 ● C 10/05            │問題│
