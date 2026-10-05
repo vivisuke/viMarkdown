@@ -1032,6 +1032,7 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	//connect(minimap, &MiniMap::vScrollValueChanged, docWidget, &DocWidget::syncEditorWithMinimap);
 	//docWidget->m_mmPixmap = new QPixmap(MINMAP_WIDTH, 100);
 	DiffView *diffview = docWidget->m_diffview = new DiffView(this, docWidget, splitter);
+	connect(diffview, &MarkdownEditor::changeFontSize, this, &MainWindow::onChangeEditorFontSize);
 	QTextBlock block = diffview->document()->begin();
 	setPhysicalLine(editor, block, 1, 0);
 	diffview->setDiffMode(true);
