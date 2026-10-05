@@ -337,6 +337,7 @@ void MainWindow::do_diff(const QString &fullPath) {
 	//docWidget->m_editor->setLineWrapMode(QPlainTextEdit::NoWrap);
 	docWidget->m_editor->rehighlight();
 	docWidget->updatePanes();
+	//docWidget->m_editor->updateLnAreaRaw();
     ui->action_DiffMode->setChecked(true);
     //do_diff();
 }

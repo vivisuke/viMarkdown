@@ -525,6 +525,9 @@ void MarkdownEditor::updateInlineColors() {
 void MarkdownEditor::updateViewportMargines() {
 	setViewportMargins(lnAreaWidth(), 0, 0, 0);
 }
+//void MarkdownEditor::updateLnAreaRaw() {
+//	m_lnAreaWidget->update();
+//}
 void MarkdownEditor::expandAll() {
 	QTextBlock block = document()->begin();
 	while( block.isValid() ) {
@@ -3265,8 +3268,8 @@ void MarkdownEditor::lnAreaPaintEvent(QPaintEvent *event) {
 		++blockNumber;
 	}
 	//if( m_foldlineY1 >= 0 && m_foldlineY2 >= 0 )
-	if( m_foldBlockNumber1 >= 0 && m_foldBlockNumber2 >= 0 )
-	{
+	if( !m_diffMode && m_foldBlockNumber1 >= 0 && m_foldBlockNumber2 >= 0 )
+	{	//	折り畳み範囲線描画
 		painter.setPen(Qt::blue);
 		int x = m_lnAreaWidget->width() - charWidth + 2;
 		int offset = contentOffset().y();

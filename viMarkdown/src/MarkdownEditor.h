@@ -17,6 +17,7 @@ const int LN_WIDTH = 7;
 
 class MainWindow;
 class DocWidget;
+class LnAreaWidget;
 //class QTextEdit;
 //class SvgCompleter;
 
@@ -184,6 +185,7 @@ public:
 	void	clearFoldLine();
 	void	drawFoldLine(QTextCursor, QTextBlock);
 	void	updateViewportMargines();
+	//void	updateLnAreaRaw();	// { m_lnAreaWidget->update(); }
 	void	scrollToTop(const QTextCursor &cursor);
 	//{
 	//	this->scrollToTop(cursor.blockNumber());
