@@ -696,8 +696,19 @@ void MainWindow::do_search(const QString srcText, bool backward) {
 		if (!found) {
 			//##qDebug() << "not found";
 			mdEditor->setTextCursor(cursor);
-		} else
-			g.m_matchedPosition = mdEditor->textCursor().anchor();
+		} else {
+			cursor = mdEditor->textCursor();
+			g.m_matchedPosition = cursor.anchor();
+			QTextBlock b = cursor.block();
+			if( !b.isVisible() ) {
+				while( (b = b.previous()).isValid() ) {
+					if( b.isVisible() ) {
+						do_unfold(b);
+						break;
+					}
+				}
+			}
+		}
 	}
 	g.m_lastSearchedPat = srcText;
 	mdEditor->highlightSearchText(srcText);
