@@ -206,6 +206,75 @@ Creates a hyperlink using the syntax `[Link Text](URL)`.
 Embeds an image into the document by adding an exclamation mark `!` before the link syntax: `![Alt Text](Path or URL to image)`.
 - Example: `![Logo](https://example.com/logo.png)`
 ## viMarkdown Original Features
+## ■ Unique Features of viMarkdown
+
+### Calendar and Diary
+The CalendarBar lets you quickly create, view, and edit daily records, reports, and notes from a calendar.
+- **Create and Open Notes with One Click**
+  - Click a target date on the CalendarBar to open that date's note (`YYYYMMDD`) immediately.
+  - If the file does not exist, the system automatically creates it from a template that contains date headings and sections (`Todo`, `Notes`, etc.).
+- **Color Highlights for Entry Status**
+  - Dates with existing notes show a color highlight on the calendar. You can check your progress at a glance.
+- **Flexible Docking Window**
+  - You can dock the CalendarBar at the bottom, left, or right of the screen, or use it as a floating window.
+  - Show or hide the CalendarBar at any time from the sidebar icon or the menu.
+- **Seamless Link with the Outline Bar**
+  - Headings in the open daily note (`Todo`, project items, etc.) show in the left Outline Bar immediately. You can jump to your target tasks quickly.
+- **Week Numbers and Easy Month Navigation**
+  - The calendar shows week numbers on the left edge.
+  - Click the arrow buttons (◀ / ▶) to switch between past and future months to review or plan your notes.
+
+### SVG Block
+An SVG block lets you write Scalable Vector Graphics (SVG) code directly in Markdown and render shapes or illustrations in the preview.  
+Write SVG tags between \```svg and \``` to show inline diagrams without external image files.
+
+> <svg width="120" height="60" viewBox="0 0 120 60">
+>   <rect x="5" y="5" width="110" height="50" rx="10" fill="#e1f5fe" stroke="#0288d1" stroke-width="2"/>
+>   <text x="60" y="35" font-size="14" text-anchor="middle" fill="#01579b">SVG Block</text>
+> </svg>
+
+　　↓
+
+
+```SVG
+<svg width="120" height="60" viewBox="0 0 120 60">
+  <rect x="5" y="5" width="110" height="50" rx="10" fill="#e1f5fe" stroke="#0288d1" stroke-width="2"/>
+  <text x="60" y="35" font-size="14" text-anchor="middle" fill="#01579b">SVG Block</text>
+</svg>
+```
+### CSV Block
+A CSV block lets you easily write spreadsheet-like tables in Markdown.  
+Write data separated by commas between \```CSV and \```. The preview automatically converts it into a clean table.
+
+> ```CSV
+> Name,Age,Department
+> Taro Tanaka,30,Sales
+> Hanako Sato,25,Development
+> ```
+
+　　↓
+
+```CSV
+Name,Age,Department
+Taro Tanaka,30,Sales
+Hanako Sato,25,Development
+```
+### Live Editing in Preview
+Live Editing lets you edit documents directly in the preview pane.  
+Click text to set focus and edit it immediately without returning to the editor pane.
+
+- **Basic Operations**
+  - Click text in the preview to edit it directly.
+  - You do not need to switch frequently between the editor and preview panes.
+- **Editor Synchronization**
+  - Edits in the preview update the Markdown source instantly.
+  - The cursor position and editing state stay synchronized across both panes.
+- **Checkbox Operations**
+  - Click a checkbox (`[ ]`) in the preview to toggle it to `[x]`.
+  - Manage your tasks using mouse clicks only.
+- **Input Assistance**
+  - Supports keyboard shortcuts (bold, italic, lists, headings, etc.).
+  - Edit documents intuitively while you view the rendered result.
 ## FAQ
 ```CSV
 , Questions & Answers
