@@ -263,6 +263,7 @@ public:
     void	onChangeEditorFontSize(int);
     void	onChangePreviewFontSize(int);
     void	exitInsertMode(QTextCursor& cursor);
+    void	exitVisualMode(QTextCursor& cursor);
     void	do_diff();
     void	do_diff(const QString &fullPath);
     void	insertDummyLines(MarkdownEditor*, QTextCursor &cur, QTextBlock &block, int count);

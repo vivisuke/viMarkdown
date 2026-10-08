@@ -1600,6 +1600,13 @@ void MainWindow::exitInsertMode(QTextCursor& cursor) {
 	//highlightVText(cursor);
 	statusBar()->clearMessage();
 }
+void MainWindow::exitVisualMode(QTextCursor& cursor) {
+	cursor.setPosition(cursor.selectionStart());
+	cursor.clearSelection();
+	gvi.m_vMode = u' ';
+	gvi.m_editor->highlightVText(cursor);
+	statusBar()->clearMessage();
+}
 int do_search_line(const QString &text, int &i, int currentLine, const QTextDocument *doc) {
 	QChar c = text[i++];
 	QString pat;
