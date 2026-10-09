@@ -34,6 +34,8 @@ It supports vi commands for efficient text editing, along with a diff feature fo
 In addition to standard GFM tables, viMarkdown supports CSV-formatted tables for smooth data exchange with other applications. It also includes drawing features such as box-drawing (Keisen) blocks and SVG blocks, making it easy to create class diagrams, UI mockups, and more.
 
 This document explains the basic operations of viMarkdown, which offers these distinctive features.
+
+**Note:** This document is intended to introduce the basic operations and features of viMarkdown and does not strictly define its behavior. In the event of any discrepancies between this document and the actual behavior of the software, the actual behavior of the software takes precedence.
 ## ■ New Features in ver0.3
 ### vi
 Features a vi editing system (Normal, Insert, Visual, and Command-line modes). Supports cursor navigation with `hjkl`, various editing commands (`x`, `dd`, `yy`, `p`, `c`, `s`, `.`), search using `/` and `?`, and ex commands such as `:w`, `:q`, and `:e`. Additionally, a custom Undo/Redo management engine optimized specifically for vi operations has been implemented.
