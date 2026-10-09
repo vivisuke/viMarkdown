@@ -86,6 +86,38 @@ The display language can be changed at any time from the Language Dialog (takes 
   Click a date to create or open that day's daily note, and visually track ToDo task progress.
 - (7) Status Bar
   Displays notifications/messages, cursor position, and character encoding.
+By default, vi commands are disabled in viMarkdown. To enable vi keybindings, select **[Other] > [vi keybindings]** from the menu. You can also view a list of available commands under **[Other] > [Cheatsheet] > [vi]**.
+
+## vi Operations
+### Modes
+This feature includes five modes: **Normal mode**, **Visual mode**, **Insert mode**, **Search mode**, and **Command-line mode**.
+
+* **Normal Mode**
+  Indicated by a half-filled rectangular block cursor. This mode serves as the starting point for operations: press `v` or `V` to switch to Visual mode, or keys such as `i`, `I`, `a`, `A`, `s`, `S`, `c`, or `C` to enter Insert mode. Pressing `/` or `?` switches to Search mode, and `:` switches to Command-line mode.
+* **Visual Mode**
+  Allows you to select text by moving the cursor: character-wise selection with `v`, and line-wise selection with `V`. After making a selection, pressing `c` (change), `d` (delete), or `y` (yank) will edit or copy the selected text and automatically return you to Normal mode. To cancel the selection and return to Normal mode, press the `Esc` key.
+* **Insert Mode**
+  The standard mode for typing text, indicated by an "I-beam" (vertical line) cursor. Press `Esc` to finish entering text and return to Normal mode.
+* **Search Mode**
+  Searches for strings within the text. Type `/` followed by a search pattern and press `Enter` to search forward, or use `?` to search backward. You can also press `↑` or `↓` to navigate through past search history. Press `Esc` to cancel the search and return to Normal mode.
+* **Command-line Mode**
+  Pressing `:` moves input focus to the status bar, putting the editor in an ex command entry state. Type a command and press `Enter` to execute it and return to Normal mode. Press `Esc` to cancel and exit without executing the command.
+
+### Cursor Movement Commands
+In Normal mode, you can navigate text flexibly using only the keyboard.
+Basic directional movements are handled by `h` (left), `j` (down), `k` (up), and `l` (right). To move word-by-word, use `w`, `W`, `b`, `B`, `e`, and `E`.
+For movement within a line, use `0` to jump to the beginning of the line, `^` to jump to the first non-whitespace character, and `$` to jump to the end of the line. For line-wise vertical movement, use `-` (first character of the previous line) and `+` (first character of the next line). In addition, you can repeat the previous search forward with `n`, or backward with `N`.
+
+### Editing Commands
+Commands used to begin entering text or to delete text.
+
+To transition to Insert mode and start typing, use `i` (insert before cursor), `a` (append after cursor), `I` (insert at line start), or `A` (append at line end). You can also use `s` (substitute single character), `S` (substitute entire line), or `C` (change to line end), choosing the command that fits your needs and cursor position.
+
+To delete text quickly while remaining in Normal mode, use `x` to delete the character under the cursor, `X` to delete the character immediately before the cursor, or `D` to delete from the cursor to the end of the line.
+
+### ex Commands
+Commands executed in Command-line mode by pressing `:`.
+Use `:w` to save the document, and `:q` to close it. Batch operations are also supported: `:{range}s/pat/rep/[g]` substitutes text, and `:{range}g/pat/{cmd}` executes a command globally on all lines matching a pattern.
 ## Markdown Syntax Specifications
 ### Block Elements
 Defines structural elements on a line-by-line basis, such as headings and lists.
