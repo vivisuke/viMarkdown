@@ -5,7 +5,7 @@
 [日本語版 (Japanese)](README_ja.md)
 
 **viMarkdown** is a lightweight, high-performance Markdown editor built with **Qt6** and **C++**.  
-It is designed for developers and writers who love efficiency.
+It is designed for Researchers, Engineers, Writers, and STEM Students, who love efficiency.
 
 <!--<img width="700" alt="image" src="./screen_en.png" />-->
 ![image](screen_en.png)
@@ -61,8 +61,8 @@ Prototype development began in December 2025, and development is currently under
 | Ver. | Features / Overview | Schedule |
 | :--- | :--- | :--- |
 | 0.2 | Basic editor features, Basic Markdown, Ruled-line (Keisen) blocks, CSV blocks, Direct editing in the previewer (limited) | Scheduled for release ( windows binary only) by the end of April 2026.|
-| 0.4 | Vi key bindings, Japanese localization for menus and UI, regex search, grep, diff?, SVG blocks, Graph View?, usability and performance improvements, migration to CMake (Qt Creator / Mac / Linux? support) | Dev version starting around May 2026, Alpha in Aug 2026, and Beta in Oct 2026. RC and Stable versions (Win/Mac? binaries) planned for release in Dec 2026. |
-| 0.6 | Math formulas, Mind maps, Page view, rectangular selection, Presentation mode? | TBD |
+| 0.4 | Vi key bindings, Japanese localization for menus and UI, regex search, grep, diff?, SVG blocks,  Calender/Diary, usability and performance improvements, migration to CMake (Qt Creator / Mac / Linux? support) | Dev version starting around May 2026, Alpha in Aug 2026, and Beta in Oct 2026. RC and Stable versions (Win/Mac? binaries) planned for release in Dec 2026. |
+| 0.6 | Math formulas, Mind maps, Page view, Graph View?, rectangular selection?, Presentation mode? | TBD |
 | 0.8 | Mermaid diagrams?  | TBD |
 
 \* Note: This roadmap is current and subject to change without notice at the author's sole discretion.
