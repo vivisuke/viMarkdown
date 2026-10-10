@@ -1166,7 +1166,7 @@ SPR# 状 P Open Close ver     Type  概要
 1151 ◎ C 10/07 10/10 03118│問題│docs/help.md：viMarkdown Original Features に vi コマンドの説明が無い
 1152 ◎ C 10/08 10/08 03118│問題│Esc でビジュアルモードが解除されない
 1153 ◎ C 10/10 10/10 03118│問題│docs/help.md > introduction：note 追加
-1154 ● C 10/10            │問題│
+1154 ◎ C 10/10 10/10 03118│問題│docs/ja/help.md：基本編集 > ナビゲーションの説明文が無い
 1155 ● C 10/10            │問題│
 1156 ● C 10/10            │問題│
 1157 ● C 10/10            │問題│
