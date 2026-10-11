@@ -812,6 +812,7 @@ void MainWindow::setup_connections() {
 	connect(ui->action_UnIndent, &QAction::triggered, this, &MainWindow::onAction_UnIndent);
 	connect(ui->action_Undo, &QAction::triggered, this, &MainWindow::onAction_Undo);
 	connect(ui->action_Redo, &QAction::triggered, this, &MainWindow::onAction_Redo);
+	connect(ui->action_CopyVisibleText, &QAction::triggered, this, &MainWindow::onAction_CopyVisibleText);
 	connect(ui->action_Cut, &QAction::triggered, this, &MainWindow::onAction_Cut);
 	connect(ui->action_SelectAll, &QAction::triggered, this, &MainWindow::onAction_SelectAll);
 	connect(ui->action_Paste, &QAction::triggered, this, &MainWindow::onAction_Paste);
@@ -2661,6 +2662,11 @@ void MainWindow::onAction_Redo() {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
 	docWidget->m_editor->do_redo();
+}
+void MainWindow::onAction_CopyVisibleText() {
+	DocWidget *docWidget = getCurDocWidget();
+	if( docWidget == nullptr ) return;
+	docWidget->m_editor->copyVisibleText();
 }
 void MainWindow::onAction_Cut() {
 	DocWidget *docWidget = getCurDocWidget();

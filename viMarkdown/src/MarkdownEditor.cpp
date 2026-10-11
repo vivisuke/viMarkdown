@@ -440,6 +440,11 @@ MarkdownEditor::MarkdownEditor(const MainWindow* mainWindow, DocWidget* docWidge
 MarkdownEditor::~MarkdownEditor() {
 	delete m_undoMgr;
 }
+void MarkdownEditor::copyVisibleText() {
+	QTextCursor cursor = textCursor();
+	if( !cursor.hasSelection() ) return;
+	QString text;
+}
 void MarkdownEditor::cut() {
 	copy();
 	QTextCursor cursor = textCursor();

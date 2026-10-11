@@ -158,6 +158,7 @@
     <addaction name="separator"/>
     <addaction name="action_Cut"/>
     <addaction name="action_Copy"/>
+    <addaction name="action_CopyVisibleText"/>
     <addaction name="action_Paste"/>
     <addaction name="action_SelectAll"/>
     <addaction name="separator"/>
@@ -1355,6 +1356,14 @@
    </property>
    <property name="toolTip">
     <string>Unfold All</string>
+   </property>
+  </action>
+  <action name="action_CopyVisibleText">
+   <property name="text">
+    <string>Copy &amp;Visible Text</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Alt+C</string>
    </property>
   </action>
  </widget>

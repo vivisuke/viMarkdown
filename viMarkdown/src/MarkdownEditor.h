@@ -266,6 +266,7 @@ public:
 public:
     //using QPlainTextEdit::QPlainTextEdit;
 
+    void	copyVisibleText();
     void	cut();
     void	paste();
 

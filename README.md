@@ -5,9 +5,8 @@
 [日本語版 (Japanese)](README_ja.md)
 
 **viMarkdown** is a lightweight, high-performance Markdown editor built with **Qt6** and **C++**.  
-It is designed for Researchers, Engineers, Writers, and STEM Students, who love efficiency.
+It is designed for researchers, engineers, writers, and STEM students who value efficiency.
 
-<!--<img width="700" alt="image" src="./screen_en.png" />-->
 ![image](screen_en.png)
 
 ## Key Features
@@ -26,7 +25,7 @@ It is designed for Researchers, Engineers, Writers, and STEM Students, who love 
 - **Outline-based Navigation**
   Easily keep track of the overall document flow and quickly jump to target sections, even in long-form writing. This supports highly efficient editing aligned with the document structure.
 - **Custom Blocks & SVG Rendering Support**
-  In addition to text-based "Keisen" (ruled line) and "CSV" blocks, it features built-in support for displaying and rendering SVG, allowing you to represent shapes and diagrams directly via code.
+  In addition to "CSV" and text-based "Keisen" (ruled line) blocks, it features built-in support for displaying and rendering SVG, allowing you to represent shapes and diagrams directly via code.
 - **Native Implementation with Qt6/C++**
   Unlike Electron-based editors, this app is built natively using Qt6 and C++, delivering highly lightweight performance and outstanding responsiveness.
 ## Documents
