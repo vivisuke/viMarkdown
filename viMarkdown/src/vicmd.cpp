@@ -1182,17 +1182,25 @@ doneW:
 		break;
 	case 'n':
 	case 'N':
+		if( g.m_lastSearchedPat.isEmpty() ) return;
 		if( g.m_searchForward && cmd == 'n' || !g.m_searchForward && cmd == 'N' ) {
+			int pos0 = cursor.position();
 			cursor.movePosition(QTextCursor::Right);
 			if( isEditor)
 				docWidget->m_editor->setTextCursor(cursor);
 			do_find();
 			if( g.m_matchedPosition >= 0 )
 				cursor.setPosition(g.m_matchedPosition);
+			else {
+				cursor.setPosition(pos0);
+	            statusBar()->showMessage(tr("Pattern not found: %1").arg(g.m_lastSearchedPat), 5000);
+			}
 		} else {
 			do_find(true);
 			if( g.m_matchedPosition >= 0 )
 				cursor.setPosition(g.m_matchedPosition);
+			else
+	            statusBar()->showMessage(tr("Pattern not found: %1").arg(g.m_lastSearchedPat), 5000);
 		}
 		break;
 	default:

@@ -43,7 +43,7 @@ Please refer to the [LICENSE](LICENSE) file for more details.
   - **For versions below 1.0:** Planned early-bird / developer-support price of 2,000 JPY (US$15) + transaction fee (details to be finalized later).
 ## Development Phases
 
-Prototype development began in December 2025, and development is currently underway toward the release of the v0.4 stable version.
+Prototype development began in December 2025, and development is currently underway toward the release of the v0.3 stable version.
 
 |ver.| Phase | Description | Schedule |
 |---|---|---|---|
@@ -51,8 +51,8 @@ Prototype development began in December 2025, and development is currently under
 |0.3.0xx| dev | Feature implementation & verification | Early May 2026 – |
 |0.3.1xx| alpha | Bug fixes, refactoring, EN/JA localization, documentation, automated test development, minor feature additions as needed | Early Aug 2026 – (**Current**) |
 |0.3.2xx| beta | Bug fixes, minor refactoring, documentation, and automated test improvements | Early Oct 2026 – |
-|0.4.0xx| rc | Only low-risk bug fixes with minimal chance of side effects | Early Dec 2026 – |
-|0.4.1xx| Stable | Maintenance mode | Mid-to-Late Dec 2026 – |
+|0.3.3xx| rc | Only low-risk bug fixes with minimal chance of side effects | Early Dec 2026 – |
+|0.3.3xx| Stable | Maintenance mode | Mid-to-Late Dec 2026 – |
 
 \* Note: The schedule above is current and subject to change without notice at the author's sole discretion.
 ## Roadmap
@@ -60,9 +60,9 @@ Prototype development began in December 2025, and development is currently under
 | Ver. | Features / Overview | Schedule |
 | :--- | :--- | :--- |
 | 0.2 | Basic editor features, Basic Markdown, Ruled-line (Keisen) blocks, CSV blocks, Direct editing in the previewer (limited) | Scheduled for release ( windows binary only) by the end of April 2026.|
-| 0.4 | Vi key bindings, Japanese localization for menus and UI, regex search, grep, diff?, SVG blocks,  Calender/Diary, usability and performance improvements, migration to CMake (Qt Creator / Mac / Linux? support) | Dev version starting around May 2026, Alpha in Aug 2026, and Beta in Oct 2026. RC and Stable versions (Win/Mac? binaries) planned for release in Dec 2026. |
-| 0.6 | Math formulas, Mind maps, Page view, Graph View?, rectangular selection?, Presentation mode? | TBD |
-| 0.8 | Mermaid diagrams?  | TBD |
+| 0.3 | Vi key bindings, Japanese localization for menus and UI, regex search, grep, diff?, SVG blocks,  Calender/Diary, usability and performance improvements, migration to CMake (Qt Creator / Mac / Linux? support) | Dev version starting around May 2026, Alpha in Aug 2026, and Beta in Oct 2026. RC and Stable versions (Win/Mac? binaries) planned for release in Dec 2026. |
+| 0.4 | Math formulas, Mind maps, Page view, Graph View?, rectangular selection?, Presentation mode? | TBD |
+| 0.5 | Mermaid diagrams?  | TBD |
 
 \* Note: This roadmap is current and subject to change without notice at the author's sole discretion.
 

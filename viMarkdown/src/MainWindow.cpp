@@ -667,20 +667,20 @@ void MainWindow::do_replace_all(const QString srcText, const QString dstText) {
 		mdEditor->setTextCursor(cursor);
 	}
 }
-void MainWindow::do_search(const QString srcText, bool backward) {
+bool MainWindow::do_search(const QString srcText, bool backward) {
 	//##qDebug() << "MainWindow::do_search()";
 	DocWidget *docWidget = getCurDocWidget();
-	if( docWidget == nullptr ) return;
+	if( docWidget == nullptr ) return false;
 	MarkdownEditor *mdEditor = docWidget->m_editor;
 	QTextCursor cursor = mdEditor->textCursor();
 	g.m_matchedPosition = -1;
+	bool found = false;
 	if( !srcText.isEmpty() ) {
 		QTextDocument::FindFlags flags;
 		if( backward )
 			flags |= QTextDocument::FindBackward;
 		if( !g.m_ignoreCase )
 			flags |= QTextDocument::FindCaseSensitively;
-		bool found;
 		if( !g.m_regexp )
 			found = mdEditor->find(srcText, flags);
 		else {
@@ -718,11 +718,12 @@ void MainWindow::do_search(const QString srcText, bool backward) {
 	m_searchCB->clear();
     m_searchCB->addItems(m_searchHist);
     m_searchCB->setCurrentText(srcText);
+    return found;
 }
-void MainWindow::do_find(bool backward) {
+bool MainWindow::do_find(bool backward) {
 	//const QString srcText = m_lastSearchedPat;
-	if( g.m_lastSearchedPat.isEmpty() ) return;
-	do_search(g.m_lastSearchedPat, backward);
+	if( g.m_lastSearchedPat.isEmpty() ) return false;
+	return do_search(g.m_lastSearchedPat, backward);
 }
 #if 0
 void MainWindow::onSearchCBActivated() {
