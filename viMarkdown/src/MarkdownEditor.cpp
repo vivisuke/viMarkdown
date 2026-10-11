@@ -444,6 +444,28 @@ void MarkdownEditor::copyVisibleText() {
 	QTextCursor cursor = textCursor();
 	if( !cursor.hasSelection() ) return;
 	QString text;
+	QTextCursor cur = cursor;
+	cur.setPosition(cursor.selectionStart());
+	QTextCursor curEnd = cursor;
+	curEnd.setPosition(cursor.selectionEnd());
+	QTextBlock block = cur.block();
+	QTextBlock blockEnd = curEnd.block();
+	if( block == blockEnd ) {
+		if( block.isVisible() )
+			text = block.text().mid(cur.position() - block.position(), curEnd.position() - cur.position());
+	} else {
+		if( block.isVisible() )
+			text = block.text().mid(cur.position() - block.position()) + "\n";
+		while( (block = block.next()) != blockEnd ) {
+			if( block.isVisible() ) text += block.text() + "\n";
+		}
+		if( curEnd.position() != blockEnd.position() && blockEnd.isVisible() )
+			text += blockEnd.text().left(curEnd.position() - blockEnd.position());
+	}
+	if( !text.isEmpty() ) {
+		QClipboard *clipboard = QGuiApplication::clipboard();
+		clipboard->setText(text);
+	}
 }
 void MarkdownEditor::cut() {
 	copy();
