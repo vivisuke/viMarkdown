@@ -194,6 +194,18 @@ void MainWindow::onImeLocaleChanged() {
 }
 #endif
 void MainWindow::setup_statusBar() {
+	//	/?: 用ラベル
+	m_prefixLabel = new QLabel(this);
+    //m_prefixLabel->setFrame(false); // 外枠の線を消してステータスバーに溶け込ませる
+    m_prefixLabel->setStyleSheet("background: transparent;"); // 背景を透過（ライト/ダークテーマ追従）
+    m_prefixLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    QFont lbldFont = m_prefixLabel->font();
+	lbldFont.setPointSize(12);
+	m_prefixLabel->setFont(lbldFont);
+	//m_prefixLabel->setWidth(16);
+	m_prefixLabel->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Preferred);
+    m_prefixLabel->hide();
+    statusBar()->addWidget(m_prefixLabel);
 	//	/?: 用ラインエディット
 	m_cmdLine = new QLineEdit(this);
     m_cmdLine->setFrame(false); // 外枠の線を消してステータスバーに溶け込ませる

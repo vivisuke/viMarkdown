@@ -2,6 +2,7 @@
 #include <QTextCursor>
 #include <QTextBlock>
 #include <QLineEdit>
+#include <QLabel>
 #include <QComboBox>
 #include <QStatusBar>
 #include <QRegularExpression>
@@ -1299,7 +1300,9 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 		//gvi.m_cmdlineMode = true;
 		gvi.m_prevFocusWidget = cursor.document() == docWidget->m_editor->document() ?
 									(QWidget*)docWidget->m_editor : (QWidget*)docWidget->m_preview;
-		m_cmdLine->setText(gvi.m_pendingCommand);
+		m_prefixLabel->setText(gvi.m_pendingCommand);
+		m_prefixLabel->show();
+		m_cmdLine->setText("");
 		m_cmdLine->show();
 		m_cmdLine->setFocus();
 		if( gvi.m_pendingCommand == ":" ) {
@@ -2037,7 +2040,12 @@ void MainWindow::on_cmdLine_enter() {
     if( docWidget == nullptr ) return;
 	QTextCursor cursor = gvi.m_prevFocusWidget == (QWidget*)docWidget->m_editor ?
 							docWidget->m_editor->textCursor() : docWidget->m_preview->textCursor();
-	do_exCmd(text, cursor);
+	auto t = m_prefixLabel->text();
+	if( t == "/" || t == "?" ) {
+		text = t + text;
+		do_vi_search(text, cursor, gvi.m_repeatCount, docWidget);
+	} else
+		do_exCmd(text, cursor);
 }
 void MainWindow::do_exCmd(const QString &text, QTextCursor& cursor) {
     DocWidget *docWidget = getCurDocWidget();
@@ -2045,14 +2053,15 @@ void MainWindow::do_exCmd(const QString &text, QTextCursor& cursor) {
 	//QTextCursor cursor = gvi.m_prevFocusWidget == (QWidget*)docWidget->m_editor ?
 	//						docWidget->m_editor->textCursor() : docWidget->m_preview->textCursor();
 	QTextDocument *doc = cursor.document();
-	if( text[0] == '/' || text[0] == '?' ) {
-		do_vi_search(text, cursor, gvi.m_repeatCount, docWidget);
-		return;
-	}
-	assert( text[0] == ':' );
+	//if( text[0] == '/' || text[0] == '?' ) {
+	//	do_vi_search(text, cursor, gvi.m_repeatCount, docWidget);
+	//	return;
+	//}
+	//assert( text[0] == ':' );
 	int totalLines = doc->blockCount();
 	if( doc->lastBlock().text().isEmpty() && totalLines > 1 ) --totalLines;
-	int ix = 1;		//	skip ':'
+	//int ix = 1;		//	skip ':'
+	int ix = 0;
 	gvi.m_nRange = 0;
 	gvi.m_rangeStart = 1;
 	if( ix < text.size() && text[ix] == '%' ) {
@@ -2067,7 +2076,7 @@ void MainWindow::do_exCmd(const QString &text, QTextCursor& cursor) {
 			++nr;
 			gvi.m_rangeEnd = parseLineSpec(text, ix, currentLine, totalLines, doc);
 			//##qDebug() << "line = " << gvi.m_rangeEnd;
-			if( ix == 1 ) {
+			if( ix == 0 ) {
 				gvi.m_rangeStart = gvi.m_rangeEnd = currentLine;
 				break;	//	行番号無し
 			}
@@ -2241,6 +2250,7 @@ void MainWindow::on_cmdLine_down() {
 }
 
 void MainWindow::close_cmdLine() {
+	m_prefixLabel->hide();
 	m_cmdLine->hide();
 	gvi.m_currentMode = ViMode::Normal;
 	//gvi.m_cmdlineMode = false;

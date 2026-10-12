@@ -531,6 +531,7 @@ private:
     QStringList	m_searchHist;			//	検索履歴、先頭が最新検索文字列
     QStringList	m_grepDirHist;			//	grep対象ディレクトリ履歴、先頭が最新
     QStringList	m_replaceHist;			//	置換履歴、先頭が最新置換文字列
+    class QLabel		*m_prefixLabel;
     class QLineEdit		*m_cmdLine;		// ステータスバー左端のコマンドライン
     class QLabel		*m_lcLabel;		//	行カラムラベル
     class QLabel		*m_encLabel;	//	文字エンコーディングラベル
