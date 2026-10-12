@@ -96,8 +96,8 @@ void setPhysicalLine(QTextBlock &block, int ln, bool changed) {
     block.setUserState(state);
 }
 #endif
-int visualLineCount(const QTextBlock &block) {
-#if 1
+int visualLineCount(const QTextBlock &block, MarkdownEditor* editor) {
+#if 0
 	int vc = 1;			//	表示行数
 	QTextLayout *layout = block.layout();
 	if( layout != 0 ) vc = layout->lineCount();
@@ -105,7 +105,11 @@ int visualLineCount(const QTextBlock &block) {
 #else
 	QTextLayout *layout = block.layout();
 	//if( layout != 0 ) vc = layout->lineCount();
-	if( layout == nullptr ) {
+	int vc = layout == nullptr ? 0 : layout->lineCount();
+	if( vc == 0 ) {
+#if 1
+		vc = block.document()->documentLayout()->blockBoundingRect(block).height() / editor->fontMetrics().lineSpacing();
+#else
 		qreal width = block.document()->textWidth();
         if (width <= 0) {
             return 1; // 幅が未定なら 1行扱い
@@ -117,15 +121,17 @@ int visualLineCount(const QTextBlock &block) {
             line.setLineWidth(width);
         }
         layout->endLayout();
+        vc = layout->lineCount();
+#endif
 	}
-	return qMax(1, layout->lineCount());
+	return qMax(1, vc);
 #endif
 }
-int visualLineCount(QTextDocument *doc) {
+int visualLineCount(QTextDocument *doc, MarkdownEditor *editor) {
 	int vc = 0;
 	QTextBlock block = doc->begin();
 	while( block.isValid() ) {
-		vc += visualLineCount(block);
+		vc += visualLineCount(block, editor);
 		block = block.next();
 	}
 	return vc;
@@ -242,7 +248,7 @@ void updateMapSub(QPainter &p, int x, QTextDocument* doc, MarkdownEditor* editor
 			else if( d == CHANGED_LINE ) col = QColor("#ffffa0");
 		}
 		p.setPen(col);
-		int vc = visualLineCount(block);
+		int vc = visualLineCount(block, editor);
 		for(int k = 0; k < vc; ++k) {
 			p.drawLine(x, y, x+MINMAP_WIDTH/2-1, y);
 			++y;
@@ -259,7 +265,7 @@ void MiniMap::updateMap(QTextDocument* doc1, MarkdownEditor* editor1, QTextDocum
 	updateMapSub(p, MINMAP_WIDTH/2, doc2, editor2);
 	p.setBrush(QColor("#e8e8e8"));
 	//p.drawRect(0, doc1->blockCount(), MINMAP_WIDTH, ht - doc1->blockCount());
-	p.drawRect(0, visualLineCount(doc1), MINMAP_WIDTH, ht - visualLineCount(doc1));
+	p.drawRect(0, visualLineCount(doc1, editor1), MINMAP_WIDTH, ht - visualLineCount(doc1, editor1));
 }
 #endif
 // -------------------------------------------------------------
@@ -340,6 +346,8 @@ void MainWindow::do_diff(const QString &fullPath) {
 	docWidget->m_editor->setHighlightMarkdown(false);
 	//docWidget->m_editor->setLineWrapMode(QPlainTextEdit::NoWrap);
 	docWidget->m_editor->rehighlight();
+	//##docWidget->m_editor->document()->adjustSize();
+	//##docWidget->m_diffview->document()->adjustSize();
 	docWidget->updatePanes();
 	//docWidget->m_editor->updateLnAreaRaw();
     ui->action_DiffMode->setChecked(true);
@@ -708,7 +716,7 @@ void MainWindow::applyDeleteHunk(DocWidget* docWidget,
             do_output(QString("- %1 0 '%2'\n").arg(ln).arg(lines1[ln - 1]));
 
         setPhysicalLine(docWidget->m_editor, block1, ++ln1, ADDED_LINE);
-        int vc = qMax(1, visualLineCount(block1));
+        int vc = qMax(1, visualLineCount(block1, docWidget->m_editor));
         block1 = block1.next();
 
         // 右側にダミー行を挿入
@@ -727,7 +735,7 @@ void MainWindow::applyAddHunk(DocWidget* docWidget,
         do_output(QString("+ 0 %1 '%2'\n").arg(ln).arg(lines2[ln - 1]));
 
         setPhysicalLine(docWidget->m_diffview, block2, ++ln2, ADDED_LINE);
-        int vc = qMax(1, visualLineCount(block2));
+        int vc = qMax(1, visualLineCount(block2, docWidget->m_diffview));
         block2 = block2.next();
 
         // 左側にダミー行を挿入
@@ -756,7 +764,7 @@ void MainWindow::applyModifyHunk(DocWidget* docWidget,
     int totalVc1 = 0;
     for (int ln = diffLn1; ln < endLn1; ++ln) {
         setPhysicalLine(docWidget->m_editor, block1, ++ln1, CHANGED_LINE);
-        totalVc1 += qMax(1, visualLineCount(block1));
+        totalVc1 += qMax(1, visualLineCount(block1, docWidget->m_editor));
         block1 = block1.next();
     }
 
@@ -764,7 +772,7 @@ void MainWindow::applyModifyHunk(DocWidget* docWidget,
     int totalVc2 = 0;
     for (int ln = diffLn2; ln < endLn2; ++ln) {
         setPhysicalLine(docWidget->m_diffview, block2, ++ln2, CHANGED_LINE);
-        totalVc2 += qMax(1, visualLineCount(block2));
+        totalVc2 += qMax(1, visualLineCount(block2, docWidget->m_diffview));
         block2 = block2.next();
     }
 	qDebug() << "totalVc1 = " << totalVc1 << ", totalVc2 = " << totalVc2;
