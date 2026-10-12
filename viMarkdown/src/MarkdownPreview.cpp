@@ -825,10 +825,12 @@ void MarkdownPreview::insertMarkdown(QTextDocument *doc, int bn0, int nBlocks, /
 		} else {
 			//printCharFlags(srcBlock);
 			if( isUnderlineHeading(buf) ) {
-				auto prev = m_bodyList.back();
-				m_bodyList.pop_back();
-				do_body(srcBlock0, cursor);
-				m_bodyList.push_back(prev);
+				if( !m_bodyList.isEmpty() ) {
+					auto prev = m_bodyList.back();
+					m_bodyList.pop_back();
+					do_body(srcBlock0, cursor);
+					m_bodyList.push_back(prev);
+				}
 				if( do_underlineHeading(cursor, buf) )
 					continue;		//	アンダーライン見出しだった場合
 			}
