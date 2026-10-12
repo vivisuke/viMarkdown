@@ -1306,9 +1306,9 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 		m_cmdLine->show();
 		m_cmdLine->setFocus();
 		if( gvi.m_pendingCommand == ":" ) {
-			gvi.m_exhist.push_front(":");
+			//gvi.m_exhist.push_front(":");
 			while( gvi.m_exhist.size() > 64 ) gvi.m_exhist.pop_back();
-			gvi.m_exhist_ix = 0;
+			gvi.m_exhist_ix = -1;
 		}
 		return;
 	} else if( gvi.m_fFtT == 'f' || gvi.m_fFtT == 'F' || gvi.m_fFtT == 't' || gvi.m_fFtT == 'T' ) {
@@ -2098,8 +2098,10 @@ void MainWindow::do_exCmd(const QString &text, QTextCursor& cursor) {
 			docWidget->m_editor->setTextCursor(cursor);
 		else
 			docWidget->m_preview->setTextCursor(cursor);
-		gvi.m_exhist[0] = text;
-		gvi.m_exhist_ix = 0;
+		gvi.m_exhist.push_front(text);
+		//if( gvi.m_exhist.isEmpty() ) gvi.m_exhist.resize(1);
+		//gvi.m_exhist[0] = text;
+		gvi.m_exhist_ix = -1;
 			return;
 	}
 	if( gvi.m_rangeStart > gvi.m_rangeEnd )
@@ -2211,8 +2213,10 @@ void MainWindow::do_exCmd(const QString &text, int ix, /*QString cmd, QChar nch,
 	} else {
 		statusBar()->showMessage(tr("illegal command."), 5000);
 	}
-	gvi.m_exhist[0] = text;
-	gvi.m_exhist_ix = 0;
+	gvi.m_exhist.push_front(text);
+	//if( gvi.m_exhist.isEmpty() ) gvi.m_exhist.resize(1);
+	//gvi.m_exhist[0] = text;
+	gvi.m_exhist_ix = -1;
 }
 void MainWindow::on_cmdLine_escape() {
 	//##qDebug() << "MainWindow::on_cmdLine_escape()";
@@ -2220,8 +2224,8 @@ void MainWindow::on_cmdLine_escape() {
 }
 void MainWindow::on_cmdLine_up() {	//	コマンドライン履歴
 	//##qDebug() << "MainWindow::on_cmdLine_up()";
-	if( m_cmdLine->text().isEmpty() ) return;
-	QChar ch = m_cmdLine->text()[0];
+	//##if( m_cmdLine->text().isEmpty() ) return;
+	QChar ch = m_prefixLabel->text()[0];
 	if( ch == ':' ) {
 		if( gvi.m_exhist_ix + 1 < gvi.m_exhist.size() ) {
 			if( gvi.m_exhist_ix == 0 ) gvi.m_exhist[0] = m_cmdLine->text();
@@ -2230,21 +2234,21 @@ void MainWindow::on_cmdLine_up() {	//	コマンドライン履歴
 	} else if( ch == '/' || ch == '?' ) {
 		if( gvi.m_exhist_ix + 1 < m_searchHist.size() ) {
 			if( gvi.m_exhist_ix == 0 ) m_searchHist[0] = m_cmdLine->text();
-			m_cmdLine->setText(ch + m_searchHist[++gvi.m_exhist_ix]);
+			m_cmdLine->setText(/*ch +*/ m_searchHist[++gvi.m_exhist_ix]);
 		}
 	}
 }
 void MainWindow::on_cmdLine_down() {
 	//##qDebug() << "MainWindow::on_cmdLine_down()";
-	if( m_cmdLine->text().isEmpty() ) return;
-	QChar ch = m_cmdLine->text()[0];
+	//##if( m_cmdLine->text().isEmpty() ) return;
+	QChar ch = m_prefixLabel->text()[0];
 	if( ch == ':' ) {
 		if( gvi.m_exhist_ix > 0 ) {
 			m_cmdLine->setText(gvi.m_exhist[--gvi.m_exhist_ix]);
 		}
 	} else if( ch == '/' || ch == '?' ) {
 		if( gvi.m_exhist_ix > 0 ) {
-			m_cmdLine->setText(ch + m_searchHist[--gvi.m_exhist_ix]);
+			m_cmdLine->setText(/*ch +*/ m_searchHist[--gvi.m_exhist_ix]);
 		}
 	}
 }
