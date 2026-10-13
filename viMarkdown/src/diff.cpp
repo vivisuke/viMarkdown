@@ -850,11 +850,16 @@ void MainWindow::applyDiffToDocuments(
 
     cur1.endEditBlock();
     cur2.endEditBlock();
+    docWidget->m_editor->setTextCursor(cur1);
+    docWidget->m_diffview->setTextCursor(cur2);
 }
 void MainWindow::do_diff() {
 	if (m_processing != 0) return;
     DocWidget *docWidget = getCurDocWidget();
     if (!docWidget || !docWidget->m_diffMode) return;
+    QTextCursor cursor = docWidget->m_editor->textCursor();
+    int pos0 = cursor.position();
+    qDebug() << "cursor.position() = " << pos0 << ", blockNumber() = " << cursor.blockNumber();;
 
     ++m_processing;
     //m_diffBlockNumbers.clear();
@@ -899,4 +904,8 @@ void MainWindow::do_diff() {
     assert( vbn2.size() == flg2.size() );
 
     --m_processing;
+
+    cursor = docWidget->m_editor->textCursor();
+    pos0 = cursor.position();
+    qDebug() << "cursor.position() = " << pos0 << ", blockNumber() = " << cursor.blockNumber();;
 }
