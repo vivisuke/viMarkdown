@@ -1589,7 +1589,7 @@ void MarkdownEditor::reflectWordToPeer(const QTextBlock &block, int start, int l
     }
     // 相手側のエディタ（peer）のカーソルをターゲット部分に動かして置換
     QTextCursor cur2(block2);
-    cur2.beginEditBlock(); // ★Undo履歴を1ステップにまとめる
+    cur2.beginEditBlock(); // Undo履歴を1ステップにまとめる
 
     // 相手の置換ターゲット範囲を選択
     cur2.setPosition(block2.position() + peerStart);
@@ -3016,33 +3016,43 @@ void drawTextCursor(QWidget *viewport, QPainter& p, QTextCursor cursor, QRect re
 void MarkdownEditor::paintEvent(QPaintEvent *e) {
 	if( m_diffMode ) {
 		QPainter p(viewport());
+#if 1
+		QTextBlock b = firstVisibleBlock();
+        // 1. 最初のブロックだけ、画面上の開始Y座標を正確に計算する
+        qreal top = blockBoundingGeometry(b).translated(contentOffset()).top();
+        qreal bottom = top + blockBoundingRect(b).height();
+        // 画面の表示範囲内だけループ
+        while (b.isValid() && top <= viewport()->height()) {
+            if (b.isVisible() && bottom >= 0) {
+                
+                if (isDummyLine(this, b) || hasDiff(this, b)) {
+                    p.setPen(Qt::transparent);
+                    // 2. top と bottom から正確な矩形を作る（折り返し行の高さも完全反映される）
+                    QRectF g(0, top, viewport()->width(), bottom - top);
+                    p.fillRect(g, QColor(isDummyLine(this, b) ? "#e8e8e8" : 
+                                         getDiff(this, b) == ADDED_LINE ? "#ffecec" : "#ffffec"));
+                }
+            }
+            // 3. 次の行のY座標は、前の行の底（bottom）からスタートして高さを足す
+            b = b.next();
+            top = bottom;
+            bottom = top + blockBoundingRect(b).height();
+        }
+#else
 		for (QTextBlock b = firstVisibleBlock(); b.isValid(); b = b.next()) {
 			QRectF r = blockBoundingRect(b).translated(contentOffset());
 			if (r.top() > viewport()->height()) break; // 画面外なら終了
 			if( isDummyLine(this, b) || hasDiff(this, b) ) {
 				p.setPen(Qt::transparent);
-				auto g = blockBoundingGeometry(b).translated(0, 3);
+				//auto g = blockBoundingGeometry(b).translated(0, 3);
 				//g.setY(g.y() + 2);
+				QRectF g = r;
+				g.setLeft(0);
+				g.setWidth(viewport()->width());
 				p.fillRect(g, QColor(isDummyLine(this, b) ? "#e8e8e8" : getDiff(this, b) == ADDED_LINE ? "#ffecec" : "#ffffec"));
-#if 0
-				if( getDiff(b) == CHANGED_LINE ) {
-					const auto *userData = dynamic_cast<const DiffBlockUserData*>(b.userData());
-		            if (userData) {
-		                QTextCharFormat format;
-		                QTextCursor cur(b);
-		                for (const auto &range : userData->ranges) {
-							cur.setPosition(b.position() + range.start);
-							cur.setPosition(b.position() + range.start + range.length, QTextCursor::KeepAnchor);
-							QAbstractTextDocumentLayout *layout = document()->documentLayout();
-							QAbstractTextDocumentLayout::Selection sel;
-							sel.cursor = cur;
-							auto rects = layout->selectionRects(sel);
-						}
-		            }
-				}
-#endif
 			}
 		}
+#endif
 	}
 	MarkdownBaseEdit::paintEvent(e); // テキストを普通に描画
 
@@ -3180,7 +3190,7 @@ void MarkdownEditor::highlightSearchText(const QString &searchText) {
                 selection.format = format;
                 selection.cursor = cursor;
                 extraSelections.append(selection);
-                // ★重要：無限ループ防止対策
+                // 重要：無限ループ防止対策
                 // 「.*」や「^」などの空文字（長さ0）にマッチする正規表現が入力された場合、
                 // カーソル位置が進まずに無限ループ（フリーズ）になるのを防ぐため、強制的に1文字進めます。
                 if (cursor.anchor() == cursor.position()) {
