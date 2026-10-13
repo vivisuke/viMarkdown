@@ -857,9 +857,9 @@ void MainWindow::do_diff() {
 	if (m_processing != 0) return;
     DocWidget *docWidget = getCurDocWidget();
     if (!docWidget || !docWidget->m_diffMode) return;
-    QTextCursor cursor = docWidget->m_editor->textCursor();
-    int pos0 = cursor.position();
-    qDebug() << "cursor.position() = " << pos0 << ", blockNumber() = " << cursor.blockNumber();;
+    QTextCursor cursor0 = docWidget->m_editor->textCursor();
+    //int pos0 = cursor.position();
+    //qDebug() << "cursor.position() = " << pos0 << ", blockNumber() = " << cursor.blockNumber();;
 
     ++m_processing;
     //m_diffBlockNumbers.clear();
@@ -905,7 +905,8 @@ void MainWindow::do_diff() {
 
     --m_processing;
 
-    cursor = docWidget->m_editor->textCursor();
-    pos0 = cursor.position();
-    qDebug() << "cursor.position() = " << pos0 << ", blockNumber() = " << cursor.blockNumber();;
+    docWidget->m_editor->setTextCursor(cursor0);
+    //cursor = docWidget->m_editor->textCursor();
+    //pos0 = cursor.position();
+    //qDebug() << "cursor.position() = " << pos0 << ", blockNumber() = " << cursor.blockNumber();;
 }
