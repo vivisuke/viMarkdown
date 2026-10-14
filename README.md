@@ -49,8 +49,8 @@ Prototype development began in December 2025, and development is currently under
 |---|---|---|---|
 |0.2.xxx| Stable | Maintenance mode | Late Apr 2026 – |
 |0.3.0xx| dev | Feature implementation & verification | Early May 2026 – |
-|0.3.1xx| alpha | Bug fixes, refactoring, EN/JA localization, documentation, automated test development, minor feature additions as needed | Early Aug 2026 – (**Current**) |
-|0.3.2xx| beta | Bug fixes, minor refactoring, documentation, and automated test improvements | Early Oct 2026 – |
+|0.3.1xx| alpha | Bug fixes, refactoring, EN/JA localization, documentation, automated test development, minor feature additions as needed | Early Aug 2026 – |
+|0.3.2xx| beta | Bug fixes, minor refactoring, documentation, and automated test improvements | Early Oct 2026 – (**Current**) |
 |0.3.3xx| rc | Only low-risk bug fixes with minimal chance of side effects | Early Dec 2026 – |
 |0.3.3xx| Stable | Maintenance mode | Mid-to-Late Dec 2026 – |
 
