@@ -2929,7 +2929,6 @@ const QList<ViTestCase> viTestCases = {
             "p",  "first\n┃first\nsecond\n" // 下の行に貼り付けられ、カーソルは新しい行へ
         }
     },
-
     // 1行ヤンクして上に貼り付け (yy -> P)
     { "Yank line (yy) - Put above (P)",
         "first\n┃second\n",
@@ -2938,7 +2937,6 @@ const QList<ViTestCase> viTestCases = {
             "P",  "first\n┃second\nsecond\n" // ※実装に応じて "first\n ┃second\nsecond\n"
         }
     },
-
     // 行の途中にカーソルがあっても行全体をヤンクし、カーソル位置が動かないこと
     { "Yank line (yy) - Cursor in middle of line",
         "he┃llo\nworld\n",
@@ -2947,7 +2945,6 @@ const QList<ViTestCase> viTestCases = {
             "p",  "hello\n┃hello\nworld\n"
         }
     },
-
     // 最終行でのヤンクと貼り付け
     { "Yank line (yy) - At last line",
         "first\n┃last\n",
@@ -2956,13 +2953,39 @@ const QList<ViTestCase> viTestCases = {
             "p",  "first\nlast\n┃last\n"
         }
     },
-
     // カウント付きヤンク (2yy)
     { "Yank line (yy) - With count (2yy)",
         "┃line1\nline2\nline3\n",
         {
             "2yy", "┃line1\nline2\nline3\n", // 2行分ヤンク
             "p",   "line1\n┃line1\nline2\nline2\nline3\n" // 下に2行貼り付け
+        }
+    },
+    // 空行のヤンクと貼り付け
+    { "Yank line (yy) - Empty line",
+        "first\n┃\nthird\n",
+        {
+            "yy", "first\n┃\nthird\n",
+            "p",  "first\n\n┃\nthird\n"
+        }
+    },
+    // インデントを持つ行のヤンクと貼り付け
+    // ※ linewise put は通常、貼り付けた行のインデント先頭（非空白文字）にカーソルが乗る
+    { "Yank line (yy) - Preserve indentation",
+        "┃  indented\nnext\n",
+        {
+            "yy", "┃  indented\nnext\n",
+            "p",  "  indented\n  ┃indented\nnext\n"
+        }
+    },
+    // ドットリピート (.) の対象外（ヤンクはテキストを変更しないため、直前の変更を繰り返す）
+    // 例: dd で削除した後、yy して . を押しても、yy ではなく dd が繰り返される
+    { "Yank line (yy) - Does not overwrite dot repeat",
+        "┃line1\nline2\nline3\nline4\n",
+        {
+            "dd", "┃line2\nline3\nline4\n", // 1行削除（直前の変更は dd）
+            "yy", "┃line2\nline3\nline4\n", // ヤンク（変更ではない）
+            ".",  "┃line3\nline4\n"        // . は yy ではなく直前の dd が実行される
         }
     },
 
@@ -2974,7 +2997,6 @@ const QList<ViTestCase> viTestCases = {
             "p", "alpha\n┃alpha\nbeta\n"
         }
     },
-
     // Y コマンドのカウント付き (2Y)
     { "Yank line (Y) - With count (2Y)",
         "┃one\ntwo\nthree\n",
@@ -2983,34 +3005,28 @@ const QList<ViTestCase> viTestCases = {
             "p",  "one\n┃one\ntwo\ntwo\nthree\n"
         }
     },
-
-    // 空行のヤンクと貼り付け
-    { "Yank line (yy) - Empty line",
-        "first\n┃\nthird\n",
+    // Y コマンド（末尾改行のない EOF 行での行ヤンク）
+    { "Yank line (Y) - At EOF line without trailing newline",
+        "alpha\n┃beta", // beta の末尾に \n がない状態
         {
-            "yy", "first\n┃\nthird\n",
-            "p",  "first\n\n┃\nthird\n"
+            "Y", "alpha\n┃beta", // ヤンク後もテキスト・カーソル位置は不変
+            "p", "alpha\nbeta\n┃beta" // 下に新しい行としてペーストされ、末尾に改行が付与される
         }
     },
-
-    // インデントを持つ行のヤンクと貼り付け
-    // ※ linewise put は通常、貼り付けた行のインデント先頭（非空白文字）にカーソルが乗る
-    { "Yank line (yy) - Preserve indentation",
-        "┃  indented\nnext\n",
+    // Y コマンド（空の EOF 行での行ヤンク）
+    { "Yank line (Y) - Empty EOF line",
+        "alpha\n┃",
         {
-            "yy", "┃  indented\nnext\n",
-            "p",  "  indented\n  ┃indented\nnext\n"
+            "Y", "alpha\n┃",       // テキスト・カーソル位置は不変（バッファには "\n" が入る）
+            "p", "alpha\n\n┃"      // 下に空行が挿入され、カーソルは新しく作られた空行へ
         }
     },
-
-    // ドットリピート (.) の対象外（ヤンクはテキストを変更しないため、直前の変更を繰り返す）
-    // 例: dd で削除した後、yy して . を押しても、yy ではなく dd が繰り返される
-    { "Yank line (yy) - Does not overwrite dot repeat",
-        "┃line1\nline2\nline3\nline4\n",
+    // Y コマンド（完全に空のファイルでの行ヤンク）
+    { "Yank line (Y) - Completely empty document",
+        "┃",
         {
-            "dd", "┃line2\nline3\nline4\n", // 1行削除（直前の変更は dd）
-            "yy", "┃line2\nline3\nline4\n", // ヤンク（変更ではない）
-            ".",  "┃line3\nline4\n"        // . は yy ではなく直前の dd が実行される
+            "Y", "┃",              // バッファには "\n" が入る
+            "p", "\n┃"             // 下に空行が挿入される（結果として2行の空行になる）
         }
     },
     //----------------------------------------------------------------------

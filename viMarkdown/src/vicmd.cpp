@@ -435,6 +435,37 @@ void MainWindow::do_vi_delete(QChar cmd, QTextCursor& cursor, int rcnt) {		//	x 
 	gvi.m_isEditCommand = true;
 }
 void do_yank_line(QTextCursor& cursor, int rcnt) {
+#if 1
+	auto pos = cursor.position();
+    // 1. カレントブロックの先頭へ移動
+    cursor.movePosition(QTextCursor::StartOfBlock);
+    // 2. rcnt 分だけブロックを進める（末尾に達した場合はそこまで）
+    bool moved = false;
+    for (int i = 0; i < rcnt; ++i) {
+        if (cursor.movePosition(QTextCursor::NextBlock, QTextCursor::KeepAnchor)) {
+            moved = true;
+        } else {
+            // NextBlock が失敗した＝最終ブロックに達している
+            // そのブロックの末尾（ドキュメントの本当の末尾）まで選択を伸ばす
+            cursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
+            break;
+        }
+    }
+    // 3. テキストを取得（Qt はブロック区切りに U+2029 を使うため \n に置換）
+    QString text = cursor.selectedText();
+    text.replace(QChar::ParagraphSeparator, '\n');
+    // 4. 行ヤンク(linewise)なので、必ず末尾を '\n' で終わらせる
+    // （最終行を含んでいる場合、selectedText() には末尾改行が含まれないため）
+    if (!text.endsWith('\n')) {
+        text += '\n';
+    }
+    // 5. バッファに格納
+    gvi.m_yankBuffer = text;
+    gvi.m_linewiseYanked = true;
+    // 6. 選択を解除して元のカーソル位置に戻す
+    cursor.clearSelection();
+    cursor.setPosition(pos);
+#else
 	auto pos = cursor.position();
 	cursor.movePosition(QTextCursor::StartOfBlock);
 	cursor.movePosition(QTextCursor::NextBlock, QTextCursor::KeepAnchor, rcnt);
@@ -445,6 +476,7 @@ void do_yank_line(QTextCursor& cursor, int rcnt) {
 		cursor.clearSelection();
 	}
 	cursor.setPosition(pos);
+#endif
 }
 int heading_level(QTextBlock block) {
 	QString text = block.text().trimmed();
