@@ -3010,7 +3010,7 @@ const QList<ViTestCase> viTestCases = {
         "alpha\n┃beta", // beta の末尾に \n がない状態
         {
             "Y", "alpha\n┃beta", // ヤンク後もテキスト・カーソル位置は不変
-            "p", "alpha\nbeta\n┃beta" // 下に新しい行としてペーストされ、末尾に改行が付与される
+            "p", "alpha\nbeta\n┃beta\n" // 下に新しい行としてペーストされ、末尾に改行が付与される
         }
     },
     // Y コマンド（空の EOF 行での行ヤンク）
@@ -3018,7 +3018,7 @@ const QList<ViTestCase> viTestCases = {
         "alpha\n┃",
         {
             "Y", "alpha\n┃",       // テキスト・カーソル位置は不変（バッファには "\n" が入る）
-            "p", "alpha\n\n┃"      // 下に空行が挿入され、カーソルは新しく作られた空行へ
+            "p", "alpha\n\n┃\n"      // 下に空行が挿入され、カーソルは新しく作られた空行へ
         }
     },
     // Y コマンド（完全に空のファイルでの行ヤンク）
@@ -3026,7 +3026,16 @@ const QList<ViTestCase> viTestCases = {
         "┃",
         {
             "Y", "┃",              // バッファには "\n" が入る
-            "p", "\n┃"             // 下に空行が挿入される（結果として2行の空行になる）
+            "p", "\n┃\n"             // 下に空行が挿入される（結果として2行の空行になる）
+        }
+    },
+    // 途中行をヤンクし、末尾改行のない EOF 行で linewise p するテスト
+    { "Linewise put (p) - At EOF line without trailing newline",
+        "┃abc\nxyz",   // 1行目にカーソルがあり、最終行(xyz)には末尾改行がない
+        {
+            "Y", "┃abc\nxyz",      // 1行目を linewise ヤンク
+            "j", "abc\n┃xyz",      // EOF 行へ移動
+            "p", "abc\nxyz\n┃abc\n"  // xyz の下に新しい行として貼り付けられ、カーソルは新行へ
         }
     },
     //----------------------------------------------------------------------

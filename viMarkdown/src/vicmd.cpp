@@ -1417,6 +1417,41 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 			break;
 		case 'p':
 			if( !gvi.m_yankBuffer.isEmpty() ) {
+#if 1
+				int insertPos = -1;
+				if( gvi.m_linewiseYanked ) {
+					// 次のブロックへ移動を試みる
+					if( !cursor.movePosition(QTextCursor::NextBlock) ) {
+						// 【EOF行の場合】NextBlock が失敗するので、末尾に改行を足して新しい行を作る
+						cursor.movePosition(QTextCursor::EndOfBlock);
+						if( gvi.m_editor != nullptr ) {
+							gvi.m_editor->do_insertText(cursor, "\n");
+						} else {
+							cursor.insertText("\n");
+						}
+						// 改行を入れた直後の位置（＝新しく作られた行の先頭）を記録
+						insertPos = cursor.position();
+					} else {
+						// 【通常行の場合】次の行の先頭位置を記録
+						insertPos = cursor.position();
+					}
+				} else {
+					cursor.movePosition(QTextCursor::Right);
+					insertPos = cursor.position();
+				}
+				// テキスト挿入
+				if( gvi.m_editor != nullptr )
+					gvi.m_editor->do_insertText(cursor, gvi.m_yankBuffer.repeated(rcnt));
+				else
+					cursor.insertText(gvi.m_yankBuffer.repeated(rcnt));
+				// ペースト後のカーソル位置調整
+				if( gvi.m_linewiseYanked ) {    // 行単位ペースト
+					cursor.setPosition(insertPos);
+					hat(cursor); // 行頭（または最初の非空白文字）へ
+				} else {        // 文字単位ペースト
+					cursor.movePosition(QTextCursor::Left);
+				}
+#else
 				if( gvi.m_linewiseYanked ) {
 					cursor.movePosition(QTextCursor::NextBlock);
 					//do_openline(cursor, false);
@@ -1432,6 +1467,7 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 					hat(cursor);
 				} else		//	文字単位ペースト
 					cursor.movePosition(QTextCursor::Left);
+#endif
 			}
 			break;
 		case 'P':
