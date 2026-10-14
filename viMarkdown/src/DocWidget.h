@@ -11,9 +11,12 @@
 #define		CODE_IMAGE		0xfffc		//	プレビュー：画像アイコン
 #define		LINE_SEPARATOR	0x2028		//	リスト文字列内改行コード
 
-#define		DUMMY_LINE		(-1)		//	for m_diffBlockNumbers[]
-#define		ADDED_LINE		1
-#define		CHANGED_LINE	2
+#define		DUMMY_LINE_NUM	(-1)		//	for m_diffBlockNumbers[]
+#define		EQU_LINE		0
+#define		DELETED_LINE	1
+#define		ADDED_LINE		2
+#define		CHANGED_LINE	3
+#define		PADDING_LINE	4			//	変更行の行数を合わせるための行
 
 //const int MINMAP_WIDTH = 40;
 

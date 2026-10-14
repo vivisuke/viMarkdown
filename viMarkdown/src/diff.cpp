@@ -63,7 +63,7 @@ void setDummyLine(MarkdownEditor* editor, QTextBlock block) {
     auto vbn = editor->diffBlockNumbers();
     if( vbn.size() < block.blockNumber() + 1 )
     	vbn.resize(block.blockNumber() + 1);
-    vbn[block.blockNumber()] = DUMMY_LINE;
+    vbn[block.blockNumber()] = DUMMY_LINE_NUM;
     //block.setUserState(0);
 }
 
@@ -643,7 +643,7 @@ void buildVcTable(QTextDocument *doc, std::vector<int>& vc) {
 	}
 }
 #endif
-void MainWindow::insertDummyLines(MarkdownEditor* editor, QTextCursor &cur, QTextBlock &block, int count) {
+void MainWindow::insertDummyLines(MarkdownEditor* editor, QTextCursor &cur, QTextBlock &block, int count, bool deleted) {
 	if (count <= 0) return;
 #if 1
     QTextDocument* doc = cur.document();
@@ -672,8 +672,8 @@ void MainWindow::insertDummyLines(MarkdownEditor* editor, QTextCursor &cur, QTex
     if (!atEnd) {
         for (int i = 0; i < count && dummy.isValid(); ++i) {
             editor->incNDummyLines();
-            editor->diffBlockNumbers().push_back(DUMMY_LINE);
-            editor->diffFlags().push_back(0);
+            editor->diffBlockNumbers().push_back(DUMMY_LINE_NUM);
+            editor->diffFlags().push_back(deleted ? DELETED_LINE : PADDING_LINE);
             setDummyLine(editor, dummy);
             dummy = dummy.next();
         }
@@ -683,8 +683,8 @@ void MainWindow::insertDummyLines(MarkdownEditor* editor, QTextCursor &cur, QTex
         dummy = dummy.next(); // 挿入した改行の次のブロックからがダミー
         for (int i = 0; i < count && dummy.isValid(); ++i) {
             editor->incNDummyLines();
-            editor->diffBlockNumbers().push_back(DUMMY_LINE);
-            editor->diffFlags().push_back(0);
+            editor->diffBlockNumbers().push_back(DUMMY_LINE_NUM);
+            editor->diffFlags().push_back(deleted ? DELETED_LINE : PADDING_LINE);
             setDummyLine(editor, dummy);
             dummy = dummy.next();
         }
@@ -779,9 +779,9 @@ void MainWindow::applyModifyHunk(DocWidget* docWidget,
     // 高さの差をダミー行で埋める
     int d = totalVc1 - totalVc2;
     if (d > 0) {
-        insertDummyLines(docWidget->m_diffview, cur2, block2, d);
+        insertDummyLines(docWidget->m_diffview, cur2, block2, d, false);
     } else if (d < 0) {
-        insertDummyLines(docWidget->m_editor, cur1, block1, -d);
+        insertDummyLines(docWidget->m_editor, cur1, block1, -d, false);
     }
 }
 void MainWindow::applyDiffToDocuments(

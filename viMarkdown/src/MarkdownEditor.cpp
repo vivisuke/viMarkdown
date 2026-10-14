@@ -31,6 +31,11 @@
 extern Global g;
 extern ViStatus gvi;
 
+bool isPaddingLine(MarkdownEditor* editor, const QTextBlock &block) {
+    const auto &flgs = editor->diffFlags();
+    int bn = block.blockNumber();
+    return bn < flgs.size() && flgs[bn] == PADDING_LINE;
+}
 bool isDummyLine(MarkdownEditor* editor, const QTextBlock &block);
 int lineNumber(MarkdownEditor* editor, const QTextBlock &block);
 bool hasDiff(MarkdownEditor* editor, const QTextBlock &block);
@@ -3295,10 +3300,14 @@ void MarkdownEditor::lnAreaPaintEvent(QPaintEvent *event) {
 								 Qt::AlignLeft, isDiffView ? "≪" : "≫");
 				}
 #else
-				if( isDummyLine(this, block) && (!block.previous().isValid() || !isDummyLine(this, block.previous())) ) {
+				if( isDummyLine(this, block) && !isPaddingLine(this, block) && (!block.previous().isValid() ||
+					!isDummyLine(this, block.previous()) && !isPaddingLine(this, block.previous())) )
+				{
 					painter.drawText(0, top, m_lnAreaWidget->width(), lineHeight,
 								 Qt::AlignLeft, isDiffView ? "≪" : "≫");
-				} else if( hasDiff(this, block) && (!block.previous().isValid() || !hasDiff(this, block.previous())) ) {
+				} else if( hasDiff(this, block) && !isPaddingLine(this, block.previous()) &&
+							(!block.previous().isValid() || !hasDiff(this, block.previous())) )
+				{
 					painter.drawText(0, top, m_lnAreaWidget->width(), lineHeight,
 								 Qt::AlignLeft, isDiffView ? "≪" : "≫");
 				}

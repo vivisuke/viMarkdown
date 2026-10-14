@@ -266,7 +266,7 @@ public:
     void	exitVisualMode(QTextCursor& cursor);
     void	do_diff();
     void	do_diff(const QString &fullPath);
-    void	insertDummyLines(MarkdownEditor*, QTextCursor &cur, QTextBlock &block, int count);
+    void	insertDummyLines(MarkdownEditor*, QTextCursor &cur, QTextBlock &block, int count, bool deleted=true);
     void	applyDeleteHunk(DocWidget*, int, int, int&, QTextBlock&, QTextBlock&, QTextCursor&, const std::vector<QString>&);
     void	applyAddHunk(DocWidget*, int, int, int&, QTextBlock&, QTextBlock&, QTextCursor&, const std::vector<QString>&);
     void	applyModifyHunk(DocWidget*, int, int, int, int, int, int, int&, int&, QTextBlock&, QTextBlock&, QTextCursor&, QTextCursor&);
