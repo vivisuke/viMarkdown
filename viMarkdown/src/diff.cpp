@@ -182,6 +182,9 @@ void MarkdownEditor::removeAllDummyLines() {
     cursor.endEditBlock(); // レイアウトを再計算して画面を更新
 }
 // -------------------------------------------------------------
+const QColor COLOR_DIFF_MINIMAP_DELETED   = QColor("#e8e8e8"); // 明るいグレイ（削除）
+const QColor COLOR_DIFF_MINIMAP_ADDED   = QColor("#ffa0a0"); // 明るい赤（挿入）
+const QColor COLOR_DIFF_MINIMAP_MODIFIED = QColor("#ffffa0"); // 明るい黄色（変更）
 #if 0
 void updateMapSub(QPainter &p, int x, int width, QTextDocument* doc, int totalLines, int mapHeight) {
 	if (totalLines <= 0) return;
@@ -240,12 +243,12 @@ void updateMapSub(QPainter &p, int x, QTextDocument* doc, MarkdownEditor* editor
 	QTextBlock block = doc->begin();
 	for(int y = 0; /*y < doc->blockCount() &&*/ block.isValid(); block=block.next()) {
 		QColor col = Qt::white;		//QColor("#808080");
-		if( isDummyLine(editor, block) ) col = QColor("#e8e8e8");
+		if( isDummyLine(editor, block) ) col = COLOR_DIFF_MINIMAP_DELETED;
 		//else if( hasDiff(block) ) col = QColor("#ffa0a0");	//QColor("#ccffcc");	//QColor("#ffecec");
 		else {
 			auto d = getDiff(editor, block);
-			if( d == ADDED_LINE ) col = QColor("#ffa0a0");
-			else if( d == CHANGED_LINE ) col = QColor("#ffffa0");
+			if( d == ADDED_LINE ) col = COLOR_DIFF_MINIMAP_ADDED;
+			else if( d == MODIFIED_LINE ) col = COLOR_DIFF_MINIMAP_MODIFIED;
 		}
 		p.setPen(col);
 		int vc = visualLineCount(block, editor);
@@ -263,7 +266,7 @@ void MiniMap::updateMap(QTextDocument* doc1, MarkdownEditor* editor1, QTextDocum
 	int x = 0;
 	updateMapSub(p, 0, doc1, editor1);
 	updateMapSub(p, MINMAP_WIDTH/2, doc2, editor2);
-	p.setBrush(QColor("#e8e8e8"));
+	p.setBrush(COLOR_DIFF_MINIMAP_DELETED);
 	//p.drawRect(0, doc1->blockCount(), MINMAP_WIDTH, ht - doc1->blockCount());
 	p.drawRect(0, visualLineCount(doc1, editor1), MINMAP_WIDTH, ht - visualLineCount(doc1, editor1));
 }
@@ -763,7 +766,7 @@ void MainWindow::applyModifyHunk(DocWidget* docWidget,
     // 左側の行属性設定と表示行数カウント
     int totalVc1 = 0;
     for (int ln = diffLn1; ln < endLn1; ++ln) {
-        setPhysicalLine(docWidget->m_editor, block1, ++ln1, CHANGED_LINE);
+        setPhysicalLine(docWidget->m_editor, block1, ++ln1, MODIFIED_LINE);
         totalVc1 += qMax(1, visualLineCount(block1, docWidget->m_editor));
         block1 = block1.next();
     }
@@ -771,7 +774,7 @@ void MainWindow::applyModifyHunk(DocWidget* docWidget,
     // 右側の行属性設定と表示行数カウント
     int totalVc2 = 0;
     for (int ln = diffLn2; ln < endLn2; ++ln) {
-        setPhysicalLine(docWidget->m_diffview, block2, ++ln2, CHANGED_LINE);
+        setPhysicalLine(docWidget->m_diffview, block2, ++ln2, MODIFIED_LINE);
         totalVc2 += qMax(1, visualLineCount(block2, docWidget->m_diffview));
         block2 = block2.next();
     }

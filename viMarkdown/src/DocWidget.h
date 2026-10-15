@@ -15,7 +15,7 @@
 #define		EQU_LINE		0
 #define		DELETED_LINE	1
 #define		ADDED_LINE		2
-#define		CHANGED_LINE	3
+#define		MODIFIED_LINE	3
 #define		PADDING_LINE	4			//	変更行の行数を合わせるための行
 
 //const int MINMAP_WIDTH = 40;

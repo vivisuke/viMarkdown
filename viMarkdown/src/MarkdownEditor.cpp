@@ -31,6 +31,10 @@
 extern Global g;
 extern ViStatus gvi;
 
+const QColor COLOR_DIFF_DELETED   = QColor("#e8e8e8"); // 明るいグレイ（削除）
+const QColor COLOR_DIFF_ADDED   = QColor("#ffecec"); // 明るい赤（挿入）
+const QColor COLOR_DIFF_MODIFIED = QColor("#ffffec"); // 明るい黄色（変更）
+
 bool isPaddingLine(MarkdownEditor* editor, const QTextBlock &block) {
     const auto &flgs = editor->diffFlags();
     int bn = block.blockNumber();
@@ -3034,8 +3038,10 @@ void MarkdownEditor::paintEvent(QPaintEvent *e) {
                     p.setPen(Qt::transparent);
                     // 2. top と bottom から正確な矩形を作る（折り返し行の高さも完全反映される）
                     QRectF g(0, top, viewport()->width(), bottom - top);
-                    p.fillRect(g, QColor(isDummyLine(this, b) ? "#e8e8e8" : 
-                                         getDiff(this, b) == ADDED_LINE ? "#ffecec" : "#ffffec"));
+                    //p.fillRect(g, QColor(isDummyLine(this, b) ? "#e8e8e8" : 
+                    //                     getDiff(this, b) == ADDED_LINE ? "#ffecec" : "#ffffec"));
+                    p.fillRect(g, isDummyLine(this, b) ? COLOR_DIFF_DELETED :
+                    						getDiff(this, b) == ADDED_LINE ? COLOR_DIFF_ADDED : COLOR_DIFF_MODIFIED);
                 }
             }
             // 3. 次の行のY座標は、前の行の底（bottom）からスタートして高さを足す
