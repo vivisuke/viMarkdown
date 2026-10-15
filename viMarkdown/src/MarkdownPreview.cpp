@@ -59,7 +59,7 @@ static QRegularExpression re_tailspc(" +$");	//	行末半角空白列
 extern CharType getCharType(QChar ch);
 extern void drawTextCursor(QWidget *viewport, QPainter& p, QTextCursor cursor, QRect rect, QFontMetrics fontMetrics, bool hasFocus, bool);
 
-void insertInlineMD(QTextCursor& cursor, const QString text) {
+void insertInlineMD(QTextCursor& cursor, const QString text, bool inTable = false) {
 	static QTextDocument tempDoc;
 	tempDoc.setMarkdown(text);
 	// 解析されたテキストと文字装飾（太字など）を取り出して、リスト内に直接挿入
@@ -70,7 +70,8 @@ void insertInlineMD(QTextCursor& cursor, const QString text) {
 	        cursor.insertText(fragment.text(), fragment.charFormat());
 	    }
 	}
-	cursor.insertBlock(QTextBlockFormat());
+	if( !inTable )
+		cursor.insertBlock(QTextBlockFormat());
 }
 
 MarkdownPreview::MarkdownPreview(const MainWindow *mainWindow, DocWidget *docWidget, QWidget* parent, bool readOnly)
@@ -899,7 +900,7 @@ void insertTable(QTextCursor& cursor, const QList<QStringList> &ll, const QList<
 				cellCursor.setBlockFormat(blockFormat);
 				//cellCursor.insertText(ll[row][col]);
 				//cellCursor.insertMarkdown(ll[row][col]);
-				insertInlineMD(cellCursor, ll[row][col]);
+				insertInlineMD(cellCursor, ll[row][col], true);
 
 				cellCursor.setPosition(cell.firstPosition());
 				cellCursor.setPosition(cell.lastPosition(), QTextCursor::KeepAnchor);
