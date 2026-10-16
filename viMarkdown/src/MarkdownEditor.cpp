@@ -491,6 +491,20 @@ void MarkdownEditor::paste() {
 	setTextCursor(cursor);
 }
 QVariant MarkdownEditor::inputMethodQuery(Qt::InputMethodQuery query) const {
+	qDebug() << "IME query:" << query;
+	//if (query == Qt::ImCursorRectangle || query == Qt::ImMicroFocus)
+	if (query & (Qt::ImCursorRectangle | Qt::ImAnchorRectangle))
+	{
+		QRect r = cursorRect();
+        int charWidth = fontMetrics().horizontalAdvance(QLatin1Char(' '));
+        r.setWidth(charWidth > 0 ? charWidth : 10);
+        qDebug() << "IME query:" << r << " / cursorRect:" << cursorRect();
+        return r;
+    }
+    return MarkdownBaseEdit::inputMethodQuery(query);
+}
+#if 0
+QVariant MarkdownEditor::inputMethodQuery(Qt::InputMethodQuery query) const {
 	//qDebug() << "query = " << query;
 #if 0
 #if 1
@@ -542,6 +556,7 @@ QVariant MarkdownEditor::inputMethodQuery(Qt::InputMethodQuery query) const {
 #endif
 	return QPlainTextEdit::inputMethodQuery(query);
 }
+#endif
 void MarkdownEditor::rehighlight() {
 	bool b = document()->isModified();
 	if( !m_diffMode )
@@ -589,6 +604,7 @@ void MarkdownEditor::setLineSpacing(int percentage) {
 	QTextCursor editorCursor = textCursor();
 	editorCursor.setBlockFormat(format);
 }
+#if 0
 void MarkdownEditor::inputMethodEvent(QInputMethodEvent *event) {
 	m_isComposing = !event->preeditString().isEmpty();
 	QString txt = event->commitString();		//	確定文字列
@@ -607,6 +623,7 @@ void MarkdownEditor::inputMethodEvent(QInputMethodEvent *event) {
 		return;
 	}
 }
+#endif
 void MarkdownEditor::insertFromMimeData(const QMimeData *source) {
 	//##qDebug() << "MarkdownEditor::insertFromMimeData()";
 	if (source->hasImage()) {
@@ -963,6 +980,7 @@ bool MarkdownEditor::event(QEvent *event) {
 }
 #endif
 void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
+	qDebug() << "Focus Widget:" << QApplication::focusWidget();
 	auto key = e->key();
 	auto mf = (e->modifiers() & Qt::ControlModifier) != 0;
 	qDebug() << "key = " << key;

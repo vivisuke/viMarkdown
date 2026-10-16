@@ -291,7 +291,7 @@ protected:
     void	dropEvent(QDropEvent *event) override;
     void	paintEvent(QPaintEvent *e) override;
     void	resizeEvent(QResizeEvent *event) override;
-    void	inputMethodEvent(QInputMethodEvent *event) override;
+    //##void	inputMethodEvent(QInputMethodEvent *event) override;
     void	insertFromMimeData(const QMimeData *source) override;
     QVariant	inputMethodQuery(Qt::InputMethodQuery query) const ;
     void	contextMenuEvent(QContextMenuEvent *event);
