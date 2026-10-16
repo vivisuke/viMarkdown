@@ -118,6 +118,7 @@ QMimeData *MarkdownPreview::createMimeDataFromSelection() const
     mimeData->setText(plainText);
     return mimeData;
 }
+#if 0
 void MarkdownPreview::inputMethodEvent(QInputMethodEvent *event) {
 	m_isComposing = !event->preeditString().isEmpty();
 	m_commitString = event->commitString();
@@ -125,6 +126,20 @@ void MarkdownPreview::inputMethodEvent(QInputMethodEvent *event) {
 	//if( m_isComposing && !txt.isEmpty() )
 	//	emit textInserted(txt);
 	QTextEdit::inputMethodEvent(event);
+}
+#endif
+QVariant MarkdownPreview::inputMethodQuery(Qt::InputMethodQuery query) const {
+	qDebug() << "IME query:" << query;
+	//if (query == Qt::ImCursorRectangle || query == Qt::ImMicroFocus)
+	if (query & (Qt::ImCursorRectangle | Qt::ImAnchorRectangle))
+	{
+		QRect r = cursorRect();
+        int charWidth = fontMetrics().horizontalAdvance(QLatin1Char(' '));
+        r.setWidth(charWidth > 0 ? charWidth : 10);
+        qDebug() << "IME query:" << r << " / cursorRect:" << cursorRect();
+        return r;
+    }
+    return QTextEdit::inputMethodQuery(query);
 }
 void MarkdownPreview::onAction_Cut() {
 }

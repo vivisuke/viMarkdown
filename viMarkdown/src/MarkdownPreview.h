@@ -88,7 +88,8 @@ protected:
     	e->ignore();
     }
     QMimeData *createMimeDataFromSelection() const override;
-    void	inputMethodEvent(QInputMethodEvent *event) override;
+    //void	inputMethodEvent(QInputMethodEvent *event) override;
+    QVariant	inputMethodQuery(Qt::InputMethodQuery query) const ;
 
     void	onAction_Cut();
 
