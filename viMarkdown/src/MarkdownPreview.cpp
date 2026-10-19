@@ -129,14 +129,14 @@ void MarkdownPreview::inputMethodEvent(QInputMethodEvent *event) {
 }
 #endif
 QVariant MarkdownPreview::inputMethodQuery(Qt::InputMethodQuery query) const {
-	qDebug() << "IME query:" << query;
+	//qDebug() << "IME query:" << query;
 	//if (query == Qt::ImCursorRectangle || query == Qt::ImMicroFocus)
 	if (query & (Qt::ImCursorRectangle | Qt::ImAnchorRectangle))
 	{
 		QRect r = cursorRect();
         int charWidth = fontMetrics().horizontalAdvance(QLatin1Char(' '));
         r.setWidth(charWidth > 0 ? charWidth : 10);
-        qDebug() << "IME query:" << r << " / cursorRect:" << cursorRect();
+        //qDebug() << "IME query:" << r << " / cursorRect:" << cursorRect();
         return r;
     }
     return QTextEdit::inputMethodQuery(query);

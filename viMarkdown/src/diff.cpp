@@ -97,6 +97,10 @@ void setPhysicalLine(QTextBlock &block, int ln, bool changed) {
 }
 #endif
 int visualLineCount(const QTextBlock &block, MarkdownEditor* editor) {
+	assert( block.isValid() );
+	if( !block.isValid() ) {
+		return 1;
+	}
 #if 0
 	int vc = 1;			//	表示行数
 	QTextLayout *layout = block.layout();
@@ -140,6 +144,9 @@ int visualLineCount(QTextDocument *doc, MarkdownEditor *editor) {
 void MarkdownEditor::removeAllDummyLines() {
     QTextDocument *doc = document();
     if (!doc) return;
+    qDebug() << "removeAllDummyLines()";
+    // シグナルを一時的に止めて、途中で do_diff が呼ばれないようにする
+    QSignalBlocker blocker(this); 
 
     QTextCursor cursor(doc);
     // 描画更新を一時停止し、処理を高速化
@@ -152,6 +159,7 @@ void MarkdownEditor::removeAllDummyLines() {
         QTextBlock prevBlock = block.previous();
 
         if (isDummyLine(this, block)) {
+        	qDebug() << "bn = " << block.blockNumber() << " will be deleted";
             cursor.setPosition(block.position());
 
             if (block.next().isValid()) {
@@ -710,10 +718,13 @@ void MainWindow::insertDummyLines(MarkdownEditor* editor, QTextCursor &cur, QTex
 }
 // 左側のみ存在（右側で削除）
 void MainWindow::applyDeleteHunk(DocWidget* docWidget,
-    int diffLn, int endLn, int &ln1,
+    int diffLn, int endLn,
+    //int nAdd,
+    int &ln1,
     QTextBlock &block1, QTextBlock &block2,
     QTextCursor &cur2, const std::vector<QString> &lines1) 
 {
+	//int endLn = diffLn + nAdd;
     for (int ln = diffLn; ln < endLn; ++ln) {
         if (ln - 1 < lines1.size())
             do_output(QString("- %1 0 '%2'\n").arg(ln).arg(lines1[ln - 1]));
@@ -729,10 +740,13 @@ void MainWindow::applyDeleteHunk(DocWidget* docWidget,
 
 // 右側のみ存在（右側で追加）
 void MainWindow::applyAddHunk(DocWidget* docWidget,
-    int diffLn, int endLn, int &ln2,
+    int diffLn, int endLn,
+    //int nDelete,
+    int &ln2,
     QTextBlock &block1, QTextBlock &block2,
     QTextCursor &cur1, const std::vector<QString> &lines2) 
 {
+	//int endLn = diffLn + nDelete;
     for (int ln = diffLn; ln < endLn; ++ln) {
         if (ln - 1 >= lines2.size()) break;
         do_output(QString("+ 0 %1 '%2'\n").arg(ln).arg(lines2[ln - 1]));
@@ -748,11 +762,16 @@ void MainWindow::applyAddHunk(DocWidget* docWidget,
 
 // 変更行（両側で異なる）
 void MainWindow::applyModifyHunk(DocWidget* docWidget,
-    int diffLn1, int endLn1, int diffLn2, int endLn2,
+    int diffLn1, int endLn1,
+    int diffLn2, int endLn2,
     int nDelete, int nAdd, int &ln1, int &ln2,
     QTextBlock &block1, QTextBlock &block2,
     QTextCursor &cur1, QTextCursor &cur2) 
 {
+	endLn1 = diffLn1 + nDelete;
+	endLn2 = diffLn2 + nAdd;
+	assert( endLn1 - diffLn1 == nDelete );
+	assert( endLn2 - diffLn2 == nAdd );
     // 単語差分用テキストの抽出
     QString text1, text2;
     auto b1 = block1, b2 = block2;
@@ -816,11 +835,17 @@ void MainWindow::applyDiffToDocuments(
     auto flush = [&](int endLn1, int endLn2) {
         if (nDelete == 0 && nAdd == 0) return;
         if (nAdd == 0) {
-            applyDeleteHunk(docWidget, diffLn1, endLn1, ln1, block1, block2, cur2, lines1);
+            applyDeleteHunk(docWidget, diffLn1,
+            				endLn1,
+            				//nAdd,
+            				ln1, block1, block2, cur2, lines1);
         } else if (nDelete == 0) {
-            applyAddHunk(docWidget, diffLn2, endLn2, ln2, block1, block2, cur1, lines2);
+            applyAddHunk(docWidget, diffLn2, endLn2,
+            				//nDelete,
+            				ln2, block1, block2, cur1, lines2);
         } else {
-            applyModifyHunk(docWidget, diffLn1, endLn1, diffLn2, endLn2,
+            applyModifyHunk(docWidget, diffLn1, endLn1,
+                                diffLn2, endLn2,
             					nDelete, nAdd, ln1, ln2, block1, block2, cur1, cur2);
         }
         nDelete = nAdd = 0;

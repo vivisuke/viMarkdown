@@ -491,14 +491,14 @@ void MarkdownEditor::paste() {
 	setTextCursor(cursor);
 }
 QVariant MarkdownEditor::inputMethodQuery(Qt::InputMethodQuery query) const {
-	qDebug() << "IME query:" << query;
+	//qDebug() << "IME query:" << query;
 	//if (query == Qt::ImCursorRectangle || query == Qt::ImMicroFocus)
 	if (query & (Qt::ImCursorRectangle | Qt::ImAnchorRectangle))
 	{
 		QRect r = cursorRect();
         int charWidth = fontMetrics().horizontalAdvance(QLatin1Char(' '));
         r.setWidth(charWidth > 0 ? charWidth : 10);
-        qDebug() << "IME query:" << r << " / cursorRect:" << cursorRect();
+        //qDebug() << "IME query:" << r << " / cursorRect:" << cursorRect();
         return r;
     }
     return MarkdownBaseEdit::inputMethodQuery(query);
@@ -1503,6 +1503,66 @@ void MarkdownEditor::wheelEvent(QWheelEvent *event) {
 	} else
 		MarkdownBaseEdit::wheelEvent(event);
 }
+#if 1
+void MarkdownEditor::contextMenuEvent(QContextMenuEvent *event) {
+    QPoint clickPos = event->pos();
+    // 1. 標準メニューを生成
+    QMenu *menu = createStandardContextMenu(clickPos);
+    if (!menu) return;
+    // 2. Cut アクションの独自差し替え
+    QAction *cutAction = menu->findChild<QAction *>("edit-cut");
+    if (!cutAction) {
+        for (QAction *action : menu->actions()) {
+            if (action->shortcut() == QKeySequence::Cut) {
+                cutAction = action;
+                break;
+            }
+        }
+    }
+    if (cutAction) {
+        cutAction->disconnect();
+        connect(cutAction, &QAction::triggered, this, &MarkdownEditor::cut);
+    }
+    // 3. diff モード時の専用メニュー追加処理
+    if (m_diffMode) {
+        QTextCursor cursor = cursorForPosition(clickPos);
+        QTextBlock block = cursor.block();
+        int posInBlock = cursor.positionInBlock();
+        bool isOnInsertedWord = false;
+        int wordStart = -1;
+        int wordLength = -1;
+        QString clickedWordText;
+        if (auto *userData = dynamic_cast<DiffBlockUserData*>(block.userData())) {
+            const auto &ranges = userData->ranges; 
+            for (const auto &range : ranges) {
+                if (posInBlock >= range.start && posInBlock < (range.start + range.length)) {
+                    isOnInsertedWord = true;
+                    wordStart = range.start;
+                    wordLength = range.length;
+                    clickedWordText = block.text().mid(range.start, range.length);
+                    break;
+                }
+            }
+        }
+        if (isOnInsertedWord && !clickedWordText.isEmpty()) {
+            // メニューの先頭に区切り線とカスタムアクションを挿入
+            if (!menu->actions().isEmpty()) {
+                menu->insertSeparator(menu->actions().first());
+            }
+
+            QAction *reflectAct = new QAction(QString("Reflect Word '%1' to Peer View").arg(clickedWordText), menu);
+            menu->insertAction(menu->actions().first(), reflectAct);
+
+            connect(reflectAct, &QAction::triggered, this, [this, block, wordStart, wordLength, clickedWordText]() {
+                reflectWordToPeer(block, wordStart, wordLength, clickedWordText);
+            });
+        }
+    }
+    // 4. すべての準備が整った後、最後に1回だけ表示して解放する！
+    menu->exec(event->globalPos());
+    delete menu;
+}
+#else
 void MarkdownEditor::contextMenuEvent(QContextMenuEvent *event) {
 	QPoint clickPos = event->pos();
     QMenu *menu = createStandardContextMenu(clickPos); //
@@ -1583,6 +1643,7 @@ void MarkdownEditor::contextMenuEvent(QContextMenuEvent *event) {
     menu->exec(event->globalPos());    // メニューをイベント発生位置にポップアップ表示
     delete menu;	//	標準メニュー（QMenu*）は呼び出し側で明示的に delete する必要がある
 }
+#endif
 void MarkdownEditor::reflectWordToPeer(const QTextBlock &block, int start, int length, const QString &wordText) {
     MarkdownEditor *peer = this == m_docWidget->m_editor ? m_docWidget->m_diffview : m_docWidget->m_editor;
     QTextDocument *doc2 = peer->document();
