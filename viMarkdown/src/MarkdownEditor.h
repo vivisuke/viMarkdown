@@ -23,6 +23,9 @@ class LnAreaWidget;
 
 extern Global g;
 
+//const QColor COLOR_DIFF_ADDED   = QColor("#ffecec"); // 明るい赤（挿入）
+#define		COLOR_WORD_ADDED		QColor("#ffc0c0")
+
 class DiffHighlighter : public QSyntaxHighlighter {
 public:
 	DiffHighlighter(QTextDocument *parent) : QSyntaxHighlighter(parent) {}
@@ -36,7 +39,7 @@ protected:
 			const auto *userData = dynamic_cast<const DiffBlockUserData*>(block.userData());
             if (userData) {
                 QTextCharFormat format;
-                format.setBackground(QColor("#ffc0c0")); 
+                format.setBackground(COLOR_WORD_ADDED); 
                 for (const auto &range : userData->ranges) {
                     setFormat(range.start, range.length, format);
                 }

@@ -2140,9 +2140,10 @@ void MainWindow::do_close(bool forced) {
 	DocWidget *docWidget = getCurDocWidget();
 	if (docWidget == nullptr) return;
 	if( !forced && docWidget->isModified() ) {
+		QString path = docWidget->m_fullPath;
 		QMessageBox::StandardButton reply = QMessageBox::question(this,
 								  "Confirm save",				 // タイトル
-								  tr("The document has been modified.\nDo you want to save your changes?"), // 本文
+								  QString(tr("The document has been modified.\n'%1' \nDo you want to save your changes?")).arg(path), // 本文
 								  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel); // ボタンの種類
 
 		if (reply == QMessageBox::Yes) {
