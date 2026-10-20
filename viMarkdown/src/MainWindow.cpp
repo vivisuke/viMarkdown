@@ -2139,11 +2139,12 @@ void MainWindow::onAction_Close() {
 void MainWindow::do_close(bool forced) {
 	DocWidget *docWidget = getCurDocWidget();
 	if (docWidget == nullptr) return;
+	QString tmp = tr("The document has been modified.\n'%1' \nDo you want to save your changes?");
 	if( !forced && docWidget->isModified() ) {
-		QString path = docWidget->m_fullPath;
+		QString path = docWidget->m_fullPath.isEmpty() ? docWidget->m_title : docWidget->m_fullPath;
 		QMessageBox::StandardButton reply = QMessageBox::question(this,
 								  "Confirm save",				 // タイトル
-								  QString(tr("The document has been modified.\n'%1' \nDo you want to save your changes?")).arg(path), // 本文
+								  QString(tmp).arg(path), // 本文
 								  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel); // ボタンの種類
 
 		if (reply == QMessageBox::Yes) {
