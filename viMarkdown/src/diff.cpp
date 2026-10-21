@@ -885,6 +885,7 @@ void MainWindow::do_diff() {
 	if (m_processing != 0) return;
     DocWidget *docWidget = getCurDocWidget();
     if (!docWidget || !docWidget->m_diffMode) return;
+    m_doing_diff = true;
     QSignalBlocker blocker(this); 
     QTextCursor cursor0 = docWidget->m_editor->textCursor();
     //int pos0 = cursor.position();
@@ -938,4 +939,5 @@ void MainWindow::do_diff() {
     //cursor = docWidget->m_editor->textCursor();
     //pos0 = cursor.position();
     //qDebug() << "cursor.position() = " << pos0 << ", blockNumber() = " << cursor.blockNumber();;
+    m_doing_diff = false;
 }

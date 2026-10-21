@@ -142,6 +142,12 @@ MainWindow::MainWindow(QWidget *parent)
     m_blinkTimer = new QTimer(this);	// カーソル点滅用タイマーの設定 (500ms)
     connect(m_blinkTimer, &QTimer::timeout, this, &MainWindow::toggleCursor);
     m_blinkTimer->start(500);
+	m_diffTimer = new QTimer(this);
+    m_diffTimer->setSingleShot(true); // 1回だけ発火
+    connect(m_diffTimer, &QTimer::timeout, this, [this]() {
+      //if( !m_doing_diff )
+	      do_diff();
+    });
     //
 	QSettings settings;
 	//m_editorFontSize = settings.value(KEY_EDITOR_FONT_SIZE).toInt();
@@ -3126,6 +3132,9 @@ void MainWindow::onMDTextChanged() {
 	}
 #endif
 	m_ignore_changed = false;
+	if( docWidget->m_diffMode && !m_doing_diff) {
+		m_diffTimer->start(100); 
+	}
 }
 void MainWindow::onMdEditTabPressed() {
 	onAction_Indent();

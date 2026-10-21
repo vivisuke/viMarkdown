@@ -515,6 +515,7 @@ private:
     bool	m_keisenMode = false;
     bool	m_thickKeisen = false;		//	Thin or Thick
     bool	m_edittingInPreview = false;		//	プレビューでの編集処理中
+    bool	m_doing_diff = false;
     int		m_tab_number = 0;
     int		m_QA_tab_number = 0;
     int		m_nMatchLines = 0;			//	マッチ行数
@@ -540,7 +541,8 @@ private:
     class QFileSystemWatcher	*m_watcher;
     //QList<QStringPair>			m_pathTitleList;
 	QLabel	*m_diffviewLabel = nullptr;
-	QTimer	*m_blinkTimer;
+	QTimer	*m_blinkTimer = nullptr;
+	QTimer	*m_diffTimer = nullptr;
     //bool	m_cursorVisible = true;
     int							m_docLocIX = -1;	//	m_docLocHist の現文書インデックス
     QList<DocLocation>			m_docLocHist;		//	文書履歴、新しい文書情報を末尾に置く（push_back）

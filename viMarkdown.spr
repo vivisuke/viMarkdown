@@ -1203,7 +1203,7 @@ SPR# 状 P Open Close ver     Type  概要
 1188 ◎ C 10/21 10/21 03205│問題│diff with file 実行直後に undo が実行可能で、実行すると変な状態になる
 1189 ● C 10/21            │問題│diff with file：比較元文書に文字挿入すると、diff 結果が不正になる
 1190 ◎ C 10/21 10/22 03205│問題│MarkdownEditor::編集処理：diff 表示時の do_diff() コールを止める
-1191 ● C 10/21            │問題│
+1191 ◎ C 10/21 10/22 03205│問題│MainWindow::onMDTextChanged() から singleShot() で do_diff() コールした方がよい？
 1192 ● C 10/21            │問題│
 1193 ● C 10/21            │問題│
 1194 ● C 10/21            │問題│
