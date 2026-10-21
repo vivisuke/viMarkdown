@@ -1276,9 +1276,9 @@ void MarkdownEditor::do_insertText(QTextCursor& cursor, const QString &txt) {
 	} else if( cursor.hasSelection() ) {
 		do_deleteText(cursor);
 	}
-	if( m_diffMode ) {
-		((MainWindow*)m_mainWindow)->do_diff();
-	}
+	//if( m_diffMode ) {
+	//	((MainWindow*)m_mainWindow)->do_diff();
+	//}
 	emit canUndoRedoChanged();
 }
 void MarkdownEditor::do_deleteText(QTextCursor &cursor) {
@@ -1296,9 +1296,9 @@ void MarkdownEditor::do_deleteText(QTextCursor &cursor) {
 	cursor.deleteChar();
 	setTextCursor(cursor);
 	//auto t3 = cursor.block().text();
-	if( m_diffMode ) {
-		((MainWindow*)m_mainWindow)->do_diff();
-	}
+	//if( m_diffMode ) {
+	//	((MainWindow*)m_mainWindow)->do_diff();
+	//}
 	emit canUndoRedoChanged();
 }
 void MarkdownEditor::initUndoMgr() {
@@ -1339,8 +1339,8 @@ int MarkdownEditor::do_undo() {
 	}
 	int pos = m_undoMgr->undo();
 	emit canUndoRedoChanged();
-	if( m_diffMode )
-		((MainWindow*)m_mainWindow)->do_diff();
+	//if( m_diffMode )
+	//	((MainWindow*)m_mainWindow)->do_diff();
 	return pos;
 }
 int MarkdownEditor::do_redo() {
@@ -1353,8 +1353,8 @@ int MarkdownEditor::do_redo() {
 	qDebug() << "m_undoMgr->redoActionFlags() = " << (int)f;
 	int pos = m_undoMgr->redo();
 	emit canUndoRedoChanged();
-	if( m_diffMode )
-		((MainWindow*)m_mainWindow)->do_diff();
+	//if( m_diffMode )
+	//	((MainWindow*)m_mainWindow)->do_diff();
 	return pos;
 }
 int indexOfNotEsc(const QString &text, QChar ch, int ix) {
@@ -1692,7 +1692,7 @@ void MarkdownEditor::reflectWordToPeer(const QTextBlock &block, int start, int l
 
     m_docWidget->m_editor->setProcessing(false);
     m_docWidget->m_diffview->setProcessing(false);
-    ((MainWindow*)m_mainWindow)->do_diff();
+    //((MainWindow*)m_mainWindow)->do_diff();
 }
 void MarkdownEditor::applyStyle(const QFont &font) {
 	bool mf = document()->isModified();		//	対処療法的処理
@@ -3488,7 +3488,7 @@ void MarkdownEditor::applyDiffBlock(QTextBlock block) {
     cur2.endEditBlock();
     m_docWidget->m_editor->setProcessing(false);
     m_docWidget->m_diffview->setProcessing(false);
-    ((MainWindow*)m_mainWindow)->do_diff();
+    //((MainWindow*)m_mainWindow)->do_diff();
 }
 void MarkdownEditor::foldableBlockNumber(QTextBlock block, int &bn1, int &bn2) {
 	bn1 = bn2 = -1;
