@@ -1332,6 +1332,7 @@ void MarkdownEditor::prohibitMergeUndo() {
 	m_undoMgr->prohibitMergeUndo();
 }
 int MarkdownEditor::do_undo() {
+	if( !canUndo() ) return textCursor().position();
 	if( m_diffMode ) {
 		m_docWidget->m_editor->removeAllDummyLines();
 		m_docWidget->m_diffview->removeAllDummyLines();
@@ -1343,6 +1344,7 @@ int MarkdownEditor::do_undo() {
 	return pos;
 }
 int MarkdownEditor::do_redo() {
+	if( !canRedo() ) return textCursor().position();
 	if( m_diffMode ) {
 		m_docWidget->m_editor->removeAllDummyLines();
 		m_docWidget->m_diffview->removeAllDummyLines();
