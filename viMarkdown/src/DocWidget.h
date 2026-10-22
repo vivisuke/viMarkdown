@@ -154,6 +154,7 @@ public:
     void	removeDummyBlocks();
     void	setMiniMapCurHeight(int vl);
     void	setMiniMapCurPos(int fvl, int vl);
+    void	setupDiffMode();					//	diff 表示モードに遷移
 
     void	syncScrollFromLeft(int value);
     void	syncScrollFromRight(int value);

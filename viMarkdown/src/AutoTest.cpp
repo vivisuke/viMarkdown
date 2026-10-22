@@ -3429,3 +3429,40 @@ void MainWindow::onAction_TestViCommands() {
 	statusBar()->showMessage(mess);
 	do_output(mess);
 }
+//----------------------------------------------------------------------
+QStringList g_diffTestCase[] = {
+	{"Basic diff test",
+	"=aaa\n"
+	"-\n"		//	削除された２行目
+	"=ccc\n",
+	"=aaa\n"
+	"+bbb\n"	//	挿入された２行目
+	"=ccc\n",
+	},
+};
+void set_text(MarkdownEditor* editor, const QString& text) {
+	editor->clear();
+	QTextCursor cursor = editor->textCursor();
+	//auto lst = text.split(u'\n', Qt::SkipEmptyParts);
+	auto lst = text.split(QRegularExpression("(?<=\n)"), Qt::SkipEmptyParts);
+	//if( text.back() == "\n" )
+	//	lst.pop_back();		//	余分な改行のみ最終行削除
+	for(const auto t: lst) {
+		cursor.insertText(t.mid(1));
+	}
+}
+void MainWindow::onAction_TestDiff() {
+	qDebug() << "onAction_TestDiff()";
+	addTab(QString("QA-%1").arg(++m_QA_tab_number));
+	DocWidget *docWidget = getCurDocWidget();;
+	if( docWidget == nullptr ) return;
+	do_output("\nTest dif...\n\n");
+	MarkdownEditor *editor = docWidget->m_editor;
+	for(const auto &tc: g_diffTestCase) {
+		do_output(tc[0] + "\n");
+		for(int i = 1; i < tc.size();) {
+			set_text(editor, tc[i++]);
+			++i;
+		}
+	}
+}

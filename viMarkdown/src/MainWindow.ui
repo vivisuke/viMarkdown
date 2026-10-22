@@ -188,6 +188,7 @@
      <addaction name="action_RunPTS"/>
      <addaction name="action_TestViCommands"/>
      <addaction name="action_DumpHeaderBlocks"/>
+     <addaction name="action_TestDiff"/>
     </widget>
     <widget class="QMenu" name="menu_CheatSheet">
      <property name="title">
@@ -1364,6 +1365,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Alt+C</string>
+   </property>
+  </action>
+  <action name="action_TestDiff">
+   <property name="text">
+    <string>&amp;Diff</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Alt+-</string>
    </property>
   </action>
  </widget>

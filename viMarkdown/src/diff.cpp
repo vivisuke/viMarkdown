@@ -60,7 +60,7 @@ bool hasDiff(MarkdownEditor*editor, const QTextBlock &block) {
 
 // ダミー行をセットする場合
 void setDummyLine(MarkdownEditor* editor, QTextBlock block) {
-    auto vbn = editor->diffBlockNumbers();
+    auto &vbn = editor->diffBlockNumbers();
     if( vbn.size() < block.blockNumber() + 1 )
     	vbn.resize(block.blockNumber() + 1);
     vbn[block.blockNumber()] = DUMMY_LINE_NUM;
@@ -364,14 +364,40 @@ void MainWindow::do_diff(const QString &fullPath) {
     ui->action_DiffMode->setChecked(true);
     //do_diff();
 }
+void DocWidget::setupDiffMode() {
+	this->m_diffMode = true;
+	this->m_editor->setDiffMode(true);
+	QScrollBar *bar1 = this->m_editor->horizontalScrollBar();
+	QScrollBar *bar2 = this->m_diffview->horizontalScrollBar();
+	this->m_editor->expandAll();
+	this->m_editor->setHighlightDiff(true);
+	this->m_diffview->setHighlightDiff(true);
+	this->m_editor->setHighlightMarkdown(false);
+	//this->m_editor->setLineWrapMode(QPlainTextEdit::NoWrap);
+	//##do_diff();
+	connect(this->m_editor->verticalScrollBar(), &QScrollBar::valueChanged,
+        this, &DocWidget::syncScrollFromLeft);
+    connect(this->m_diffview->verticalScrollBar(), &QScrollBar::valueChanged,
+        this, &DocWidget::syncScrollFromRight);
+    this->m_diffview->verticalScrollBar()->setValue(this->m_diffview->verticalScrollBar()->value());
+    int fvl = this->m_editor->verticalScrollBar()->value();
+    int vl = this->m_editor->getVisibleLineCount();
+    this->setMiniMapCurPos(fvl, vl);
+    connect(this->m_editor->verticalScrollBar(), &QScrollBar::valueChanged,
+	        this, &DocWidget::syncMinimapWithEditor);
+    connect(bar1, &QScrollBar::valueChanged, bar2, &QScrollBar::setValue);
+	connect(bar2, &QScrollBar::valueChanged, bar1, &QScrollBar::setValue);
+}
 void MainWindow::onAction_DiffMode(bool checked) {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
-	docWidget->m_diffMode = checked;
-	docWidget->m_editor->setDiffMode(checked);
-	QScrollBar *bar1 = docWidget->m_editor->horizontalScrollBar();
-	QScrollBar *bar2 = docWidget->m_diffview->horizontalScrollBar();
+	//docWidget->m_diffMode = checked;
+	//docWidget->m_editor->setDiffMode(checked);
+	//QScrollBar *bar1 = docWidget->m_editor->horizontalScrollBar();
+	//QScrollBar *bar2 = docWidget->m_diffview->horizontalScrollBar();
 	if (checked) {
+		docWidget->setupDiffMode();
+#if 0
 		docWidget->m_editor->expandAll();
 		docWidget->m_editor->setHighlightDiff(true);
 		docWidget->m_diffview->setHighlightDiff(true);
@@ -390,12 +416,17 @@ void MainWindow::onAction_DiffMode(bool checked) {
 		        docWidget, &DocWidget::syncMinimapWithEditor);
         connect(bar1, &QScrollBar::valueChanged, bar2, &QScrollBar::setValue);
 		connect(bar2, &QScrollBar::valueChanged, bar1, &QScrollBar::setValue);
+#endif
 		QTimer::singleShot(0, this, [this]() {
             do_diff();
         });
 		//bool b = docWidget->m_editor->document()->isModified();
 		//qDebug() << "modified = " << b;
 	} else {
+		docWidget->m_diffMode = checked;
+		docWidget->m_editor->setDiffMode(checked);
+		QScrollBar *bar1 = docWidget->m_editor->horizontalScrollBar();
+		QScrollBar *bar2 = docWidget->m_diffview->horizontalScrollBar();
 		if( docWidget->m_docType == DocType::Markdown )
 			docWidget->m_editor->setHighlightMarkdown(true);
 		docWidget->m_editor->setHighlightDiff(false);
