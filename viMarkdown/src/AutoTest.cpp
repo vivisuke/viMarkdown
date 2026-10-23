@@ -3432,14 +3432,40 @@ void MainWindow::onAction_TestViCommands() {
 }
 //----------------------------------------------------------------------
 QStringList g_diffTestCase[] = {
+#if 1
 	{"Basic diff test",
-	"=aaa\n"
-	"-\n"		//	削除された２行目
-	"=ccc\n",
-	"=aaa\n"
-	"+bbb\n"	//	挿入された２行目
-	"=ccc\n",
+		"=aaa\n"
+		"-\n"		//	削除された２行目
+		"=ccc\n",
+		"=aaa\n"
+		"+bbb\n"	//	挿入された２行目
+		"=ccc\n",
+		"x",		//	文書先頭一文字削除
+		"!aa\n"
+		"!\n"		//	パディング行
+		"=ccc\n",
+		"!aaa\n"
+		"!bbb\n"	//	
+		"=ccc\n",
 	},
+#endif
+#if 0
+	{"Basic diff test (2)",
+		"=aaa\n"
+		"+bbb\n"	//	挿入された２行目
+		"=ccc\n",
+		"=aaa\n"
+		"-\n"		//	削除された２行目
+		"=ccc\n",
+		"x",		//	文書先頭一文字削除
+		"!aa\n"
+		"!bbb\n"	//	挿入された２行目
+		"=ccc\n",
+		"!aaa\n"
+		"-\n"		//	パディング行
+		"=ccc\n",
+	},
+#endif
 };
 void set_text(MarkdownEditor* editor, const QString& text) {
 	editor->clear();
@@ -3452,6 +3478,20 @@ void set_text(MarkdownEditor* editor, const QString& text) {
 		if( !t.startsWith('-') )	//	削除行でなければ、
 			cursor.insertText(t.mid(1));
 	}
+	cursor.setPosition(0);
+	editor->setTextCursor(cursor);
+}
+void do_exec(MarkdownEditor* editor, const QString& text) {
+	QTextCursor cursor = editor->textCursor();
+	for(int i = 0; i < text.size(); ++i) {
+		switch( text[i].unicode() ) {
+		case u'x':
+			//cursor.deleteChar();
+			editor->do_deleteText(cursor);
+			break;
+		}
+	}
+	editor->setTextCursor(cursor);
 }
 bool MainWindow::test_diff_line(MarkdownEditor* editor, const QString& text) {
 	QTextBlock block = editor->document()->begin();
@@ -3474,6 +3514,8 @@ void MainWindow::onAction_TestDiff() {
 	addTab(QString("QA-%1").arg(++m_QA_tab_number));
 	DocWidget *docWidget = getCurDocWidget();;
 	if( docWidget == nullptr ) return;
+	docWidget->setupDiffMode();
+	docWidget->updatePanes();
 	do_output("\nTest dif...\n\n");
 	int total_tested = 0;
 	int total_failed = 0;
@@ -3482,14 +3524,16 @@ void MainWindow::onAction_TestDiff() {
 	for(const auto &tc: g_diffTestCase) {
 		//do_output(tc[0] + "\n");
 		for(int i = 0; i < tc.size();) {
-			if( i == 0 )
-				do_output(tc[0] + "\n");
-			++i;
 			++total_tested;
-			set_text(editor, tc[i++]);
-			set_text(diffview, tc[i++]);
-			docWidget->setupDiffMode();
-			docWidget->updatePanes();
+			if( i == 0 ) {
+				do_output(tc[0] + "\n");
+				set_text(editor, tc[++i]);
+				set_text(diffview, tc[++i]);
+				++i;
+			} else {
+				do_exec(editor, tc[i]);
+				i += 3;
+			}
 			do_output(".");
 			QCoreApplication::processEvents();
             do_diff();
