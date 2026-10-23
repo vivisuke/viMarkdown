@@ -41,6 +41,7 @@ extern ViStatus gvi;
 
 uchar blockType(const QTextBlock &block);
 void setBlockType(QTextBlock block, uchar type);
+bool isDummyLine(MarkdownEditor* editor, const QTextBlock &block);
 
 QChar g_flag_char[] = {
 	u'v',	//	PCF_VISIBLE = 0,	// プレビューに表示される
@@ -3448,8 +3449,25 @@ void set_text(MarkdownEditor* editor, const QString& text) {
 	//if( text.back() == "\n" )
 	//	lst.pop_back();		//	余分な改行のみ最終行削除
 	for(const auto t: lst) {
-		cursor.insertText(t.mid(1));
+		if( !t.startsWith('-') )	//	削除行でなければ、
+			cursor.insertText(t.mid(1));
 	}
+}
+bool MainWindow::test_diff_line(MarkdownEditor* editor, const QString& text) {
+	QTextBlock block = editor->document()->begin();
+	auto lst = text.split(QRegularExpression("(?<=\n)"), Qt::SkipEmptyParts);
+	for(const auto t: lst) {
+		if( t[0] == u'-' && !isDummyLine(editor, block) ) {
+			do_output(QString("Expected block %1 to be a dummy line\n").arg(block.blockNumber()));
+			return false;
+		}
+		if( t[0] != u'-' && isDummyLine(editor, block) ) {
+			do_output(QString("Expected block %1 NOT to be a dummy line\n").arg(block.blockNumber()));
+			return false;
+		}
+		if( !(block = block.next()).isValid() ) return false;
+	}
+	return true;
 }
 void MainWindow::onAction_TestDiff() {
 	qDebug() << "onAction_TestDiff()";
@@ -3457,12 +3475,38 @@ void MainWindow::onAction_TestDiff() {
 	DocWidget *docWidget = getCurDocWidget();;
 	if( docWidget == nullptr ) return;
 	do_output("\nTest dif...\n\n");
+	int total_tested = 0;
+	int total_failed = 0;
 	MarkdownEditor *editor = docWidget->m_editor;
+	MarkdownEditor *diffview = docWidget->m_diffview;
 	for(const auto &tc: g_diffTestCase) {
-		do_output(tc[0] + "\n");
-		for(int i = 1; i < tc.size();) {
-			set_text(editor, tc[i++]);
+		//do_output(tc[0] + "\n");
+		for(int i = 0; i < tc.size();) {
+			if( i == 0 )
+				do_output(tc[0] + "\n");
 			++i;
+			++total_tested;
+			set_text(editor, tc[i++]);
+			set_text(diffview, tc[i++]);
+			docWidget->setupDiffMode();
+			docWidget->updatePanes();
+			do_output(".");
+			QCoreApplication::processEvents();
+            do_diff();
+			QCoreApplication::processEvents();
+			if( !test_diff_line(editor, tc[i-2]) ) {
+				++total_failed;
+				break;
+			}
+			if( !test_diff_line(diffview, tc[i-1]) ) {
+				++total_failed;
+				break;
+			}
+			//if( i + 1 >= tc.size() ) break;
 		}
 	}
+	QString mess = QString("\nTotal: %1 failed / %2 tested. (Success:%3%)")
+					.arg(total_failed).arg(total_tested).arg(100.0 - total_failed*100.0/total_tested, 0, 'f', 1);
+	statusBar()->showMessage(mess);
+	do_output(mess);
 }
