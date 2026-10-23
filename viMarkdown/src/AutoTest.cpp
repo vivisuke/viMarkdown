@@ -3442,7 +3442,7 @@ QStringList g_diffTestCase[] = {
 		"=ccc\n",
 		"x",		//	文書先頭一文字削除
 		"!aa\n"
-		"!\n"		//	パディング行
+		"-\n"		//	パディング行
 		"=ccc\n",
 		"!aaa\n"
 		"!bbb\n"	//	
@@ -3493,16 +3493,16 @@ void do_exec(MarkdownEditor* editor, const QString& text) {
 	}
 	editor->setTextCursor(cursor);
 }
-bool MainWindow::test_diff_line(MarkdownEditor* editor, const QString& text) {
+bool MainWindow::test_diff_line(MarkdownEditor* editor, const QString& text, int& total_failed) {
 	QTextBlock block = editor->document()->begin();
 	auto lst = text.split(QRegularExpression("(?<=\n)"), Qt::SkipEmptyParts);
 	for(const auto t: lst) {
 		if( t[0] == u'-' && !isDummyLine(editor, block) ) {
-			do_output(QString("Expected block %1 to be a dummy line\n").arg(block.blockNumber()));
+			do_output(QString("[FAILED #%1] Expected block %2 to be a dummy line\n").arg(++total_failed).arg(block.blockNumber()));
 			return false;
 		}
 		if( t[0] != u'-' && isDummyLine(editor, block) ) {
-			do_output(QString("Expected block %1 NOT to be a dummy line\n").arg(block.blockNumber()));
+			do_output(QString("[FAILED #%1] Expected block %2 NOT to be a dummy line\n").arg(++total_failed).arg(block.blockNumber()));
 			return false;
 		}
 		if( !(block = block.next()).isValid() ) return false;
@@ -3538,12 +3538,10 @@ void MainWindow::onAction_TestDiff() {
 			QCoreApplication::processEvents();
             do_diff();
 			QCoreApplication::processEvents();
-			if( !test_diff_line(editor, tc[i-2]) ) {
-				++total_failed;
+			if( !test_diff_line(editor, tc[i-2], total_failed) ) {
 				break;
 			}
-			if( !test_diff_line(diffview, tc[i-1]) ) {
-				++total_failed;
+			if( !test_diff_line(diffview, tc[i-1], total_failed) ) {
 				break;
 			}
 			//if( i + 1 >= tc.size() ) break;

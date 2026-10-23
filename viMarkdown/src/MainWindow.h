@@ -505,7 +505,7 @@ protected:
     bool	do_cdy(QChar cmd, QTextCursor& cursor);
     void	do_cdy_moved(QTextCursor& cursor);
     void	save_preffered_x();
-    bool	test_diff_line(MarkdownEditor* editor, const QString& text);
+    bool	test_diff_line(MarkdownEditor* editor, const QString& text, int&);
 
 private:
     int		m_processing = 0;
