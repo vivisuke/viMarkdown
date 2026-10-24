@@ -3432,7 +3432,7 @@ void MainWindow::onAction_TestViCommands() {
 }
 //----------------------------------------------------------------------
 QStringList g_diffTestCase[] = {
-#if 1
+#if 0
 	{"Basic diff test",
 		"=aaa\n"
 		"-\n"		//	削除された２行目
@@ -3454,6 +3454,25 @@ QStringList g_diffTestCase[] = {
 		"!aaa\n"
 		"!bbb\n"	//	
 		"=ccc\n",
+	},
+#endif
+#if 1
+	{"Basic diff test",
+		"=aaa\n"
+		"-\n"		//	削除された２行目
+		"=ccc\n",
+		"=aaa\n"
+		"+bbb\n"	//	挿入された２行目
+		"=ccc\n",
+#if 0
+		">x",		//	右側文書先頭一文字削除
+		"!aaa\n"
+		"-\n"		//	パディング行
+		"=ccc\n",
+		"!aa\n"
+		"!bbb\n"	//	
+		"=ccc\n",
+#endif
 	},
 #endif
 #if 0
@@ -3488,9 +3507,19 @@ void set_text(MarkdownEditor* editor, const QString& text) {
 	cursor.setPosition(0);
 	editor->setTextCursor(cursor);
 }
-void do_exec(MarkdownEditor* editor, const QString& text) {
-	QTextCursor cursor = editor->textCursor();
-	for(int i = 0; i < text.size(); ++i) {
+void do_action(MarkdownEditor* editor, MarkdownEditor* diffview, const QString& text) {
+	if( text.isEmpty() ) return;
+	int i = 0;
+	QTextCursor cursor;
+	if( text[0] == u'>' ) {
+		cursor = diffview->textCursor();
+		++i;
+	} else {
+		cursor = editor->textCursor();
+		if( text[0] == u'<' )
+			++i;
+	}
+	for(; i < text.size(); ++i) {
 		switch( text[i].unicode() ) {
 		case u'x':
 			//cursor.deleteChar();
@@ -3549,7 +3578,7 @@ void MainWindow::onAction_TestDiff() {
 				set_text(diffview, tc[++i]);
 				++i;
 			} else {
-				do_exec(editor, tc[i]);
+				do_action(editor, diffview, tc[i]);
 				i += 3;
 			}
 			do_output(".");

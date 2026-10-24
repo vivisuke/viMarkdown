@@ -57,12 +57,14 @@ Prototype development began in December 2025, and development is currently under
 \* Note: The schedule above is current and subject to change without notice at the author's sole discretion.
 ## Roadmap
 
-| Ver. | Features / Overview | Schedule |
-| :--- | :--- | :--- |
-| 0.2 | Basic editor features, Basic Markdown, Ruled-line (Keisen) blocks, CSV blocks, Direct editing in the previewer (limited) | Scheduled for release ( windows binary only) by the end of April 2026.|
-| 0.3 | Vi key bindings, Japanese localization for menus and UI, regex search, grep, diff?, SVG blocks,  Calender/Diary, usability and performance improvements, migration to CMake (Qt Creator / Mac / Linux? support) | Dev version starting around May 2026, Alpha in Aug 2026, and Beta in Oct 2026. RC and Stable versions (Win/Mac? binaries) planned for release in Dec 2026. |
-| 0.4 | Math formulas, Mind maps, Page view, Graph View?, rectangular selection?, Presentation mode? | TBD |
-| 0.5 | Mermaid diagrams?  | TBD |
+| Version | Summary | Schedule |
+|:---:|----|----|
+| **0.2** | Basic editor features, basic Markdown support, ruled/box-drawing blocks, CSV blocks, in-preview editing (limited) | **Late Apr 2026**: Stable released (Windows only) |
+| **0.3** | Vi keybindings, bilingual UI (JA/EN), regex search, grep, diff view, SVG blocks, calendar & diary (daily notes), UX improvements, performance optimizations, CMake migration, Qt Creator support, macOS/Linux support | **May 2026**: Dev<br>**Aug**: Alpha<br>**Oct**: Beta<br>**Dec 2026**: RC → Stable release (Win binary) |
+| **0.4** | Math formulas (LaTeX), custom in-house Markdown parser, mind maps?, presentation mode?, folder tree view?, incremental preview updates | **Jan 2027**: Dev |
+| **0.5** | Page view (multi-column, footnotes)?, diagram support?, rectangular/column selection?, graph view?, lazy loading? | **Jul 2027**: Dev |
+| **0.6** | Mermaid support?, scripting language (JavaScript or Lua)?, code blocks: multi-language syntax highlighting | **Jan 2028**: Dev |
+| **1.0** | TBD | TBD |
 
 \* Note: This roadmap is current and subject to change without notice at the author's sole discretion.
 
