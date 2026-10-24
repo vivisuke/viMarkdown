@@ -417,9 +417,12 @@ void MainWindow::onAction_DiffMode(bool checked) {
         connect(bar1, &QScrollBar::valueChanged, bar2, &QScrollBar::setValue);
 		connect(bar2, &QScrollBar::valueChanged, bar1, &QScrollBar::setValue);
 #endif
-		QTimer::singleShot(0, this, [this]() {
-            do_diff();
-        });
+		QCoreApplication::processEvents();
+		do_diff();
+		QCoreApplication::processEvents();
+		//QTimer::singleShot(0, this, [this]() {
+        //    do_diff();
+        //});
 		//bool b = docWidget->m_editor->document()->isModified();
 		//qDebug() << "modified = " << b;
 	} else {
