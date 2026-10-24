@@ -3447,8 +3447,8 @@ QStringList g_diffTestCase[] = {
 		"!aaa\n"
 		"!bbb\n"	//	
 		"=ccc\n",
-		"ix",
-		"!xaa\n"
+		"ixyz\x1b",
+		"!xyzaa\n"
 		"-\n"		//	パディング行
 		"=ccc\n",
 		"!aaa\n"
