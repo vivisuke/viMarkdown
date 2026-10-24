@@ -145,8 +145,9 @@ MainWindow::MainWindow(QWidget *parent)
 	m_diffTimer = new QTimer(this);
     m_diffTimer->setSingleShot(true); // 1回だけ発火
     connect(m_diffTimer, &QTimer::timeout, this, [this]() {
-      //if( !m_doing_diff )
-	      do_diff();
+		//if( !m_doing_diff )
+		QCoreApplication::processEvents();
+		do_diff();
     });
     //
 	QSettings settings;

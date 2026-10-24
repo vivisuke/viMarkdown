@@ -14,6 +14,7 @@
 #include <QLabel>
 #include <QTimer>
 #include <vector>
+#include <utility>
 #include <assert.h>
 #include "dtl/dtl.hpp"
 #include "MainWindow.h"
@@ -144,6 +145,7 @@ int visualLineCount(QTextDocument *doc, MarkdownEditor *editor) {
 void MarkdownEditor::removeAllDummyLines() {
     QTextDocument *doc = document();
     if (!doc) return;
+    if (!m_dummyInserted) return;
     qDebug() << "removeAllDummyLines()";
     // シグナルを一時的に止めて、途中で do_diff が呼ばれないようにする
     QSignalBlocker blocker(this); 
@@ -188,6 +190,21 @@ void MarkdownEditor::removeAllDummyLines() {
     }
 
     cursor.endEditBlock(); // レイアウトを再計算して画面を更新
+    {
+        std::vector<int> newBlockNumbers;
+        std::vector<uchar> newFlags;
+        newBlockNumbers.reserve(doc->blockCount());
+        newFlags.reserve(doc->blockCount());
+        for (size_t i = 0; i < m_diffBlockNumbers.size(); ++i) {
+            if (m_diffBlockNumbers[i] == DUMMY_LINE_NUM) continue; // ダミー行分は捨てる
+            newFlags.push_back(i < m_diffFlags.size() ? m_diffFlags[i] : uchar(0));
+            newBlockNumbers.push_back((int)newBlockNumbers.size()); // 実在行の連番に振り直し
+        }
+        m_diffBlockNumbers = std::move(newBlockNumbers);
+        m_diffFlags = std::move(newFlags);
+    }
+    m_nDummyLines = 0;
+    m_dummyInserted = false;
 }
 // -------------------------------------------------------------
 const QColor COLOR_DIFF_MINIMAP_DELETED   = QColor("#e8e8e8"); // 明るいグレイ（削除）
