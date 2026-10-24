@@ -757,8 +757,8 @@ void MainWindow::applyDeleteHunk(DocWidget* docWidget,
 {
 	//int endLn = diffLn + nAdd;
     for (int ln = diffLn; ln < endLn; ++ln) {
-        if (ln - 1 < lines1.size())
-            do_output(QString("- %1 0 '%2'\n").arg(ln).arg(lines1[ln - 1]));
+        //if (ln - 1 < lines1.size())
+        //    do_output(QString("- %1 0 '%2'\n").arg(ln).arg(lines1[ln - 1]));
 
         setPhysicalLine(docWidget->m_editor, block1, ++ln1, ADDED_LINE);
         int vc = qMax(1, visualLineCount(block1, docWidget->m_editor));
@@ -780,7 +780,7 @@ void MainWindow::applyAddHunk(DocWidget* docWidget,
 	//int endLn = diffLn + nDelete;
     for (int ln = diffLn; ln < endLn; ++ln) {
         if (ln - 1 >= lines2.size()) break;
-        do_output(QString("+ 0 %1 '%2'\n").arg(ln).arg(lines2[ln - 1]));
+        //do_output(QString("+ 0 %1 '%2'\n").arg(ln).arg(lines2[ln - 1]));
 
         setPhysicalLine(docWidget->m_diffview, block2, ++ln2, ADDED_LINE);
         int vc = qMax(1, visualLineCount(block2, docWidget->m_diffview));
@@ -889,7 +889,7 @@ void MainWindow::applyDiffToDocuments(
         switch (info.type) {
         case dtl::SES_COMMON:
             flush(info.beforeIdx, info.afterIdx);
-            do_output(QString("= %1 %2 '%3'\n").arg(info.beforeIdx).arg(info.afterIdx).arg(line));
+            //do_output(QString("= %1 %2 '%3'\n").arg(info.beforeIdx).arg(info.afterIdx).arg(line));
             setPhysicalLine(docWidget->m_editor, block1, ++ln1, 0);
             block1 = block1.next();
             setPhysicalLine(docWidget->m_diffview, block2, ++ln2, 0);

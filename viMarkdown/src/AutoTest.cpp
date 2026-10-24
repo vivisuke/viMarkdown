@@ -3447,6 +3447,13 @@ QStringList g_diffTestCase[] = {
 		"!aaa\n"
 		"!bbb\n"	//	
 		"=ccc\n",
+		"ix",
+		"!xaa\n"
+		"-\n"		//	パディング行
+		"=ccc\n",
+		"!aaa\n"
+		"!bbb\n"	//	
+		"=ccc\n",
 	},
 #endif
 #if 0
@@ -3489,6 +3496,17 @@ void do_exec(MarkdownEditor* editor, const QString& text) {
 			//cursor.deleteChar();
 			editor->do_deleteText(cursor);
 			break;
+		case u'i': {
+			QString t = text.mid(1);
+			int ix = t.indexOf(QChar(0x1b));	//	Esc
+			if( ix >= 0 ) {
+				t = t.left(ix);
+				i += 2 + t.size();		//	2 for i, Esc
+			}
+				i = text.size();
+			editor->do_insertText(cursor, t);
+			break;
+		}
 		}
 	}
 	editor->setTextCursor(cursor);
@@ -3526,7 +3544,7 @@ void MainWindow::onAction_TestDiff() {
 		for(int i = 0; i < tc.size();) {
 			++total_tested;
 			if( i == 0 ) {
-				do_output(tc[0] + "\n");
+				do_output("\n" + tc[0]);
 				set_text(editor, tc[++i]);
 				set_text(diffview, tc[++i]);
 				++i;
