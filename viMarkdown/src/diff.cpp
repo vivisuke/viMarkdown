@@ -964,6 +964,11 @@ void MainWindow::do_diff() {
 
     if (docWidget->m_editor->dummyInserted())   docWidget->m_editor->removeAllDummyLines();
     if (docWidget->m_diffview->dummyInserted()) docWidget->m_diffview->removeAllDummyLines();
+	//	前回の単語差分強調 (DiffBlockUserData) を全てクリアする。
+	//	「変更→共通」になったブロックは calculateAndSet* を通らないため、
+	//	クリアしないと古い強調が残り続ける (SPR #1182)
+	for (QTextBlock b = doc1->begin(); b.isValid(); b = b.next()) b.setUserData(nullptr);
+	for (QTextBlock b = doc2->begin(); b.isValid(); b = b.next()) b.setUserData(nullptr);
 
     std::vector<QString> lines1 = extractLinesFromDocument(doc1);
     std::vector<QString> lines2 = extractLinesFromDocument(doc2);
