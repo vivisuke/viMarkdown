@@ -1685,7 +1685,8 @@ void MarkdownEditor::reflectWordToPeer(const QTextBlock &block, int start, int l
     cur2.setPosition(block2.position() + peerStart);
     cur2.setPosition(block2.position() + peerStart + peerLength, QTextCursor::KeepAnchor);
     // 選択された範囲を指定単語に置換
-    cur2.insertText(wordText);
+    peer->do_insertText(cur2, wordText);
+    //cur2.insertText(wordText);
     cur2.endEditBlock();
     m_docWidget->m_editor->rehighlight();
     m_docWidget->m_diffview->rehighlight();
