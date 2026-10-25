@@ -1326,18 +1326,20 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 	bool completed = true;
 	int rcnt = getRepeatCount();
 	gvi.m_pendingCommand += cmd;
-	if( gvi.m_pendingCommand == ":" || gvi.m_pendingCommand == "/"  || gvi.m_pendingCommand == "?" ) {
+	//	カウント前置（例: 2/）でもコマンドラインを開くため、pendingCommand の完全一致ではなく
+	//	入力文字そのもので判定する。オペレータ・プレフィックス・fFtT 待ちの場合は対象外。
+	if( (cmd == ':' || cmd == '/' || cmd == '?') && gvi.m_operator == ' ' && gvi.m_prefix == ' ' && gvi.m_fFtT == ' ' ) {
 		statusBar()->clearMessage();
 		gvi.m_currentMode = ViMode::CommandLine;
 		//gvi.m_cmdlineMode = true;
 		gvi.m_prevFocusWidget = cursor.document() == docWidget->m_editor->document() ?
 									(QWidget*)docWidget->m_editor : (QWidget*)docWidget->m_preview;
-		m_prefixLabel->setText(gvi.m_pendingCommand);
+		m_prefixLabel->setText(QString(cmd));
 		m_prefixLabel->show();
 		m_cmdLine->setText("");
 		m_cmdLine->show();
 		m_cmdLine->setFocus();
-		if( gvi.m_pendingCommand == ":" ) {
+		if( cmd == ':' ) {
 			//gvi.m_exhist.push_front(":");
 			while( gvi.m_exhist.size() > 64 ) gvi.m_exhist.pop_back();
 			gvi.m_exhist_ix = -1;

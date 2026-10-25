@@ -3223,33 +3223,33 @@ const QList<ViTestCase> viTestCases = {
     //--------------------------------------------------------------------------
     //  検索 (/, ?, n, N)  ── SPR #1204
     { "Search forward (/) - Basic",
-        "c ┃at dog cat\n"
+        "c┃at dog cat\n"
         "bird cat fish\n"
         "dog bird\n",
         {
-            "/cat", "cat dog  ┃cat\nbird cat fish\ndog bird\n",	// カーソル位置より後方の最初のマッチ先頭へ
-            "/fish", "cat dog cat\nbird cat  ┃fish\ndog bird\n",	// 続けて別パターンを検索
+            "/cat", "cat dog ┃cat\nbird cat fish\ndog bird\n",	// カーソル位置より後方の最初のマッチ先頭へ
+            "/fish", "cat dog cat\nbird cat ┃fish\ndog bird\n",	// 続けて別パターンを検索
         }
     },
     { "Search forward (/) - Wrap around",
         "cat dog bird\n"
-        "fish c ┃at\n",
+        "fish c┃at\n",
         {
-            "/cat", " ┃cat dog bird\nfish cat\n",	// 後方にマッチが無いので文書先頭に折り返す
+            "/cat", "┃cat dog bird\nfish cat\n",	// 後方にマッチが無いので文書先頭に折り返す
         }
     },
     { "Search forward (/) - Not found",
-        "abc ┃ def\n"
+        "abc┃ def\n"
         "ghi\n",
         {
-            "/xyz", "abc ┃ def\nghi\n",	// マッチなし：カーソルは移動しない
+            "/xyz", "abc┃ def\nghi\n",	// マッチなし：カーソルは移動しない
         }
     },
     { "Search backward (?) - Basic",
         "cat dog cat\n"
-        "bird cat  ┃fish\n",
+        "bird cat ┃fish\n",
         {
-            "?cat", "cat dog cat\nbird  ┃cat fish\n",	// カーソル位置より前方の最後のマッチ先頭へ
+            "?cat", "cat dog cat\nbird ┃cat fish\n",	// カーソル位置より前方の最後のマッチ先頭へ
         }
     },
     { "Search backward (?) - Wrap around",
