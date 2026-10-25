@@ -3484,7 +3484,8 @@ void MarkdownEditor::applyDiffBlock(QTextBlock block) {
     if (moved && !sourceTexts.isEmpty()) {
         newText += '\n';
     }
-    cur2.insertText(newText);
+    peer->do_insertText(cur2, newText);
+    //cur2.insertText(newText);
     cur2.endEditBlock();
     m_docWidget->m_editor->setProcessing(false);
     m_docWidget->m_diffview->setProcessing(false);
