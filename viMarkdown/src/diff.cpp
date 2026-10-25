@@ -487,10 +487,17 @@ void MainWindow::onAction_DiffMode(bool checked) {
 }
 void MainWindow::onDiffViewChanged() {	//	比較先エディタが編集された場合
 	//##qDebug() << "MainWindow::onDiffViewChanged()";
+	DocWidget *docWidget = getCurDocWidget();
+	if( docWidget == nullptr ) return;
+	if( docWidget->m_diffMode && !m_doing_diff) {
+		m_diffTimer->start(100); 
+	}
+#if 0
     if (m_processing!=0) return;
     ++m_processing;
     do_diff();
     --m_processing;
+#endif
 }
 #if 0
 void applyInlineHighlight(QTextBlock &block, const DiffBlockUserData *userData, bool isLeft = true) {
