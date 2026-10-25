@@ -3220,6 +3220,108 @@ const QList<ViTestCase> viTestCases = {
             "2U", "┃345\n"   // 2回分まとめてリドゥ
         }
     },
+    //--------------------------------------------------------------------------
+    //  検索 (/, ?, n, N)  ── SPR #1204
+    { "Search forward (/) - Basic",
+        "c ┃at dog cat\n"
+        "bird cat fish\n"
+        "dog bird\n",
+        {
+            "/cat", "cat dog  ┃cat\nbird cat fish\ndog bird\n",	// カーソル位置より後方の最初のマッチ先頭へ
+            "/fish", "cat dog cat\nbird cat  ┃fish\ndog bird\n",	// 続けて別パターンを検索
+        }
+    },
+    { "Search forward (/) - Wrap around",
+        "cat dog bird\n"
+        "fish c ┃at\n",
+        {
+            "/cat", " ┃cat dog bird\nfish cat\n",	// 後方にマッチが無いので文書先頭に折り返す
+        }
+    },
+    { "Search forward (/) - Not found",
+        "abc ┃ def\n"
+        "ghi\n",
+        {
+            "/xyz", "abc ┃ def\nghi\n",	// マッチなし：カーソルは移動しない
+        }
+    },
+    { "Search backward (?) - Basic",
+        "cat dog cat\n"
+        "bird cat  ┃fish\n",
+        {
+            "?cat", "cat dog cat\nbird  ┃cat fish\n",	// カーソル位置より前方の最後のマッチ先頭へ
+        }
+    },
+    { "Search backward (?) - Wrap around",
+        "┃cat dog\n"
+        "bird fish\n",
+        {
+            "?fish", "cat dog\nbird ┃fish\n",	// 前方にマッチが無いので文書末尾に折り返す
+        }
+    },
+    { "Search (/) - Case insensitive",
+        "d┃og\n"
+        "Cat bird\n",
+        {
+            "/cat", "dog\n┃Cat bird\n",	// 実装は CaseInsensitiveOption 固定（大文字小文字を区別しない）
+        }
+    },
+    { "Search (/) - Regular expression",
+        "d┃og\n"
+        "c4t bird\n",
+        {
+            "/c.t", "dog\n┃c4t bird\n",	// パターンは正規表現として解釈される
+        }
+    },
+    { "Search (/) - Empty pattern reuses last pattern",
+        "c┃at dog cat\n"
+        "bird cat fish\n",
+        {
+            "/cat", "cat dog ┃cat\nbird cat fish\n",
+            "l", "cat dog c┃at\nbird cat fish\n",
+            "/", "cat dog cat\nbird ┃cat fish\n",	// 空パターンは前回パターン "cat" を再利用
+        }
+    },
+    { "Search with count (2/) - Second match",
+        "c┃at dog cat\n"
+        "bird cat fish\n",
+        {
+            "2/cat", "cat dog cat\nbird ┃cat fish\n",	// カウント分だけマッチを進む
+        }
+    },
+    { "Search (/) - Japanese text",
+        "あ┃いう\n"
+        "かきく あい\n",
+        {
+            "/あい", "あいう\nかきく ┃あい\n",	// マルチバイト文字の検索
+        }
+    },
+    { "Repeat search (n/N) - After forward search",
+        "c┃at dog cat\n"
+        "bird cat fish\n",
+        {
+            "/cat", "cat dog ┃cat\nbird cat fish\n",
+            "n", "cat dog cat\nbird ┃cat fish\n",	// 同方向の次のマッチへ
+            "N", "cat dog ┃cat\nbird cat fish\n",	// 逆方向へ戻る
+        }
+    },
+    { "Repeat search (n/N) - After backward search",
+        "cat dog cat\n"
+        "bird cat ┃fish\n",
+        {
+            "?cat", "cat dog cat\nbird ┃cat fish\n",
+            "n", "cat dog ┃cat\nbird cat fish\n",	// 後方検索の同方向＝前のマッチへ
+            "N", "cat dog cat\nbird ┃cat fish\n",	// 逆方向へ戻る
+        }
+    },
+    { "Repeat search (n) - Wrap around",
+        "c┃at dog cat\n"
+        "bird\n",
+        {
+            "/cat", "cat dog ┃cat\nbird\n",
+            "n", "┃cat dog cat\nbird\n",	// 最後のマッチから先頭のマッチへ折り返す（do_find の wrapscan 前提・要確認）
+        }
+    },
 #endif
 //	ex commands
 #if 0
@@ -3386,6 +3488,14 @@ void MainWindow::onAction_TestViCommands() {
 				} else if( gvi.m_currentMode == ViMode::CommandLine ) {
 					if( cmd_text[i] == u':' )
 						do_exCmd(cmd_text.mid(i), cursor);
+					else if( cmd_text[i] == u'/' || cmd_text[i] == u'?' ) {
+						//	SPR #1204: 検索コマンドもテスト可能にする（本物の Enter 経路は do_vi_search を直接呼ぶ）
+						do_vi_search(cmd_text.mid(i), cursor, qMax(1, gvi.m_repeatCount), docWidget);
+						cursor = editor->textCursor();	// do_vi_search はエディタ側カーソルを移動させる
+						gvi.m_currentMode = ViMode::Normal;
+						gvi.m_pendingCommand.clear();
+						gvi.m_repeatCount = 0;
+					}					
 					break;
 				}
 			}
