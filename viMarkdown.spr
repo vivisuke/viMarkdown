@@ -1211,7 +1211,7 @@ SPR# 状 P Open Close ver     Type  概要
 1196 ◎ C 10/24 10/24 03205│問題│テスト失敗時：失敗番号を表示した方がよい
 1197 ◎ C 10/24 10/24 03205│問題│diff自動テスト実行時：diff結果をアウトプット表示しない方がよい？
 1198 ◎ C 10/24 10/24 03205│ToDo│diff自動テスト："i<text>\x1b" でカーソル位置文字列挿入
-1199 ● C 10/24            │ToDo│diff自動テスト："> コマンド" で、右側の比較先ビューでもコマンド実行可能にする
+1199 ◎ C 10/24 10/26 03206│ToDo│diff自動テスト："> コマンド" で、右側の比較先ビューでもコマンド実行可能にする
 1200 ◎ C 10/24 10/24 03205│問題│README.md > roadmap：日本語版への修正が反映されていない
 1201 ◎ C 10/25 10/25 03206│問題│QTimer::singleShot() を止め、QCoreApplication::processEvents() でウェイト（？）
 1202 ◎ C 10/25 10/25 03206│問題│MarkdownEditor::removeAllDummyLines()：m_nDummyLines, m_dummyInserted のリセットが行われていない

@@ -3574,7 +3574,7 @@ QStringList g_diffTestCase[] = {
 		"=aaa\n"
 		"+bbb\n"	//	挿入された２行目
 		"=ccc\n",
-#if 0
+#if 1
 		">x",		//	右側文書先頭一文字削除
 		"!aaa\n"
 		"-\n"		//	パディング行
@@ -3619,21 +3619,27 @@ void set_text(MarkdownEditor* editor, const QString& text) {
 }
 void do_action(MarkdownEditor* editor, MarkdownEditor* diffview, const QString& text) {
 	if( text.isEmpty() ) return;
+	//bool isEditor = true;
+	MarkdownEditor *ptr = editor;
 	int i = 0;
-	QTextCursor cursor;
+	//QTextCursor cursor;
 	if( text[0] == u'>' ) {
-		cursor = diffview->textCursor();
+		ptr = diffview;
+		//isEditor = false;
+		//cursor = diffview->textCursor();
 		++i;
 	} else {
-		cursor = editor->textCursor();
+		//ptr == editor;
+		//cursor = editor->textCursor();
 		if( text[0] == u'<' )
 			++i;
 	}
+	QTextCursor cursor = ptr->textCursor();
 	for(; i < text.size(); ++i) {
 		switch( text[i].unicode() ) {
 		case u'x':
 			//cursor.deleteChar();
-			editor->do_deleteText(cursor);
+			ptr->do_deleteText(cursor);
 			break;
 		case u'i': {
 			QString t = text.mid(1);
@@ -3643,12 +3649,12 @@ void do_action(MarkdownEditor* editor, MarkdownEditor* diffview, const QString& 
 				i += 2 + t.size();		//	2 for i, Esc
 			}
 				i = text.size();
-			editor->do_insertText(cursor, t);
+			ptr->do_insertText(cursor, t);
 			break;
 		}
 		}
 	}
-	editor->setTextCursor(cursor);
+	ptr->setTextCursor(cursor);
 }
 bool MainWindow::test_diff_line(MarkdownEditor* editor, const QString& text, int& total_failed) {
 	QTextBlock block = editor->document()->begin();
