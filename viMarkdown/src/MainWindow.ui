@@ -189,6 +189,7 @@
      <addaction name="action_TestViCommands"/>
      <addaction name="action_DumpHeaderBlocks"/>
      <addaction name="action_TestDiff"/>
+     <addaction name="action_TestCursorSync"/>
     </widget>
     <widget class="QMenu" name="menu_CheatSheet">
      <property name="title">
@@ -1373,6 +1374,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Alt+-</string>
+   </property>
+  </action>
+  <action name="action_TestCursorSync">
+   <property name="text">
+    <string>CursorSync(&amp;S)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Alt+S</string>
    </property>
   </action>
  </widget>

@@ -459,6 +459,7 @@ protected:
     void	onAction_TestViCommands();
     void	onAction_TestDiff();
     void	onAction_TestAll();
+    void	onAction_TestCursorSync();
     //void	onAction_DumpCharFlags();
     void	onAction_DumpBlockUserData();
     void	onAction_DumpBlockUserStates();

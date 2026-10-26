@@ -808,6 +808,7 @@ void MainWindow::setup_connections() {
 	connect(ui->action_TestViCommands, &QAction::triggered, this, &MainWindow::onAction_TestViCommands);
 	connect(ui->action_TestDiff, &QAction::triggered, this, &MainWindow::onAction_TestDiff);
 	connect(ui->action_TestAll, &QAction::triggered, this, &MainWindow::onAction_TestAll);
+	connect(ui->action_TestCursorSync, &QAction::triggered, this, &MainWindow::onAction_TestCursorSync);
 	connect(ui->action_RunPTS, &QAction::triggered, this, &MainWindow::onAction_RunPTS);
 	//connect(ui->action_DumpCharFlags, &QAction::triggered, this, &MainWindow::onAction_DumpCharFlags);
 	connect(ui->action_DumpBlockUserData, &QAction::triggered, this, &MainWindow::onAction_DumpBlockUserData);

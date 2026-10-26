@@ -44,6 +44,7 @@ public:
 	void	moveToPrevWord(QTextCursor& cursor, bool select);
 	void	moveToStartOfWord(QTextCursor& cursor, bool select);
 	void	moveToEndOfWord(QTextCursor& cursor, bool select);
+    void	onCursorPosChanged();
 #if 0
 	void	scrollToTop(int lineNum) {		//	lineNum: 0 org.
 		verticalScrollBar()->setValue(lineNum);
@@ -93,7 +94,6 @@ protected:
 
     void	onAction_Cut();
 
-    void	onCursorPosChanged();
     void	onContentsChanged(int position, int charsRemoved, int charsAdded);
     //bool	isTableLine(const QString&);
     //bool	isTableHyphenLine(const QString&);

@@ -942,7 +942,7 @@ void MainWindow::run_previewTestScript(const QString &script) {
 // viコマンド自動テスト用のテストケース構造体
 struct ViTestCase {
     QString m_name;			// テスト名
-    QString m_initialText;	// 初期テキスト（'|' がカーソル位置）
+    QString m_initialText;	// 初期テキスト（'┃' がカーソル位置）
     QStringList m_steps;	//	{viコマンド列, コマンド実行後テキスト（'|' がカーソル位置）}...
 };
 
@@ -3709,6 +3709,108 @@ void MainWindow::onAction_TestDiff() {
 			}
 			//if( i + 1 >= tc.size() ) break;
 		}
+	}
+	QString mess = QString("\nTotal: %1 failed / %2 tested. (Success:%3%)")
+					.arg(total_failed).arg(total_tested).arg(100.0 - total_failed*100.0/total_tested, 0, 'f', 1);
+	statusBar()->showMessage(mess);
+	do_output(mess);
+}
+//----------------------------------------------------------------------
+struct SyncTestCase {
+    QString m_name;			// テスト名
+    QString m_initialText;	// 初期テキスト（'┃' がカーソル位置）
+    QString m_previewText;	//	EtoP 同期結果
+    QString m_editorText;	//	PtoE 同期結果
+};
+QList<SyncTestCase> g_syncTestCase = {
+	{"Basic", "┃Hello\n", "┃Hello\n", "┃Hello\n"},
+	{"Basic > line tail", "Hello┃\n", "Hello┃\n", "Hello┃\n"},
+	{"Bold・中間", "ab **bo┃ld** cd\n", "ab bo┃ld cd\n", "ab **bo┃ld** cd\n"},
+	{"Bold・開始内側", "ab **┃bold** cd\n", "ab ┃bold cd\n", "ab **┃bold** cd\n"},
+	{"Bold・末尾内側", "ab **bold┃** cd\n", "ab bold┃ cd\n", "ab **bold┃** cd\n"},
+	{"Bold・行頭", "**┃bold**\n", "┃bold\n", "**┃bold**\n"},
+	{"Bold・直前", "ab ┃**bold** cd\n", "ab ┃bold cd\n", ""},
+	{"Bold・直後", "ab **bold**┃ cd\n", "ab bold┃ cd\n", ""},
+};
+void MainWindow::onAction_TestCursorSync() {
+	qDebug() << "onAction_TestCursorSync()";
+	addTab(QString("QA-%1").arg(++m_QA_tab_number));
+	DocWidget *docWidget = getCurDocWidget();;
+	if( docWidget == nullptr ) return;
+	MarkdownEditor *editor = docWidget->m_editor;
+	MarkdownPreview *preview = docWidget->m_preview;
+	int total_tested = 0;
+	int total_failed = 0;
+	do_output("\n");
+	do_output("Test cursor synchronization...\n\n");
+	int pos, anchor;
+	int pos2, anchor2;
+	for(int i = 0; i < g_syncTestCase.size(); ++i) {
+		do_output(g_syncTestCase[i].m_name + ": ");
+		editor->initUndoMgr();
+		QTextCursor cursor = editor->textCursor();
+		cursor.movePosition(QTextCursor::Start);
+		cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
+		cursor.insertText(removeCursor(g_syncTestCase[i].m_initialText, pos, anchor));
+		cursor.setPosition(pos);
+		cursor.clearSelection();
+		editor->setTextCursor(cursor);
+		editor->savePrefferedX(cursor);
+		QCoreApplication::processEvents();		//	溜まっているイベント処理
+		QString exp = g_syncTestCase[i].m_previewText;	//	期待するプレビューテキスト
+		QString text2 = removeCursor(exp, pos2, anchor2);
+		exp.replace('\n', "\\n");
+		QTextCursor cursor2 = preview->textCursor();
+		QString after = cursor2.document()->toPlainText();		//	実際のプレビューテキスト
+		after.insert(cursor2.position(), u'┃');
+		if( after.endsWith("\n\n") ) after = after.left(after.size() - 1);
+		after.replace('\n', "\\n");
+		++total_tested;
+		if( after != exp ) {
+			++total_failed;
+			do_output(QString("\n[FAILED #%1] wrong document text.\n").arg(total_failed));
+			do_output(QString("Expected: '%1'\n").arg(exp));
+			do_output(QString("Actual:   '%1'\n").arg(after));
+		}
+		++total_tested;
+		if( pos2 != cursor2.position() ) {
+			++total_failed;
+			do_output(QString("\n[FAILED #%1] wrong cursor position.\n").arg(total_failed));
+			do_output(QString("Expected: '%1'\n").arg(exp));
+			do_output(QString("Actual:   '%1'\n").arg(after));
+		}
+		//	PtoE チェック（m_editorText が空ならスキップ）
+		if( !g_syncTestCase[i].m_editorText.isEmpty() ) {
+			QString expE = g_syncTestCase[i].m_editorText;	//	期待するエディタテキスト
+			int pos3, anchor3;
+			removeCursor(expE, pos3, anchor3);
+			expE.replace('\n', "\\n");
+			QTextCursor cursorP = preview->textCursor();
+			cursorP.setPosition(pos2);		//	EtoP 結果位置から逆同期する
+			cursorP.clearSelection();
+			preview->setTextCursor(cursorP);
+			preview->onCursorPosChanged();		//	位置不変だとシグナルが発火しないため直接呼ぶ
+			QCoreApplication::processEvents();
+			QTextCursor cursorE = editor->textCursor();
+			QString afterE = cursorE.document()->toPlainText();		//	実際のエディタテキスト
+			afterE.insert(cursorE.position(), u'┃');
+			afterE.replace('\n', "\\n");
+			++total_tested;
+			if( afterE != expE ) {
+				++total_failed;
+				do_output(QString("\n[FAILED #%1] wrong editor text (PtoE).\n").arg(total_failed));
+				do_output(QString("Expected: '%1'\n").arg(expE));
+				do_output(QString("Actual:   '%1'\n").arg(afterE));
+			}
+			++total_tested;
+			if( pos3 != cursorE.position() ) {
+				++total_failed;
+				do_output(QString("\n[FAILED #%1] wrong editor cursor position (PtoE).\n").arg(total_failed));
+				do_output(QString("Expected: '%1'\n").arg(expE));
+				do_output(QString("Actual:   '%1'\n").arg(afterE));
+			}
+		}
+		do_output("\n");
 	}
 	QString mess = QString("\nTotal: %1 failed / %2 tested. (Success:%3%)")
 					.arg(total_failed).arg(total_tested).arg(100.0 - total_failed*100.0/total_tested, 0, 'f', 1);
