@@ -27,12 +27,20 @@
 CharType getCharType(QChar ch);
 
 // 1. ダミー行（高さを揃えるための空行）かどうかの判定
+#if 1
+bool isDummyLine(MarkdownEditor* editor, const QTextBlock &block) {
+    const auto &vbn = editor->diffBlockNumbers();   // ← editor 自身の対応表を引く
+    int bn = block.blockNumber();
+    return bn < vbn.size() && vbn[bn] < 0;
+}
+#else
 bool isDummyLine(MarkdownEditor* editor, const QTextBlock &block) {
     const auto &vbn = editor->diffBlockNumbers();
     int bn = block.blockNumber();
     return bn < vbn.size() && vbn[bn] < 0;
     //return block.userState() == 0;
 }
+#endif
 #if 1
 // 2. 行番号（1オリジン）取得（2ビット右シフトするだけ）
 int lineNumber(MarkdownEditor* editor, const QTextBlock &block) {

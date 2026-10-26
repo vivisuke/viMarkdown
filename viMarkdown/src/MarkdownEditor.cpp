@@ -40,6 +40,38 @@ bool isPaddingLine(MarkdownEditor* editor, const QTextBlock &block) {
     int bn = block.blockNumber();
     return bn < flgs.size() && flgs[bn] == PADDING_LINE;
 }
+//	対応ブロックを物理行番号で引く共通ヘルパー。
+//	生のブロック番号はダミー行の挿入で左右ずれるため対応付けに使えない。
+//	m_diffBlockNumbers[ブロック番号] = 物理行番号（実在行は 0 org.、ダミー行は負値）。
+//	src がダミー行の場合：*pSelfDummy = true とし、対応ブロックは
+//	そのダミー群の直後の「次の実在行」とする。
+//	対応が取れない場合は無効ブロックを返す。
+QTextBlock peerBlockForPhysicalLine(const QTextBlock &src, MarkdownEditor *self, MarkdownEditor *peer, bool *pSelfDummy) {
+	if( pSelfDummy ) *pSelfDummy = false;
+	if( !src.isValid() || self == nullptr || peer == nullptr ) return QTextBlock();
+	const auto &vbn1 = self->diffBlockNumbers();
+	const auto &vbn2 = peer->diffBlockNumbers();
+	int bn1 = src.blockNumber();
+	int phys = -1;
+	if( bn1 < (int)vbn1.size() && vbn1[bn1] >= 0 ) {
+		phys = vbn1[bn1];
+	} else {
+		if( pSelfDummy ) *pSelfDummy = true;
+		for( int i = bn1 + 1; i < (int)vbn1.size(); ++i ) {
+			if( vbn1[i] >= 0 ) { phys = vbn1[i]; break; }
+		}
+	}
+	if( phys >= 0 ) {
+		for( int i = 0; i < (int)vbn2.size(); ++i ) {
+			if( vbn2[i] == phys ) return peer->document()->findBlockByNumber(i);
+		}
+	}
+	//	末尾のダミー等、対応する実在行が無い場合：相手の最後の実在行へ
+	for( int i = (int)vbn2.size() - 1; i >= 0; --i ) {
+		if( vbn2[i] >= 0 ) return peer->document()->findBlockByNumber(i);
+	}
+	return QTextBlock();
+}
 bool isDummyLine(MarkdownEditor* editor, const QTextBlock &block);
 int lineNumber(MarkdownEditor* editor, const QTextBlock &block);
 bool hasDiff(MarkdownEditor* editor, const QTextBlock &block);
@@ -1649,7 +1681,9 @@ void MarkdownEditor::contextMenuEvent(QContextMenuEvent *event) {
 void MarkdownEditor::reflectWordToPeer(const QTextBlock &block, int start, int length, const QString &wordText) {
     MarkdownEditor *peer = this == m_docWidget->m_editor ? m_docWidget->m_diffview : m_docWidget->m_editor;
     QTextDocument *doc2 = peer->document();
-    QTextBlock block2 = doc2->findBlockByNumber(block.blockNumber());
+    QTextBlock block2 = peerBlockForPhysicalLine(block, this, peer, nullptr);
+	if( !block2.isValid() ) return;
+    //QTextBlock block2 = doc2->findBlockByNumber(block.blockNumber());
     m_docWidget->m_editor->setProcessing(true);
     m_docWidget->m_diffview->setProcessing(true);
     int peerStart = start;
@@ -2879,9 +2913,15 @@ void MarkdownEditor::syncDiffViewCursorFromEditor() {
 	peerView->m_processing = true;
 	QTextCursor cur1 = textCursor();
 	QTextBlock block1 = cur1.block();
-	QTextBlock block2 = peerView->document()->findBlockByNumber(block1.blockNumber());
+	//QTextBlock block2 = peerView->document()->findBlockByNumber(block1.blockNumber());
+	bool selfDummy = false;
+	QTextBlock block2 = peerBlockForPhysicalLine(block1, this, peerView, &selfDummy);
+	if( !block2.isValid() ) { peerView->m_processing = false; m_processing = false; return; }
 	QTextCursor cur2 = peerView->textCursor();
-	int offset = isDummyLine(this, block2) ? 0 : cur1.position() - block1.position();
+	// MarkdownEditor::syncDiffViewCursorFromEditor() (MarkdownEditor.cpp:2883)
+	int offset = selfDummy ? 0 : cur1.position() - block1.position();
+	//int offset = isDummyLine(peerView, block2) ? 0 : cur1.position() - block1.position();
+	//int offset = isDummyLine(this, block2) ? 0 : cur1.position() - block1.position();
 	if( offset != 0 ) {
 		const auto *userData1 = dynamic_cast<const DiffBlockUserData*>(block1.userData());
 		const auto *userData2 = dynamic_cast<const DiffBlockUserData*>(block2.userData());
@@ -3441,11 +3481,14 @@ void MarkdownEditor::lnAreaPaintEvent(QPaintEvent *event) {
 	}
 }
 void MarkdownEditor::applyDiffBlock(QTextBlock block) {
-	int bn = block.blockNumber();
+	//int bn = block.blockNumber();
 	MarkdownEditor *peer = this == m_docWidget->m_editor ? m_docWidget->m_diffview : m_docWidget->m_editor;
 	QTextDocument *doc = document();
 	QTextDocument *doc2 = peer->document();
-	QTextBlock block2 = doc2->findBlockByNumber(bn);
+	//QTextBlock block2 = doc2->findBlockByNumber(bn);
+	QTextBlock block2 = peerBlockForPhysicalLine(block, this, peer, nullptr);
+	if( !block2.isValid() ) return;
+
 	QTextCursor cur2(block2);
 	//	undone: 差分ブロックテキストを peerの対応ブロックにコピー
 	m_docWidget->m_editor->setProcessing(true);
@@ -3458,7 +3501,7 @@ void MarkdownEditor::applyDiffBlock(QTextBlock block) {
 	}
 	QTextBlock b2 = block2;
 	int count2 = 0;		//	差分・ダミーブロック行数
-	while (b2.isValid() && (isDummyLine(this, b2) || hasDiff(this, b2))) {
+	while (b2.isValid() && (isDummyLine(peer, b2) || hasDiff(peer, b2))) {
 		count2++;
 		b2 = b2.next();
 	}
