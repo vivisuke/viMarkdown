@@ -35,49 +35,79 @@ const QColor COLOR_DIFF_DELETED   = QColor("#e8e8e8"); // 明るいグレイ（�
 const QColor COLOR_DIFF_ADDED   = QColor("#ffecec"); // 明るい赤（挿入）
 const QColor COLOR_DIFF_MODIFIED = QColor("#ffffec"); // 明るい黄色（変更）
 
+bool isDummyLine(MarkdownEditor* editor, const QTextBlock &block);
+int lineNumber(MarkdownEditor* editor, const QTextBlock &block);
+bool hasDiff(MarkdownEditor* editor, const QTextBlock &block);
+int getDiff(MarkdownEditor* editor, const QTextBlock &block);
+void removeAllDummyLines(QTextDocument *doc);
+int visualLineCount(const QTextBlock &block, MarkdownEditor* editor);
+
 bool isPaddingLine(MarkdownEditor* editor, const QTextBlock &block) {
     const auto &flgs = editor->diffFlags();
     int bn = block.blockNumber();
     return bn < flgs.size() && flgs[bn] == PADDING_LINE;
 }
 //	対応ブロックを物理行番号で引く共通ヘルパー。
-//	生のブロック番号はダミー行の挿入で左右ずれるため対応付けに使えない。
-//	m_diffBlockNumbers[ブロック番号] = 物理行番号（実在行は 0 org.、ダミー行は負値）。
-//	src がダミー行の場合：*pSelfDummy = true とし、対応ブロックは
-//	そのダミー群の直後の「次の実在行」とする。
-//	対応が取れない場合は無効ブロックを返す。
 QTextBlock peerBlockForPhysicalLine(const QTextBlock &src, MarkdownEditor *self, MarkdownEditor *peer, bool *pSelfDummy) {
 	if( pSelfDummy ) *pSelfDummy = false;
 	if( !src.isValid() || self == nullptr || peer == nullptr ) return QTextBlock();
 	const auto &vbn1 = self->diffBlockNumbers();
 	const auto &vbn2 = peer->diffBlockNumbers();
-	int bn1 = src.blockNumber();
-	int phys = -1;
-	if( bn1 < (int)vbn1.size() && vbn1[bn1] >= 0 ) {
-		phys = vbn1[bn1];
-	} else {
+	const auto &flgs1 = self->diffFlags();
+	const auto &flgs2 = peer->diffFlags();
+	auto isDummy1 = [&](const QTextBlock &b) {
+		int bn = b.blockNumber();
+		return bn < (int)vbn1.size() && vbn1[bn] < 0;
+	};
+	auto isDummy2 = [&](const QTextBlock &b) {
+		int bn = b.blockNumber();
+		return bn < (int)vbn2.size() && vbn2[bn] < 0;
+	};
+	auto isPadding1 = [&](const QTextBlock &b) {
+		int bn = b.blockNumber();
+		return bn < (int)flgs1.size() && flgs1[bn] == PADDING_LINE;
+	};
+	auto isPadding2 = [&](const QTextBlock &b) {
+		int bn = b.blockNumber();
+		return bn < (int)flgs2.size() && flgs2[bn] == PADDING_LINE;
+	};
+	//	src がパディング行の場合：直前の非パディング行を起点にする
+	QTextBlock anchor = src;
+	while( anchor.isValid() && isPadding1(anchor) ) {
 		if( pSelfDummy ) *pSelfDummy = true;
-		for( int i = bn1 + 1; i < (int)vbn1.size(); ++i ) {
-			if( vbn1[i] >= 0 ) { phys = vbn1[i]; break; }
-		}
+		anchor = anchor.previous();
 	}
-	if( phys >= 0 ) {
-		for( int i = 0; i < (int)vbn2.size(); ++i ) {
-			if( vbn2[i] == phys ) return peer->document()->findBlockByNumber(i);
+	if( !anchor.isValid() ) return QTextBlock();
+	//	両文書を先頭から歩き、ブロック同士の対応を復元する
+	QTextBlock b1 = self->document()->begin();
+	QTextBlock b2 = peer->document()->begin();
+	while( b1.isValid() && b2.isValid() ) {
+		if( isPadding1(b1) ) { b1 = b1.next(); continue; }
+		if( isPadding2(b2) ) { b2 = b2.next(); continue; }
+		bool d1 = isDummy1(b1);
+		bool d2 = isDummy2(b2);
+		if( !d1 && !d2 ) {	//	実在行同士：1対1
+			if( b1 == anchor ) return b2;
+			b1 = b1.next(); b2 = b2.next();
+		} else if( !d1 && d2 ) {	//	b2 側に b1 のプレースホルダ群がある
+			if( b1 == anchor ) return b2;	//	群の先頭ダミーを返す
+			int vc = qMax(1, visualLineCount(b1, self));
+			for( int i = 0; i < vc && b2.isValid(); ++i ) b2 = b2.next();
+			b1 = b1.next();
+		} else if( d1 && !d2 ) {	//	b1 側に b2 のプレースホルダ群がある
+			int vc = qMax(1, visualLineCount(b2, peer));
+			if( anchor.blockNumber() >= b1.blockNumber() && anchor.blockNumber() < b1.blockNumber() + vc ) {
+				if( pSelfDummy ) *pSelfDummy = true;
+				return b2;
+			}
+			for( int i = 0; i < vc && b1.isValid(); ++i ) b1 = b1.next();
+			b2 = b2.next();
+		} else {	//	両側ダミー（通常は来ない）：安全に1つずつ進める
+			b1 = b1.next(); b2 = b2.next();
 		}
-	}
-	//	末尾のダミー等、対応する実在行が無い場合：相手の最後の実在行へ
-	for( int i = (int)vbn2.size() - 1; i >= 0; --i ) {
-		if( vbn2[i] >= 0 ) return peer->document()->findBlockByNumber(i);
 	}
 	return QTextBlock();
 }
-bool isDummyLine(MarkdownEditor* editor, const QTextBlock &block);
-int lineNumber(MarkdownEditor* editor, const QTextBlock &block);
-bool hasDiff(MarkdownEditor* editor, const QTextBlock &block);
-int getDiff(MarkdownEditor* editor, const QTextBlock &block);
-void removeAllDummyLines(QTextDocument *doc);
-
 //extern bool parseCsvLine(QStringList &fields, const QString &line, bool inQuotes, bool &inComment, bool &commented);
 //extern bool isTableLine(const QString& lnStr, QList<QStringView> &tableTokens);
 //extern bool isTableLine(const QString& lnStr, QStringList &tableTokens);
@@ -2919,7 +2949,8 @@ void MarkdownEditor::syncDiffViewCursorFromEditor() {
 	if( !block2.isValid() ) { peerView->m_processing = false; m_processing = false; return; }
 	QTextCursor cur2 = peerView->textCursor();
 	// MarkdownEditor::syncDiffViewCursorFromEditor() (MarkdownEditor.cpp:2883)
-	int offset = selfDummy ? 0 : cur1.position() - block1.position();
+	int offset = (selfDummy || isDummyLine(peerView, block2)) ? 0 : cur1.position() - block1.position();
+	//int offset = selfDummy ? 0 : cur1.position() - block1.position();
 	//int offset = isDummyLine(peerView, block2) ? 0 : cur1.position() - block1.position();
 	//int offset = isDummyLine(this, block2) ? 0 : cur1.position() - block1.position();
 	if( offset != 0 ) {
