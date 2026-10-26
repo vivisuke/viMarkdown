@@ -3731,6 +3731,14 @@ QList<SyncTestCase> g_syncTestCase = {
 	{"Bold・行頭", "**┃bold**\n", "┃bold\n", "**┃bold**\n"},
 	{"Bold・直前", "ab ┃**bold** cd\n", "ab ┃bold cd\n", ""},
 	{"Bold・直後", "ab **bold**┃ cd\n", "ab bold┃ cd\n", ""},
+	{"List・1項目先頭", "- ┃hoge\n- fuga\n", "┃hoge\nfuga\n", "- ┃hoge\n- fuga\n"},
+	{"List・1項目中間", "- ho┃ge\n- fuga\n", "ho┃ge\nfuga\n", "- ho┃ge\n- fuga\n"},
+	{"List・2項目先頭", "- hoge\n- ┃fuga\n", "hoge\n┃fuga\n", "- hoge\n- ┃fuga\n"},
+	{"List・2項目末尾", "- hoge\n- fuga┃\n", "hoge\nfuga┃\n", "- hoge\n- fuga┃\n"},
+	{"List・継続行 直前項目", "- ho┃ge\nここが継続行\n- fuga\n", "ho┃ge\nここが継続行\nfuga\n", "- ho┃ge\nここが継続行\n- fuga\n"},
+	{"List・継続行 先頭", "- hoge\n┃ここが継続行\n- fuga\n", "hoge\n┃ここが継続行\nfuga\n", "- hoge\n┃ここが継続行\n- fuga\n"},
+	{"List・継続行 中間", "- hoge\nここが継┃続行\n- fuga\n", "hoge\nここが継┃続行\nfuga\n", "- hoge\nここが継┃続行\n- fuga\n"},
+	{"List・継続行 次項目", "- hoge\nここが継続行\n- ┃fuga\n", "hoge\nここが継続行\n┃fuga\n", "- hoge\nここが継続行\n- ┃fuga\n"},
 };
 void MainWindow::onAction_TestCursorSync() {
 	qDebug() << "onAction_TestCursorSync()";

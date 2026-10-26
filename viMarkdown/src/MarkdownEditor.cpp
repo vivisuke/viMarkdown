@@ -1837,12 +1837,35 @@ int MarkdownEditor::findPosition(const PosContext &context) {
 	int offset = 0;
 	bool inComment = false;
 	bool isPrevLineEmpty = false;
+	bool inListItem = false;		//	リスト項目内（継続行を含む）にいるか
 	while( block.isValid() ) {
 		if( isCommentOuted(getBlockData(block)) ) {
 			block = block.next();
 			ix = 0;
 			continue;
 		}
+#if 1
+		if( ch == ListBullet ) {
+			auto text = block.text();
+			int ix = 0;
+			if( blockType(block) == BT_LIST ) {		//	リスト行の場合のみ "- " 分をスキップ
+				while( text[ix] == ' ' ) ++ix;
+				ix += 2;		//	2 for "- "
+			}
+			const BlockData* data = getBlockData(block);
+			int offset = context.m_offset;
+			// 先頭に装飾記号がある場合（例: - **hoge**）のスキップ
+			while( ix < data->m_charFlags.size() && data->m_charFlags[ix] >= PCF_NOT_VISIBLE )
+				++ix;
+			while(offset > 0 && ix < data->m_charFlags.size() ) {
+				++ix;
+				--offset;
+				while( ix < data->m_charFlags.size() && data->m_charFlags[ix] >= PCF_NOT_VISIBLE )
+					++ix;
+			}
+			return block.position() + ix;
+		}
+#else
 		if( ch == ListBullet ) {
 			if( blockType(block) == BT_LIST ) {
 				if( --nth == 0 ) break;
@@ -1850,6 +1873,7 @@ int MarkdownEditor::findPosition(const PosContext &context) {
 			block = block.next();
 			continue;
 		}
+#endif
 		if( ch == QChar(U_KEISEN_BLOCK) ) {
 			if( blockType(block) == BT_KEISEN_BEGIN ) {
 				if( --nth == 0 ) break;
