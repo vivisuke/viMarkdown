@@ -3322,6 +3322,67 @@ const QList<ViTestCase> viTestCases = {
             "n", "┃cat dog cat\nbird\n",	// 最後のマッチから先頭のマッチへ折り返す（do_find の wrapscan 前提・要確認）
         }
     },
+    { "Visual mode",
+		"h┃ello\n",
+		{
+			"v", "h《┃e》llo\n",
+			"l", "h《e┃l》lo\n",
+		}
+	},
+	{ "Visual - select and delete (d)",
+		"┃abcdef\n",
+		{
+			"vl", "《a┃b》cdef\n",
+			"l", "《ab┃c》def\n",
+			"d", "┃def\n",
+		}
+	},
+	{ "Visual - swap anchor (o)",
+		"┃abcdef\n",
+		{
+			"vl", "《a┃b》cdef\n",
+			"o", "《┃ab》cdef\n",
+			"o", "《a┃b》cdef\n",
+			"d", "┃cdef\n",
+		}
+	},
+	{ "Visual - word select (e) and delete",
+		"┃foo bar baz\n",
+		{
+			"ve", "《fo┃o》 bar baz\n",
+			"d", "┃ bar baz\n",
+		}
+	},
+	{ "Visual - count and delete (x)",
+		"┃abcdef\n",
+		{
+			"v3l", "《abc┃d》ef\n",
+			"x", "┃ef\n",
+		}
+	},
+	{ "Visual - across lines (j) and delete",
+		"┃ab\ncd\n",
+		{
+			"vj", "《ab\n┃c》d\n",
+			"d", "┃d\n",
+		}
+	},
+	{ "Visual - $ and 0",
+		"abc┃def\n",
+		{
+			"v$", "abc《de┃f》\n",
+			"0", "《┃abcdef》\n",
+			"d", "┃\n",
+		}
+	},
+	{ "Visual - yank and paste",
+		"┃abc def\n",
+		{
+			"vey", "┃abc def\n",		// ヤンク後、カーソルは選択先頭へ戻る
+			"ww", "abc ┃def\n",
+			"p", "abc dab┃c ef\n",
+		}
+	},
 #endif
 //	ex commands
 #if 0
@@ -3739,6 +3800,15 @@ QList<SyncTestCase> g_syncTestCase = {
 	{"List・継続行 先頭", "- hoge\n┃ここが継続行\n- fuga\n", "hoge\n┃ここが継続行\nfuga\n", "- hoge\n┃ここが継続行\n- fuga\n"},
 	{"List・継続行 中間", "- hoge\nここが継┃続行\n- fuga\n", "hoge\nここが継┃続行\nfuga\n", "- hoge\nここが継┃続行\n- fuga\n"},
 	{"List・継続行 次項目", "- hoge\nここが継続行\n- ┃fuga\n", "hoge\nここが継続行\n┃fuga\n", "- hoge\nここが継続行\n- ┃fuga\n"},
+#if 0		//	v0.3 では NPTF, v0.4 で対処予定
+	{"f*u**ga・先頭", "┃f*u**ga\n", "┃f*u**ga\n", "┃f*u**ga\n"},
+	{"f*u**ga・f直後", "f┃*u**ga\n", "f┃*u**ga\n", "f┃*u**ga\n"},
+	{"f*u**ga・u直前", "f*┃u**ga\n", "f*┃u**ga\n", "f*┃u**ga\n"},
+	{"f*u**ga・u直後", "f*u┃**ga\n", "f*u┃**ga\n", "f*u┃**ga\n"},
+	{"f*u**ga・**の間", "f*u*┃*ga\n", "f*u*┃*ga\n", "f*u*┃*ga\n"},
+	{"f*u**ga・g直前", "f*u**┃ga\n", "f*u**┃ga\n", "f*u**┃ga\n"},
+	{"f*u**ga・末尾", "f*u**ga┃\n", "f*u**ga┃\n", "f*u**ga┃\n"},
+#endif
 };
 void MainWindow::onAction_TestCursorSync() {
 	qDebug() << "onAction_TestCursorSync()";
@@ -3774,18 +3844,22 @@ void MainWindow::onAction_TestCursorSync() {
 		if( after.endsWith("\n\n") ) after = after.left(after.size() - 1);
 		after.replace('\n', "\\n");
 		++total_tested;
+		do_output(".");
 		if( after != exp ) {
 			++total_failed;
 			do_output(QString("\n[FAILED #%1] wrong document text.\n").arg(total_failed));
 			do_output(QString("Expected: '%1'\n").arg(exp));
 			do_output(QString("Actual:   '%1'\n").arg(after));
+			continue;
 		}
 		++total_tested;
+		do_output(".");
 		if( pos2 != cursor2.position() ) {
 			++total_failed;
 			do_output(QString("\n[FAILED #%1] wrong cursor position.\n").arg(total_failed));
 			do_output(QString("Expected: '%1'\n").arg(exp));
 			do_output(QString("Actual:   '%1'\n").arg(after));
+			continue;
 		}
 		//	PtoE チェック（m_editorText が空ならスキップ）
 		if( !g_syncTestCase[i].m_editorText.isEmpty() ) {
@@ -3804,18 +3878,22 @@ void MainWindow::onAction_TestCursorSync() {
 			afterE.insert(cursorE.position(), u'┃');
 			afterE.replace('\n', "\\n");
 			++total_tested;
+			do_output(".");
 			if( afterE != expE ) {
 				++total_failed;
 				do_output(QString("\n[FAILED #%1] wrong editor text (PtoE).\n").arg(total_failed));
 				do_output(QString("Expected: '%1'\n").arg(expE));
 				do_output(QString("Actual:   '%1'\n").arg(afterE));
+				continue;
 			}
 			++total_tested;
+			do_output(".");
 			if( pos3 != cursorE.position() ) {
 				++total_failed;
 				do_output(QString("\n[FAILED #%1] wrong editor cursor position (PtoE).\n").arg(total_failed));
 				do_output(QString("Expected: '%1'\n").arg(expE));
 				do_output(QString("Actual:   '%1'\n").arg(afterE));
+				continue;
 			}
 		}
 		do_output("\n");
