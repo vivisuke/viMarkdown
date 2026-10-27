@@ -1395,7 +1395,7 @@
   <customwidget>
    <class>CalendarWidget</class>
    <extends>QCalendarWidget</extends>
-   <header>calendarwidget.h</header>
+   <header>CalendarWidget.h</header>
   </customwidget>
  </customwidgets>
  <resources>

@@ -13,6 +13,7 @@
 #include <QMessageBox>
 #include <QLabel>
 #include <QTimer>
+#include <QPushButton>
 #include <vector>
 #include <utility>
 #include <assert.h>
@@ -355,6 +356,30 @@ void MainWindow::onAction_DiffWithFile() {
 		"markdown file (*.md *.markdown);;text file(*.txt);;all(*.*)"	// フィルター
 	);
 	if( fullPath.isEmpty() ) return;
+	DocWidget *base = getCurDocWidget();	//	diff 元文書
+	if( base == nullptr ) return;
+	int ix = tabIndexOf("", fullPath);
+	if( ix >= 0 ) {
+		qDebug() << fullPath << " is already open.";
+		if( ui->tabWidget->widget(ix) == base ) {
+			QMessageBox::warning(this, "diff with file",
+				tr("Cannot diff a file with itself:\n%1").arg(fullPath));
+			return;
+		}
+		QMessageBox msgBox(this);
+		msgBox.setWindowTitle("diff with file");
+		msgBox.setText(tr("The file is already open in another tab:\n%1\nClose that tab and continue with diff?").arg(fullPath));
+		QAbstractButton *closeButton = msgBox.addButton(tr("Close tab and diff"), QMessageBox::AcceptRole);
+		msgBox.addButton(tr("Cancel"), QMessageBox::RejectRole);
+		msgBox.exec();
+		if( msgBox.clickedButton() != closeButton ) return;	//	diff を中止
+		ui->tabWidget->setCurrentIndex(ix);
+		do_close();		//	未保存なら保存確認ダイアログが出る（Cancel の場合は閉じない）
+		if( tabIndexOf("", fullPath) >= 0 ) return;	//	閉じられなかった → diff を中止
+		int bix = ui->tabWidget->indexOf(base);
+		if( bix < 0 ) return;
+		ui->tabWidget->setCurrentIndex(bix);	//	diff 元文書のタブをカレントに戻す
+	}
 	do_diff(fullPath);
 }
 void MainWindow::do_diff(const QString &fullPath) {

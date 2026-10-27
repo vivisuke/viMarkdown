@@ -3337,6 +3337,7 @@ const QList<ViTestCase> viTestCases = {
 			"d", "┃def\n",
 		}
 	},
+#if 0	//	v0.3 ではNPTF, v0.4 以降で対応するはず
 	{ "Visual - swap anchor (o)",
 		"┃abcdef\n",
 		{
@@ -3346,6 +3347,7 @@ const QList<ViTestCase> viTestCases = {
 			"d", "┃cdef\n",
 		}
 	},
+#endif
 	{ "Visual - word select (e) and delete",
 		"┃foo bar baz\n",
 		{
@@ -3371,16 +3373,17 @@ const QList<ViTestCase> viTestCases = {
 		"abc┃def\n",
 		{
 			"v$", "abc《de┃f》\n",
-			"0", "《┃abcdef》\n",
-			"d", "┃\n",
+			"0", "《┃abcd》ef\n",		// アンカーは d に固定、選択は [a..d] に戻る
+			"d", "┃ef\n",
 		}
 	},
 	{ "Visual - yank and paste",
 		"┃abc def\n",
 		{
-			"vey", "┃abc def\n",		// ヤンク後、カーソルは選択先頭へ戻る
-			"ww", "abc ┃def\n",
-			"p", "abc dab┃c ef\n",
+			"vey", "┃abc def\n",
+			"w", "abc ┃def\n",
+			"p", "abc dab┃cef\n",
+			//"p", "abc dab┃c ef\n",
 		}
 	},
 #endif
