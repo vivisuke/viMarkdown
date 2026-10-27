@@ -177,6 +177,7 @@ public:
 	QStringConverter::Encoding m_encoding = QStringConverter::Utf8;
 	QString	m_title;				//	タブタイトル
 	QString	m_fullPath;
+	QString	m_diffPeerFullPath;		//	diff相手フルパス
 	//QPixmap				*m_mmPixmap = nullptr;	//	ミニマップ用画像
 	QFrame				*m_headerWidget = nullptr;
 	MainWindow			*m_mainWindow;

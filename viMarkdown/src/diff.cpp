@@ -382,12 +382,12 @@ void MainWindow::onAction_DiffWithFile() {
 	}
 	do_diff(fullPath);
 }
-void MainWindow::do_diff(const QString &fullPath) {
+void MainWindow::do_diff(const QString &diffPeerFullPath) {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
-	QFile file(fullPath);
+	QFile file(diffPeerFullPath);
 	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-		QMessageBox::warning(this, tr("Error"), tr("Cannot open file:\n%1").arg(fullPath));
+		QMessageBox::warning(this, tr("Error"), tr("Cannot open file:\n%1").arg(diffPeerFullPath));
 		return;
 	}
 	QTextStream in(&file);
@@ -395,11 +395,12 @@ void MainWindow::do_diff(const QString &fullPath) {
     QString content = in.readAll();
     //auto encoding = in.encoding();
     file.close();
-    QFileInfo fi2(fullPath);
+    QFileInfo fi2(diffPeerFullPath);
     m_diffviewLabel->setText(fi2.fileName());
 	docWidget->m_diffview->setPlainText(content);
 	//
 	docWidget->m_diffMode = true;
+	docWidget->m_diffPeerFullPath = diffPeerFullPath;
 	docWidget->m_editor->setDiffMode(true);
 	docWidget->m_editor->expandAll();
 	docWidget->m_editor->setHighlightDiff(true);
