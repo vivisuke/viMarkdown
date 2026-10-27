@@ -1893,6 +1893,16 @@ int MainWindow::tabIndexOf(const QString& title, const QString& fullPath) {
 	}
 	return -1;
 }
+//	#1217: fullPath がいずれかのタブの diff 比較相手であれば、そのタブのインデックスを返す
+int MainWindow::diffPeerTabIndexOf(const QString& fullPath) {
+	if( fullPath.isEmpty() ) return -1;
+	for(int ix = 0; ix < ui->tabWidget->count(); ++ix) {
+		DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(ix);
+		if( docWidget->m_diffMode && docWidget->m_diffPeerFullPath == fullPath )
+			return ix;
+	}
+	return -1;
+}
 void MainWindow::addToRecentFiles(const QString& fullPath) {
 	QSettings settings;
 	QStringList recentFilePaths = settings.value(KEY_RECENT_FILES).toStringList();
@@ -1985,6 +1995,14 @@ bool MainWindow::do_open(const QString& title0, const QString& fullPath, const Q
 			DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(tix);
 			docWidget->m_editor->jumpToHeading(name);
 		}
+		return true;
+	}
+	int pix = diffPeerTabIndexOf(fullPath);
+	if( pix >= 0 ) {
+		ui->tabWidget->setCurrentIndex(pix);	//	diff 中のタブへ誘導
+		//	「diff 比較相手として使用中」の通知（文言は要検討）
+		QString mess = QString(tr("'%1'\nis in use as a diff peer.\nIt cannot be opened separately while diff is in progress.")).arg(fullPath);
+		QMessageBox::information(this, "confirmation", mess);
 		return true;
 	}
 	QFileInfo checkFile(fullPath);

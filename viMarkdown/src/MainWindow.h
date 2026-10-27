@@ -294,6 +294,7 @@ protected:
     DocWidget	*getCurDocWidget();
     //DocWidget	*findDocWidget(const QString& fullPath);
     int		tabIndexOf(const QString& title, const QString& fullPath);
+    int		diffPeerTabIndexOf(const QString& fullPath);
     void	addTab(const QString& title, const QString fullPath = "", const QString txt = "",
     				bool=true, QStringConverter::Encoding encoding = QStringConverter::Utf8, bool readOnly = false);
     void	addTopItemToTreeWidget(const QString& title, const QString fullPath);

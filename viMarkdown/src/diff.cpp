@@ -448,26 +448,6 @@ void MainWindow::onAction_DiffMode(bool checked) {
 	//QScrollBar *bar2 = docWidget->m_diffview->horizontalScrollBar();
 	if (checked) {
 		docWidget->setupDiffMode();
-#if 0
-		docWidget->m_editor->expandAll();
-		docWidget->m_editor->setHighlightDiff(true);
-		docWidget->m_diffview->setHighlightDiff(true);
-		docWidget->m_editor->setHighlightMarkdown(false);
-		//docWidget->m_editor->setLineWrapMode(QPlainTextEdit::NoWrap);
-		//##do_diff();
-		connect(docWidget->m_editor->verticalScrollBar(), &QScrollBar::valueChanged,
-            docWidget, &DocWidget::syncScrollFromLeft);
-	    connect(docWidget->m_diffview->verticalScrollBar(), &QScrollBar::valueChanged,
-            docWidget, &DocWidget::syncScrollFromRight);
-	    docWidget->m_diffview->verticalScrollBar()->setValue(docWidget->m_diffview->verticalScrollBar()->value());
-	    int fvl = docWidget->m_editor->verticalScrollBar()->value();
-        int vl = docWidget->m_editor->getVisibleLineCount();
-        docWidget->setMiniMapCurPos(fvl, vl);
-        connect(docWidget->m_editor->verticalScrollBar(), &QScrollBar::valueChanged,
-		        docWidget, &DocWidget::syncMinimapWithEditor);
-        connect(bar1, &QScrollBar::valueChanged, bar2, &QScrollBar::setValue);
-		connect(bar2, &QScrollBar::valueChanged, bar1, &QScrollBar::setValue);
-#endif
 		QCoreApplication::processEvents();
 		do_diff();
 		QCoreApplication::processEvents();
@@ -477,8 +457,9 @@ void MainWindow::onAction_DiffMode(bool checked) {
 		//bool b = docWidget->m_editor->document()->isModified();
 		//qDebug() << "modified = " << b;
 	} else {
-		docWidget->m_diffMode = checked;
-		docWidget->m_editor->setDiffMode(checked);
+		docWidget->m_diffMode = false;
+		docWidget->m_diffPeerFullPath.clear();
+		docWidget->m_editor->setDiffMode(false);
 		QScrollBar *bar1 = docWidget->m_editor->horizontalScrollBar();
 		QScrollBar *bar2 = docWidget->m_diffview->horizontalScrollBar();
 		if( docWidget->m_docType == DocType::Markdown )
