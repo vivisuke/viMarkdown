@@ -3386,6 +3386,117 @@ const QList<ViTestCase> viTestCases = {
 			//"p", "abc dab┃c ef\n",
 		}
 	},
+	// ------------------------------------------------------------------
+	// 末尾改行なし文書 × オペレータ（#1207）
+	// ------------------------------------------------------------------
+	{ "No trailing newline - dd on middle line",
+	    "one\n"
+	    "t┃wo\n"
+	    "three",
+	    {
+	        "dd", "one\n"
+	              "┃three"          // 中間行を削除しても末尾改行なしは維持される
+	    }
+	},
+	{ "No trailing newline - D on last line",
+	    "first\n"
+	    "sec┃ond",
+	    {
+	        "D", "first\n"
+	             "se┃c"             // 行末まで削除、カーソルは残った最終文字へ
+	    }
+	},
+	{ "No trailing newline - dw on last word",
+	    "first\n"
+	    "foo ┃bar",
+	    {
+	        "dw", "first\n"
+	              "foo┃ "           // 最後の単語を削除（削除対象の改行は存在しない）
+	    }
+	},
+	{ "No trailing newline - dw across newline into last line",
+	    "ab┃c\n"
+	    "def",
+	    {
+	        "dw", "ab┃def"          // 改行を削除して末尾改行なしの最終行と連結
+	    }
+	},
+	{ "No trailing newline - x on last character",
+	    "first\n"
+	    "secon┃d",
+	    {
+	        "x", "first\n"
+	             "seco┃n"           // 文書の最終文字を削除、カーソルは新しい最終文字へ
+	    }
+	},
+	{ "No trailing newline - dd last line and p",
+	    "first\n"
+	    "sec┃ond",
+	    {
+	        "dd", "┃first\n",       // 最終行を削除
+	        "p", "first\n"
+	             "┃second"          // 行ペーストで最終行が復元され、末尾改行は付かない
+	    }
+	},
+	{ "No trailing newline - undo after dd on last line",
+	    "first\n"
+	    "sec┃ond",
+	    {
+	        "dd", "┃first\n",       // 最終行を削除
+	        "u", "first\n"
+	             "sec┃ond"          // Undo で末尾改行なしの状態が正確に復元される
+	    }
+	},
+	{ "No trailing newline - dG to end of document",
+	    "one\n"
+	    "t┃wo\n"
+	    "three",
+	    {
+	        "dG", "┃one\n"          // 自行から文書末尾まで削除
+	    }
+	},
+	{ "No trailing newline - cw on last word",
+	    "first\n"
+	    "foo ┃bar",
+	    {
+	        "cwxyz", "first\n"
+	                 "foo xy┃z"     // 最後の単語を変更
+	    }
+	},
+	{ "No trailing newline - >> on last line",
+	    "first\n"
+	    "sec┃ond",
+	    {
+	        ">>", "first\n"
+	              "  ┃second"       // 半角スペース2個挿入、カーソルは最初の非空白文字へ
+	    }
+	},
+	{ "No trailing newline - yy on last line and p on first line",
+	    "first\n"
+	    "sec┃ond",
+	    {
+	        "yy", "first\n"
+	              "sec┃ond",        // ヤンクのみ（変化なし）
+	        "k", "fir┃st\n"
+	             "second",          // 1行目の同じ列へ
+	        "p", "first\n"
+	             "┃second\n"
+	             "second"           // 1行目の下に最終行がペーストされる
+	    }
+	},
+	{ "No trailing newline - G and gg",
+	    "┃one\n"
+	    "two\n"
+	    "three",
+	    {
+	        "G", "one\n"
+	             "two\n"
+	             "┃three",          // 最終行（改行なし）の行頭へ
+	        "gg", "┃one\n"
+	              "two\n"
+	              "three"           // 先頭行へ戻る
+	    }
+	},
 #endif
 //	ex commands
 #if 0
