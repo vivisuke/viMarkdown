@@ -2173,7 +2173,6 @@ void MainWindow::do_close(bool forced) {
 								  "Confirm save",				 // タイトル
 								  QString(tmp).arg(path), // 本文
 								  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel); // ボタンの種類
-
 		if (reply == QMessageBox::Yes) {
 			onAction_Save();
 		} else if (reply == QMessageBox::Cancel) {
@@ -2182,6 +2181,42 @@ void MainWindow::do_close(bool forced) {
 	}
 	if( !forced && docWidget->m_diffMode && docWidget->m_diffview->document()->isModified() ) {
 		qDebug() << "diffview is modified.";
+		QString path = docWidget->m_diffPeerFullPath;
+		QMessageBox::StandardButton reply = QMessageBox::question(this,
+								  "Confirm save",				 // タイトル
+								  QString(tmp).arg(path), // 本文
+								  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel); // ボタンの種類
+		if (reply == QMessageBox::Yes) {
+			//	save docWidget->m_diffview-
+			if( path.isEmpty() ) {		//	保存先が無い場合はファイル選択ダイアログ
+				path = QFileDialog::getSaveFileName(
+							this,
+							"Save File",
+							QString(),
+							"markdown (*.md)"
+							,nullptr
+							,QFileDialog::DontUseNativeDialog
+						);
+				if( path.isEmpty() ) return;	//	キャンセルしたら閉じない
+				if( QFileInfo(path).suffix().isEmpty() ) path += ".md";
+				docWidget->m_diffPeerFullPath = path;
+			}
+			docWidget->m_diffview->removeAllDummyLines();
+			QFile file(path);
+			if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+				QTextStream out(&file);
+				out.setEncoding(docWidget->m_encoding);
+				out.setGenerateByteOrderMark(docWidget->m_withBOM);
+				out << docWidget->m_diffview->toPlainText();
+				file.close();
+				docWidget->m_diffview->document()->setModified(false);
+			} else {
+				QMessageBox::warning(this, tr("Error"), tr("Cannot write file:\n%1").arg(path));
+				return;		//	保存できなかったら閉じない
+			}
+		} else if (reply == QMessageBox::Cancel) {
+			return;
+		}
 	}
 	int ix = ui->tabWidget->currentIndex();
 	if (ix >= 0)
