@@ -996,8 +996,8 @@ void MainWindow::do_diff() {
     applyDiffToDocuments(docWidget, lines1, lines2, d.getSes());
 
     // --- 4. 後処理・UI更新 ---
-    docWidget->m_editor->setDummyInserted(true);
-    docWidget->m_diffview->setDummyInserted(true);
+    docWidget->m_editor->setDummyInserted(docWidget->m_editor->nDummyLines() != 0);
+    docWidget->m_diffview->setDummyInserted(docWidget->m_diffview->nDummyLines() != 0);
     docWidget->m_minimap->updateMap(doc1, docWidget->m_editor, doc2, docWidget->m_diffview);
     docWidget->m_editor->rehighlight();
     docWidget->m_diffview->rehighlight();

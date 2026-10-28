@@ -2180,6 +2180,9 @@ void MainWindow::do_close(bool forced) {
 			return;
 		}
 	}
+	if( !forced && docWidget->m_diffMode && docWidget->m_diffview->document()->isModified() ) {
+		qDebug() << "diffview is modified.";
+	}
 	int ix = ui->tabWidget->currentIndex();
 	if (ix >= 0)
 		ui->tabWidget->removeTab(ix);
