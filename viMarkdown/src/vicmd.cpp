@@ -164,7 +164,9 @@ void MainWindow::do_cdy_moved(QTextCursor& cursor) {
 				cursor.setPosition(start);
 				cursor.movePosition(QTextCursor::StartOfBlock);
 				cursor.setPosition(end, QTextCursor::KeepAnchor);
-				cursor.movePosition(QTextCursor::NextBlock, QTextCursor::KeepAnchor);
+				if( !cursor.movePosition(QTextCursor::NextBlock, QTextCursor::KeepAnchor) )
+					cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);	//	最終行には次ブロックが無いため、文書末尾まで広げる
+				//cursor.movePosition(QTextCursor::NextBlock, QTextCursor::KeepAnchor);
 			}
 			gvi.m_yankBuffer = cursor.selectedText();
 			if( gvi.m_operator == 'd' ) {
