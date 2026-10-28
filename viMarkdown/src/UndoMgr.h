@@ -27,6 +27,7 @@ struct UndoAction
 		FLAG_BS = 2,		//	BackSpace による削除
 		FLAG_JOIN = 4,		//	for J コマンド
 		FLAG_SHIFT = 8,		//	for >> << コマンド
+		FLAG_LINEWISE = 16,	//	行単位編集
 	};
 	uchar	m_type;
 	uchar	m_flags;

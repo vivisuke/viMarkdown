@@ -787,8 +787,10 @@ bool MainWindow::do_vi_operator(QChar cmd, QTextCursor& cursor, int rcnt, DocWid
 				gvi.m_yankBuffer = cursor.selectedText();
 				gvi.m_linewiseYanked = true;
 				//cursor.deleteChar();
-				if( gvi.m_editor != nullptr )
+				if( gvi.m_editor != nullptr ) {
 					gvi.m_editor->do_deleteText(cursor);
+					gvi.m_editor->setActionFlag(UndoAction::FLAG_LINEWISE);
+				}
 				gvi.m_isEditCommand = true;
 				int pos = cursor.position();
 				int sz = gvi.m_editor->document()->characterCount();
@@ -1511,7 +1513,7 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 			}
 			cursor = docWidget->m_editor->textCursor();
 			cursor.setPosition(pos);
-			if( (f&UndoAction::FLAG_SHIFT) != 0 )
+			if( (f&UndoAction::FLAG_SHIFT) != 0 || (f&UndoAction::FLAG_LINEWISE) != 0 )
 				hat(cursor);
 			moveLeftIfAtEol(cursor);
 			break;
@@ -1523,7 +1525,7 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 				pos = docWidget->m_editor->do_redo();
 			cursor = docWidget->m_editor->textCursor();
 			cursor.setPosition(pos);
-			if( (f&UndoAction::FLAG_SHIFT) != 0 )
+			if( (f&UndoAction::FLAG_SHIFT) != 0 || (f&UndoAction::FLAG_LINEWISE) != 0 )
 				hat(cursor);
 			moveLeftIfAtEol(cursor);
 			break;

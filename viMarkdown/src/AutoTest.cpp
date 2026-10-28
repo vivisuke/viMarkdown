@@ -3463,7 +3463,16 @@ const QList<ViTestCase> viTestCases = {
 	    {
 	        "dd", "┃first\n",       // 最終行を削除
 	        "u", "first\n"
-	             "sec┃ond"          // Undo で末尾改行なしの状態が正確に復元される
+	             "┃second"          // Undo で末尾改行なしの状態が正確に復元される
+	    }
+	},
+	{ "No trailing newline - undo after dd on last line",
+	    "first\n"
+	    "  sec┃ond",
+	    {
+	        "dd", "┃first\n",       // 最終行を削除
+	        "u", "first\n"
+	             "  ┃second"          // Undo で末尾改行なしの状態が正確に復元される
 	    }
 	},
 	{ "No trailing newline - dG to end of document",
