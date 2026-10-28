@@ -544,7 +544,7 @@ private:
     class QComboBox				*m_searchCB = nullptr;
     class QFileSystemWatcher	*m_watcher;
     //QList<QStringPair>			m_pathTitleList;
-	QLabel	*m_diffviewLabel = nullptr;
+	//QLabel	*m_diffviewLabel = nullptr;
 	QTimer	*m_blinkTimer = nullptr;
 	QTimer	*m_diffTimer = nullptr;
     //bool	m_cursorVisible = true;

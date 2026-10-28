@@ -951,6 +951,9 @@ void MainWindow::onCurrentTabChanged(int ix) {
 	++m_processing;
 	//##qDebug() << "MainWindow::onCurrentTabChanged()";
 	ui->action_DiffMode->setChecked(docWidget->m_diffMode);
+	if( docWidget->m_diffMode && !docWidget->m_diffPeerFullPath.isEmpty() ) {
+		docWidget->m_diffviewLabel->setText(docWidget->m_diffPeerFullPath);
+	}
 	m_altFullPath = m_curFullPath;
 	m_altTitle = m_curTitle;
 	m_curFullPath = docWidget->m_fullPath;
@@ -1093,8 +1096,10 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	auto* titleLabel = new QLabel(fi.fileName(), headerWidget);
     titleLabel->setStyleSheet("font-weight: bold; color: #333;");
     headerLayout->addWidget(titleLabel);
-	m_diffviewLabel = new QLabel("", headerWidget);
-    m_diffviewLabel->setStyleSheet("font-weight: bold; color: #333;");
+	//if( m_diffviewLabel == nullptr ) {
+		docWidget->m_diffviewLabel = new QLabel("", headerWidget);
+	    docWidget->m_diffviewLabel->setStyleSheet("font-weight: bold; color: #333;");
+	//}
     QWidget *dummySpacer = new QWidget(this);
 	dummySpacer->setFixedWidth(MINMAP_WIDTH+OPEN_DST_WIDTH);
 	QPushButton *pb = new QPushButton("Open...");
@@ -1102,7 +1107,7 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	connect(pb, &QAbstractButton::clicked, this, &MainWindow::diffview_open);
     headerLayout->addWidget(titleLabel);
     headerLayout->addWidget(dummySpacer);
-    headerLayout->addWidget(m_diffviewLabel);
+    headerLayout->addWidget(docWidget->m_diffviewLabel);
     headerLayout->addWidget(pb);
     //headerLayout->addStretch();
     //

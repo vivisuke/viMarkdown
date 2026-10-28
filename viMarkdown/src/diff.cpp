@@ -323,7 +323,7 @@ std::vector<QString> extractLinesFromDocument(const QTextDocument *doc) {
     lines.back() += QString("\n")+ QChar(0xffff);		//	改行＋EOF
     return lines;
 }
-void MainWindow::diffview_open() {
+void MainWindow::diffview_open() {		//	文書を選択して比較
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr || !docWidget->m_diffMode )
 		return;
@@ -345,7 +345,7 @@ void MainWindow::diffview_open() {
     //auto encoding = in.encoding();
     file.close();
     QFileInfo fi2(fullPath);
-    m_diffviewLabel->setText(fi2.fileName());
+    docWidget->m_diffviewLabel->setText(fi2.fileName());
 	docWidget->m_diffview->setPlainText(content);
 }
 void MainWindow::onAction_DiffWithFile() {
@@ -398,7 +398,7 @@ void MainWindow::do_diff(const QString &diffPeerFullPath) {
     //auto encoding = in.encoding();
     file.close();
     QFileInfo fi2(diffPeerFullPath);
-    m_diffviewLabel->setText(fi2.fileName());
+    docWidget->m_diffviewLabel->setText(fi2.fileName());
 	docWidget->m_diffview->setPlainText(content);
 	//
 	docWidget->m_diffMode = true;

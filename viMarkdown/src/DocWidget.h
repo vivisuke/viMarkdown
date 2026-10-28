@@ -180,6 +180,7 @@ public:
 	QString	m_diffPeerFullPath;		//	diff相手フルパス
 	//QPixmap				*m_mmPixmap = nullptr;	//	ミニマップ用画像
 	QFrame				*m_headerWidget = nullptr;
+	QLabel				*m_diffviewLabel = nullptr;
 	MainWindow			*m_mainWindow;
 	MarkdownEditor		*m_editor = nullptr;	//	マークダウンエディタへのポインタ
 	MarkdownPreview		*m_preview = nullptr;	//	マークダウンプレビューワへのポインタ
