@@ -3437,7 +3437,7 @@ const QList<ViTestCase> viTestCases = {
 	    "ab┃c\n"
 	    "def",
 	    {
-	        "dw", "ab┃def"          // 改行を削除して末尾改行なしの最終行と連結
+	        "dw", "a┃b\ndef"
 	    }
 	},
 	{ "No trailing newline - x on last character",
