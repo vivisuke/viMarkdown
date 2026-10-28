@@ -158,6 +158,7 @@ void MarkdownEditor::removeAllDummyLines() {
     qDebug() << "removeAllDummyLines()";
     // シグナルを一時的に止めて、途中で do_diff が呼ばれないようにする
     QSignalBlocker blocker(this); 
+    bool isModified = doc->isModified();
 
     QTextCursor cursor(doc);
     // 描画更新を一時停止し、処理を高速化
@@ -214,6 +215,7 @@ void MarkdownEditor::removeAllDummyLines() {
     }
     m_nDummyLines = 0;
     m_dummyInserted = false;
+    doc->setModified(isModified);
 }
 // -------------------------------------------------------------
 const QColor COLOR_DIFF_MINIMAP_DELETED   = QColor("#e8e8e8"); // 明るいグレイ（削除）
@@ -446,6 +448,7 @@ void MainWindow::onAction_DiffMode(bool checked) {
 	//docWidget->m_editor->setDiffMode(checked);
 	//QScrollBar *bar1 = docWidget->m_editor->horizontalScrollBar();
 	//QScrollBar *bar2 = docWidget->m_diffview->horizontalScrollBar();
+	++m_doing_diff;
 	if (checked) {
 		docWidget->setupDiffMode();
 		QCoreApplication::processEvents();
@@ -499,6 +502,7 @@ void MainWindow::onAction_DiffMode(bool checked) {
 	docWidget->updatePanes();
 	//b = docWidget->m_editor->document()->isModified();
 	//qDebug() << "modified = " << b;
+	--m_doing_diff;
 }
 void MainWindow::onDiffViewChanged() {	//	比較先エディタが編集された場合
 	//##qDebug() << "MainWindow::onDiffViewChanged()";
@@ -958,7 +962,7 @@ void MainWindow::do_diff() {
 	if (m_processing != 0) return;
     DocWidget *docWidget = getCurDocWidget();
     if (!docWidget || !docWidget->m_diffMode) return;
-    m_doing_diff = true;
+    ++m_doing_diff;
     QSignalBlocker blocker(this); 
     QTextCursor cursor0 = docWidget->m_editor->textCursor();
     //int pos0 = cursor.position();
@@ -1017,5 +1021,5 @@ void MainWindow::do_diff() {
     //cursor = docWidget->m_editor->textCursor();
     //pos0 = cursor.position();
     //qDebug() << "cursor.position() = " << pos0 << ", blockNumber() = " << cursor.blockNumber();;
-    m_doing_diff = false;
+    --m_doing_diff;
 }

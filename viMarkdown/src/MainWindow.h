@@ -519,7 +519,7 @@ private:
     bool	m_keisenMode = false;
     bool	m_thickKeisen = false;		//	Thin or Thick
     bool	m_edittingInPreview = false;		//	プレビューでの編集処理中
-    bool	m_doing_diff = false;
+    int		m_doing_diff = 0;
     int		m_tab_number = 0;
     int		m_QA_tab_number = 0;
     int		m_nMatchLines = 0;			//	マッチ行数
