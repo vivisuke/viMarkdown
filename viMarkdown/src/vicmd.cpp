@@ -173,6 +173,12 @@ void MainWindow::do_cdy_moved(QTextCursor& cursor) {
 				//cursor.deleteChar();
 				if( !gvi.m_linewiseMoved )
 					moveLeftIfAtEol(cursor);
+				else {
+					if( !cursor.block().next().isValid() ) {	//	最終行にいる場合
+						cursor.movePosition(QTextCursor::Up);
+						hat(cursor);
+					}
+				}
 			} else {		//	y<move>
 				statusBar()->showMessage(QString("%1 charactors yanked.").arg(gvi.m_yankBuffer.size()), 5000);
 				cursor.setPosition(qMin(cursor.anchor(), cursor.position()));
@@ -1192,14 +1198,15 @@ doneW:
 		break;
 	case 'G':
 		if( gvi.m_repeatCount == 0 || !(block = doc->findBlockByNumber(gvi.m_repeatCount - 1)).isValid() ) {
-			cursor.movePosition(QTextCursor::End);
+			cursor.movePosition(QTextCursor::End, moveMode);
 			if( cursor.block().text().isEmpty() )
-				cursor.movePosition(QTextCursor::PreviousBlock);
+				cursor.movePosition(QTextCursor::PreviousBlock, moveMode);
 		} else {
 			//block = doc->findBlockByNumber(gvi.m_repeatCount - 1);
-			cursor.setPosition(block.position());
+			cursor.setPosition(block.position(), moveMode);
 		}
-		hat(cursor);
+		hat(cursor, moveMode);
+		gvi.m_linewiseMoved = true;
 		break;
 	case 'H':
 		do_vi_H(cursor, rcnt, docWidget);

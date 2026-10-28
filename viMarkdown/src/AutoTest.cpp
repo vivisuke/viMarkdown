@@ -3387,6 +3387,25 @@ const QList<ViTestCase> viTestCases = {
 		}
 	},
 	// ------------------------------------------------------------------
+	{ "dG with trailing newline (empty EOF line)",
+	    "one\n"
+	    "t┃wo\n"
+	    "three\n",
+	    {
+	        "dG", "┃one\n"          // 自行から最終行まで削除。末尾の空行ブロックを含めて正しく処理されること
+	    }
+	},
+	{ "dG on last line with trailing newline (empty EOF line)",
+	    "one\n"
+	    "two\n"
+	    "th┃ree\n",
+	    {
+	        "dG", "one\n"
+	              "┃two\n"          // 最終行のみ削除され、カーソルは直前行の行頭へ
+	    }
+	},
+
+	// ------------------------------------------------------------------
 	// 末尾改行なし文書 × オペレータ（#1207）
 	// ------------------------------------------------------------------
 	{ "No trailing newline - dd on middle line",
