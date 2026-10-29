@@ -126,6 +126,7 @@ protected:
 	void mousePressEvent(QMouseEvent *event) override;
 	void mouseReleaseEvent(QMouseEvent *event) override;
 	void mouseMoveEvent(QMouseEvent *event) override;
+	void resizeEvent(QResizeEvent *event) override;	//	サイズ変更時にミニマップを再描画する
 public:
 	bool	m_mousePressed = false;
 	int		m_totalLines = 1;				//	総ビジュアル行数
@@ -134,6 +135,11 @@ public:
 	int		m_pressedY;
 	QPixmap	m_mapPixmap;
 	class DocWidget	*m_docWidget;
+	//	updateMap() の引数の保持（resizeEvent で再描画するため）
+	QTextDocument	*m_mapDoc1 = nullptr;
+	MarkdownEditor	*m_mapEditor1 = nullptr;
+	QTextDocument	*m_mapDoc2 = nullptr;
+	MarkdownEditor	*m_mapEditor2 = nullptr;
 };
 
 class DocWidget : public QWidget

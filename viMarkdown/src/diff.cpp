@@ -327,6 +327,7 @@ void updateMapSub(QPainter &p, int x, QTextDocument* doc, MarkdownEditor* editor
 }
 void MiniMap::updateMap(QTextDocument* doc1, MarkdownEditor* editor1, QTextDocument* doc2, MarkdownEditor* editor2) {
 	//m_mapPixmap = QPixmap(MINMAP_WIDTH, doc1->blockCount());
+	m_mapDoc1 = doc1; m_mapEditor1 = editor1; m_mapDoc2 = doc2; m_mapEditor2 = editor2;	//	resizeEvent での再描画用に保持
 	auto ht = rect().height();
 	m_mapPixmap = QPixmap(MINMAP_WIDTH, ht);
 	QPainter p(&m_mapPixmap);

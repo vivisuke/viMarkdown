@@ -49,6 +49,11 @@ void MiniMap::mouseMoveEvent(QMouseEvent *event) {
 	update();
 #endif
 }
+void MiniMap::resizeEvent(QResizeEvent *event) {
+	QWidget::resizeEvent(event);
+	if( m_mapDoc1 != nullptr )		//	diff 未実施のときは再描画しない
+		updateMap(m_mapDoc1, m_mapEditor1, m_mapDoc2, m_mapEditor2);
+}
 //----------------------------------------------------------------------
 BlockData* getBlockData(QTextBlock srcBlock, bool init /*, int length*/) {
 	assert( srcBlock.isValid() );
