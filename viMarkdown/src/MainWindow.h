@@ -333,6 +333,7 @@ protected:
     void	onMdEditEscPressed();
     void	onFileChanged(const QString&);
     void	onModificationChanged(bool);
+    void	onDiffPeerModificationChanged(bool);
     //void	onSearchCBActivated();
     void	onMarkdownPreviewLineClicked(/*int,*/ bool);
     //void	onEditorCurPosChanged();

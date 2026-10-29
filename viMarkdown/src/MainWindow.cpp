@@ -1070,6 +1070,7 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	//docWidget->m_mmPixmap = new QPixmap(MINMAP_WIDTH, 100);
 	DiffView *diffview = docWidget->m_diffview = new DiffView(this, docWidget, splitter);
 	connect(diffview, &MarkdownEditor::changeFontSize, this, &MainWindow::onChangeEditorFontSize);
+	connect(diffview->document(), &QTextDocument::modificationChanged, this, &MainWindow::onDiffPeerModificationChanged);
 	QTextBlock block = diffview->document()->begin();
 	setPhysicalLine(editor, block, 1, 0);
 	diffview->setDiffMode(true);
@@ -3110,6 +3111,13 @@ void MainWindow::onModificationChanged(bool b) {
 	QString title = docWidget->m_title;
 	if( b ) title += " *";
 	ui->tabWidget->setTabText(ui->tabWidget->currentIndex(), title);
+}
+void MainWindow::onDiffPeerModificationChanged(bool b) {
+	DocWidget *docWidget = getCurDocWidget();
+	if (docWidget == nullptr) return;
+	QString title = docWidget->m_diffPeerTitle;
+	if( b ) title += " *";
+	docWidget->m_diffviewLabel->setText(title);
 }
 //void MainWindow::onSrcCursorPosChanged() {
 //}

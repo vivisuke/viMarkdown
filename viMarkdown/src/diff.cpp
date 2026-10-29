@@ -377,7 +377,7 @@ void MainWindow::diffview_open() {		//	文書を選択して比較
     //auto encoding = in.encoding();
     file.close();
     QFileInfo fi2(fullPath);
-    docWidget->m_diffviewLabel->setText(fi2.fileName());
+    docWidget->m_diffviewLabel->setText(docWidget->m_diffPeerTitle = fi2.fileName());
 	docWidget->m_diffview->setPlainText(content);
 }
 void MainWindow::onAction_DiffWithFile() {
@@ -430,7 +430,7 @@ void MainWindow::do_diff(const QString &diffPeerFullPath) {
     //auto encoding = in.encoding();
     file.close();
     QFileInfo fi2(diffPeerFullPath);
-    docWidget->m_diffviewLabel->setText(fi2.fileName());
+    docWidget->m_diffviewLabel->setText(docWidget->m_diffPeerTitle = fi2.fileName());
 	docWidget->m_diffview->setPlainText(content);
 	//
 	docWidget->m_diffMode = true;

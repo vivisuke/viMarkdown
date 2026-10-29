@@ -178,6 +178,7 @@ public:
 	QString	m_title;				//	タブタイトル
 	QString	m_fullPath;
 	QString	m_diffPeerFullPath;		//	diff相手フルパス
+	QString	m_diffPeerTitle;		//	diff相手タイトル
 	//QPixmap				*m_mmPixmap = nullptr;	//	ミニマップ用画像
 	QFrame				*m_headerWidget = nullptr;
 	QLabel				*m_diffviewLabel = nullptr;
