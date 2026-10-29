@@ -1509,7 +1509,8 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 			int pos = 0;
 			uchar f = docWidget->m_editor->undoActionFlags();
 			for(int i = 0; i < rcnt; ++i) {
-				pos = docWidget->m_editor->do_undo();
+				pos = gvi.m_editor->do_undo();
+				//pos = docWidget->m_editor->do_undo();
 			}
 			cursor = docWidget->m_editor->textCursor();
 			cursor.setPosition(pos);
@@ -1521,8 +1522,10 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 		case 'U': {
 			int pos = 0;
 			uchar f = docWidget->m_editor->redoActionFlags();
-			for(int i = 0; i < rcnt; ++i)
-				pos = docWidget->m_editor->do_redo();
+			for(int i = 0; i < rcnt; ++i) {
+				pos = gvi.m_editor->do_redo();
+				//pos = docWidget->m_editor->do_redo();
+			}
 			cursor = docWidget->m_editor->textCursor();
 			cursor.setPosition(pos);
 			if( (f&UndoAction::FLAG_SHIFT) != 0 || (f&UndoAction::FLAG_LINEWISE) != 0 )
