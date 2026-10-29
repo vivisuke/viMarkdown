@@ -275,6 +275,37 @@ void MiniMap::updateMap(QTextDocument* doc1, QTextDocument* doc2) {
 	// ※末尾の余白塗りつぶしは不要になります（全体にスケーリングされるため）
 }
 #else
+#if 1
+void updateMapSub(QPainter &p, int x, QTextDocument* doc, MarkdownEditor* editor, int totalLines, int mapHeight) {
+	if( totalLines <= 0 ) return;
+	QTextBlock block = doc->begin();
+	int curVLine = 0;
+	for(; block.isValid(); block=block.next()) {
+		QColor col = Qt::white;
+		if( isDummyLine(editor, block) ) col = COLOR_DIFF_MINIMAP_DELETED;
+		else {
+			auto d = getDiff(editor, block);
+			if( d == ADDED_LINE ) col = COLOR_DIFF_MINIMAP_ADDED;
+			else if( d == MODIFIED_LINE ) col = COLOR_DIFF_MINIMAP_MODIFIED;
+		}
+		int vc = visualLineCount(block, editor);
+		int y1 = curVLine * mapHeight / totalLines;
+		int y2 = (curVLine + vc) * mapHeight / totalLines;
+		p.fillRect(x, y1, MINMAP_WIDTH/2, qMax(1, y2 - y1), col);
+		curVLine += vc;
+	}
+}
+void MiniMap::updateMap(QTextDocument* doc1, MarkdownEditor* editor1, QTextDocument* doc2, MarkdownEditor* editor2) {
+	auto ht = rect().height();
+	m_mapPixmap = QPixmap(MINMAP_WIDTH, ht);
+	m_mapPixmap.fill(COLOR_DIFF_MINIMAP_DELETED);	//	背景（ダミー行色）
+	m_totalLines = qMax(visualLineCount(doc1, editor1), visualLineCount(doc2, editor2));
+	if( m_totalLines <= 0 ) return;
+	QPainter p(&m_mapPixmap);
+	updateMapSub(p, 0, doc1, editor1, m_totalLines, ht);
+	updateMapSub(p, MINMAP_WIDTH/2, doc2, editor2, m_totalLines, ht);
+}
+#else
 void updateMapSub(QPainter &p, int x, QTextDocument* doc, MarkdownEditor* editor) {
 	QTextBlock block = doc->begin();
 	for(int y = 0; /*y < doc->blockCount() &&*/ block.isValid(); block=block.next()) {
@@ -306,6 +337,7 @@ void MiniMap::updateMap(QTextDocument* doc1, MarkdownEditor* editor1, QTextDocum
 	//p.drawRect(0, doc1->blockCount(), MINMAP_WIDTH, ht - doc1->blockCount());
 	p.drawRect(0, visualLineCount(doc1, editor1), MINMAP_WIDTH, ht - visualLineCount(doc1, editor1));
 }
+#endif
 #endif
 // -------------------------------------------------------------
 std::vector<QString> extractLinesFromDocument(const QTextDocument *doc) {
