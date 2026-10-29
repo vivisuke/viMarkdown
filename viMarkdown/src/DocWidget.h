@@ -189,6 +189,7 @@ public:
 	QFrame				*m_headerWidget = nullptr;
 	QLabel				*m_diffviewLabel = nullptr;
 	MainWindow			*m_mainWindow;
+	MarkdownEditor		*m_focusView = nullptr;	//	フォーカスを持っているMarkdownEditorへのポインタ
 	MarkdownEditor		*m_editor = nullptr;	//	マークダウンエディタへのポインタ
 	MarkdownPreview		*m_preview = nullptr;	//	マークダウンプレビューワへのポインタ
 	MiniMap				*m_minimap = nullptr;

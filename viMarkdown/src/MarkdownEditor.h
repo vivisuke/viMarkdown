@@ -292,6 +292,8 @@ protected:
     void	wheelEvent(QWheelEvent *event) override;
     void	dragEnterEvent(QDragEnterEvent *event) override;
     void	dropEvent(QDropEvent *event) override;
+    void	focusInEvent(QFocusEvent *event) override;
+    void	focusOutEvent(QFocusEvent *event) override;
     void	paintEvent(QPaintEvent *e) override;
     void	resizeEvent(QResizeEvent *event) override;
     //##void	inputMethodEvent(QInputMethodEvent *event) override;

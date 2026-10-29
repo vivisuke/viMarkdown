@@ -3823,6 +3823,17 @@ void MarkdownEditor::dragEnterEvent(QDragEnterEvent *e) {
 void MarkdownEditor::dropEvent(QDropEvent *e) {
    	e->ignore();
 }
+void MarkdownEditor::focusInEvent(QFocusEvent *event) {
+	qDebug() << "MarkdownEditor::focusInEvent(QFocusEvent *event)";
+	m_docWidget->m_focusView = this;
+	QPlainTextEdit::focusInEvent(event);
+}
+void MarkdownEditor::focusOutEvent(QFocusEvent *event) {
+	qDebug() << "MarkdownEditor::focusOutEvent(QFocusEvent *event)";
+	if( m_docWidget->m_focusView == this )
+		m_docWidget->m_focusView = nullptr;
+	QPlainTextEdit::focusOutEvent(event);
+}
 bool MarkdownEditor::isInComment(int pos) const {		//	指定位置がコメント内か？
 	auto* doc = document();
 	QTextBlock block = doc->findBlock(pos);
