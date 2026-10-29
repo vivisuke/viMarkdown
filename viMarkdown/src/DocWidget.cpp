@@ -10,23 +10,44 @@
 uchar blockType(const QTextBlock &block);
 
 void MiniMap::mousePressEvent(QMouseEvent *event) {
+#if 1
+	m_mousePressed = true;
+	auto pos = event->position();
+	//m_pressedY = pos.y();
+	int line = height() > 0 ? (int)pos.y() * m_totalLines / height() : 0;	//	ピクセル → 行番号への逆換算
+	int mx = m_docWidget->m_editor->verticalScrollBar()->maximum();
+	m_firstVisibleLine = qMin(qMax(0, line - m_visibleLines/2), mx);
+	m_docWidget->syncEditorWithMinimap(m_firstVisibleLine);
+	update();
+#else
 	m_mousePressed = true;
 	auto pos = event->position();
 	//m_pressedY = pos.y();
 	m_firstVisibleLine = qMax(0, (int)pos.y() - m_visibleLines/2);
 	m_docWidget->syncEditorWithMinimap(m_firstVisibleLine);
 	update();
+#endif
 }
 void MiniMap::mouseReleaseEvent(QMouseEvent *event) {
 	m_mousePressed = false;
 }
 void MiniMap::mouseMoveEvent(QMouseEvent *event) {
+#if 1
+	if( !m_mousePressed ) return;
+	auto pos = event->position();
+	int line = height() > 0 ? (int)pos.y() * m_totalLines / height() : 0;	//	ピクセル → 行番号への逆換算
+	int mx = m_docWidget->m_editor->verticalScrollBar()->maximum();
+	m_firstVisibleLine = qMin(qMax(0, line - m_visibleLines/2), mx);
+	m_docWidget->syncEditorWithMinimap(m_firstVisibleLine);
+	update();
+#else
 	if( !m_mousePressed ) return;
 	auto pos = event->position();
 	int mx = m_docWidget->m_editor->verticalScrollBar()->maximum();
 	m_firstVisibleLine = qMin(qMax(0, (int)pos.y() - m_visibleLines/2), mx);
 	m_docWidget->syncEditorWithMinimap(m_firstVisibleLine);
 	update();
+#endif
 }
 //----------------------------------------------------------------------
 BlockData* getBlockData(QTextBlock srcBlock, bool init /*, int length*/) {
@@ -467,6 +488,29 @@ void DocWidget::setEditorCurPos(int pos) {
 	m_editor->setTextCursor(cursor);
 	m_editor->ensureCursorVisible();
 }
+#if 1
+void DocWidget::syncScrollFromLeft(int value)
+{
+    if (m_isSyncingScroll) return;
+    m_isSyncingScroll = true;
+    // 左が末尾までスクロールされたら、右も右自身の末尾に合わせる（最大値の差を吸収）
+    QScrollBar *src = m_editor->verticalScrollBar();
+    QScrollBar *dst = m_diffview->verticalScrollBar();
+    dst->setValue(value >= src->maximum() ? dst->maximum() : value);
+    m_isSyncingScroll = false;
+}
+
+void DocWidget::syncScrollFromRight(int value)
+{
+    if (m_isSyncingScroll) return;
+    m_isSyncingScroll = true;
+    // 右が末尾までスクロールされたら、左も左自身の末尾に合わせる（最大値の差を吸収）
+    QScrollBar *src = m_diffview->verticalScrollBar();
+    QScrollBar *dst = m_editor->verticalScrollBar();
+    dst->setValue(value >= src->maximum() ? dst->maximum() : value);
+    m_isSyncingScroll = false;
+}
+#else
 void DocWidget::syncScrollFromLeft(int value)
 {
     if (m_isSyncingScroll) return;
@@ -484,6 +528,7 @@ void DocWidget::syncScrollFromRight(int value)
     m_editor->verticalScrollBar()->setValue(value);
     m_isSyncingScroll = false;
 }
+#endif
 void DocWidget::syncMinimapWithEditor(int value) {
 	m_minimap->m_firstVisibleLine = value;
 	m_minimap->update();

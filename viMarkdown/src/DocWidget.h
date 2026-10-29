@@ -97,16 +97,16 @@ protected:
     	if (m_mapPixmap.isNull()) return;
     	QPainter p(this);
 		p.drawPixmap(0, 0, m_mapPixmap);
-#if 0
+#if 1
 		if (m_totalLines <= 0) return;
 		int mapH = height();
 		// スケーリング計算（行番号 → MiniMap上のY座標）
 		int y = m_firstVisibleLine * mapH / m_totalLines;
 		int h = m_visibleLines * mapH / m_totalLines;
-		
+
 		// ドキュメントが長大でも枠が消えないよう、最小高さを確保（例: 4px）
 		h = qMax(4, h);
-		
+
 		// MiniMapの下端からはみ出さないようガード
 		if (y + h > mapH) {
 			y = qMax(0, mapH - h);
