@@ -97,7 +97,7 @@ protected:
     	if (m_mapPixmap.isNull()) return;
     	QPainter p(this);
 		p.drawPixmap(0, 0, m_mapPixmap);
-#if 1
+#if 0
 		if (m_totalLines <= 0) return;
 		int mapH = height();
 		// スケーリング計算（行番号 → MiniMap上のY座標）

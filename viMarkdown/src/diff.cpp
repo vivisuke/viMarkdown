@@ -275,7 +275,7 @@ void MiniMap::updateMap(QTextDocument* doc1, QTextDocument* doc2) {
 	// ※末尾の余白塗りつぶしは不要になります（全体にスケーリングされるため）
 }
 #else
-#if 1
+#if 0
 void updateMapSub(QPainter &p, int x, QTextDocument* doc, MarkdownEditor* editor, int totalLines, int mapHeight) {
 	if( totalLines <= 0 ) return;
 	QTextBlock block = doc->begin();

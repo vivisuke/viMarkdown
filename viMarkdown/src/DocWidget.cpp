@@ -10,7 +10,7 @@
 uchar blockType(const QTextBlock &block);
 
 void MiniMap::mousePressEvent(QMouseEvent *event) {
-#if 1
+#if 0
 	m_mousePressed = true;
 	auto pos = event->position();
 	//m_pressedY = pos.y();
@@ -32,7 +32,7 @@ void MiniMap::mouseReleaseEvent(QMouseEvent *event) {
 	m_mousePressed = false;
 }
 void MiniMap::mouseMoveEvent(QMouseEvent *event) {
-#if 1
+#if 0
 	if( !m_mousePressed ) return;
 	auto pos = event->position();
 	int line = height() > 0 ? (int)pos.y() * m_totalLines / height() : 0;	//	ピクセル → 行番号への逆換算
