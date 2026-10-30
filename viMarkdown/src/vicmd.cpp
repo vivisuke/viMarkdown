@@ -2262,6 +2262,12 @@ void MainWindow::do_exCmd(const QString &text, int ix, /*QString cmd, QChar nch,
 			gvi.m_editor->do_deleteText(cursor);
 			cursor.endEditBlock();
 			hat(cursor);
+			QTextBlock block = cursor.block();
+			if( block.text().isEmpty() && block.blockNumber() == doc->blockCount() - 1 && block.previous().isValid() ) {
+			    // 末尾まで削除した場合：カーソルを前の行の非空白先頭へ
+			    cursor.setPosition(block.previous().position());
+			    hat(cursor);
+			}
 			docWidget->m_editor->setTextCursor(cursor);
 		}
 	} else if( is_match(cmd, "p(rint") ) {
