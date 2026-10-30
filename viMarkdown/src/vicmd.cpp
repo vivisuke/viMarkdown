@@ -2309,6 +2309,8 @@ void MainWindow::do_exCmd(const QString &text, int ix, /*QString cmd, QChar nch,
 			onAction_DiffMode(!docWidget->m_diffMode);
 		else
 			do_diff(arg);
+	} else if( is_match(cmd, "me(rge") ) {
+		do_merge();
 	} else {
 		statusBar()->showMessage(tr("illegal command."), 5000);
 	}

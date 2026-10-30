@@ -1056,3 +1056,6 @@ void MainWindow::do_diff() {
     //qDebug() << "cursor.position() = " << pos0 << ", blockNumber() = " << cursor.blockNumber();;
     --m_doing_diff;
 }
+void MainWindow::do_merge() {
+	qDebug() << "MainWindow::do_merge()";
+}

@@ -376,6 +376,7 @@ protected:
     void	onCalendarPageChanged(int, int);
     void	do_openDiary(QDate date);
     void	do_grep(const QString &searchText, const QString &dirPath, bool grepSubDir = false);
+    void	do_merge();
 
     void	onAction_New();
     void	onAction_NewTab();
