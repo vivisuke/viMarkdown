@@ -1046,12 +1046,15 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 	auto key = e->key();
 	auto mf = (e->modifiers() & Qt::ControlModifier) != 0;
 	qDebug() << "key = " << key;
+	QTextCursor cursor = this->textCursor();
 	if (e->matches(QKeySequence::Cut)) {
-		if( m_diffMode ) {
-			m_docWidget->m_editor->removeAllDummyLines();
-			m_docWidget->m_diffview->removeAllDummyLines();
+		if( cursor.hasSelection() ) {
+			if( m_diffMode ) {
+				m_docWidget->m_editor->removeAllDummyLines();
+				m_docWidget->m_diffview->removeAllDummyLines();
+			}
+			cut();
 		}
-		cut();
         e->accept();
         return;
     }
@@ -1064,7 +1067,6 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
         e->accept();
         return;
     }
-	QTextCursor cursor = this->textCursor();
 	if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Enter) {		//	改行入力
 		if( gvi.m_currentMode == ViMode::Normal ) {
 			emit do_viCmd(QChar(u'\n'), cursor);
