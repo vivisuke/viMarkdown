@@ -1047,12 +1047,20 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 	auto mf = (e->modifiers() & Qt::ControlModifier) != 0;
 	qDebug() << "key = " << key;
 	if (e->matches(QKeySequence::Cut)) {
-        cut();
+		if( m_diffMode ) {
+			m_docWidget->m_editor->removeAllDummyLines();
+			m_docWidget->m_diffview->removeAllDummyLines();
+		}
+		cut();
         e->accept();
         return;
     }
 	if (e->matches(QKeySequence::Paste)) {
-        paste();
+		if( m_diffMode ) {
+			m_docWidget->m_editor->removeAllDummyLines();
+			m_docWidget->m_diffview->removeAllDummyLines();
+		}
+		paste();
         e->accept();
         return;
     }
@@ -1062,6 +1070,10 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 			emit do_viCmd(QChar(u'\n'), cursor);
 			setTextCursor(cursor);
 		} else {
+			if( m_diffMode ) {
+				m_docWidget->m_editor->removeAllDummyLines();
+				m_docWidget->m_diffview->removeAllDummyLines();
+			}
 			QTextBlock currentBlock = cursor.block();
 			if( (e->modifiers() & Qt::ShiftModifier) == 0 &&		//	Shift + Enter でない
 				cursor.position() != currentBlock.position())		//	行頭にいない場合
@@ -1128,6 +1140,10 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 		}
 		return;
 	} else if (e->key() == Qt::Key_Delete ) {
+		if( m_diffMode ) {
+			m_docWidget->m_editor->removeAllDummyLines();
+			m_docWidget->m_diffview->removeAllDummyLines();
+		}
 		if( (e->modifiers() & Qt::ControlModifier) != 0) {
 			deleteWord();
 		} else {
@@ -1137,6 +1153,10 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 		}
 		return;
 	} else if (e->key() == Qt::Key_Backspace ) {
+		if( m_diffMode ) {
+			m_docWidget->m_editor->removeAllDummyLines();
+			m_docWidget->m_diffview->removeAllDummyLines();
+		}
 		if( (e->modifiers() & Qt::ControlModifier) != 0) {		//	Ctrl +
 			backSpaceWord();
 		} else {
@@ -1144,7 +1164,10 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 			//setTextCursor(cursor);
 			if( !cursor.hasSelection() ) {
 				if( cursor.position() == 0 ) return;
-				cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor);
+				//if( m_diffMode && cursor.block().previous().isValid() && isDummyLine(cursor.block().previous()) {
+				//	//	ダミー行直後での BackSpace は、直前非ダミー行末尾改行まで削除
+				//} else
+					cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor);
 				setTextCursor(cursor);
 				do_deleteText(cursor);
 			}
