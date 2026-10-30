@@ -3600,7 +3600,8 @@ const QList<ViTestCase> viTestCases = {
     { "Ex Delete - Whole Document (:%d)",
         "line 1\nli┃ne 2\nline 3\n",
         {
-            ":%d", "┃\n" // バッファ全体のすべての行を削除。Vimの仕様として、中身のない空行が1行だけ残る
+            //":%d", "┃\n" // バッファ全体のすべての行を削除。Vimの仕様として、中身のない空行が1行だけ残る
+            ":%d", "┃" // バッファ全体のすべての行を削除。viMarkdown はすべて消える
         }
     },
     { "Ex Delete - To EOF (:.,$d)",
