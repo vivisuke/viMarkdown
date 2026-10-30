@@ -3689,9 +3689,11 @@ void MainWindow::onAction_TestViCommands() {
 					exitInsertMode(cursor);
 					break;
 				} else if( gvi.m_currentMode == ViMode::CommandLine ) {
-					if( cmd_text[i] == u':' )
+					if( cmd_text[i] == u':' ) {
 						do_exCmd(cmd_text.mid(i+1), cursor);
-					else if( cmd_text[i] == u'/' || cmd_text[i] == u'?' ) {
+						cursor = editor->textCursor();	// do_exCmd はエディタ側カーソルを移動させる
+					    gvi.m_currentMode = ViMode::Normal;
+					} else if( cmd_text[i] == u'/' || cmd_text[i] == u'?' ) {
 						//	SPR #1204: 検索コマンドもテスト可能にする（本物の Enter 経路は do_vi_search を直接呼ぶ）
 						do_vi_search(cmd_text.mid(i), cursor, qMax(1, gvi.m_repeatCount), docWidget);
 						cursor = editor->textCursor();	// do_vi_search はエディタ側カーソルを移動させる
