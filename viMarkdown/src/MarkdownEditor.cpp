@@ -1140,10 +1140,6 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 		}
 		return;
 	} else if (e->key() == Qt::Key_Delete ) {
-		if( m_diffMode ) {
-			m_docWidget->m_editor->removeAllDummyLines();
-			m_docWidget->m_diffview->removeAllDummyLines();
-		}
 		if( (e->modifiers() & Qt::ControlModifier) != 0) {
 			deleteWord();
 		} else {
@@ -1153,10 +1149,10 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 		}
 		return;
 	} else if (e->key() == Qt::Key_Backspace ) {
-		if( m_diffMode ) {
-			m_docWidget->m_editor->removeAllDummyLines();
-			m_docWidget->m_diffview->removeAllDummyLines();
-		}
+		//if( m_diffMode ) {
+		//	m_docWidget->m_editor->removeAllDummyLines();
+		//	m_docWidget->m_diffview->removeAllDummyLines();
+		//}
 		if( (e->modifiers() & Qt::ControlModifier) != 0) {		//	Ctrl +
 			backSpaceWord();
 		} else {
@@ -1342,6 +1338,7 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 	//##qDebug() << "cursorRect = " << cursorRect();
 }
 void MarkdownEditor::do_insertText(QTextCursor& cursor, const QString &txt) {
+	if( m_diffMode && isDummyLine(this, cursor.block()) ) return;
 	if( !txt.isEmpty() ) {
 		if( cursor.hasSelection() ) {
 			int dsz = cursor.selectedText().size();
@@ -1367,6 +1364,11 @@ void MarkdownEditor::do_insertText(QTextCursor& cursor, const QString &txt) {
 	emit canUndoRedoChanged();
 }
 void MarkdownEditor::do_deleteText(QTextCursor &cursor) {
+	if( m_diffMode && isDummyLine(this, cursor.block()) ) return;
+	if( m_diffMode ) {
+		m_docWidget->m_editor->removeAllDummyLines();
+		m_docWidget->m_diffview->removeAllDummyLines();
+	}
 	//QTextCursor cursor = textCursor();
 	int pos = cursor.position();
 	int sz = 1;
