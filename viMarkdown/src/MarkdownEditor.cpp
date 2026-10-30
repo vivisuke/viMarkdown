@@ -1059,11 +1059,13 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
         return;
     }
 	if (e->matches(QKeySequence::Paste)) {
-		if( m_diffMode ) {
-			m_docWidget->m_editor->removeAllDummyLines();
-			m_docWidget->m_diffview->removeAllDummyLines();
+		if( cursor.hasSelection() || !isDummyLine(this, cursor.block()) ) {
+			if( m_diffMode ) {
+				m_docWidget->m_editor->removeAllDummyLines();
+				m_docWidget->m_diffview->removeAllDummyLines();
+			}
+			paste();
 		}
-		paste();
         e->accept();
         return;
     }
