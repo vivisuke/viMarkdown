@@ -3611,6 +3611,78 @@ const QList<ViTestCase> viTestCases = {
         }
     },
 #endif
+    { "Ex Substitute - Current Line (:s)",
+	    "┃foo foo\nbar\n",
+	    {
+	        ":s/foo/baz/", "┃baz foo\nbar\n" // カレント行の最初のマッチのみ置換
+	    }
+	},
+	{ "Ex Substitute - Global Flag (:s/g)",
+	    "┃foo foo foo\nbar\n",
+	    {
+	        ":s/foo/baz/g", "┃baz baz baz\nbar\n" // 行内の全マッチを置換
+	    }
+	},
+	{ "Ex Substitute - Range (:1,2s)",
+	    "apple\napple\n┃apple\n",
+	    {
+	        ":1,2s/apple/orange/", "orange\n┃orange\napple\n" // 1〜2行目のみ置換。カーソルは最後に変更された行（2行目）の先頭へ
+	    }
+	},
+	{ "Ex Substitute - Whole Document (:%s)",
+	    "┃x x\nx x\n",
+	    {
+	        ":%s/x/y/g", "y y\n┃y y\n" // 全行の全マッチを置換。カーソルは最終行の先頭へ
+	    }
+	},
+	{ "Ex Substitute - Whole Match (&)",
+	    "┃hello world\n",
+	    {
+	        ":s/world/[&]/", "┃hello [world]\n" // & はマッチ全体に展開される
+	    }
+	},
+	{ "Ex Substitute - Capture Groups",
+	    "┃ab cd\n",
+	    {
+	        ":s/(a)(b)/\\2\\1/", "┃ba cd\n" // キャプチャグループの入れ替え（パターンはQt正規表現式）
+	    }
+	},
+	{ "Ex Substitute - No Match",
+	    "abc\nd┃ef\n",
+	    {
+	        ":s/zzz/yyy/", "abc\nd┃ef\n" // マッチなし：テキスト・カーソルとも不変
+	    }
+	},
+	{ "Ex Substitute - Alternate Delimiter (#)",
+	    "┃a/b\n",
+	    {
+	        ":s#/#_#", "┃a_b\n" // デリミタに # を使用
+	    }
+	},
+	{ "Ex Global - Delete (:g/pat/d)",
+	    "┃keep\nTODO a\nkeep2\nTODO b\n",
+	    {
+	        ":g/TODO/d", "keep\n┃keep2\n" // マッチした行を全て削除。カーソルは残った最終行の先頭へ
+	    }
+	},
+	{ "Ex Global - Range (:2,3g/pat/d)",
+	    "┃a x\nb x\nc x\nd x\n",
+	    {
+	        ":2,3g/x/d", "a x\n┃d x\n" // 範囲内（2〜3行目）のマッチ行のみ削除
+	    }
+	},
+	{ "Ex Global - Substitute (:g/pat/s)",
+	    "┃foo a\nbar\nfoo b\n",
+	    {
+	        ":g/foo/s/foo/baz/", "baz a\nbar\n┃baz b\n" // マッチした行にだけ置換を適用
+	    }
+	},
+	{ "Ex Global - No Match",
+	    "┃abc\ndef\n",
+	    {
+	        ":g/zzz/d", "┃abc\ndef\n" // マッチなし：不変
+	    }
+	},
 };
 QString removeCursor(const QString &src, int &pos, int &anchor) {
 	QString dst;

@@ -1999,6 +1999,7 @@ void MainWindow::do_subst(const QString &text, int ix, QTextDocument* doc) {
 	QTextCursor cursor(doc);
 	cursor.beginEditBlock();
 	int replacedCount = 0;
+	int lastReplacedLine = -1;
 	for (int line = gvi.m_rangeStart; line <= gvi.m_rangeEnd; ++line) {
 		QTextBlock block = doc->findBlockByNumber(line - 1);	// ex行番号は1始まり
 		if (!block.isValid())
@@ -2031,9 +2032,17 @@ void MainWindow::do_subst(const QString &text, int ix, QTextDocument* doc) {
 			lineCursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
 			lineCursor.insertText(newLineText);
 			replacedCount++;
+			lastReplacedLine = line;
 		}
 	}
 	cursor.endEditBlock();
+	if (lastReplacedLine > 0) {
+	    QTextBlock block = doc->findBlockByNumber(lastReplacedLine - 1);
+	    QTextCursor c(doc);
+	    c.setPosition(block.position());
+	    hat(c);
+	    gvi.m_editor->setTextCursor(c);
+	}
 	if (replacedCount == 0) {
         statusBar()->showMessage(tr("No match found."), 5000);
     } else {
