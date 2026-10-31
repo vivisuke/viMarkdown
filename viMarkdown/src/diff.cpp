@@ -1247,8 +1247,16 @@ void MainWindow::do_merge() {
 		return;
 	}
 
+	//	対象ファイルが既に開いているか（開く前に調べる。無題タブが置き換わる場合があるため）
+	bool alreadyOpen = false;
+	for( int i = 0; i < ui->tabWidget->count(); ++i ) {
+		//DocWidget *w = qobject_cast<DocWidget*>(ui->tabWidget->widget(i));
+		DocWidget *w = static_cast<DocWidget*>(ui->tabWidget->widget(i));
+		if( w != nullptr && w->m_fullPath == fullPath ) { alreadyOpen = true; break; }
+	}
+
 	//	対象ファイルを先に開く（既に開いていればそのタブがアクティブになる）
-	int nTabs = ui->tabWidget->count();
+
 	do_open("", fullPath);
 	DocWidget *srcWidget = getCurDocWidget();
 	if( srcWidget == nullptr || srcWidget->m_fullPath != fullPath ) {
@@ -1260,7 +1268,8 @@ void MainWindow::do_merge() {
 	QString oldText = srcWidget->m_editor->document()->toPlainText();
 	auto srcEncoding = srcWidget->m_encoding;
 	bool srcWithBOM = srcWidget->m_withBOM;
-	if( ui->tabWidget->count() > nTabs ) do_close();	//	:merge が開いたタブは取り込み後に閉じる
+	if( !alreadyOpen ) do_close();	//	:merge が開いたタブは取り込み後に閉じる
+
 
 	//	元のテキストのまま新規タブを開く
 	QString title = QFileInfo(fullPath).fileName();
