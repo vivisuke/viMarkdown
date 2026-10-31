@@ -14,6 +14,7 @@
 #include <QLabel>
 #include <QTimer>
 #include <QPushButton>
+#include <QClipboard>
 #include <vector>
 #include <utility>
 #include <assert.h>
@@ -1056,6 +1057,255 @@ void MainWindow::do_diff() {
     //qDebug() << "cursor.position() = " << pos0 << ", blockNumber() = " << cursor.blockNumber();;
     --m_doing_diff;
 }
+//----------------------------------------------------------------------
+//	--- の前に現れてよい既知の前置き行かどうか
+static bool isPatchPreambleLine(const QString &line) {
+	if( line.isEmpty() || line == "---" ) return true;
+	static const char *prefixes[] = {
+		"index ", "new file mode ", "deleted file mode ", "old mode ", "new mode ",
+		"rename from ", "rename to ", "copy from ", "copy to ",
+		"similarity index ", "dissimilarity index ", "Binary files ",
+	};
+	for( const char *p : prefixes )
+		if( line.startsWith(QLatin1String(p)) ) return true;
+	return false;
+}
+#if 1
+void MainWindow::dumpLinesToOutput(const QString &caption, const QStringList &lines) {
+	do_output("\n" + caption + "\n");
+	for( int i = 0; i < lines.size(); ++i )
+		do_output(QString("%1: %2\n").arg(i + 1, 4).arg(lines[i]));
+}
+#else
+auto dumpLines = [&](const QString &caption, const QStringList &ls) {
+	do_output("\n" + caption + "\n");
+	for( int i = 0; i < ls.size(); ++i )
+		do_output(QString("%1: %2\n").arg(i + 1, 4).arg(ls[i]));
+};
+#endif
+//	成功すれば true、失敗時は error に行番号つきの理由を入れる
+bool parseUnifiedDiff(const QString &text, QVector<DiffFile> &files, QString *error = nullptr) {
+	files.clear();
+	static const QRegularExpression reHunk(R"(^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@(.*)$)");
+	QStringList lines = text.split(u'\n');
+	int fi = -1;		//	現在の DiffFile（-1: なし）
+	int hi = -1;		//	現在の DiffHunk
+	int needOld = 0, needNew = 0;	//	現ハンクの残り行数
+	auto fail = [&](int ln, const QString &msg) {
+		if( error != nullptr )
+			*error = QString("line %1: %2: ").arg(ln + 1).arg(msg) + lines[ln];
+	return false;
+		return false;
+	};
+	for( int ln = 0; ln < lines.size(); ++ln ) {
+		QString line = lines[ln];
+		if( line.endsWith(u'\r') ) line.chop(1);
+		if( fi >= 0 && hi >= 0 && ((needOld > 0 || needNew > 0) || line.startsWith(u'\\')) ) {
+			//	ハンク本体
+			DiffHunk &hunk = files[fi].m_hunks[hi];
+			if( line.startsWith(u'\\') ) {		//	"\ No newline at end of file"
+				if( !hunk.m_lines.isEmpty() ) {
+					QChar t = hunk.m_lines.back().m_type;
+					if( t == u'-' || t == u' ' ) hunk.m_oldNoNewline = true;
+					if( t == u'+' || t == u' ' ) hunk.m_newNoNewline = true;
+				}
+				continue;
+			}
+			QChar type = line.isEmpty() ? u' ' : line[0];	//	空行は文脈行とみなす（空白が落ちたパッチ対策）
+			if( type != u' ' && type != u'-' && type != u'+' )
+				return fail(ln, "invalid hunk line");
+			hunk.m_lines.push_back({type, line.isEmpty() ? QString() : line.mid(1)});
+			if( type == u' ' ) { --needOld; --needNew; }
+			else if( type == u'-' ) --needOld;
+			else --needNew;
+			if( needOld < 0 || needNew < 0 )
+				return fail(ln, "hunk line count mismatch");
+			continue;
+		}
+		hi = -1;
+		if( line.startsWith("diff --git ") ) {
+			files.push_back(DiffFile());
+			fi = (int)files.size() - 1;
+		} else if( line.startsWith("--- ") ) {
+			if( fi < 0 ) { files.push_back(DiffFile()); fi = 0; }
+			QString p = line.mid(4);
+			int tab = p.indexOf(u'\t');		//	古典形式のタイムスタンプを除く
+			if( tab >= 0 ) p = p.left(tab);
+			files[fi].m_oldPath = stripDiffPrefix(p.trimmed());
+			qDebug() << "oldPath = " << files[fi].m_oldPath;
+		} else if( line.startsWith("+++ ") ) {
+			if( fi < 0 ) return fail(ln, "+++ without ---");
+			QString p = line.mid(4);
+			int tab = p.indexOf(u'\t');
+			if( tab >= 0 ) p = p.left(tab);
+			files[fi].m_newPath = stripDiffPrefix(p.trimmed());
+			qDebug() << "newPath = " << files[fi].m_newPath;
+		} else if( line.startsWith("@@ ") ) {
+			if( fi < 0 ) return fail(ln, "@@ without file header");
+			auto m = reHunk.match(line);
+			if( !m.hasMatch() ) return fail(ln, "invalid hunk header");
+			files[fi].m_hunks.push_back(DiffHunk());
+			hi = (int)files[fi].m_hunks.size() - 1;
+			DiffHunk &hunk = files[fi].m_hunks[hi];
+			hunk.m_oldStart = m.captured(1).toInt();
+			hunk.m_oldCount = m.captured(2).isEmpty() ? 1 : m.captured(2).toInt();
+			hunk.m_newStart = m.captured(3).toInt();
+			hunk.m_newCount = m.captured(4).isEmpty() ? 1 : m.captured(4).toInt();
+			hunk.m_section = m.captured(5).trimmed();
+			needOld = hunk.m_oldCount;
+			needNew = hunk.m_newCount;
+		} else if( !isPatchPreambleLine(line) ) {
+			return fail(ln, "unexpected line");	
+		}
+		//	それ以外の行（index 行、format-patch のメールヘッダ等）は無視
+	}
+	if( hi >= 0 && (needOld > 0 || needNew > 0) )
+		return fail((int)lines.size() - 1, "hunk is truncated");
+	if( files.isEmpty() || files.front().m_hunks.isEmpty() ) {
+		if( error != nullptr ) *error = "no hunk found";
+		return false;
+	}
+	return true;
+}
+//	oldLines に file のハンクを適用し、結果を newLines に返す（失敗時は error に理由）
+bool applyDiffFile(const QStringList &oldLines, const DiffFile &file, QStringList &newLines, QString *error = nullptr) {
+	newLines.clear();
+	int srcPos = 0;		//	oldLines の読み進み位置
+	for( int hi = 0; hi < file.m_hunks.size(); ++hi ) {
+		const DiffHunk &hunk = file.m_hunks[hi];
+		QStringList oldSide, newSide;
+		for( const DiffLine &dl : hunk.m_lines ) {
+			if( dl.m_type != u'+' ) oldSide << dl.m_text;
+			if( dl.m_type != u'-' ) newSide << dl.m_text;
+		}
+		//	適用位置（oldStart は1始まり。oldCount==0 のときは oldStart 行の直後）
+		int pos = hunk.m_oldCount == 0 ? hunk.m_oldStart : hunk.m_oldStart - 1;
+		if( pos < srcPos || pos > oldLines.size() ) {
+			if( error != nullptr ) *error = QString("hunk %1: out of range").arg(hi + 1);
+			return false;
+		}
+		if( !oldSide.isEmpty() ) {
+			//	旧側テキストが一致するか検証し、ずれている場合は最も近い一致位置を探す
+			auto matchesAt = [&](int p) {
+				if( p < srcPos || p + oldSide.size() > oldLines.size() ) return false;
+				for( int i = 0; i < oldSide.size(); ++i )
+					if( oldLines[p + i] != oldSide[i] ) return false;
+				return true;
+			};
+			if( !matchesAt(pos) ) {
+				int found = -1;
+				for( int p = srcPos; p + oldSide.size() <= oldLines.size(); ++p )
+					if( matchesAt(p) && (found < 0 || qAbs(p - pos) < qAbs(found - pos)) ) found = p;
+				if( found < 0 ) {
+					if( error != nullptr ) *error = QString("hunk %1: context mismatch").arg(hi + 1);
+					return false;
+				}
+				pos = found;
+			}
+		}
+		for( int i = srcPos; i < pos; ++i ) newLines << oldLines[i];	//	ハンク間の無変更部分
+		newLines << newSide;
+		srcPos = pos + (int)oldSide.size();
+	}
+	for( int i = srcPos; i < oldLines.size(); ++i ) newLines << oldLines[i];
+	return true;
+}
 void MainWindow::do_merge() {
-	qDebug() << "MainWindow::do_merge()";
+	//	クリップボードのパッチを対象ファイルへ適用し、新規タブで diff 表示する
+	QString text = QGuiApplication::clipboard()->text();
+	do_output("clipboard text:\n" + text + "\n");
+	QVector<DiffFile> files;
+	QString error;
+	if( !parseUnifiedDiff(text, files, &error) ) {
+		QString msg = tr("Merge: cannot parse as a patch (%1)").arg(error);
+		statusBar()->showMessage(msg, 5000);
+		do_output(msg + "\n");
+		return;
+	}
+	const DiffFile &file = files[0];
+	if( file.m_oldPath == "/dev/null" ) {
+		QString msg = tr("Merge: creating a new file is not supported");
+		statusBar()->showMessage(msg, 5000);
+		do_output(msg + "\n");
+		return;
+	}
+
+	//	対象ファイルのフルパスを解決する：現在の文書のディレクトリを優先し、次にそのままのパス
+	QString relPath = stripDiffPrefix(file.m_oldPath);
+	QString fullPath;
+	DocWidget *cur = getCurDocWidget();
+	if( cur != nullptr && !cur->m_fullPath.isEmpty() ) {
+		QString cand = QDir(QFileInfo(cur->m_fullPath).absolutePath()).filePath(relPath);
+		if( QFileInfo::exists(cand) ) fullPath = QFileInfo(cand).absoluteFilePath();
+	}
+	if( fullPath.isEmpty() && QFileInfo::exists(relPath) )
+		fullPath = QFileInfo(relPath).absoluteFilePath();
+	if( fullPath.isEmpty() ) {
+		QString msg = tr("Merge: target file not found (%1)").arg(relPath);
+		statusBar()->showMessage(msg, 5000);
+		do_output(msg + "\n");
+		return;
+	}
+
+	//	対象ファイルを先に開く（既に開いていればそのタブがアクティブになる）
+	int nTabs = ui->tabWidget->count();
+	do_open("", fullPath);
+	DocWidget *srcWidget = getCurDocWidget();
+	if( srcWidget == nullptr || srcWidget->m_fullPath != fullPath ) {
+		QString msg = tr("Merge: cannot open the target file (%1)").arg(relPath);
+		statusBar()->showMessage(msg, 5000);
+		do_output(msg + "\n");
+		return;
+	}
+	QString oldText = srcWidget->m_editor->document()->toPlainText();
+	auto srcEncoding = srcWidget->m_encoding;
+	bool srcWithBOM = srcWidget->m_withBOM;
+	if( ui->tabWidget->count() > nTabs ) do_close();	//	:merge が開いたタブは取り込み後に閉じる
+
+	//	元のテキストのまま新規タブを開く
+	QString title = QFileInfo(fullPath).fileName();
+	title.remove(QRegularExpression("\\.md$"));
+	//addTab(title + " (merge)", fullPath, oldText, srcWidget->m_withBOM, srcWidget->m_encoding);
+	addTab(title + " (merge)", fullPath, oldText, srcWithBOM, srcEncoding);
+	DocWidget *docWidget = getCurDocWidget();
+	if( docWidget == nullptr ) return;
+
+	//	開いたタブの内容に対してパッチを適用する
+	QStringList oldLines = oldText.split('\n');
+	if( oldText.endsWith('\n') ) oldLines.removeLast();
+	QStringList newLines;
+	if( !applyDiffFile(oldLines, file, newLines, &error) ) {
+		QString msg = tr("Merge: cannot apply patch (%1)").arg(error);
+		statusBar()->showMessage(msg, 5000);
+		do_output(msg + "\n");
+		dumpLinesToOutput("buffer:", oldLines);
+		return;		//	タブには元のテキストが残るだけ
+	}
+	QString newText = newLines.join('\n');
+	bool trailingNewline = oldText.isEmpty() || oldText.endsWith('\n');
+	if( !file.m_hunks.isEmpty() ) {
+		const DiffHunk &last = file.m_hunks.last();
+		if( last.m_newNoNewline ) trailingNewline = false;
+		else if( last.m_oldNoNewline ) trailingNewline = true;
+	}
+	if( trailingNewline && !newText.isEmpty() ) newText += '\n';
+
+	//	左＝適用結果、右＝元のソースで diff 表示にする
+	docWidget->m_editor->setPlainText(newText);
+	docWidget->m_editor->document()->setModified(true);
+	docWidget->m_diffPeerTitle = QFileInfo(fullPath).fileName();
+	docWidget->m_diffview->setPlainText(oldText);
+	docWidget->m_diffview->document()->setModified(false);
+	docWidget->m_diffMode = true;
+	docWidget->m_diffPeerFullPath = fullPath;
+	docWidget->m_editor->setDiffMode(true);
+	docWidget->m_diffview->setDiffMode(true);
+	docWidget->m_editor->setHighlightDiff(true);
+	docWidget->m_diffview->setHighlightDiff(true);
+	docWidget->m_editor->setHighlightMarkdown(false);
+	docWidget->m_diffview->setHighlightMarkdown(false);
+	docWidget->m_editor->expandAll();
+	docWidget->m_diffview->expandAll();
+	docWidget->updatePanes();
+	ui->action_DiffMode->setChecked(true);
 }

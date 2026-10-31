@@ -240,6 +240,34 @@ struct DayInfo {
 // 1ヶ月分のデータを保持する型定義（QDate -> DayInfo）
 using MonthDiaryMap = QMap<QDate, DayInfo>;
 #endif
+//--------------------------------------------------------------------------------
+//	Unified diff パース（:merge 用）
+//--------------------------------------------------------------------------------
+struct DiffLine {
+	QChar m_type;			//	' ': 文脈, '-': 削除, '+': 追加
+	QString m_text;			//	先頭マーカーを除いた行テキスト（改行なし）
+};
+struct DiffHunk {
+	int m_oldStart = 0;		//	旧側開始行（1始まり。m_oldCount==0 のときは 0）
+	int m_oldCount = 0;
+	int m_newStart = 0;
+	int m_newCount = 0;
+	QString m_section;		//	@@ の後ろのセクション名
+	bool m_oldNoNewline = false;	//	旧ファイル末尾に改行なし
+	bool m_newNoNewline = false;	//	新ファイル末尾に改行なし
+	QVector<DiffLine> m_lines;
+};
+struct DiffFile {
+	QString m_oldPath;		//	"/dev/null" はファイル追加を意味する
+	QString m_newPath;		//	"/dev/null" はファイル削除を意味する
+	QVector<DiffHunk> m_hunks;
+};
+
+static QString stripDiffPrefix(const QString &path) {
+	if( path.startsWith("a/") || path.startsWith("b/") )
+		return path.mid(2);
+	return path;
+}
 
 class MainWindow : public QMainWindow
 {
@@ -367,6 +395,7 @@ protected:
     void	do_test(DocWidget*, int nth_path);
     void	run_previewTestScript(const QString&);
     void	do_output(const QString&);
+    void	dumpLinesToOutput(const QString& caption, const QStringList& lines);
     void	toggleCursor();
     void	do_settings(int page=0);
     void	do_close(bool forced = false);
