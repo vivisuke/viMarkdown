@@ -214,8 +214,9 @@ void MarkdownPreview::onContentsChanged(int position, int charsRemoved, int char
 		cursor.setPosition(position);
 		QTextBlock block = cursor.block();
 		QString addedStr = block.text().mid(cursor.position() - block.position(), charsAdded);
-		addedStr.replace("\\", "\\\\").replace("#", "\\#").replace("-", "\\-").replace("<", "\\<")
-				.replace("`", "\\`").replace("[", "\\[").replace("*", "\\*").replace("_", "\\_").replace("~", "\\~");
+		if( blockType(block) != BT_CODE_BLOCK )
+			addedStr.replace("\\", "\\\\").replace("#", "\\#").replace("-", "\\-").replace("<", "\\<")
+					.replace("`", "\\`").replace("[", "\\[").replace("*", "\\*").replace("_", "\\_").replace("~", "\\~");
 		if( blockType(block) == BT_CELL_DQ )
 			addedStr.replace("\"", "\"\"");
 		if( addedStr.isEmpty() && charsRemoved == 0 && charsAdded == 1  )
@@ -1392,6 +1393,7 @@ void MarkdownPreview::do_code(int bn0, int nBlocks, QTextBlock srcBlock, QTextCu
 	cursor.setBlockFormat(blockFmt);
 	for (auto txt : lst) {
 	    cursor.insertText(txt, charFmt);
+	    setBlockType(cursor.block(), BT_CODE_BLOCK);
 	    cursor.insertBlock(blockFmt);
 	}
 #else
