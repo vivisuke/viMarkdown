@@ -143,10 +143,38 @@ QVariant MarkdownPreview::inputMethodQuery(Qt::InputMethodQuery query) const {
 }
 void MarkdownPreview::onAction_Cut() {
 }
+//	新規ドキュメントの [from, to) 範囲を、エディタへ挿入する文字列として取り出す。
+//	ブロック境界は '\n' とし、ブロックごとに種別に応じたエスケープを行う
+//	（コードブロック内はエスケープしない。BT_CELL_DQ では " を二重化する）。
+static QString escapedInsertText(QTextDocument *doc, int from, int to) {
+	QString result;
+	QTextBlock block = doc->findBlock(from);
+	while( block.isValid() && block.position() < to ) {
+		const int textEnd = block.position() + block.text().size();	//	段落セパレータ手前の位置
+		const int segStart = qMax(from, block.position());
+		const int segEnd = qMin(to, textEnd);
+		if( segEnd > segStart ) {
+			QString seg = block.text().mid(segStart - block.position(), segEnd - segStart);
+			if( blockType(block) != BT_CODE_BLOCK )
+				seg.replace("\\", "\\\\").replace("#", "\\#").replace("-", "\\-").replace("<", "\\<")
+					.replace("`", "\\`").replace("[", "\\[").replace("*", "\\*").replace("_", "\\_").replace("~", "\\~");
+			if( blockType(block) == BT_CELL_DQ )
+				seg.replace("\"", "\"\"");
+			result += seg;
+		}
+		if( textEnd >= from && textEnd < to && block.next().isValid() )
+			result += '\n';		//	ブロック境界
+		block = block.next();
+	}
+	return result;
+}
 void MarkdownPreview::onCursorPosChanged() {
 	if( m_docWidget->m_incrementalUpdating ) return;
 	QTextCursor cursor = this->textCursor();
 	m_lastCurBlockText = cursor.block().text();
+	m_lastDocText = document()->toPlainText();	//	編集前スナップショット（onContentsChanged の差分算出用）
+	m_lastCursorPos = cursor.position();
+	m_lastAnchorPos = cursor.anchor();
 	viewport()->update();	//	強制再描画
 	if( m_procContentsChanged ) return;
 	//if (!m_commitString.isEmpty()) return;
@@ -177,6 +205,7 @@ void MarkdownPreview::onContentsChanged(int position, int charsRemoved, int char
 	//##qDebug() << "*** MarkdownPreview::onContentsChanged(" << position << ", " << charsRemoved << ", " << charsAdded << ")";
 	m_processing = true;
 	m_procContentsChanged = true;
+#if 0
 	QTextCursor cursor = this->textCursor();
 	QTextBlock block = cursor.block();
 	const QString &text = block.text();		//	編集後ブロックテキスト
@@ -235,6 +264,47 @@ void MarkdownPreview::onContentsChanged(int position, int charsRemoved, int char
 	if( charsRemoved > 0 ) {
 		emit textRemoved(charsRemoved);
 	}
+#else
+	//	編集内容は、編集前スナップショット（m_lastDocText）との差分で算出する。
+	//	従来は「カーソルのある1ブロック内の編集」と決め打ちしていたため、複数ブロック分の
+	//	変更が1回の通知で届くペーストでは、着地ブロックのずれで差分算出が破綻していた（#1234）。
+	const QString oldText = m_lastDocText;
+	const QString newText = document()->toPlainText();
+	const int selStart = qMin(m_lastAnchorPos, m_lastCursorPos);	//	編集前の選択範囲
+	const int selEnd = qMax(m_lastAnchorPos, m_lastCursorPos);
+	if( position < 0 || position + charsRemoved > oldText.size() + 1 || selStart > oldText.size() ) {
+		//	スナップショットと通知範囲が不整合：同期せず、下記のスナップショット更新のみ行う
+	} else if( selEnd > selStart && selEnd <= oldText.size() &&
+			selStart >= position && selEnd <= position + charsRemoved + 1 ) {
+		//	選択範囲の置換：挿入文字列は選択範囲を固定した窓から取り出す。
+		//	最小差分では置換前後の共通部分が相殺され、挿入文字列が欠けてしまうため。
+		const int insEnd = newText.size() - (oldText.size() - selEnd);	//	新規テキスト側の挿入終端
+		if( insEnd >= selStart )
+			emit textInserted(escapedInsertText(document(), selStart, insEnd));
+		//	エディタ側では選択範囲が do_insertText() で置換されるので、
+		//	textRemoved は emit しない（emit すると置換済みの範囲を二重に削除してしまう）
+	} else {
+		//	非選択編集：窓の開始は編集位置（編集前のカーソル位置）に固定し、末尾共通部分のみ相殺する。
+		//	先頭共通部分まで相殺すると、挿入テキストと前後の既存テキストに共通部分がある場合
+		//	（例："int " で始まる複数行をコードブロックへペースト）に窓がずれ、
+		//	エディタ側カーソル位置への挿入と対応しなくなり、テキストが回転してしまう。
+		const int p = selStart;
+		int s = 0;
+		const int maxS = qMin(oldText.size(), newText.size()) - p;
+		while( s < maxS && oldText[oldText.size()-1-s] == newText[newText.size()-1-s] ) ++s;	//	末尾共通部分
+		const int removedCount = oldText.size() - p - s;
+		const int addedLen = newText.size() - p - s;
+		if( p >= position && p + removedCount <= position + charsRemoved ) {	//	算出窓が通知範囲に収まること
+			if( addedLen > 0 )
+				emit textInserted(escapedInsertText(document(), p, p + addedLen));
+			if( removedCount > 0 )
+				emit textRemoved(removedCount);
+		}
+	}
+	m_lastDocText = document()->toPlainText();
+	m_lastCursorPos = textCursor().position();
+	m_lastAnchorPos = textCursor().anchor();
+#endif
 	m_procContentsChanged = false;
 	m_processing = false;
 	((MainWindow*)m_mainWindow)->syncEditorToPreviewCursor();	//	暫定的、undone: シグナルスロットに変更
@@ -736,6 +806,9 @@ void MarkdownPreview::setMarkdown(QTextDocument *doc) {		//	doc: markdown ソー
 	insertMarkdown(doc, 0, doc->lineCount(), cursor);
 	cursor.endEditBlock();
 	m_processing = false;
+	m_lastDocText = document()->toPlainText();	//	再変換後のスナップショットに更新
+	m_lastCursorPos = textCursor().position();
+	m_lastAnchorPos = textCursor().anchor();
     qint64 elapsedMs = timer.elapsed();
     qDebug() << "[Benchmark] setMarkdown completed:" << elapsedMs << "ms (" 
              << timer.nsecsElapsed() / 1000.0 << "μs)";

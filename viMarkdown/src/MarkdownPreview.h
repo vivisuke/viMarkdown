@@ -130,6 +130,9 @@ private:
 	QString	m_commitString;
 	QString	m_lastCurBlockText;				//	事前のカーソルブロックテキスト
     //QString	m_bodyText;
+	QString	m_lastDocText;					//	事前のドキュメント全体テキスト（プレーンテキスト）
+	int		m_lastCursorPos = 0;			//	事前のカーソル位置
+	int		m_lastAnchorPos = 0;			//	事前のアンカー位置
     int		m_bodyLineNum = -1;		//	m_bodyList に入っている最初の行のソース行番号
     QStringList	m_bodyList;
 	//QStringList	m_lst;

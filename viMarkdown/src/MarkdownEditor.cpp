@@ -3794,6 +3794,7 @@ void MarkdownEditor::resizeEvent(QResizeEvent *event) {
 	m_lnAreaWidget->setGeometry(QRect(cr.left(), cr.top(), lnAreaWidth(), cr.height()));
 
 	m_docWidget->setMiniMapCurHeight(getVisibleLineCount());
+	//emit resized();
 }
 int MarkdownEditor::getVisibleLineCount() const {
 	int lineHeight = fontMetrics().lineSpacing(); 

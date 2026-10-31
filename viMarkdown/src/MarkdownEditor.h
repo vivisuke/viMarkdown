@@ -281,6 +281,7 @@ signals:
     void	changeFontSize(int delta);
     void	posContextChanged(const PosContext &context, const PosContext &acontext);
     void	do_viCmd(QChar, QTextCursor&);
+    //void	resized();	//	リサイズ時に通知（diff 中のパディング再計算用）
     void	canUndoRedoChanged();
 
 protected:

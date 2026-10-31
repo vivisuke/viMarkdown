@@ -1077,6 +1077,7 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	diffview->setDiffMode(true);
 	//diffview->setLineWrapMode(QPlainTextEdit::NoWrap);
 	connect(diffview, &MarkdownEditor::textChanged, this, &MainWindow::onDiffViewChanged);
+	//connect(diffview, &MarkdownEditor::resized, this, &MainWindow::onDiffViewChanged);
 	splitter->addWidget(editor);
 	splitter->addWidget(preview);
 	splitter->addWidget(minimap);
@@ -1147,6 +1148,7 @@ MarkdownEditor *MainWindow::newEditor(DocWidget *docWidget, QSplitter *splitter,
 	connect(mdEditor, &MarkdownEditor::changeFontSize, this, &MainWindow::onChangeEditorFontSize);
 	connect(mdEditor, &MarkdownEditor::posContextChanged, this, &MainWindow::onSrcPosContextChanged);
 	connect(mdEditor, &MarkdownEditor::textChanged, this, &MainWindow::onMDTextChanged);
+	//connect(mdEditor, &MarkdownEditor::resized, this, &MainWindow::onDiffViewChanged);
 	connect(mdEditor, &MarkdownEditor::canUndoRedoChanged, this, &MainWindow::updateUndoRedoEnabled);
 	//connect(mdEditor, &MarkdownPreview::textChanged, this, &MainWindow::onMDTextChanged);
 	connect(mdEditor->document(), &QTextDocument::modificationChanged, this, &MainWindow::onModificationChanged);
