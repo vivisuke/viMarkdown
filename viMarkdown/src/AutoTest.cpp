@@ -4008,7 +4008,11 @@ QList<SyncTestCase> g_syncTestCase = {
 	{"Bold・末尾内側", "ab **bold┃** cd\n", "ab bold┃ cd\n", "ab **bold┃** cd\n"},
 	{"Bold・行頭", "**┃bold**\n", "┃bold\n", "**┃bold**\n"},
 	{"Bold・直前", "ab ┃**bold** cd\n", "ab ┃bold cd\n", ""},
-	{"Bold・直後", "ab **bold**┃ cd\n", "ab bold┃ cd\n", ""},
+	//{"Bold・直後", "ab **bold**┃ cd\n", "ab bold┃ cd\n", ""},
+	{"Bold・直後", "ab **bold**┃ cd\n", "ab bold┃ cd\n", "ab **bold┃** cd\n"},
+	{"Bold・全体選択", "ab **《bold┃》** cd\n", "ab 《bold┃》 cd\n", "ab **《bold┃》** cd\n"},
+	{"Bold・先頭から選択", "ab **《bold** cd┃》 ef\n", "ab 《bold cd┃》 ef\n", "ab **《bold** cd┃》 ef\n"},
+	{"Bold・末尾まで選択", "a《b **bold┃》** cd\n", "a《b bold┃》 cd\n", "a《b **bold┃》** cd\n"},
 	{"List・1項目先頭", "- ┃hoge\n- fuga\n", "┃hoge\nfuga\n", "- ┃hoge\n- fuga\n"},
 	{"List・1項目中間", "- ho┃ge\n- fuga\n", "ho┃ge\nfuga\n", "- ho┃ge\n- fuga\n"},
 	{"List・2項目先頭", "- hoge\n- ┃fuga\n", "hoge\n┃fuga\n", "- hoge\n- ┃fuga\n"},
@@ -4027,6 +4031,31 @@ QList<SyncTestCase> g_syncTestCase = {
 	{"f*u**ga・末尾", "f*u**ga┃\n", "f*u**ga┃\n", "f*u**ga┃\n"},
 #endif
 };
+//	カーソル位置と選択範囲を ┃・《・》 表記で描画する（removeCursor で読み戻せる形式）
+//	trimTail が真でプレーンテキストが "\n\n" で終わる場合は末尾を1文字落とすが、
+//	マーカーが末尾2文字以内にある場合は落とさない（従来の描画と同一にするため）
+static QString syncActualText(const QTextCursor &cursor, bool trimTail) {
+	QString text = cursor.document()->toPlainText();
+	int pos = cursor.position();
+	int anchor = cursor.hasSelection() ? cursor.anchor() : -1;
+	if( trimTail && text.endsWith("\n\n") && qMax(pos, anchor) <= text.size() - 2 )
+		text = text.left(text.size() - 1);
+	pos = qBound(0, pos, text.size());
+	if( anchor < 0 || anchor == pos ) {
+		text.insert(pos, u'┃');
+		return text;
+	}
+	anchor = qBound(0, anchor, text.size());
+	if( anchor < pos ) {		//	順方向選択：《 ... ┃》
+		text.insert(pos, u'》');
+		text.insert(pos, u'┃');
+		text.insert(anchor, u'《');
+	} else {					//	逆方向選択：┃ ... 《
+		text.insert(anchor, u'《');
+		text.insert(pos, u'┃');
+	}
+	return text;
+}
 void MainWindow::onAction_TestCursorSync() {
 	qDebug() << "onAction_TestCursorSync()";
 	addTab(QString("QA-%1").arg(++m_QA_tab_number));
@@ -4047,8 +4076,15 @@ void MainWindow::onAction_TestCursorSync() {
 		cursor.movePosition(QTextCursor::Start);
 		cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
 		cursor.insertText(removeCursor(g_syncTestCase[i].m_initialText, pos, anchor));
-		cursor.setPosition(pos);
-		cursor.clearSelection();
+		//cursor.setPosition(pos);
+		//cursor.clearSelection();
+		if( anchor >= 0 ) {
+			cursor.setPosition(anchor);
+			cursor.setPosition(pos, QTextCursor::KeepAnchor);
+		} else {
+			cursor.setPosition(pos);
+			cursor.clearSelection();
+		}
 		editor->setTextCursor(cursor);
 		editor->savePrefferedX(cursor);
 		QCoreApplication::processEvents();		//	溜まっているイベント処理
@@ -4056,9 +4092,13 @@ void MainWindow::onAction_TestCursorSync() {
 		QString text2 = removeCursor(exp, pos2, anchor2);
 		exp.replace('\n', "\\n");
 		QTextCursor cursor2 = preview->textCursor();
+#if 1
+		QString after = syncActualText(cursor2, true);		//	実際のプレビューテキスト（選択範囲も描画）
+#else
 		QString after = cursor2.document()->toPlainText();		//	実際のプレビューテキスト
 		after.insert(cursor2.position(), u'┃');
 		if( after.endsWith("\n\n") ) after = after.left(after.size() - 1);
+#endif
 		after.replace('\n', "\\n");
 		++total_tested;
 		do_output(".");
@@ -4078,6 +4118,15 @@ void MainWindow::onAction_TestCursorSync() {
 			do_output(QString("Actual:   '%1'\n").arg(after));
 			continue;
 		}
+		++total_tested;
+		do_output(".");
+		if( (anchor2 >= 0) != cursor2.hasSelection() || (anchor2 >= 0 && anchor2 != cursor2.anchor()) ) {
+			++total_failed;
+			do_output(QString("\n[FAILED #%1] wrong selection anchor.\n").arg(total_failed));
+			do_output(QString("Expected: '%1'\n").arg(exp));
+			do_output(QString("Actual:   '%1'\n").arg(after));
+			continue;
+		}
 		//	PtoE チェック（m_editorText が空ならスキップ）
 		if( !g_syncTestCase[i].m_editorText.isEmpty() ) {
 			QString expE = g_syncTestCase[i].m_editorText;	//	期待するエディタテキスト
@@ -4085,14 +4134,22 @@ void MainWindow::onAction_TestCursorSync() {
 			removeCursor(expE, pos3, anchor3);
 			expE.replace('\n', "\\n");
 			QTextCursor cursorP = preview->textCursor();
-			cursorP.setPosition(pos2);		//	EtoP 結果位置から逆同期する
-			cursorP.clearSelection();
+			//cursorP.setPosition(pos2);		//	EtoP 結果位置から逆同期する
+			//cursorP.clearSelection();
+			if( anchor2 >= 0 ) {
+				cursorP.setPosition(anchor2);
+				cursorP.setPosition(pos2, QTextCursor::KeepAnchor);
+			} else {
+				cursorP.setPosition(pos2);		//	EtoP 結果位置から逆同期する
+				cursorP.clearSelection();
+			}
 			preview->setTextCursor(cursorP);
 			preview->onCursorPosChanged();		//	位置不変だとシグナルが発火しないため直接呼ぶ
 			QCoreApplication::processEvents();
 			QTextCursor cursorE = editor->textCursor();
-			QString afterE = cursorE.document()->toPlainText();		//	実際のエディタテキスト
-			afterE.insert(cursorE.position(), u'┃');
+			//QString afterE = cursorE.document()->toPlainText();		//	実際のエディタテキスト
+			//afterE.insert(cursorE.position(), u'┃');
+			QString afterE = syncActualText(cursorE, false);		//	実際のエディタテキスト（選択範囲も描画）
 			afterE.replace('\n', "\\n");
 			++total_tested;
 			do_output(".");
@@ -4112,6 +4169,15 @@ void MainWindow::onAction_TestCursorSync() {
 				do_output(QString("Actual:   '%1'\n").arg(afterE));
 				continue;
 			}
+			++total_tested;
+			do_output(".");
+			if( (anchor3 >= 0) != cursorE.hasSelection() || (anchor3 >= 0 && anchor3 != cursorE.anchor()) ) {
+				++total_failed;
+				do_output(QString("\n[FAILED #%1] wrong editor selection anchor (PtoE).\n").arg(total_failed));
+				do_output(QString("Expected: '%1'\n").arg(expE));
+				do_output(QString("Actual:   '%1'\n").arg(afterE));
+				continue;
+ 			}
 		}
 		do_output("\n");
 	}
