@@ -1158,7 +1158,9 @@ void MarkdownPreview::do_heading(QTextBlock& srcBlock, QTextCursor& cursor, QStr
 	int h = qMin(6, i);		//	[1, 6]
 	while( i < buf.size() && buf[i] == u' ' ) ++i;
 	BlockData *data = getBlockData(srcBlock);
-	for(int k = 0; k < i; ++k)
+	//for(int k = 0; k < i; ++k)
+	//	buf は行頭空白を除いた文字列。charFlags は元ブロック基準なので、先行空白も含め接頭辞全体に設定する
+	for(int k = 0; k < m_nSpaces + i && k < data->m_charFlags.size(); ++k)
 		data->m_charFlags[k] = PCF_HEADING;
 	srcBlock.setUserData(data);
 	setBlockType(srcBlock, BT_HEADING);
