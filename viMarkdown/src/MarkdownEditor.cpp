@@ -1343,6 +1343,14 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 }
 void MarkdownEditor::do_insertText(QTextCursor& cursor, const QString &txt) {
 	if( m_diffMode && isDummyLine(this, cursor.block()) ) return;
+	if( m_diffMode && txt.contains(u'\n') ) {
+		//	[#1255] 改行を含む挿入はブロック数を変える。ダミー行がある状態でそのまま挿入すると
+		//	diffBlockNumbers がずれ、次の do_diff 冒頭のダミー除去が実テキストを誤って削除する。
+		//	do_deleteText と同様に、挿入前に両ペインのダミー行を除去しておく
+		//	（vicmd の o/O・p/P、paste() など keyPressEvent を経由しない入口への対策）
+		m_docWidget->m_editor->removeAllDummyLines();
+		m_docWidget->m_diffview->removeAllDummyLines();
+	}
 	if( !txt.isEmpty() ) {
 		if( cursor.hasSelection() ) {
 			int dsz = cursor.selectedText().size();

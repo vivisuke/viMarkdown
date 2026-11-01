@@ -171,7 +171,11 @@ void MarkdownEditor::removeAllDummyLines() {
         // 削除操作によってブロックが破棄される前に、前のブロックへの参照を確保しておく
         QTextBlock prevBlock = block.previous();
 
-        if (isDummyLine(this, block)) {
+        //if (isDummyLine(this, block))
+        if (isDummyLine(this, block) && block.text().isEmpty())
+        	//	ダミー行は常に空行。テキストがある場合は diffBlockNumbers がずれている（#1255）ので、
+        	//	実テキストを誤って削除しないためのガード
+        {
         	qDebug() << "bn = " << block.blockNumber() << " will be deleted";
             cursor.setPosition(block.position());
 
