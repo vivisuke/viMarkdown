@@ -1821,7 +1821,10 @@ void MarkdownPreview::do_list(int bn0, int nBlocks, QTextBlock srcBlock, QTextCu
 				if( re_block.match(text).hasMatch() )	//	ブロック行の場合
 					break;
 #if 1
-				bool tailsp = text.endsWith(" ");
+				//	[#1260] 継続行は insertMarkdown() ループ先頭の初期化（getBlockData(true)）を通らないため、
+				//	ここで charFlags を初期化しないと、リスト行だった頃の PCF_LIST_MARK が残留する
+				BlockData* data = getBlockData(srcBlock, true);		//	true for 初期化
+				srcBlock.setUserData(data);				bool tailsp = text.endsWith(" ");
 				//cursor.insertText("\n");
 				QTextBlockFormat blockFormat = cursor.blockFormat();
 				blockFormat.setIndent(indent + 1);
