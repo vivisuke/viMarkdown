@@ -4021,6 +4021,8 @@ QList<SyncTestCase> g_syncTestCase = {
 	{"List・継続行 先頭", "- hoge\n┃ここが継続行\n- fuga\n", "hoge\n┃ここが継続行\nfuga\n", "- hoge\n┃ここが継続行\n- fuga\n"},
 	{"List・継続行 中間", "- hoge\nここが継┃続行\n- fuga\n", "hoge\nここが継┃続行\nfuga\n", "- hoge\nここが継┃続行\n- fuga\n"},
 	{"List・継続行 次項目", "- hoge\nここが継続行\n- ┃fuga\n", "hoge\nここが継続行\n┃fuga\n", "- hoge\nここが継続行\n- ┃fuga\n"},
+	{"List・Bold全体選択", "- **《bold┃》** cd\n", "《bold┃》 cd\n", "- **《bold┃》** cd\n"},
+	{"List・Bold直後", "- **bold**┃ cd\n", "bold┃ cd\n", "- **bold┃** cd\n"},
 #if 0		//	v0.3 では NPTF, v0.4 で対処予定
 	{"f*u**ga・先頭", "┃f*u**ga\n", "┃f*u**ga\n", "┃f*u**ga\n"},
 	{"f*u**ga・f直後", "f┃*u**ga\n", "f┃*u**ga\n", "f┃*u**ga\n"},

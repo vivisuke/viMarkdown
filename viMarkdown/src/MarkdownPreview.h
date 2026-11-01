@@ -35,7 +35,8 @@ public:
     void	setCursorAtNthPat(int srcBlockNum, QString pat, int nth, bool=false);
     void	ensureLineVisible(int srcBlockNum);
     void	scrollToBlock(int blockIndex);
-    struct PosContext	contextAt(int pos);
+    //struct PosContext	contextAt(int pos);
+    struct PosContext	contextAt(int pos, bool forSelection = false);
     int		prvToSrcHeading(int blockNum);		//	プレビューの見出し行番号（0 org.）をエディタのそれに変換
 	void	setCursorByContext(const struct PosContext &context, const PosContext &acontext);
     int		findPosition(const struct PosContext&);

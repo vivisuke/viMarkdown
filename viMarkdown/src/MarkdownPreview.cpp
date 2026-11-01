@@ -183,11 +183,13 @@ void MarkdownPreview::onCursorPosChanged() {
 	m_processing = true;
 	m_mainWindow->setCursorCyncing();
 	//QTextCursor cursor = this->textCursor();
-	auto context = contextAt(cursor.position());
+	//auto context = contextAt(cursor.position());
+	auto context = contextAt(cursor.position(), cursor.hasSelection());
 	context.m_srcHBlockNum = m_docWidget->prvToSrcHeading(context.m_prvHBlockNum);
 	PosContext acontext;
 	if( cursor.hasSelection() ) {
-		acontext = contextAt(cursor.anchor());
+		//acontext = contextAt(cursor.anchor());
+		acontext = contextAt(cursor.anchor(), true);
 		acontext.m_srcHBlockNum = m_docWidget->prvToSrcHeading(acontext.m_prvHBlockNum);
 	}
 	emit posContextChanged(context, acontext);
@@ -2078,7 +2080,30 @@ void MarkdownPreview::setCursorByContext(const PosContext &context, const PosCon
 	}
 	m_processing = false;
 }
-PosContext MarkdownPreview::contextAt(int pos) {	//	pos 位置から PosContext を構築
+//	[#1258] pos が強調ラン（ボールド・イタリック・打ち消し）の末尾境界かどうかを判定
+//	直前の文字が強調書式で、pos の文字が強調書式でない（またはブロック末尾）場合に true
+static bool isEmphasisTailPos(QTextDocument *doc, const QTextBlock &block, int pos) {
+	auto formatAt = [doc](int p) {
+		QTextBlock b = doc->findBlock(p);
+		for( auto it = b.begin(); !it.atEnd(); ++it ) {
+			QTextFragment f = it.fragment();
+			if( f.contains(p) )
+				return f.charFormat();
+		}
+		return QTextCharFormat();
+	};
+	auto isEmph = [](const QTextCharFormat &f) {
+		return f.fontWeight() >= QFont::Bold || f.fontItalic() || f.fontStrikeOut();
+	};
+	if( !isEmph(formatAt(pos - 1)) )
+		return false;
+	if( pos < block.position() + block.text().size() && isEmph(formatAt(pos)) )
+		return false;
+	return true;
+}
+PosContext MarkdownPreview::contextAt(int pos, bool forSelection)	//	pos 位置から PosContext を構築
+//PosContext MarkdownPreview::contextAt(int pos)	//	pos 位置から PosContext を構築
+{
 	PosContext pc;
 	QTextCursor cursor = this->textCursor();
 	cursor.setPosition(pos);
@@ -2097,6 +2122,14 @@ PosContext MarkdownPreview::contextAt(int pos) {	//	pos 位置から PosContext 
 		pc.m_anchorChar = pos == block.position() ? STX : EOB;
 	} else if( pos == block.position() && (table == nullptr || table->cellAt(cursor).column() == 0) ) {		//	行頭にいる場合
 		pc.m_anchorChar = STX;
+	} else if( forSelection && table == nullptr &&
+			(blockType(block) == BT_DEFAULT || blockType(block) == BT_NUMLIST || blockType(block) == BT_CHECKBOX) &&
+			pos > block.position() && isEmphasisTailPos(doc, block, pos) ) {
+		//	[#1258] 選択端点が強調ラン末尾にある場合：直前の文字をアンカーとし、エディタ側で閉じマーカー直前に解決させる
+		//	（非選択カーソルは従来挙動を維持する。行中の境界カーソルの扱いは仕様未決定のため）
+		pc.m_anchorChar = doc->characterAt(pos - 1);
+		pc.m_offset = 1;
+		--pos;		//	nth 集計はアンカー文字の位置を基準にする
 	} else if( blockType(block) != BT_LIST &&
 				pos == block.position() + block.text().size() &&		//	行末にいる場合
 				(table == nullptr || table->cellAt(cursor).column() >= table->columns() - 1) )

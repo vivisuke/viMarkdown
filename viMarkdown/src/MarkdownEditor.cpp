@@ -1855,6 +1855,57 @@ bool isPrevEmptyBlock(QTextBlock block) {
 	} while( txt.startsWith("<!--") && txt.endsWith("-->") );		//	全体コメント行はスキップ
 	return true;
 }
+//	[#1258] 強調マーカー run の開始・終了位置と閉じか否かを集める（updateCharFlags と同じペアリング規則）
+struct EmphMarkerRun {
+	int m_start;
+	int m_size;
+	bool m_close;
+};
+static void collectEmphMarkerRuns(const QString &buf, const QByteArray &flags, int begin, int end, QList<EmphMarkerRun> &runs) {
+	int i = begin;
+	while( i < end ) {
+		QChar c = buf[i];
+		if( c == u'\\' && i + 1 < end ) {	//	エスケープされた文字はマーカーとして扱わない
+			QChar n = buf[i+1];
+			if( (n.unicode() >= u' ' && n.unicode() <= u'/') ||
+				(n.unicode() >= u'[' && n.unicode() <= u']') || n.unicode() == u'>' ) {
+				i += 2;
+				continue;
+			}
+		}
+		if( (c == u'*' || c == u'_' || c == u'`' || (c == u'~' && i + 1 < end && buf[i+1] == u'~')) &&
+			i < flags.size() && flags[i] == PCF_EMPHASIZED )
+		{
+			QString sym;
+			if( c == u'~' )
+				sym = QStringLiteral("~~");
+			else if( i + 1 < end && buf[i+1] == c ) {
+				if( i + 2 < end && buf[i+2] == c ) sym = buf.mid(i, 3);
+				else sym = buf.mid(i, 2);
+			} else
+				sym = QString(c);
+			int j = buf.indexOf(sym, i + (int)sym.size());
+			if( j >= 0 && j + (int)sym.size() <= end ) {
+				runs.push_back({i, (int)sym.size(), false});
+				runs.push_back({j, (int)sym.size(), true});
+				collectEmphMarkerRuns(buf, flags, i + sym.size(), j, runs);	//	入れ子
+				i = j + sym.size();
+				continue;
+			}
+		}
+		++i;
+	}
+}
+//	[#1258] [runStart, runEnd) が強調の「閉じ」マーカー run そのものであれば true
+static bool isClosingEmphMarkerRun(const QString &buf, const QByteArray &flags, int runStart, int runEnd) {
+	QList<EmphMarkerRun> runs;
+	collectEmphMarkerRuns(buf, flags, 0, buf.size(), runs);
+	for(const auto &r : runs) {
+		if( r.m_close && r.m_start == runStart && r.m_start + r.m_size == runEnd )
+			return true;
+	}
+	return false;
+}
 int MarkdownEditor::findPosition(const PosContext &context) {
 	//##qDebug() << "MarkdownEditor::findPosition():";
 	//##qDebug() << ".ancharChar = " << context.m_anchorChar << ", nth = " << context.m_nth << ", offset = " << context.m_offset;
@@ -2020,6 +2071,14 @@ int MarkdownEditor::findPosition(const PosContext &context) {
 				--offset;
 				while( ix < data->m_charFlags.size() && data->m_charFlags[ix] >= PCF_NOT_VISIBLE )
 					++ix;
+			}
+			//	[#1258] ちょうど強調の閉じマーカーを越えた位置は、マーカー直前（内側）に戻す
+			if( ix > 0 && ix <= data->m_charFlags.size() && data->m_charFlags[ix-1] == PCF_EMPHASIZED ) {
+				int rs = ix - 1;
+				while( rs > 0 && data->m_charFlags[rs-1] == PCF_EMPHASIZED )
+					--rs;
+				if( isClosingEmphMarkerRun(text, data->m_charFlags, rs, ix) )
+					ix = rs;
 			}
 			return block.position() + ix;
 		}
