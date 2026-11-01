@@ -97,31 +97,44 @@ protected:
     	if (m_mapPixmap.isNull()) return;
     	QPainter p(this);
 		p.drawPixmap(0, 0, m_mapPixmap);
-#if 0
-		if (m_totalLines <= 0) return;
+//#if 0
+//		if (m_totalLines <= 0) return;
 		int mapH = height();
+#if 0
 		// スケーリング計算（行番号 → MiniMap上のY座標）
 		int y = m_firstVisibleLine * mapH / m_totalLines;
 		int h = m_visibleLines * mapH / m_totalLines;
 
 		// ドキュメントが長大でも枠が消えないよう、最小高さを確保（例: 4px）
 		h = qMax(4, h);
+#endif
 
 		// MiniMapの下端からはみ出さないようガード
-		if (y + h > mapH) {
-			y = qMax(0, mapH - h);
-		}
+		//if (y + h > mapH) {
+		//	y = qMax(0, mapH - h);
+		if (m_totalLines > mapH) {	//	自動スケーリング時：表示範囲枠も比率で描く
+			// スケーリング計算（行番号 → MiniMap上のY座標）
+			int y = (int)((qint64)m_firstVisibleLine * mapH / m_totalLines);
+			int h = (int)((qint64)m_visibleLines * mapH / m_totalLines);
 
-		int w = width() - 1;
-		p.setPen(QPen(Qt::blue, 1, Qt::SolidLine));
-		p.drawRect(0, y, w, h);
-#else
-		int y = m_firstVisibleLine;
-		int w = width() - 1;
-		int h = m_visibleLines;
-		p.setPen(QPen(Qt::blue, 1, Qt::SolidLine));
-        p.drawRect(0, y, w, h);
-#endif
+			// ドキュメントが長大でも枠が消えないよう、最小高さを確保（例: 4px）
+			h = qMax(4, h);
+
+			// MiniMapの下端からはみ出さないようガード
+			if (y + h > mapH) {
+				y = qMax(0, mapH - h);
+			}
+
+			int w = width() - 1;
+			p.setPen(QPen(Qt::blue, 1, Qt::SolidLine));
+			p.drawRect(0, y, w, h);
+		} else {
+			int y = m_firstVisibleLine;
+			int w = width() - 1;
+			int h = m_visibleLines;
+			p.setPen(QPen(Qt::blue, 1, Qt::SolidLine));
+			p.drawRect(0, y, w, h);
+		}
     }
 	void mousePressEvent(QMouseEvent *event) override;
 	void mouseReleaseEvent(QMouseEvent *event) override;

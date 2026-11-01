@@ -10,23 +10,32 @@
 uchar blockType(const QTextBlock &block);
 
 void MiniMap::mousePressEvent(QMouseEvent *event) {
-#if 0
+//#if 0
 	m_mousePressed = true;
 	auto pos = event->position();
 	//m_pressedY = pos.y();
+#if 0
 	int line = height() > 0 ? (int)pos.y() * m_totalLines / height() : 0;	//	ピクセル → 行番号への逆換算
 	int mx = m_docWidget->m_editor->verticalScrollBar()->maximum();
 	m_firstVisibleLine = qMin(qMax(0, line - m_visibleLines/2), mx);
 	m_docWidget->syncEditorWithMinimap(m_firstVisibleLine);
 	update();
-#else
+//#else
 	m_mousePressed = true;
 	auto pos = event->position();
 	//m_pressedY = pos.y();
 	m_firstVisibleLine = qMax(0, (int)pos.y() - m_visibleLines/2);
+#endif
+	if( m_totalLines > height() && height() > 0 ) {	//	自動スケーリング時：ピクセル → 行番号への逆換算
+		int line = (int)pos.y() * m_totalLines / height();
+		int mx = m_docWidget->m_editor->verticalScrollBar()->maximum();
+		m_firstVisibleLine = qMin(qMax(0, line - m_visibleLines/2), mx);
+	} else {
+		m_firstVisibleLine = qMax(0, (int)pos.y() - m_visibleLines/2);
+	}
 	m_docWidget->syncEditorWithMinimap(m_firstVisibleLine);
 	update();
-#endif
+//#endif
 }
 void MiniMap::mouseReleaseEvent(QMouseEvent *event) {
 	m_mousePressed = false;
@@ -44,7 +53,13 @@ void MiniMap::mouseMoveEvent(QMouseEvent *event) {
 	if( !m_mousePressed ) return;
 	auto pos = event->position();
 	int mx = m_docWidget->m_editor->verticalScrollBar()->maximum();
-	m_firstVisibleLine = qMin(qMax(0, (int)pos.y() - m_visibleLines/2), mx);
+	//m_firstVisibleLine = qMin(qMax(0, (int)pos.y() - m_visibleLines/2), mx);
+	if( m_totalLines > height() && height() > 0 ) {	//	自動スケーリング時：ピクセル → 行番号への逆換算
+		int line = (int)pos.y() * m_totalLines / height();
+		m_firstVisibleLine = qMin(qMax(0, line - m_visibleLines/2), mx);
+	} else {
+		m_firstVisibleLine = qMin(qMax(0, (int)pos.y() - m_visibleLines/2), mx);
+	}
 	m_docWidget->syncEditorWithMinimap(m_firstVisibleLine);
 	update();
 #endif

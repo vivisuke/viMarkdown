@@ -307,7 +307,36 @@ void MiniMap::updateMap(QTextDocument* doc1, MarkdownEditor* editor1, QTextDocum
 	updateMapSub(p, MINMAP_WIDTH/2, doc2, editor2, m_totalLines, ht);
 }
 #else
-void updateMapSub(QPainter &p, int x, QTextDocument* doc, MarkdownEditor* editor) {
+//void updateMapSub(QPainter &p, int x, QTextDocument* doc, MarkdownEditor* editor)
+void updateMapSub(QPainter &p, int x, QTextDocument* doc, MarkdownEditor* editor, int totalLines, int mapHeight)
+{
+	if( totalLines > mapHeight ) {	//	帯の高さに収まらない場合のみ比例圧縮し、差分行が潰れないよう優先度付きで集約する
+		std::vector<QColor> rowColor(mapHeight, Qt::white);
+		std::vector<int> rowPrio(mapHeight, -1);
+		int curVLine = 0;
+		for(QTextBlock block = doc->begin(); block.isValid(); block=block.next()) {
+			QColor col = Qt::white;
+			int prio = 0;	//	通常行
+			if( isDummyLine(editor, block) ) { col = COLOR_DIFF_MINIMAP_DELETED; prio = 1; }
+			else {
+				auto d = getDiff(editor, block);
+				if( d == ADDED_LINE ) { col = COLOR_DIFF_MINIMAP_ADDED; prio = 2; }
+				else if( d == MODIFIED_LINE ) { col = COLOR_DIFF_MINIMAP_MODIFIED; prio = 3; }
+			}
+			int vc = visualLineCount(block, editor);
+			int y1 = (int)((qint64)curVLine * mapHeight / totalLines);
+			int y2 = (int)((qint64)(curVLine + vc) * mapHeight / totalLines);
+			if( y2 <= y1 ) y2 = y1 + 1;
+			if( y2 > mapHeight ) y2 = mapHeight;
+			for(int y = y1; y < y2; ++y) {
+				if( prio > rowPrio[y] ) { rowPrio[y] = prio; rowColor[y] = col; }
+			}
+			curVLine += vc;
+		}
+		for(int y = 0; y < mapHeight; ++y)
+			p.fillRect(x, y, MINMAP_WIDTH/2, 1, rowColor[y]);
+		return;
+	}
 	QTextBlock block = doc->begin();
 	for(int y = 0; /*y < doc->blockCount() &&*/ block.isValid(); block=block.next()) {
 		QColor col = Qt::white;		//QColor("#808080");
@@ -330,14 +359,25 @@ void MiniMap::updateMap(QTextDocument* doc1, MarkdownEditor* editor1, QTextDocum
 	//m_mapPixmap = QPixmap(MINMAP_WIDTH, doc1->blockCount());
 	m_mapDoc1 = doc1; m_mapEditor1 = editor1; m_mapDoc2 = doc2; m_mapEditor2 = editor2;	//	resizeEvent での再描画用に保持
 	auto ht = rect().height();
+	m_totalLines = qMax(visualLineCount(doc1, editor1), visualLineCount(doc2, editor2));	//	paintEvent・マウス逆換算用
 	m_mapPixmap = QPixmap(MINMAP_WIDTH, ht);
 	QPainter p(&m_mapPixmap);
 	int x = 0;
+#if 1
+	updateMapSub(p, 0, doc1, editor1, m_totalLines, ht);
+	updateMapSub(p, MINMAP_WIDTH/2, doc2, editor2, m_totalLines, ht);
+	if( m_totalLines <= ht ) {	//	圧縮時は全面描画済みのため余白塗りは不要
+		p.setBrush(COLOR_DIFF_MINIMAP_DELETED);
+		//p.drawRect(0, doc1->blockCount(), MINMAP_WIDTH, ht - doc1->blockCount());
+		p.drawRect(0, visualLineCount(doc1, editor1), MINMAP_WIDTH, ht - visualLineCount(doc1, editor1));
+	}
+#else
 	updateMapSub(p, 0, doc1, editor1);
 	updateMapSub(p, MINMAP_WIDTH/2, doc2, editor2);
 	p.setBrush(COLOR_DIFF_MINIMAP_DELETED);
 	//p.drawRect(0, doc1->blockCount(), MINMAP_WIDTH, ht - doc1->blockCount());
 	p.drawRect(0, visualLineCount(doc1, editor1), MINMAP_WIDTH, ht - visualLineCount(doc1, editor1));
+#endif
 }
 #endif
 #endif
