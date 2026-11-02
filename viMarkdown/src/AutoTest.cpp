@@ -3852,7 +3852,6 @@ QStringList g_diffTestCase[] = {
 		"=aaa\n"
 		"+bbb\n"	//	挿入された２行目
 		"=ccc\n",
-#if 1
 		">x",		//	右側文書先頭一文字削除
 		"!aaa\n"
 		"-\n"		//	パディング行
@@ -3860,10 +3859,9 @@ QStringList g_diffTestCase[] = {
 		"!aa\n"
 		"!bbb\n"	//	
 		"=ccc\n",
-#endif
 	},
 #endif
-#if 0
+#if 1
 	{"Basic diff test (2)",
 		"=aaa\n"
 		"+bbb\n"	//	挿入された２行目
