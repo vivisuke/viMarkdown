@@ -23,6 +23,9 @@ struct WordToken {
 struct DiffRange {
     int start;
     int length;
+#if 0
+    int hogehoge;
+#endif
 public:
     DiffRange(int s, int l)
     	: start(s), length(l)
