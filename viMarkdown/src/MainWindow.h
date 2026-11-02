@@ -405,7 +405,8 @@ protected:
     void	onCalendarPageChanged(int, int);
     void	do_openDiary(QDate date);
     void	do_grep(const QString &searchText, const QString &dirPath, bool grepSubDir = false);
-    void	do_merge();
+    void	do_merge(const QString &arg);
+    void	do_merge_file(const DiffFile &file, bool wrapRight);
 
     void	onAction_New();
     void	onAction_NewTab();

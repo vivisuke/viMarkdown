@@ -1254,8 +1254,20 @@ bool applyDiffFile(const QStringList &oldLines, const DiffFile &file, QStringLis
 	for( int i = srcPos; i < oldLines.size(); ++i ) newLines << oldLines[i];
 	return true;
 }
-void MainWindow::do_merge() {
+void MainWindow::do_merge(const QString &arg) {
 	//	クリップボードのパッチを対象ファイルへ適用し、新規タブで diff 表示する
+	//	-wrapright 指定時のみ右端で折り返す（デフォルトは折り返さない）
+	bool wrapRight = false;
+	for( const QString &tok: arg.split(u' ', Qt::SkipEmptyParts) ) {
+		if( tok == "-wrapright" )
+			wrapRight = true;
+		else {
+			QString msg = tr("Merge: unknown option (%1)").arg(tok);
+			statusBar()->showMessage(msg, 5000);
+			do_output(msg + "\n");
+			return;
+		}
+	}
 	QString text = QGuiApplication::clipboard()->text();
 	do_output("clipboard text:\n" + text + "\n");
 	QVector<DiffFile> files;
@@ -1266,7 +1278,12 @@ void MainWindow::do_merge() {
 		do_output(msg + "\n");
 		return;
 	}
-	const DiffFile &file = files[0];
+	for( const DiffFile &file : files )
+		do_merge_file(file, wrapRight);
+}
+//	パッチ内の1ファイルを対象ファイルへ適用し、新規タブで diff 表示する
+void MainWindow::do_merge_file(const DiffFile &file, bool wrapRight) {
+	QString error;
 	if( file.m_oldPath == "/dev/null" ) {
 		QString msg = tr("Merge: creating a new file is not supported");
 		statusBar()->showMessage(msg, 5000);
@@ -1359,6 +1376,10 @@ void MainWindow::do_merge() {
 	docWidget->m_diffview->setHighlightMarkdown(false);
 	docWidget->m_editor->expandAll();
 	docWidget->m_diffview->expandAll();
+	//	-wrapright 指定時のみ右端で折り返す（デフォルトは折り返さない）
+	QPlainTextEdit::LineWrapMode wrapMode = wrapRight ? QPlainTextEdit::WidgetWidth : QPlainTextEdit::NoWrap;
+	docWidget->m_editor->setLineWrapMode(wrapMode);
+	docWidget->m_diffview->setLineWrapMode(wrapMode);
 	docWidget->updatePanes();
 	ui->action_DiffMode->setChecked(true);
 }

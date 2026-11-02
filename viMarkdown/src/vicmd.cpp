@@ -2310,7 +2310,7 @@ void MainWindow::do_exCmd(const QString &text, int ix, /*QString cmd, QChar nch,
 		else
 			do_diff(arg);
 	} else if( is_match(cmd, "me(rge") ) {
-		do_merge();
+		do_merge(arg);
 	} else {
 		statusBar()->showMessage(tr("illegal command."), 5000);
 	}
