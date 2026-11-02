@@ -1059,6 +1059,16 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
         return;
     }
 	if (e->matches(QKeySequence::Paste)) {
+		if( m_diffMode && !cursor.hasSelection() && isDummyLine(this, cursor.block()) ) {
+			//	[#1266] ダミー行でのペーストは、直後の非ダミー行の先頭へリダイレクトする。
+			//	直後に非ダミー行が無い場合は、従来通りペーストしない。
+			QTextBlock block = cursor.block().next();
+			while( block.isValid() && isDummyLine(this, block) ) block = block.next();
+			if( block.isValid() ) {
+				cursor.setPosition(block.position());
+				setTextCursor(cursor);
+			}
+		}
 		if( cursor.hasSelection() || !isDummyLine(this, cursor.block()) ) {
 			if( m_diffMode ) {
 				m_docWidget->m_editor->removeAllDummyLines();
@@ -1342,7 +1352,15 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 	//##qDebug() << "cursorRect = " << cursorRect();
 }
 void MarkdownEditor::do_insertText(QTextCursor& cursor, const QString &txt) {
-	if( m_diffMode && isDummyLine(this, cursor.block()) ) return;
+	if( m_diffMode && isDummyLine(this, cursor.block()) ) {
+		//	[#1266] ダミー行への挿入・ペーストは、直後の非ダミー行の先頭へリダイレクトする。
+		//	直後に非ダミー行が無い場合と、選択範囲がある場合は、従来通り無視する。
+		if( cursor.hasSelection() ) return;
+		QTextBlock block = cursor.block().next();
+		while( block.isValid() && isDummyLine(this, block) ) block = block.next();
+		if( !block.isValid() ) return;
+		cursor.setPosition(block.position());
+	}
 	if( m_diffMode && txt.contains(u'\n') ) {
 		//	[#1255] 改行を含む挿入はブロック数を変える。ダミー行がある状態でそのまま挿入すると
 		//	diffBlockNumbers がずれ、次の do_diff 冒頭のダミー除去が実テキストを誤って削除する。
