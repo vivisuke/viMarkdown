@@ -531,6 +531,7 @@ protected:
     void	do_vi_insert(QChar cmd, QTextCursor&, int rcnt);		//	iIaAoOsS
     void	do_vi_delete(QChar cmd, QTextCursor&, int rcnt);		//	xXD
     void	do_prefix_cmd(QChar cmd, QTextCursor&, int rcnt, DocWidget*);		//	{g z [ ] r}<cmd>
+    void	do_diffJump(QTextCursor&, int rcnt, bool forward, DocWidget*);		//	]c [c
     bool	do_vi_operator(QChar cmd, QTextCursor&, int rcnt, DocWidget*);		//	{c|d|y|<|>}<move>
     void	do_vi_motion(QChar cmd, QTextCursor&, int rcnt, DocWidget*);		//	hjklwW...
     void	do_vi_search(const QString&, QTextCursor&, int rcnt, DocWidget*);

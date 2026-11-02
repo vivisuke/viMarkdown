@@ -640,6 +640,9 @@ void MainWindow::do_prefix_cmd(QChar cmd, QTextCursor& cursor, int rcnt, DocWidg
 			}
 			break;
 		}
+		case 'c':		//	[c：前の差分ブロック先頭へ（diff モード時のみ）
+			do_diffJump(cursor, rcnt, false, docWidget);
+			break;
 		}
 		break;
 	case ']':
@@ -657,9 +660,36 @@ void MainWindow::do_prefix_cmd(QChar cmd, QTextCursor& cursor, int rcnt, DocWidg
 			}
 			break;
 		}
+		case 'c':		//	]c：次の差分ブロック先頭へ（diff モード時のみ）
+			do_diffJump(cursor, rcnt, true, docWidget);
+			break;
 		}
 		break;
 	}
+}
+void MainWindow::do_diffJump(QTextCursor& cursor, int rcnt, bool forward, DocWidget* docWidget) {		//	]c / [c：差分ブロック先頭へ移動
+	if( docWidget == nullptr || !docWidget->m_diffMode ) return;
+	MarkdownEditor *editor = docWidget->m_editor;
+	if( docWidget->m_diffview != nullptr && cursor.document() == docWidget->m_diffview->document() )
+		editor = docWidget->m_diffview;
+	const auto &flgs = editor->diffFlags();
+	auto isChanged = [&flgs](int bn) {
+		return bn >= 0 && bn < (int)flgs.size() && flgs[bn] != EQU_LINE;
+	};
+	QTextDocument *doc = cursor.document();
+	int cnt = qMax(1, rcnt);
+	int target = -1;
+	if( forward ) {
+		for( int bn = cursor.blockNumber() + 1; bn < doc->blockCount() && cnt > 0; ++bn ) {
+			if( isChanged(bn) && !isChanged(bn - 1) ) { target = bn; --cnt; }
+		}
+	} else {
+		for( int bn = cursor.blockNumber() - 1; bn >= 0 && cnt > 0; --bn ) {
+			if( isChanged(bn) && !isChanged(bn - 1) ) { target = bn; --cnt; }
+		}
+	}
+	if( target >= 0 )
+		cursor.setPosition(doc->findBlockByNumber(target).position());
 }
 bool MainWindow::do_cdy(QChar cmd, QTextCursor& cursor) {
 	assert( gvi.m_editor != nullptr );
