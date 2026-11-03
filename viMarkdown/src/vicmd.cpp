@@ -1190,8 +1190,8 @@ doneW:
 				docWidget->m_preview->moveToNextWordEnd(cursor, /*select = */gvi.m_operator != ' ');
 			if( cursor.position() == pos ) break;
 		}
-		if( gvi.m_operator == u'c' || gvi.m_operator == u'd' )
-			cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor);	//	ce、cd の場合：単語末尾も削除
+		if( gvi.m_operator == u'c' || gvi.m_operator == u'd' || gvi.m_operator == u'y' )
+			cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor);	//	ce、de、ye の場合：単語末尾も含める（#1274）
 		break;
 	case 'E': {
 		const int maxPos = doc->characterCount() - 1;
@@ -1238,8 +1238,11 @@ doneW:
 			cursor.movePosition(QTextCursor::NextBlock, moveMode, rcnt-1);
 			block = cursor.block();
 		}
-		if( !block.text().isEmpty() )
+		if( !block.text().isEmpty() ) {
 			cursor.setPosition(block.position() + block.text().size() - 1, moveMode);
+			if( gvi.m_operator == u'y' )
+				cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor);	//	y$ の場合：行末文字も含める（#1274）
+		}
 		break;
 	case '-':
 		if( cursor.movePosition(QTextCursor::PreviousBlock, moveMode, rcnt) )
