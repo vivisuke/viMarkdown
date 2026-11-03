@@ -205,7 +205,7 @@ CharType getCharType(QChar ch) {
 	if (uc >= 0x4E00 && uc <= 0x9FFF) return Type_Kanji;
 	if (uc >= 0x3040 && uc <= 0x309F) return Type_Hiragana;
 	if (uc >= 0x30A0 && uc <= 0x30FF) return Type_Katakana;
-	if (ch.isLetterOrNumber()) return Type_HalfAlphaNum; // 半角英数
+	if (ch.isLetterOrNumber() || uc == u'_') return Type_HalfAlphaNum; // 半角英数（'_' は Vim と同様に単語構成文字とする、#1275）
 	return Type_Other;
 }
 
