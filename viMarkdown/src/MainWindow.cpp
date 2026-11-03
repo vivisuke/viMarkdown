@@ -2004,6 +2004,7 @@ bool MainWindow::do_open(const QString& title0, const QString& fullPath, const Q
 				docWidget->m_editor->jumpToHeading(name);
 				appendToDocLoc(docWidget->m_title, docWidget->m_fullPath, docWidget->m_editor->textCursor().position());	//	ジャンプ後位置
 				docWidget->m_editor->scrollToTop(docWidget->m_editor->textCursor());
+				docWidget->m_editor->syncPreviewCursorFromEditor();	//	#0862: プレビュー側カーソルも見出し位置へ同期
 				syncEditorPreviewScroll();
 				printDocLocHist();
 			}
@@ -2016,6 +2017,7 @@ bool MainWindow::do_open(const QString& title0, const QString& fullPath, const Q
 		if( !name.isEmpty() ) {
 			DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(tix);
 			docWidget->m_editor->jumpToHeading(name);
+			docWidget->m_editor->syncPreviewCursorFromEditor();	//	#0862: プレビュー側カーソルも見出し位置へ同期
 		}
 		return true;
 	}
