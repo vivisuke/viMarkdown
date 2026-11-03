@@ -44,15 +44,23 @@ int getRepeatCount() {
 	if( gvi.m_repeatCount == 0 ) return 1;
 	return gvi.m_repeatCount;
 }
-//	cw 専用：カーソルが単語の上にある場合に、その単語（同種文字の連続）の末尾へ移動する（#1272）
-//	空白・改行の上にある場合は false を返し、従来の ce としての処理に任せる
+//	cw 専用：カーソル位置から変更対象の末尾へ移動する（#1272, #1273）
+//	単語上であればその単語（同種文字の連続）の末尾、空白上であれば連続する空白の末尾（次単語の手前）まで。
+//	改行の上にある場合は false を返し、従来の ce としての処理に任せる
 bool clampCwToCurWordEnd(QTextCursor& cursor) {
 	QTextDocument *doc = cursor.document();
 	const int end = doc->characterCount();	//	-1 しない（moveToNextWordEnd と同様）
 	int pos = cursor.position();
 	if( pos >= end - 1 ) return false;
 	CharType ct = getCharType(doc->characterAt(pos));
-	if( ct == Type_Space || ct == Type_NewLine ) return false;
+	if( ct == Type_NewLine ) return false;
+	if( ct == Type_Space ) {
+		//	空白上：連続する空白の末尾まで（次単語は消さない、#1273）
+		while( pos + 1 < end && getCharType(doc->characterAt(pos + 1)) == Type_Space )
+			++pos;
+		cursor.setPosition(pos, QTextCursor::KeepAnchor);
+		return true;
+	}
 	while( pos + 1 < end && getCharType(doc->characterAt(pos + 1)) == ct )
 		++pos;
 	cursor.setPosition(pos, QTextCursor::KeepAnchor);
