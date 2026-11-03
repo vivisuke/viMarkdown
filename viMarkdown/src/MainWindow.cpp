@@ -834,6 +834,18 @@ void MainWindow::setup_connections() {
 	connect(ui->action_UnIndent, &QAction::triggered, this, &MainWindow::onAction_UnIndent);
 	connect(ui->action_Undo, &QAction::triggered, this, &MainWindow::onAction_Undo);
 	connect(ui->action_Redo, &QAction::triggered, this, &MainWindow::onAction_Redo);
+	//	フォーカスが文書ペインへ移ったとき、Undo/Redo アクションの有効・無効をフォーカス側の状態で再計算する（#1269）
+	connect(qApp, &QApplication::focusChanged, this, [this](QWidget *oldWidget, QWidget *nowWidget) {
+		if( nowWidget == nullptr ) return;
+		DocWidget *docWidget = getCurDocWidget();
+		if( docWidget == nullptr ) return;
+		for( QWidget *w = nowWidget; w != nullptr; w = w->parentWidget() ) {
+			if( w == docWidget->m_editor || w == docWidget->m_preview || w == docWidget->m_diffview ) {
+				updateUndoRedoEnabled();
+				return;
+			}
+		}
+	});
 	connect(ui->action_CopyVisibleText, &QAction::triggered, this, &MainWindow::onAction_CopyVisibleText);
 	connect(ui->action_Cut, &QAction::triggered, this, &MainWindow::onAction_Cut);
 	connect(ui->action_SelectAll, &QAction::triggered, this, &MainWindow::onAction_SelectAll);
@@ -1077,6 +1089,7 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	diffview->setDiffMode(true);
 	//diffview->setLineWrapMode(QPlainTextEdit::NoWrap);
 	connect(diffview, &MarkdownEditor::textChanged, this, &MainWindow::onDiffViewChanged);
+	connect(diffview, &MarkdownEditor::canUndoRedoChanged, this, &MainWindow::updateUndoRedoEnabled);
 	//connect(diffview, &MarkdownEditor::resized, this, &MainWindow::onDiffViewChanged);
 	splitter->addWidget(editor);
 	splitter->addWidget(preview);
