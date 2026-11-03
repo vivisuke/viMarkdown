@@ -2244,6 +2244,9 @@ void MainWindow::do_close(bool forced) {
 	if (ix >= 0)
 		ui->tabWidget->removeTab(ix);
 	removeTopLevelItem(docWidget);
+	DocWidget *curDocWidget = getCurDocWidget();
+	if( curDocWidget != nullptr )
+		curDocWidget->m_editor->setFocus();	//	アクティブになったタブのエディタにフォーカスを移す（#1276）
 }
 int parseMdFile(const QString fullPath, DayInfo &di) {
 	QFile file(fullPath);
