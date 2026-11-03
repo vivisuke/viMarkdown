@@ -2745,12 +2745,20 @@ void MainWindow::updateUndoRedoEnabled() {
 void MainWindow::onAction_Undo() {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
-	docWidget->m_editor->do_undo();
+	//	[#1267] diff 表示中は、フォーカスのあるビューに対して Undo する
+	MarkdownEditor *editor = docWidget->m_editor;
+	if( docWidget->m_diffMode && QApplication::focusWidget() == docWidget->m_diffview )
+		editor = docWidget->m_diffview;
+	editor->do_undo();
 }
 void MainWindow::onAction_Redo() {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
-	docWidget->m_editor->do_redo();
+	//	[#1267] diff 表示中は、フォーカスのあるビューに対して Redo する
+	MarkdownEditor *editor = docWidget->m_editor;
+	if( docWidget->m_diffMode && QApplication::focusWidget() == docWidget->m_diffview )
+		editor = docWidget->m_diffview;
+	editor->do_redo();
 }
 void MainWindow::onAction_CopyVisibleText() {
 	DocWidget *docWidget = getCurDocWidget();
