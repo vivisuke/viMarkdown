@@ -1125,6 +1125,28 @@ const QList<ViTestCase> viTestCases = {
             "w", "日本語 abc カタカナ 123。ひらが┃な"  // 次の単語がないため、末尾の文字 'な' で停止
         }
     },
+    { "Move right/left (l/h) - Over emoji (surrogate pair)",
+        "┃a😀b\n",
+        {
+            "l", "a┃😀b\n", // 絵文字（サロゲートペア）の先頭へ
+            "l", "a😀┃b\n", // 絵文字を1文字として越える
+            "h", "a┃😀b\n"  // 絵文字の先頭へ戻る
+        }
+    },
+    { "Delete character (x) - Emoji (surrogate pair)",
+        "a┃😀b\n",
+        {
+            "x", "a┃b\n" // 絵文字全体が1文字として削除される
+        }
+    },
+    { "Move forward word (w) - Across emoji",
+        "┃a😀b c\n",
+        {
+            "w", "a┃😀b c\n",
+            "w", "a😀┃b c\n",
+            "w", "a😀b ┃c\n"
+        }
+    },
 #endif
 #if 1		//	e
     { "Move to end of word (e) - Basic spacing",
@@ -2739,7 +2761,7 @@ const QList<ViTestCase> viTestCases = {
             "u",     "┃abc def\n",
         }
     },
-#if 0
+    // cw 詳細ケース：#if 0 で無効化されていたものを 2026-11-03 に有効化（期待値は実 Vim 9.1 で検証済み）
     { "Change word (cw) - Basic",
         "┃abc def ghi\n",
         {
@@ -2768,7 +2790,7 @@ const QList<ViTestCase> viTestCases = {
     { "Change word (cw) - On whitespace",
         "abc  ┃  def\n",
         {
-            "cw", "abc  ┃def\n"  // カーソル位置以降の空白を削除
+            "cw", "abc ┃ def\n"  // カーソル位置以降の空白を削除
         }
     },
 
@@ -2782,7 +2804,7 @@ const QList<ViTestCase> viTestCases = {
     { "Change word (cw) - On symbols",
         "foo┃->bar = 1;\n",
         {
-            "cw", "foo┃bar = 1;\n" // "->" のみを削除
+            "cw", "fo┃obar = 1;\n" // "->" のみを削除
         }
     },
 
@@ -2798,7 +2820,7 @@ const QList<ViTestCase> viTestCases = {
     { "Change word (cw) - End of line word",
         "foo ┃bar\nnext\n",
         {
-            "cw", "foo ┃\nnext\n" // "bar" を削除（改行は残る）
+            "cw", "foo┃ \nnext\n" // "bar" を削除（改行は残る）
         }
     },
     // 1. cw で単語を置換し、次の単語へ移動してドットリピート (.)
@@ -2824,7 +2846,7 @@ const QList<ViTestCase> viTestCases = {
     // 3. 単語の途中からの cw をドットリピート
     // (ドットリピート時もカーソル位置から単語末尾までを置換)
     { "Change word (cw) - Repeat from middle of word",
-        "he┃llo wo┃rld\n",
+        "he┃llo world\n",
         {
             "cwy<Esc>", "he┃y world\n", // "llo" を "y" に置換
             "w",        "hey ┃world\n",
@@ -2839,10 +2861,10 @@ const QList<ViTestCase> viTestCases = {
         {
             "cw<Esc>", "┃ def ghi\n", // 何も入力せずにEsc（単語のみ削除）
             "w",       " ┃def ghi\n", // 次の単語へ移動
-            ".",       " ┃ ghi\n"     // "def" が削除される
+            ".",       "┃  ghi\n"     // "def" が削除される
         }
     },
-#endif
+
     //----------------------------------------------------------------------
     // --- 1. 基本動作 (cc / S での行置換) ---
     { "Change line (cc) - Basic",
@@ -3037,6 +3059,30 @@ const QList<ViTestCase> viTestCases = {
             "Y", "┃abc\nxyz",      // 1行目を linewise ヤンク
             "j", "abc\n┃xyz",      // EOF 行へ移動
             "p", "abc\nxyz\n┃abc\n"  // xyz の下に新しい行として貼り付けられ、カーソルは新行へ
+        }
+    },
+    { "Yank word (yw) - Paste after cursor",
+        "┃foo bar\n",
+        {
+            "yw", "┃foo bar\n", // テキスト・カーソル不変（"foo " がヤンクされる）
+            "w",  "foo ┃bar\n",
+            "p",  "foo bfoo┃ ar\n" // カーソルはペーストした最終文字（空白）へ
+        }
+    },
+    { "Yank to end of word (ye) - Paste after cursor",
+        "┃foo bar\n",
+        {
+            "ye", "┃foo bar\n", // テキスト・カーソル不変（"foo" がヤンクされる）
+            "w",  "foo ┃bar\n",
+            "p",  "foo bfo┃oar\n" // カーソルはペーストした最終文字へ
+        }
+    },
+    { "Yank to end of line (y$) - Paste after cursor",
+        "foo ┃bar\n",
+        {
+            "y$", "foo ┃bar\n", // テキスト・カーソル不変（"bar" がヤンクされる）
+            "0",  "┃foo bar\n",
+            "p",  "fba┃roo bar\n" // カーソルはペーストした最終文字へ
         }
     },
     //----------------------------------------------------------------------
