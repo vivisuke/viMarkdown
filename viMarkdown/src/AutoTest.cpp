@@ -2827,7 +2827,7 @@ const QList<ViTestCase> viTestCases = {
     { "Change word (cw) and repeat with dot (.)",
         "┃foo bar baz\n",
         {
-            "cwnew<Esc>", "ne┃w bar baz\n", // "foo" を "new" に変更（Escでカーソルは末尾の'w'へ）
+            "cwnew", "ne┃w bar baz\n", // "foo" を "new" に変更（Escでカーソルは末尾の'w'へ）
             "w",          "new ┃bar baz\n", // 次の単語 "bar" の先頭へ移動
             ".",          "new ne┃w baz\n"  // "bar" が "new" に置換される
         }
@@ -2837,7 +2837,7 @@ const QList<ViTestCase> viTestCases = {
     { "Change word (cw) - Repeat on different length word",
         "┃a very_long_word end\n",
         {
-            "cwtarget<Esc>", "targe┃t very_long_word end\n", // 1文字の "a" を "target" に置換
+            "cwtarget", "targe┃t very_long_word end\n", // 1文字の "a" を "target" に置換
             "w",             "target ┃very_long_word end\n",  // 長い単語の先頭へ移動
             ".",             "target targe┃t end\n"           // 長い単語全体が "target" に置換される
         }
@@ -2848,7 +2848,7 @@ const QList<ViTestCase> viTestCases = {
     { "Change word (cw) - Repeat from middle of word",
         "he┃llo world\n",
         {
-            "cwy<Esc>", "he┃y world\n", // "llo" を "y" に置換
+            "cwy", "he┃y world\n", // "llo" を "y" に置換
             "w",        "hey ┃world\n",
             "l",        "hey w┃orld\n", // "world" の途中に移動
             ".",        "hey w┃y\n"     // "orld" が "y" に置換される
@@ -2859,7 +2859,7 @@ const QList<ViTestCase> viTestCases = {
     { "Change word (cw) - Empty change repeated",
         "┃abc def ghi\n",
         {
-            "cw<Esc>", "┃ def ghi\n", // 何も入力せずにEsc（単語のみ削除）
+            "cw", "┃ def ghi\n", // 何も入力せずにEsc（単語のみ削除）
             "w",       " ┃def ghi\n", // 次の単語へ移動
             ".",       "┃  ghi\n"     // "def" が削除される
         }

@@ -16,6 +16,7 @@
 
 extern Global g;
 extern ViStatus gvi;
+extern CharType getCharType(QChar ch);
 
 uchar blockType(const QTextBlock &block);
 void setBlockType(QTextBlock block, uchar type);
@@ -42,6 +43,20 @@ bool blockGFlag(const QTextBlock &block) {
 int getRepeatCount() {
 	if( gvi.m_repeatCount == 0 ) return 1;
 	return gvi.m_repeatCount;
+}
+//	cw 専用：カーソルが単語の上にある場合に、その単語（同種文字の連続）の末尾へ移動する（#1272）
+//	空白・改行の上にある場合は false を返し、従来の ce としての処理に任せる
+bool clampCwToCurWordEnd(QTextCursor& cursor) {
+	QTextDocument *doc = cursor.document();
+	const int end = doc->characterCount();	//	-1 しない（moveToNextWordEnd と同様）
+	int pos = cursor.position();
+	if( pos >= end - 1 ) return false;
+	CharType ct = getCharType(doc->characterAt(pos));
+	if( ct == Type_Space || ct == Type_NewLine ) return false;
+	while( pos + 1 < end && getCharType(doc->characterAt(pos + 1)) == ct )
+		++pos;
+	cursor.setPosition(pos, QTextCursor::KeepAnchor);
+	return true;
 }
 bool isSpaceChar(QChar ch) {
 	return ch == u' ' || ch == u'\t' || ch == u'\n'|| ch.unicode() == 0x2029;	//	0x2029: 改行コード
@@ -1034,8 +1049,11 @@ void MainWindow::do_vi_motion(QChar cmd, QTextCursor& cursor, int rcnt, DocWidge
 						QTextCursor::MoveAnchor : QTextCursor::KeepAnchor;
 	QTextDocument *doc = cursor.document();
 	QTextBlock block = cursor.block();
-	if( gvi.m_operator == 'c' && cmd == u'w' )
+	bool isCw = false;
+	if( gvi.m_operator == 'c' && cmd == u'w' ) {
 		cmd = u'e';		//	cw は ce として処理
+		isCw = true;
+	}
 	gvi.m_lastMoveCommand = cmd;
 	switch( cmd.unicode() ) {
 	case 'k': {
@@ -1156,7 +1174,9 @@ doneW:
 	case 'e':
 		for(int i = 0; i < rcnt; ++i) {
 			auto pos = cursor.position();
-			if( isEditor )
+			if( isCw && rcnt == 1 && clampCwToCurWordEnd(cursor) ) {
+				//	cw の場合は自単語の末尾までに制限（#1272）
+			} else if( isEditor )
 				docWidget->m_editor->moveToNextWordEnd(cursor, /*select = */gvi.m_operator != ' ');
 			else
 				docWidget->m_preview->moveToNextWordEnd(cursor, /*select = */gvi.m_operator != ' ');
