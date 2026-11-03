@@ -118,7 +118,7 @@ QMimeData *MarkdownPreview::createMimeDataFromSelection() const
     mimeData->setText(plainText);
     return mimeData;
 }
-#if 0
+#if 1
 void MarkdownPreview::inputMethodEvent(QInputMethodEvent *event) {
 	m_isComposing = !event->preeditString().isEmpty();
 	m_commitString = event->commitString();
