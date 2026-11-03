@@ -526,6 +526,7 @@ protected:
     //void	do_fold(QTextBlock block, QTextDocument*);
     //void	do_unfold(QTextBlock block, QTextDocument*);
     void	do_viCmd(QChar cmd, QTextCursor&);
+    void	do_viCmd_completed(QTextCursor&, QChar cmd);	//	vicmd 完結時処理（#0365）
     void	do_exCmd(const QString&, QTextCursor&);
     void	do_exCmd(const QString&, int, QTextCursor&, QTextDocument*, DocWidget*);
     void	do_vi_insert(QChar cmd, QTextCursor&, int rcnt);		//	iIaAoOsS

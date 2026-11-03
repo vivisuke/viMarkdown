@@ -1641,6 +1641,7 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 		}
 	}
 	auto p2 = cursor.position();	//	for Debug
+#if 0
 	if( completed ) {	//	コマンド完結
 		if( cmd != 'j' && cmd != 'k' && cmd != '$' ) {
 			if( gvi.m_editor != nullptr )
@@ -1679,6 +1680,9 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 		}
 		//##qDebug() << "gvi.m_lastEditCommand = " << gvi.m_lastEditCommand;
 	}
+#endif
+	if( completed )	//	コマンド完結
+		do_viCmd_completed(cursor, cmd);
 	if( gvi.m_currentMode == ViMode::Insert ) {
 		statusBar()->showMessage("-- INSERT --");
 	} else if( gvi.m_currentMode == ViMode::Replace ) {
@@ -1689,6 +1693,45 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 		statusBar()->showMessage("-- VISUAL LINE --");
 	} //else
 	//	statusBar()->clearMessage();
+}
+void MainWindow::do_viCmd_completed(QTextCursor& cursor, QChar cmd) {	//	vicmd 完結時処理（#0365）
+	DocWidget *docWidget = getCurDocWidget();
+	if( cmd != 'j' && cmd != 'k' && cmd != '$' ) {
+		if( gvi.m_editor != nullptr )
+			gvi.m_editor->savePrefferedX(cursor);
+	}
+	if( gvi.m_redoing && gvi.m_currentMode == ViMode::Insert && !gvi.m_insertedText.isEmpty() ) {
+		auto text = gvi.m_insertedText;
+		if( gvi.m_repeatCount > 1 )
+			text = gvi.m_insertedText.repeated(gvi.m_repeatCount);
+		gvi.m_editor->do_insertText(cursor, text);
+		cursor.movePosition(QTextCursor::Left);
+		//cursor.insertText(gvi.m_insertedText.repeated(gvi.m_repeatCount));
+		//gvi.m_viCmdMode = true;
+		gvi.m_currentMode = ViMode::Normal;
+	}
+	gvi.m_opCount = 1;
+	gvi.m_repeatCount = 0;
+	gvi.m_operator = ' ';
+	gvi.m_prefix = ' ';
+	gvi.m_fFtT = ' ';
+	if( gvi.m_isEditCommand && !gvi.m_redoing )
+		gvi.m_lastEditCommand = gvi.m_pendingCommand;
+	//else
+	//	gvi.m_lastEditCommand.clear();
+	if( gvi.m_currentMode == ViMode::Insert ) {
+		gvi.m_recInsertedText = true;
+		gvi.m_insertedText.clear();
+	} else
+		gvi.m_recInsertedText = false;
+	gvi.m_pendingCommand.clear();
+	gvi.m_isEditCommand = false;
+	if( docWidget != nullptr ) {
+		docWidget->m_editor->viewport()->update();
+		docWidget->m_editor->prohibitMergeUndo();
+		docWidget->m_preview->viewport()->update();
+	}
+	//##qDebug() << "gvi.m_lastEditCommand = " << gvi.m_lastEditCommand;
 }
 void MainWindow::exitInsertMode(QTextCursor& cursor) {
 	if( gvi.m_insRepCount > 1 && !gvi.m_insertedText.isEmpty() ) {
@@ -2167,6 +2210,9 @@ void MainWindow::on_cmdLine_enter() {
 	if( t == "/" || t == "?" ) {
 		text = t + text;
 		do_vi_search(text, cursor, gvi.m_repeatCount, docWidget);
+		//	検索処理終了時にも vicmd 完結時処理をコールする（#0365）
+		QTextCursor cur2 = docWidget->m_editor->textCursor();
+		do_viCmd_completed(cur2, t[0]);
 	} else
 		do_exCmd(text, cursor);
 }
