@@ -1,6 +1,6 @@
-﻿# Menu List
+﻿﻿# Menu List
 
-[README_ja](../../README.md) > Menu List
+[README](../../README.md) > Menu List
 
 **Note on Document Rendering:**
 > 
@@ -23,6 +23,7 @@
 "File > Export", "PDF", "Export as PDF", ""
 "File", "Close", "Close current document", "Ctrl + W"
 "File > Recent", "Recent Markdown Path", "Open recent file", ""
+"File > Favorites", "Add Current File", "Add current file to favorites", ""
 "File > Favorites", "Favorite Markdown Path", "Open favorite file", ""
 "File", "Print", "Print preview", "Ctrl + P"
 "File", "Exit", "Close main window", "Alt + F4"
@@ -36,6 +37,7 @@
 "Edit", "Redo", "Redo the last edit", "Ctrl + Y"
 "Edit", "Cut", "Cut selection to clipboard", "Ctrl + X"
 "Edit", "Copy", "Copy selection to clipboard", "Ctrl + C"
+"Edit", "Copy Visible Text", "Copy visible part of selection to clipboard", "Ctrl + Alt + C"
 "Edit", "Paste", "Paste from clipboard", "Ctrl + V"
 "Edit", "SelectAll", "Select all text", "Ctrl + A"
 "Edit > Block", "List", "Convert selected lines to a bullet list", ""
@@ -45,6 +47,7 @@
 "Edit > Inline", "Bold", "Make selection bold", ""
 "Edit > Inline", "Italic", "Make selection italic", ""
 "Edit > Inline", "Strikethrough", "Apply strikethrough to selection", ""
+"Edit > Inline", "Link", "Make selection a link", ""
 "Edit > Format", "AlignLeft", "Align left within table cell", ""
 "Edit > Format", "AlignCenter", "Align center within table cell", ""
 "Edit > Format", "AlignRight", "Align right within table cell", ""
@@ -81,6 +84,8 @@
 "View", "OutputBar", "Toggle Output Bar", ""
 "View", "ClearOutput", "Clear output contents", ""
 "View", "CalendarBar", "Toggle Calendar Bar", ""
+"View", "Fold All", "Fold all headings", ""
+"View", "Unfold All", "Unfold all headings", ""
 ```
 
 ## Navigation menu
@@ -121,6 +126,7 @@
 "Other > Cheat Sheet", "Markdown", "Show Markdown cheat sheet", ""
 "Other > Cheat Sheet", "vi", "Show vi cheat sheet", ""
 "Other > Test", "etc", "Various debug tests", ""
+"Other > Benchmark", "InsertFront", "Benchmark repeated insertion at the start of the preview", ""
+"Other > Benchmark", "InsertBack", "Benchmark repeated insertion at the end of the preview", ""
 "Other", "About viMarkdown...", "Show About viMarkdown dialog", ""
 ```
-
