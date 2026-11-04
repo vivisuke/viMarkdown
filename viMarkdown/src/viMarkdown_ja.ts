@@ -5,23 +5,35 @@
     <name>GrepDialogClass</name>
     <message>
         <source>Search Text:</source>
-        <translation type="vanished">検索文字列：</translation>
+        <translation>検索文字列：</translation>
     </message>
     <message>
         <source>Ignore Case</source>
-        <translation type="vanished">大小英文字同一視</translation>
+        <translation>大小英文字同一視</translation>
     </message>
     <message>
         <source>Regexp</source>
-        <translation type="vanished">正規表現</translation>
+        <translation>正規表現</translation>
     </message>
     <message>
         <source>Clear Output</source>
-        <translation type="vanished">アウトプットクリア</translation>
+        <translation>アウトプットクリア</translation>
     </message>
     <message>
         <source>Grep SubDir</source>
-        <translation type="vanished">サブディレクトリ検索</translation>
+        <translation>サブディレクトリ検索</translation>
+    </message>
+    <message>
+        <source>GrepDialog</source>
+        <translation>grep</translation>
+    </message>
+    <message>
+        <source>Grep Dir:</source>
+        <translation>検索ディレクトリ：</translation>
+    </message>
+    <message>
+        <source>dir...</source>
+        <translation>参照...</translation>
     </message>
 </context>
 <context>
@@ -1012,47 +1024,51 @@ Do you want to save your changes?</source>
     <name>ReplaceDialogClass</name>
     <message>
         <source>Search Text:</source>
-        <translation type="obsolete">検索文字列：</translation>
+        <translation>検索文字列：</translation>
     </message>
     <message>
         <source>Replace To:</source>
-        <translation type="obsolete">置換文字列：</translation>
+        <translation>置換文字列：</translation>
     </message>
     <message>
         <source>IgnoreCase</source>
-        <translation type="vanished">大小英文字同一視</translation>
+        <translation>大小英文字同一視</translation>
     </message>
     <message>
         <source>Regexp</source>
-        <translation type="vanished">正規表現</translation>
+        <translation>正規表現</translation>
     </message>
     <message>
         <source>&amp;Undo</source>
-        <translation type="obsolete">戻す</translation>
+        <translation>戻す</translation>
     </message>
     <message>
         <source>Re&amp;do</source>
-        <translation type="obsolete">再実行</translation>
+        <translation>再実行</translation>
     </message>
     <message>
         <source>Search &amp;Prev</source>
-        <translation type="obsolete">前検索</translation>
+        <translation>前検索</translation>
     </message>
     <message>
         <source>Search &amp;Next</source>
-        <translation type="obsolete">次検索</translation>
+        <translation>次検索</translation>
     </message>
     <message>
         <source>&amp;Replace &amp; Next</source>
-        <translation type="obsolete">置換・次検索</translation>
+        <translation>置換・次検索</translation>
     </message>
     <message>
         <source>Replace&amp;All</source>
-        <translation type="obsolete">全置換</translation>
+        <translation>全置換</translation>
     </message>
     <message>
         <source>&amp;Close</source>
-        <translation type="obsolete">閉じる</translation>
+        <translation>閉じる</translation>
+    </message>
+    <message>
+        <source>ReplaceDialog</source>
+        <translation>置換</translation>
     </message>
 </context>
 <context>
