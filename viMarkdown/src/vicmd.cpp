@@ -1736,7 +1736,8 @@ void MainWindow::do_viCmd_completed(QTextCursor& cursor, QChar cmd) {	//	vicmd �
 		if( gvi.m_repeatCount > 1 )
 			text = gvi.m_insertedText.repeated(gvi.m_repeatCount);
 		gvi.m_editor->do_insertText(cursor, text);
-		cursor.movePosition(QTextCursor::Left);
+		if( cursor.position() > cursor.block().position() )		//	[#1280] exitInsertMode と同様、ブロック先頭では左移動しない
+			cursor.movePosition(QTextCursor::Left);
 		//cursor.insertText(gvi.m_insertedText.repeated(gvi.m_repeatCount));
 		//gvi.m_viCmdMode = true;
 		gvi.m_currentMode = ViMode::Normal;
