@@ -2796,7 +2796,11 @@ void MainWindow::onAction_SelectAll() {
 void MainWindow::onAction_Paste() {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
-	docWidget->m_editor->paste();
+	//	[#1268] diff 表示中は、フォーカスのあるビューに対して Paste する
+	MarkdownEditor *editor = docWidget->m_editor;
+	if( docWidget->m_diffMode && QApplication::focusWidget() == docWidget->m_diffview )
+		editor = docWidget->m_diffview;
+	editor->paste();
 }
 void MainWindow::onAction_Heading() {
 	DocWidget *docWidget = getCurDocWidget();
