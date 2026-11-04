@@ -888,6 +888,7 @@ void MarkdownEditor::deleteWord() {
 void MarkdownEditor::backSpaceWord() {
 	QTextCursor cursor = textCursor();
 	moveToPrevWord(cursor, true);
+	if( !cursor.hasSelection() ) return;		//	[#1282] 文書先頭など、削除する対象が無い場合
 	//cursor.deleteChar();
 	do_deleteText(cursor);
 	setTextCursor(cursor);

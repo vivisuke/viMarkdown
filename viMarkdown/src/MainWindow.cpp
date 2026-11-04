@@ -1512,7 +1512,8 @@ void MainWindow::onBS_pressed(bool ctrl) {
 				cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor, 2);
 			else
 				cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor, 1);
-			docWidget->m_editor->do_deleteText(cursor);
+			if( cursor.hasSelection() )		//	[#1282] 文書先頭では選択が作られないので削除しない
+				docWidget->m_editor->do_deleteText(cursor);
 #if 0
 			auto pos = cursor.position();
 			if( pos > 1 && docWidget->m_editor->document()->characterAt(pos-2) == '\\' ) {
