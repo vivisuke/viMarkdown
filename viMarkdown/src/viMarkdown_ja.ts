@@ -1059,79 +1059,171 @@ Do you want to save your changes?</source>
     <name>SettingsDialogClass</name>
     <message>
         <source>Editor</source>
-        <translation type="obsolete">エディタ</translation>
+        <translation>エディタ</translation>
     </message>
     <message>
         <source>Font Size:</source>
-        <translation type="obsolete">フォントサイズ：</translation>
+        <translation>フォントサイズ：</translation>
     </message>
     <message>
         <source>Title/Headdings:</source>
-        <translation type="obsolete">タイトル/見出し：</translation>
+        <translation>タイトル/見出し：</translation>
     </message>
     <message>
         <source>Bold color:</source>
-        <translation type="obsolete">ボールド：</translation>
+        <translation>ボールド：</translation>
     </message>
     <message>
         <source>Match color:</source>
-        <translation type="obsolete">検索マッチ：</translation>
+        <translation>検索マッチ：</translation>
     </message>
     <message>
         <source>Italic color:</source>
-        <translation type="obsolete">イタリック：</translation>
+        <translation>イタリック：</translation>
     </message>
     <message>
         <source>Strikethrough:</source>
-        <translation type="obsolete">打ち消し線：</translation>
+        <translation>打ち消し線：</translation>
     </message>
     <message>
         <source>Bold Italic color:</source>
-        <translation type="obsolete">ボールドイタリック：</translation>
+        <translation>ボールドイタリック：</translation>
     </message>
     <message>
         <source>Preview</source>
-        <translation type="obsolete">プレビュー</translation>
+        <translation>プレビュー</translation>
     </message>
     <message>
         <source>Table Header color:</source>
-        <translation type="obsolete">表ヘッダ：</translation>
+        <translation>表ヘッダ：</translation>
     </message>
     <message>
         <source>Table Zebra-1 color:</source>
-        <translation type="obsolete">表ゼブラカラー１：</translation>
+        <translation>表ゼブラカラー１：</translation>
     </message>
     <message>
         <source>Table Zebra-2 color:</source>
-        <translation type="obsolete">表ゼブラカラー２：</translation>
+        <translation>表ゼブラカラー２：</translation>
     </message>
     <message>
         <source>Quote color:</source>
-        <translation type="obsolete">引用：</translation>
+        <translation>引用：</translation>
     </message>
     <message>
         <source>Code block color:</source>
-        <translation type="obsolete">コードブロック：</translation>
+        <translation>コードブロック：</translation>
     </message>
     <message>
         <source>Keisen block color:</source>
-        <translation type="obsolete">罫線ブロック：</translation>
+        <translation>罫線ブロック：</translation>
     </message>
     <message>
         <source>Font Size</source>
-        <translation type="obsolete">フォントサイズ：</translation>
+        <translation>フォントサイズ：</translation>
     </message>
     <message>
         <source>Active line cursor:</source>
-        <translation type="obsolete">アクティブ行カーソル：</translation>
+        <translation>アクティブ行カーソル：</translation>
     </message>
     <message>
         <source>Inactive line cursor:</source>
-        <translation type="obsolete">非アクティブ行カーソル：</translation>
+        <translation>非アクティブ行カーソル：</translation>
     </message>
     <message>
         <source>Cancel</source>
-        <translation type="obsolete">キャンセル</translation>
+        <translation>キャンセル</translation>
+    </message>
+    <message>
+        <source>SettingsDialog</source>
+        <translation>設定</translation>
+    </message>
+    <message>
+        <source>General</source>
+        <translation>全般</translation>
+    </message>
+    <message>
+        <source>Font/Color</source>
+        <translation>フォント・色</translation>
+    </message>
+    <message>
+        <source>Table Text color:</source>
+        <translation>表テキスト：</translation>
+    </message>
+    <message>
+        <source>Cursor</source>
+        <translation>カーソル</translation>
+    </message>
+    <message>
+        <source>Calendar</source>
+        <translation>カレンダー</translation>
+    </message>
+    <message>
+        <source>Completed:</source>
+        <translation>完了：</translation>
+    </message>
+    <message>
+        <source>Pending</source>
+        <translation>未完了</translation>
+    </message>
+    <message>
+        <source>NotesOnly</source>
+        <translation>メモのみ</translation>
+    </message>
+    <message>
+        <source>Auto SVG completer</source>
+        <translation>SVG自動補完</translation>
+    </message>
+    <message>
+        <source>Default directory:</source>
+        <translation>デフォルトディレクトリ：</translation>
+    </message>
+    <message>
+        <source>Dir...</source>
+        <translation>参照...</translation>
+    </message>
+    <message>
+        <source>Calendar &gt; FirstDayOfWeek;</source>
+        <translation>カレンダー &gt; 週の開始曜日：</translation>
+    </message>
+    <message>
+        <source>Monday</source>
+        <translation>月曜日</translation>
+    </message>
+    <message>
+        <source>Tuesday</source>
+        <translation>火曜日</translation>
+    </message>
+    <message>
+        <source>Wednesday</source>
+        <translation>水曜日</translation>
+    </message>
+    <message>
+        <source>Thursday</source>
+        <translation>木曜日</translation>
+    </message>
+    <message>
+        <source>Friday</source>
+        <translation>金曜日</translation>
+    </message>
+    <message>
+        <source>Saturday</source>
+        <translation>土曜日</translation>
+    </message>
+    <message>
+        <source>Sunday</source>
+        <translation>日曜日</translation>
+    </message>
+    <message>
+        <source># of Low-Intensity Flame Displays</source>
+        <translation>弱い炎を表示するタスク数</translation>
+    </message>
+    <message>
+        <source># of High-Intensity Flame Displays</source>
+        <translation>強い炎を表示するタスク数</translation>
+    </message>
+    <message>
+        <source>All completed tasks ★</source>
+        <translation>全タスク完了で ★ を表示</translation>
     </message>
 </context>
 </TS>
