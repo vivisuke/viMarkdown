@@ -2786,7 +2786,11 @@ void MainWindow::onAction_CopyVisibleText() {
 void MainWindow::onAction_Cut() {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
-	docWidget->m_editor->cut();
+	//	[#1278] diff 表示中は、フォーカスのあるビューに対して Cut する
+	MarkdownEditor *editor = docWidget->m_editor;
+	if( docWidget->m_diffMode && QApplication::focusWidget() == docWidget->m_diffview )
+		editor = docWidget->m_diffview;
+	editor->cut();
 }
 void MainWindow::onAction_SelectAll() {
 	DocWidget *docWidget = getCurDocWidget();
