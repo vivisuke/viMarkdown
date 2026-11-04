@@ -32,7 +32,7 @@
         <translation>検索ディレクトリ：</translation>
     </message>
     <message>
-        <source>dir...</source>
+        <source>Dir...</source>
         <translation>参照...</translation>
     </message>
 </context>
