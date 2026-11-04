@@ -751,7 +751,7 @@ void MarkdownPreview::do_body(QTextBlock srcBlock, QTextCursor& cursor, bool las
 			blankLine = true;
 		} else
 			blankLine = false;
-		txt.replace(re_tailspc, "&nbsp;");
+		//##txt.replace(re_tailspc, "&nbsp;");
 		cursor.mergeBlockFormat(blockFormat);
 		cursor.insertMarkdown(txt);
 		cursor.insertBlock(QTextBlockFormat(), QTextCharFormat());

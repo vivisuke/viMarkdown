@@ -4075,6 +4075,8 @@ QList<SyncTestCase> g_syncTestCase = {
 	{"Bold・全体選択", "ab **《bold┃》** cd\n", "ab 《bold┃》 cd\n", "ab **《bold┃》** cd\n"},
 	{"Bold・先頭から選択", "ab **《bold** cd┃》 ef\n", "ab 《bold cd┃》 ef\n", "ab **《bold** cd┃》 ef\n"},
 	{"Bold・末尾まで選択", "a《b **bold┃》** cd\n", "a《b bold┃》 cd\n", "a《b **bold┃》** cd\n"},
+	{"行末空白・空白直前", "ab┃ \ndef\n", "ab┃\ndef\n", "ab ┃\ndef\n"},
+	{"行末空白・空白直後", "ab ┃\ndef\n", "ab┃\ndef\n", "ab ┃\ndef\n"},
 	{"List・1項目先頭", "- ┃hoge\n- fuga\n", "┃hoge\nfuga\n", "- ┃hoge\n- fuga\n"},
 	{"List・1項目中間", "- ho┃ge\n- fuga\n", "ho┃ge\nfuga\n", "- ho┃ge\n- fuga\n"},
 	{"List・2項目先頭", "- hoge\n- ┃fuga\n", "hoge\n┃fuga\n", "- hoge\n- ┃fuga\n"},
