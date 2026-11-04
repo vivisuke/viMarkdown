@@ -3085,6 +3085,24 @@ const QList<ViTestCase> viTestCases = {
             "p",  "fba┃roo bar\n" // カーソルはペーストした最終文字へ
         }
     },
+	//	s で改行を挿入し、. で繰り返す (#1279)
+	{ "Substitute newline and dot repeat (s <CR> .)",
+	    "┃abc\ndef\n",
+	    {
+	        "s\n", "\n┃bc\ndef\n",   // "a" を改行に置換（Esc後カーソルは "bc" の行頭）
+	        ".",   "\n\n┃c\ndef\n",   // 移動せず . → "b" も改行に置換されるはず
+	        "j",   "\n\nc\n┃def\n",   // "def" の行頭へ移動
+	        ".",   "\n\nc\n\n┃ef\n",  // . → "d" も改行に置換されるはず
+	    }
+	},
+	{ "Substitute text+newline and dot repeat (s X<CR> .)",
+	    "┃abc\ndef\n",
+	    {
+	        "sX\n", "X\n┃bc\ndef\n",  // "a" を "X\n" に置換（Esc後カーソルは "bc" の行頭）
+	        "j",    "X\nbc\n┃def\n",  // "def" の行頭へ移動
+	        ".",    "X\nbc\nX\n┃ef\n",  // . → "d" が "X\n" に置換されるはず
+	    }
+	},
     //----------------------------------------------------------------------
     // --- カウント指定の文字単位ペースト (<num>p / <num>P) ---
     { "characterwise put with count (3p)",

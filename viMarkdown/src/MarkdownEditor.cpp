@@ -869,8 +869,11 @@ void MarkdownEditor::insertEnter() {
 	//if( atxt.isEmpty() ) return;
 	//cursor.insertText("\n" + atxt);
 	//if( !atxt.isEmpty() )
-	if( !removed )
+	if( !removed ) {
 		do_insertText(cursor, "\n" + atxt);
+		if( gvi.m_recInsertedText )		//	[#1279] 改行挿入もドットリピート用に記録する
+			gvi.m_insertedText += "\n" + atxt;
+	}
 	setTextCursor(cursor);
 	// カーソル位置を画面内に維持
 	this->ensureCursorVisible();
@@ -1096,6 +1099,8 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 			} else {
 				//cursor.insertText("\n");
 				do_insertText(cursor, "\n");
+				if( gvi.m_recInsertedText )		//	[#1279] 改行挿入もドットリピート用に記録する
+					gvi.m_insertedText += "\n";
 			}
 			if( g.m_auto_svg_completer )
 				check_svg_completer();
