@@ -1376,6 +1376,26 @@ void MarkdownEditor::do_insertText(QTextCursor& cursor, const QString &txt) {
 		m_docWidget->m_diffview->removeAllDummyLines();
 	}
 	if( !txt.isEmpty() ) {
+		if( !cursor.hasSelection() && txt[0] != u'\n' ) {
+			//	行末が &nbsp; の位置での挿入は、先に &nbsp; を通常空白へ置き換える。
+			//	行末でなくなった空白は通常空白で表すためで、置換と挿入は同一の undo 単位とする。
+			const QTextBlock block = cursor.block();
+			const int bt = blockType(block);
+			if( (bt == BT_DEFAULT || bt == BT_HEADING || bt == BT_LIST || bt == BT_CHECKBOX || bt == BT_NUMLIST) &&
+				cursor.position() == block.position() + block.text().size() && block.text().endsWith("&nbsp;") )
+			{
+				const int pos = cursor.position();
+				const int esz = (int)strlen("&nbsp;");
+				const QString ins = " " + txt;
+				m_undoMgr->push_back_repText(pos - esz, esz, (int)ins.size());
+				cursor.setPosition(pos - esz);
+				cursor.setPosition(pos, QTextCursor::KeepAnchor);
+				cursor.insertText(ins);
+				setTextCursor(cursor);
+				emit canUndoRedoChanged();
+				return;
+			}
+		}
 		if( cursor.hasSelection() ) {
 			int dsz = cursor.selectedText().size();
 			m_undoMgr->push_back_repText(cursor.selectionStart(), dsz, txt.size());
@@ -2070,6 +2090,14 @@ int MarkdownEditor::findPosition(const PosContext &context) {
 					break;
 				}
 			}
+			block = block.next();
+			ix = 0;
+		} else if( ch == QChar(0x00a0) ) {		//	プレビュー上の NBSP：ソースでは &nbsp; に対応し、その先頭位置を返す
+			while( (ix = buf.indexOf("&nbsp;", ix)) >= 0 ) {
+				if( charFlags[ix] == PCF_VISIBLE && --nth == 0 ) break;
+				ix += 6;
+			}
+			if( nth == 0 ) break;
 			block = block.next();
 			ix = 0;
 		} else {		//	非行末の場合
@@ -4141,6 +4169,20 @@ PosContext MarkdownEditor::contextAt(int pos) {	//	pos 位置から PosContext �
 		if (ch == QChar::ParagraphSeparator) ch = ETX;
 	}
 	//	Undone: "  +\n" の場合も改行扱い
+	if( ch != STX && ch != ETX &&
+		(blockType(block) == BT_DEFAULT || blockType(block) == BT_HEADING || blockType(block) == BT_LIST ||
+		 blockType(block) == BT_CHECKBOX || blockType(block) == BT_NUMLIST) )
+	{	//	カーソルが &nbsp; の範囲内にある場合は、その先頭位置を NBSP アンカーとする（プレビュー上の空白位置に対応）
+		const QString bt = block.text();
+		const int ixInBlock = pos - block.position();
+		for( int s = bt.indexOf("&nbsp;"); s >= 0; s = bt.indexOf("&nbsp;", s + 1) ) {
+			if( ixInBlock >= s && ixInBlock < s + (int)strlen("&nbsp;") ) {
+				pos = block.position() + s;
+				ch = QChar(0x00a0);
+				break;
+			}
+		}
+	}
 	pc.m_anchorChar = ch;
 	while( blockType(block) == BT_IN_COMMENT || !block.text().startsWith(u'#') ) {		//	直前の見出し行を探す
 		if( !block.previous().isValid() )
@@ -4258,7 +4300,8 @@ int MarkdownEditor::countCharUntil(QTextBlock block, int pos, QChar ch) const
 								finished = true;
 								break;
 							}
-							if( ix < buf.size() && buf[ix] == ch && data->m_charFlags[ix] == PCF_VISIBLE )
+							if( ix < buf.size() && data->m_charFlags[ix] == PCF_VISIBLE &&
+								(buf[ix] == ch || (ch == QChar(0x00a0) && QStringView(buf).mid(ix).startsWith(u"&nbsp;"))) )
 								++count;
 							++ix;
 						}

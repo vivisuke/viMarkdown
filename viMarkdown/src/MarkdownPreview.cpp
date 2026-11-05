@@ -297,8 +297,20 @@ void MarkdownPreview::onContentsChanged(int position, int charsRemoved, int char
 		const int removedCount = oldText.size() - p - s;
 		const int addedLen = newText.size() - p - s;
 		if( p >= position && p + removedCount <= position + charsRemoved ) {	//	算出窓が通知範囲に収まること
-			if( addedLen > 0 )
-				emit textInserted(escapedInsertText(document(), p, p + addedLen));
+			if( addedLen > 0 ) {
+				QString insText = escapedInsertText(document(), p, p + addedLen);
+				//	プレビューで行末に半角空白が1文字入力された場合は、エディタ側には &nbsp; を挿入する。
+				//	通常空白は Markdown 変換で行末では無視され、入力した空白がプレビューに表示されないため。
+				if( addedLen == 1 && insText == " " ) {
+					const QTextBlock block = document()->findBlock(p);
+					const int bt = blockType(block);
+					if( block.isValid() && p + 1 == block.position() + (int)block.text().size() &&
+						bt != BT_CODE_BLOCK && bt != BT_CODE_BLOCK_END && bt != BT_CELL &&
+						bt != BT_CELL_DQ && bt != BT_CSV_BLOCK )
+						insText = "&nbsp;";
+				}
+				emit textInserted(insText);
+			}
 			if( removedCount > 0 )
 				emit textRemoved(removedCount);
 		}

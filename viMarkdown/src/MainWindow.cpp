@@ -1459,7 +1459,32 @@ void MainWindow::onTextRemovedAtPreview(int charsRemoved) {
 	if( docWidget == nullptr ) return;
 	if( docWidget->m_incrementalUpdating ) return;
 	QTextCursor cursor = docWidget->m_editor->textCursor();
+	int from = cursor.position();
 	cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, charsRemoved);
+	int to = cursor.position();
+	//	プレビュー上の空白はエディタ側では &nbsp;（6文字）に対応する。削除範囲が &nbsp; の
+	//	途中にかかる場合は、残骸（"&nbsp" 等）を残さないよう &nbsp; 全体を削除範囲に広げる。
+	QTextBlock block = docWidget->m_editor->document()->findBlock(from);
+	while( block.isValid() && block.position() <= to ) {
+		const int bt = blockType(block);
+		if( bt == BT_DEFAULT || bt == BT_HEADING || bt == BT_LIST || bt == BT_CHECKBOX ||
+			bt == BT_NUMLIST || bt == BT_TABLE || bt == BT_CELL || bt == BT_CELL_DQ )
+		{
+			const QString btext = block.text();
+			for( int s = btext.indexOf("&nbsp;"); s >= 0; s = btext.indexOf("&nbsp;", s + 1) ) {
+				const int es = block.position() + s;			//	&nbsp; 開始位置
+				const int ee = es + (int)strlen("&nbsp;");		//	&nbsp; 終了位置
+				if( es < to && from < ee ) {					//	削除範囲と重なる場合
+					if( from > es ) from = es;
+					if( to < ee ) to = ee;
+				}
+			}
+		}
+		if( block.position() + block.text().size() >= to ) break;
+		block = block.next();
+	}
+	cursor.setPosition(from);
+	cursor.setPosition(to, QTextCursor::KeepAnchor);
 	cursor.removeSelectedText();
 	//syncPreviewCursorWithEditor();
 }
