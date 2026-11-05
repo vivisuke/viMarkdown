@@ -638,9 +638,9 @@ void MarkdownEditor::updateInlineColors() {
 void MarkdownEditor::updateViewportMargines() {
 	setViewportMargins(lnAreaWidth(), 0, 0, 0);
 }
-//void MarkdownEditor::updateLnAreaRaw() {
-//	m_lnAreaWidget->update();
-//}
+void MarkdownEditor::updateLnAreaRaw() {
+	m_lnAreaWidget->update();
+}
 void MarkdownEditor::expandAll() {
 	QTextBlock block = document()->begin();
 	while( block.isValid() ) {

@@ -1083,6 +1083,9 @@ void MainWindow::do_diff() {
     docWidget->m_minimap->updateMap(doc1, docWidget->m_editor, doc2, docWidget->m_diffview);
     docWidget->m_editor->rehighlight();
     docWidget->m_diffview->rehighlight();
+    //	diffFlags を書き換えただけでは行番号エリアは再描画されないため、明示的に更新する（#1299）
+    docWidget->m_editor->updateLnAreaRaw();
+    docWidget->m_diffview->updateLnAreaRaw();
     doc1->setModified(modified1);
     doc2->setModified(modified2);
 

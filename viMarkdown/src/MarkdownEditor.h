@@ -188,7 +188,7 @@ public:
 	void	clearFoldLine();
 	void	drawFoldLine(QTextCursor, QTextBlock);
 	void	updateViewportMargines();
-	//void	updateLnAreaRaw();	// { m_lnAreaWidget->update(); }
+	void	updateLnAreaRaw();	// { m_lnAreaWidget->update(); }
 	void	scrollToTop(const QTextCursor &cursor);
 	//{
 	//	this->scrollToTop(cursor.blockNumber());
