@@ -7,6 +7,8 @@
 #include <QStatusBar>
 #include <QRegularExpression>
 #include <QDir>
+#include <QApplication>
+#include <QKeyEvent>
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
 #include "DocWidget.h"
@@ -2235,7 +2237,15 @@ void MainWindow::on_cmdLine_enter() {
 	//##qDebug() << "cmdline text = " << text;
 	close_cmdLine();
     DocWidget *docWidget = getCurDocWidget();
-    if( docWidget == nullptr ) return;
+    if( docWidget == nullptr ) {
+		//	文書が無い状態では、文書を必要としないコマンドだけ実行する
+		if( m_prefixLabel->text() == ":" ) {
+			do_exCmd_noDoc(text);
+			DocWidget *dw = getCurDocWidget();
+			if( dw != nullptr ) dw->m_editor->setFocus();
+		}
+		return;
+	}
 	QTextCursor cursor = gvi.m_prevFocusWidget == (QWidget*)docWidget->m_editor ?
 							docWidget->m_editor->textCursor() : docWidget->m_preview->textCursor();
 	auto t = m_prefixLabel->text();
@@ -2247,6 +2257,61 @@ void MainWindow::on_cmdLine_enter() {
 		do_viCmd_completed(cur2, t[0]);
 	} else
 		do_exCmd(text, cursor);
+}
+//	文書が無い状態（タブ全閉じ）で ':' が押されたら ex コマンドラインを開く
+bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
+	if( event->type() == QEvent::KeyPress && getCurDocWidget() == nullptr
+		&& QApplication::activeModalWidget() == nullptr && !m_cmdLine->isVisible() ) {
+		QKeyEvent *ke = static_cast<QKeyEvent*>(event);
+		if( ke->text() == ":" && (ke->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier)) == 0 ) {
+			QWidget *fw = QApplication::focusWidget();
+			if( fw == nullptr || (qobject_cast<QLineEdit*>(fw) == nullptr
+				&& qobject_cast<QTextEdit*>(fw) == nullptr && qobject_cast<QPlainTextEdit*>(fw) == nullptr) ) {
+				open_cmdLine();
+				return true;
+			}
+		}
+	}
+	return QMainWindow::eventFilter(obj, event);
+}
+void MainWindow::open_cmdLine() {
+	statusBar()->clearMessage();
+	gvi.m_currentMode = ViMode::CommandLine;
+	gvi.m_prevFocusWidget = ui->tabWidget;		//	フォーカスの戻り先（文書が無いのでタブウィジェット）
+	m_prefixLabel->setText(":");
+	m_prefixLabel->show();
+	m_cmdLine->setText("");
+	m_cmdLine->show();
+	m_cmdLine->setFocus();
+	while( gvi.m_exhist.size() > 64 ) gvi.m_exhist.pop_back();
+	gvi.m_exhist_ix = -1;
+}
+//	文書が無い状態で実行できる ex コマンド（:e, :pwd, :cd, :merge のみ。それ以外は illegal command）
+void MainWindow::do_exCmd_noDoc(const QString &text) {
+	int ix = 0;
+	QString cmd, arg;
+	while( ix < text.size() && text[ix].isLetter() ) cmd += text[ix++];
+	if( ix < text.size() )
+		arg = text.mid(ix+1).trimmed();
+	if( is_match(cmd, "pwd") ) {
+		do_output(QString("\ncurrent directory: %1\n").arg(QDir::currentPath()));
+	} else if( is_match(cmd, "cd") ) {
+		if( !g.m_defaultDir.isEmpty() ) {
+			QDir::setCurrent(g.m_defaultDir);
+			do_output(QString("\ncurrent directory: %1\n").arg(QDir::currentPath()));
+		}
+	} else if( is_match(cmd, "e(dit") ) {
+		if( arg.isEmpty() )
+			onAction_Open();
+		else
+			do_open("", arg);
+	} else if( is_match(cmd, "me(rge") ) {
+		do_merge(arg);
+	} else {
+		statusBar()->showMessage(tr("illegal command."), 5000);
+	}
+	gvi.m_exhist.push_front(text);
+	gvi.m_exhist_ix = -1;
 }
 void MainWindow::do_exCmd(const QString &text, QTextCursor& cursor) {
     DocWidget *docWidget = getCurDocWidget();

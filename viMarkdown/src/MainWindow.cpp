@@ -125,6 +125,7 @@ MainWindow::MainWindow(QWidget *parent)
 	setAcceptDrops(true);		//	ファイルドロップ可
 	setup_tabMenu();
 	setup_connections();
+	qApp->installEventFilter(this);		//	タブ全閉じでも ':' で ex コマンドラインを開けるように
 	//connect(QGuiApplication::inputMethod(), &QInputMethod::localeChanged, 
 	//        this, &MainWindow::onImeLocaleChanged);
 	// 拡大 (自動的に Windows: Ctrl++, Mac: Cmd++)

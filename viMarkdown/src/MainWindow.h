@@ -510,6 +510,7 @@ protected:
     void dragEnterEvent(QDragEnterEvent *event) override;
     void dropEvent(QDropEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
+    bool eventFilter(QObject *obj, QEvent *event) override;
     bool nativeEvent(const QByteArray &eventType, void *message, qintptr *result);
 
     bool ASSERT(bool actual, int ln);
@@ -528,6 +529,8 @@ protected:
     void	do_viCmd(QChar cmd, QTextCursor&);
     void	do_viCmd_completed(QTextCursor&, QChar cmd);	//	vicmd 完結時処理（#0365）
     void	do_exCmd(const QString&, QTextCursor&);
+    void	do_exCmd_noDoc(const QString&);	//	文書が無い状態で実行できる ex コマンド
+    void	open_cmdLine();					//	文書が無い状態で ex コマンドラインを開く
     void	do_exCmd(const QString&, int, QTextCursor&, QTextDocument*, DocWidget*);
     void	do_vi_insert(QChar cmd, QTextCursor&, int rcnt);		//	iIaAoOsS
     void	do_vi_delete(QChar cmd, QTextCursor&, int rcnt);		//	xXD
