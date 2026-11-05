@@ -3218,8 +3218,8 @@ void MainWindow::onModificationChanged(bool b) {
 		DocWidget *w = static_cast<DocWidget*>(ui->tabWidget->widget(i));
 		if( w != nullptr && w->m_editor != nullptr && w->m_editor->document() == doc ) { docWidget = w; break; }
 	}
-	if( docWidget == nullptr ) docWidget = getCurDocWidget();
-	if (docWidget == nullptr) return;
+	if( docWidget == nullptr ) return;		//	タブ未追加の文書（DocWidget 生成中の通知）では、カレントタブを書き換えない
+
 	QString title = docWidget->m_title;
 	if( b ) title += " *";
 	ui->tabWidget->setTabText(ui->tabWidget->indexOf(docWidget), title);
