@@ -1454,6 +1454,43 @@ void MainWindow::onTextInsertedAtPreview(QString txt) {
 	//docWidget->m_editor->onCursorPosChanged();
 	docWidget->m_editor->syncPreviewCursorFromEditor();
 }
+//	削除対象範囲が &nbsp; の途中にかかる場合は、残骸（"&nbsp" 等）を残さないよう
+//	&nbsp; 全体を削除範囲に含める。選択が無い場合はカーソル位置の1文字を削除対象とする。
+static void expandRangeForNbsp(QTextCursor &cursor, QTextDocument *doc) {
+	int from, to;
+	if( cursor.hasSelection() ) {
+		from = cursor.selectionStart();
+		to = cursor.selectionEnd();
+	} else {
+		from = cursor.position();
+		to = from + 1;
+		if( from >= doc->characterCount() - 1 ) return;		//	文書末尾では前方削除の対象が無い
+	}
+	const int from0 = from, to0 = to;
+	QTextBlock block = doc->findBlock(from);
+	while( block.isValid() && block.position() <= to ) {
+		const int bt = blockType(block);
+		if( bt == BT_DEFAULT || bt == BT_HEADING || bt == BT_LIST || bt == BT_CHECKBOX ||
+			bt == BT_NUMLIST || bt == BT_TABLE || bt == BT_CELL || bt == BT_CELL_DQ )
+		{
+			const QString btext = block.text();
+			for( int s = btext.indexOf("&nbsp;"); s >= 0; s = btext.indexOf("&nbsp;", s + 1) ) {
+				const int es = block.position() + s;			//	&nbsp; 開始位置
+				const int ee = es + (int)strlen("&nbsp;");		//	&nbsp; 終了位置
+				if( es < to && from < ee ) {					//	削除範囲と重なる場合
+					if( from > es ) from = es;
+					if( to < ee ) to = ee;
+				}
+			}
+		}
+		if( block.position() + block.text().size() >= to ) break;
+		block = block.next();
+	}
+	if( from != from0 || to != to0 ) {
+		cursor.setPosition(from);
+		cursor.setPosition(to, QTextCursor::KeepAnchor);
+	}
+}
 void MainWindow::onTextRemovedAtPreview(int charsRemoved) {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
@@ -1495,6 +1532,7 @@ void MainWindow::onDel_pressed(bool ctrl) {
 	QTextCursor cursor = docWidget->m_editor->textCursor();
 	if( cursor.hasSelection() ) {
 		//cursor.deleteChar();
+		expandRangeForNbsp(cursor, docWidget->m_editor->document());
 		docWidget->m_editor->do_deleteText(cursor);
 	} else {
 		if( ctrl )
@@ -1504,6 +1542,7 @@ void MainWindow::onDel_pressed(bool ctrl) {
 			if( pos > 0 && docWidget->m_editor->document()->characterAt(pos-1) == '\\' ) {
 				cursor.deletePreviousChar();
 			}
+			expandRangeForNbsp(cursor, docWidget->m_editor->document());
 			//cursor.deleteChar();
 			docWidget->m_editor->do_deleteText(cursor);
 		}
@@ -1527,6 +1566,7 @@ void MainWindow::onBS_pressed(bool ctrl) {
 	QTextCursor cursor = docWidget->m_editor->textCursor();
 	if( cursor.hasSelection() ) {
 		//cursor.deleteChar();
+		expandRangeForNbsp(cursor, docWidget->m_editor->document());
 		docWidget->m_editor->do_deleteText(cursor);
 	} else {
 		if( ctrl )
@@ -1537,8 +1577,10 @@ void MainWindow::onBS_pressed(bool ctrl) {
 				cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor, 2);
 			else
 				cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor, 1);
-			if( cursor.hasSelection() )		//	[#1282] 文書先頭では選択が作られないので削除しない
+			if( cursor.hasSelection() ) {		//	[#1282] 文書先頭では選択が作られないので削除しない
+				expandRangeForNbsp(cursor, docWidget->m_editor->document());
 				docWidget->m_editor->do_deleteText(cursor);
+			}
 #if 0
 			auto pos = cursor.position();
 			if( pos > 1 && docWidget->m_editor->document()->characterAt(pos-2) == '\\' ) {
