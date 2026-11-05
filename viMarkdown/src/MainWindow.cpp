@@ -3211,11 +3211,18 @@ void MainWindow::updateOutlineTree() {
 	expandAllChildren(item0);
 }
 void MainWindow::onModificationChanged(bool b) {
-	DocWidget *docWidget = getCurDocWidget();
+	//	変更された文書のタブを更新する（:merge で複数ファイルを適用すると、カレントでないタブの文書が変更される場合があるため）
+	QTextDocument *doc = qobject_cast<QTextDocument*>(sender());
+	DocWidget *docWidget = nullptr;
+	for( int i = 0; i < ui->tabWidget->count(); ++i ) {
+		DocWidget *w = static_cast<DocWidget*>(ui->tabWidget->widget(i));
+		if( w != nullptr && w->m_editor != nullptr && w->m_editor->document() == doc ) { docWidget = w; break; }
+	}
+	if( docWidget == nullptr ) docWidget = getCurDocWidget();
 	if (docWidget == nullptr) return;
 	QString title = docWidget->m_title;
 	if( b ) title += " *";
-	ui->tabWidget->setTabText(ui->tabWidget->currentIndex(), title);
+	ui->tabWidget->setTabText(ui->tabWidget->indexOf(docWidget), title);
 }
 void MainWindow::onDiffPeerModificationChanged(bool b) {
 	DocWidget *docWidget = getCurDocWidget();

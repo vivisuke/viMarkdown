@@ -9,6 +9,10 @@
 
 #pragma once
 
+#if 0
+test
+#endif
+
 struct WordToken {
     QString text;
     int start;
