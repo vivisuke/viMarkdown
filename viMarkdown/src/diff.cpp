@@ -1336,7 +1336,7 @@ void MainWindow::do_merge_file(const DiffFile &file, bool wrapRight) {
 	QString title = QFileInfo(fullPath).fileName();
 	title.remove(QRegularExpression("\\.md$"));
 	//addTab(title + " (merge)", fullPath, oldText, srcWidget->m_withBOM, srcWidget->m_encoding);
-	addTab(title + " (merge)", fullPath, oldText, srcWithBOM, srcEncoding);
+	addTab(title  /*+ " (merge)"*/, fullPath, oldText, srcWithBOM, srcEncoding);
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
 
@@ -1363,7 +1363,8 @@ void MainWindow::do_merge_file(const DiffFile &file, bool wrapRight) {
 	//	左＝適用結果、右＝元のソースで diff 表示にする
 	docWidget->m_editor->setPlainText(newText);
 	docWidget->m_editor->document()->setModified(true);
-	docWidget->m_diffPeerTitle = QFileInfo(fullPath).fileName();
+	docWidget->m_diffPeerTitle = QFileInfo(fullPath).fileName() + " (before)";		//	右側は適用前の元のソース
+	docWidget->m_diffviewLabel->setText(docWidget->m_diffPeerTitle);
 	docWidget->m_diffview->setPlainText(oldText);
 	docWidget->m_diffview->document()->setModified(false);
 	docWidget->m_diffMode = true;

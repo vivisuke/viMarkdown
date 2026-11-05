@@ -1,0 +1,15 @@
+diff --git a/viMarkdown/src/main.cpp b/viMarkdown/src/main.cpp
+index 3c7f02c..6399cef 100644
+--- C:\src\VS2026Qt6\viMarkdown\viMarkdown\src\main.cpp
++++ C:\src\VS2026Qt6\viMarkdown\viMarkdown\src\main.cpp
+@@ -16,10 +16,6 @@ int main(int argc, char *argv[])
+     QCoreApplication::setOrganizationName("VisualSoftLab");
+     QCoreApplication::setApplicationName("viMarkdown");
+ 
+-#if 0
+-    test
+-#endif
+-
+ 	QSettings settings;
+ 	int lang = settings.value(KEY_LANGUAGE, SystemDefault).toInt();
+ 	if( lang == SystemDefault ) {
