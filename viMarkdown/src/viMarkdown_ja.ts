@@ -441,7 +441,7 @@ Do you want to save your changes?</source>
     </message>
     <message>
         <location filename="MainWindow.ui" line="774"/>
-        <source>e&amp;xit</source>
+        <source>E&amp;xit</source>
         <translation type="unfinished">終了(&amp;X)</translation>
     </message>
     <message>

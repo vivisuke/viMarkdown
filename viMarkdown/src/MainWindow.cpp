@@ -49,7 +49,6 @@
 #include <windows.h>
 #endif
 
-
 using namespace std;
 
 const int N_RECENT_FILES = 10 + 26;
