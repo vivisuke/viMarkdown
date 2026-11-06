@@ -1045,6 +1045,29 @@ bool MarkdownEditor::event(QEvent *event) {
     return QPlainTextEdit::event(event);
 }
 #endif
+//	[#1302] BS でリストマーカー全体を削除すべき場合に、その長さ（インデント含む）を返す。
+//	条件：カーソルがリスト項目の本文先頭（マーカー直後）にあるか、ブロック全体がマーカーのみ。
+//	末尾の空白だけを消すとマーカーのみの行が残り、プレビュー側のリスト構造とカーソル対応が壊れるため。
+//	プレビュー側（MainWindow::onBS_pressed）と同じ規則。
+static int listMarkerBSLength(const QTextCursor &cursor) {
+	QTextBlock block = cursor.block();
+	const uchar bt = blockType(block);
+	if( bt != BT_LIST && bt != BT_CHECKBOX && bt != BT_NUMLIST && bt != BT_DEFAULT )
+		return 0;
+	const QString text = block.text();
+	const int rel = cursor.position() - block.position();
+	if( bt != BT_DEFAULT ) {
+		static const QRegularExpression reMarker("^\\s*(?:[-*+]|\\d{1,9}[.)])(?:\\s*\\[[ xX]\\])?\\s+");
+		auto m = reMarker.match(text);
+		if( m.hasMatch() && rel == m.capturedEnd(0) )
+			return rel;		//	本文先頭：マーカー部（ブロック先頭からカーソルまで）を削除
+	}
+	static const QRegularExpression reBareMarker("^\\s*(?:[-*+]|\\d{1,9}[.)])(?:\\s*\\[[ xX]\\])?\\s*$");
+	auto m = reBareMarker.match(text);
+	if( m.hasMatch() && rel <= (int)text.size() )
+		return (int)text.size();	//	マーカーのみの行：行全体のマーカーを削除
+	return 0;
+}
 void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 	qDebug() << "Focus Widget:" << QApplication::focusWidget();
 	auto key = e->key();
@@ -1180,9 +1203,12 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 			//setTextCursor(cursor);
 			if( !cursor.hasSelection() ) {
 				if( cursor.position() == 0 ) return;
-				//if( m_diffMode && cursor.block().previous().isValid() && isDummyLine(cursor.block().previous()) {
-				//	//	ダミー行直後での BackSpace は、直前非ダミー行末尾改行まで削除
-				//} else
+				int markerLen = listMarkerBSLength(cursor);		//	[#1302]
+				if( markerLen > 0 ) {
+					QTextBlock block = cursor.block();
+					cursor.setPosition(block.position());
+					cursor.setPosition(block.position() + markerLen, QTextCursor::KeepAnchor);
+				} else
 					cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor);
 				setTextCursor(cursor);
 				do_deleteText(cursor);

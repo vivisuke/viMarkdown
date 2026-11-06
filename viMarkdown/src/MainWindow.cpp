@@ -1561,6 +1561,28 @@ void MainWindow::onEnter_pressed() {
 void MainWindow::onTab_pressed() {
 	onAction_Indent();
 }
+//	[#1302] プレビューでの BS でリストマーカー全体を削除すべき場合に、その長さ（インデント含む）を返す。
+//	条件：カーソルがリスト項目の本文先頭（マーカー直後）にあるか、ブロック全体がマーカーのみ。
+//	末尾の空白だけを消すとマーカーのみの行が残り、プレビュー側のリスト構造とカーソル対応が壊れるため。
+static int listMarkerBSLength(const QTextCursor &cursor) {
+	QTextBlock block = cursor.block();
+	const uchar bt = blockType(block);
+	if( bt != BT_LIST && bt != BT_CHECKBOX && bt != BT_NUMLIST && bt != BT_DEFAULT )
+		return 0;
+	const QString text = block.text();
+	const int rel = cursor.position() - block.position();
+	if( bt != BT_DEFAULT ) {
+		static const QRegularExpression reMarker("^\\s*(?:[-*+]|\\d{1,9}[.)])(?:\\s*\\[[ xX]\\])?\\s+");
+		auto m = reMarker.match(text);
+		if( m.hasMatch() && rel == m.capturedEnd(0) )
+			return rel;		//	本文先頭：マーカー部（ブロック先頭からカーソルまで）を削除
+	}
+	static const QRegularExpression reBareMarker("^\\s*(?:[-*+]|\\d{1,9}[.)])(?:\\s*\\[[ xX]\\])?\\s*$");
+	auto m = reBareMarker.match(text);
+	if( m.hasMatch() && rel <= (int)text.size() )
+		return (int)text.size();	//	マーカーのみの行：行全体のマーカーを削除
+	return 0;
+}
 void MainWindow::onBS_pressed(bool ctrl) {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
@@ -1572,7 +1594,12 @@ void MainWindow::onBS_pressed(bool ctrl) {
 	} else {
 		if( ctrl )
 			docWidget->m_editor->backSpaceWord();
-		else {
+		else if( int markerLen = listMarkerBSLength(cursor) ) {		//	[#1302]
+			QTextBlock block = cursor.block();
+			cursor.setPosition(block.position());
+			cursor.setPosition(block.position() + markerLen, QTextCursor::KeepAnchor);
+			docWidget->m_editor->do_deleteText(cursor);
+		} else {
 			auto pos = cursor.position();
 			if( pos > 1 && docWidget->m_editor->document()->characterAt(pos-2) == '\\' )
 				cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor, 2);
