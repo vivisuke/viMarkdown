@@ -666,6 +666,33 @@ void MarkdownEditor::setLineSpacing(int percentage) {
 	QTextCursor editorCursor = textCursor();
 	editorCursor.setBlockFormat(format);
 }
+void MarkdownEditor::inputMethodEvent(QInputMethodEvent *event) {
+	//	[#1304] IME の確定文字列は do_insertText を経由せず基底クラスの処理で文書へ直接挿入されるため、
+	//	検索マッチ強調（ExtraSelection）の終端ちょうどへの確定では、通常入力と同様に強調範囲が広がってしまう。
+	//	確定前に終端が一致する選択範囲を記録しておき、基底クラスの処理の後に終端を元の位置へ戻す。
+	QList<int> trimEnds;
+	const int insPos = textCursor().position();
+	const QString commit = event->commitString();
+	if( !commit.isEmpty() && event->replacementLength() == 0 && !textCursor().hasSelection() ) {
+		const auto sels = extraSelections();
+		for(int i = 0; i < (int)sels.size(); ++i)
+			if( sels[i].cursor.anchor() < insPos && sels[i].cursor.position() == insPos )
+				trimEnds.append(i);
+	}
+	MarkdownBaseEdit::inputMethodEvent(event);
+	if( !trimEnds.isEmpty() ) {
+		auto sels = extraSelections();
+		for(int i : trimEnds) {
+			if( i < (int)sels.size() && sels[i].cursor.position() == insPos + (int)commit.size() ) {
+				QTextCursor sc = sels[i].cursor;
+				sc.setPosition(sc.anchor());
+				sc.setPosition(insPos, QTextCursor::KeepAnchor);
+				sels[i].cursor = sc;
+			}
+		}
+		setExtraSelections(sels);
+	}
+}
 #if 0
 void MarkdownEditor::inputMethodEvent(QInputMethodEvent *event) {
 	m_isComposing = !event->preeditString().isEmpty();
@@ -1422,6 +1449,16 @@ void MarkdownEditor::do_insertText(QTextCursor& cursor, const QString &txt) {
 				return;
 			}
 		}
+		//	[#1304] 検索マッチ強調（ExtraSelection）の終端ちょうどへ挿入すると、Qt のカーソル追随で
+		//	強調範囲が挿入文字列を含むよう広がってしまうため、対象の選択範囲を記録しておき、挿入後に終端を戻す
+		QList<int> trimEnds;
+		const int insPos = cursor.position();
+		if( !cursor.hasSelection() ) {
+			const auto sels = extraSelections();
+			for(int i = 0; i < (int)sels.size(); ++i)
+				if( sels[i].cursor.anchor() < insPos && sels[i].cursor.position() == insPos )
+					trimEnds.append(i);
+		}
 		if( cursor.hasSelection() ) {
 			int dsz = cursor.selectedText().size();
 			m_undoMgr->push_back_repText(cursor.selectionStart(), dsz, txt.size());
@@ -1436,6 +1473,18 @@ void MarkdownEditor::do_insertText(QTextCursor& cursor, const QString &txt) {
 			m_undoMgr->push_back_insText(cursor.position(), txt.size());
 		}
 		cursor.insertText(txt);
+		if( !trimEnds.isEmpty() ) {
+			auto sels = extraSelections();
+			for(int i : trimEnds) {
+				if( i < (int)sels.size() && sels[i].cursor.position() == insPos + (int)txt.size() ) {
+					QTextCursor sc = sels[i].cursor;
+					sc.setPosition(sc.anchor());
+					sc.setPosition(insPos, QTextCursor::KeepAnchor);
+					sels[i].cursor = sc;
+				}
+			}
+			setExtraSelections(sels);
+		}
 		setTextCursor(cursor);
 	} else if( cursor.hasSelection() ) {
 		do_deleteText(cursor);
