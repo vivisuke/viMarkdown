@@ -2230,6 +2230,7 @@ void MainWindow::do_save(bool fDialog, int ix) {
 		ui->tabWidget->setTabToolTip(ix, fullPath);
 		QTreeWidgetItem *top = findTopLevelItemByFullPath(oldTitle, oldFullPath);
 		top->setText(0, docWidget->m_title);
+		top->setData(0, Qt::UserRole, fullPath);	//	[#0299] アイテム側のパスも新しいパスに更新する（古いままだとクリック時のタブ検索が一致しない）
 		if( !oldFullPath.isEmpty() && oldFullPath != fullPath )		//	ファイル名変更
 			m_watcher->removePath(oldFullPath);
 	}
@@ -3130,7 +3131,7 @@ int MainWindow::treeItemToTabIndex(QTreeWidgetItem *current) {
 	auto top = current;
 	while( top->parent() != nullptr ) top = top->parent();		//	親のトップレベルアイテムまで移動
 	QString fullPath = top->data(0, Qt::UserRole).toString();
-	return tabIndexOf(current->text(0), fullPath);
+	return tabIndexOf(top->text(0), fullPath);	//	[#0299] タイトル照合はトップレベルアイテムのテキストで行う（見出しアイテムのテキストでは未保存文書で一致しない）
 }
 void MainWindow::onTreeCurrentItemChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous) {
 	//if( current == nullptr ) return;
