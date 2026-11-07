@@ -4312,7 +4312,9 @@ int MarkdownEditor::countCharUntil(QTextBlock block, int pos, QChar ch) const
 			if( !block.text().startsWith("```") ) {		//	``` 行は無視
 #if 1	//	GFM
 				if( pos >= block.position() && pos < block.next().position() ) break;
-				if( !block.text().isEmpty() || !(block.previous().isValid() && block.previous().text().isEmpty()) )		//	連続空行でない場合
+				if( blockType(block) == BT_TABLE && isTableHyphenLine(block.text()) ) {
+					//	GFM 表のハイフン行はプレビューに対応行が無いため数えない（#1307）
+				} else if( !block.text().isEmpty() || !(block.previous().isValid() && block.previous().text().isEmpty()) )		//	連続空行でない場合
 					++count;
 #else	//	コモンマークダウン
 				bool prefix = block.text().indexOf(re_prefix) == 0;		//	# 等の接頭辞？あり
