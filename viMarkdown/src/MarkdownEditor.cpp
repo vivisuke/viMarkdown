@@ -3143,9 +3143,82 @@ void MarkdownEditor::onContentsChanged(int position, int charsRemoved, int chars
 	}
 	//##updateInlineColors();
 	//rehighlight();
-	//##highlightSearchText(g.m_lastSearchedPat);
+	updateSearchHighlight(position, charsRemoved, charsAdded);	//	[#1062] 全文再ハイライトではなく、編集された部分のみ更新する
 	//syncEditorCursorFromPreview();
 	m_processing = false;
+}
+//	[#1062] 検索ハイライトの増分更新：編集された部分の周辺だけを再走査し、ExtraSelection を部分更新する
+//	position, charsRemoved, charsAdded は QTextDocument::contentsChange の引数（編集後の座標系）
+//	再走査範囲の前後の余裕は、既存マッチの最大長とする（正規表現で長いマッチがある場合はそれに追随する。
+//	最大長が大きすぎる場合と大きな編集時は、全文再ハイライトにフォールバックする）
+void MarkdownEditor::updateSearchHighlight(int position, int charsRemoved, int charsAdded) {
+	if( m_highlightPat.isEmpty() ) return;
+	const QString &pat = m_highlightPat;
+	if( charsRemoved + charsAdded > 8192 ) {	//	大きな編集は範囲も広いので、全文再ハイライトにフォールバックする
+		highlightSearchText(pat);
+		return;
+	}
+	//	既存の検索ハイライトからマッチの最大長を求める
+	int margin = (int)pat.size();
+	for(const auto &sel : extraSelections()) {
+		if( sel.format.background().color() == QColor(Qt::yellow) && sel.format.foreground().color() == QColor(Qt::black) )
+			margin = qMax(margin, (int)sel.cursor.selectedText().size());
+	}
+	if( margin > 8192 ) {
+		highlightSearchText(pat);
+		return;
+	}
+	QTextDocument *doc = document();
+	const int docLen = doc->characterCount() - 1;
+	//	編集の影響が及ぶ範囲：マッチが編集箇所にかかるのは、その開始位置がこの範囲内にある場合のみ
+	const int from = qMax(0, position - margin);
+	const int to = qMin(docLen, position + charsAdded + margin);
+	QList<QTextEdit::ExtraSelection> kept;
+	bool changed = false;
+	for(const auto &sel : extraSelections()) {
+		//	検索ハイライト（黄背景・黒文字）以外（ビジュアル選択の強調等）は対象外とし、そのまま保持する
+		if( sel.format.background().color() == QColor(Qt::yellow) && sel.format.foreground().color() == QColor(Qt::black) ) {
+			int s = qMin(sel.cursor.anchor(), sel.cursor.position());
+			if( s >= from && s < to ) { changed = true; continue; }	//	範囲内は再走査で作り直す
+		}
+		kept.append(sel);
+	}
+	//	範囲内を再走査する
+	QTextCharFormat format;
+	format.setBackground(Qt::yellow);
+	format.setForeground(Qt::black);
+	QTextCursor cursor(doc);
+	cursor.setPosition(from);
+	if( g.m_regexp ) {
+		QRegularExpression::PatternOptions options = QRegularExpression::NoPatternOption;
+		if( g.m_ignoreCase ) options |= QRegularExpression::CaseInsensitiveOption;
+		QRegularExpression rx(pat, options);
+		if( !rx.isValid() ) return;
+		while( !cursor.isNull() && !cursor.atEnd() ) {
+			cursor = doc->find(rx, cursor);
+			if( cursor.isNull() || qMin(cursor.anchor(), cursor.position()) >= to ) break;
+			QTextEdit::ExtraSelection sel;
+			sel.format = format;
+			sel.cursor = cursor;
+			kept.append(sel);
+			changed = true;
+			if( cursor.anchor() == cursor.position() )	//	空マッチでは1文字進める（highlightSearchText と同じ無限ループ対策）
+				cursor.movePosition(QTextCursor::NextCharacter);
+		}
+	} else {
+		QTextDocument::FindFlags flags;
+		if( !g.m_ignoreCase ) flags |= QTextDocument::FindCaseSensitively;
+		while( !cursor.isNull() && !cursor.atEnd() ) {
+			cursor = doc->find(pat, cursor, flags);
+			if( cursor.isNull() || cursor.anchor() >= to ) break;
+			QTextEdit::ExtraSelection sel;
+			sel.format = format;
+			sel.cursor = cursor;
+			kept.append(sel);
+			changed = true;
+		}
+	}
+	if( changed ) setExtraSelections(kept);
 }
 	//	カーソル同期処理
 void MarkdownEditor::syncPreviewCursorFromEditor() {
@@ -3554,6 +3627,7 @@ void MarkdownEditor::highlightVText(QTextCursor cursor) {
     this->setExtraSelections(extraSelections);
 }
 void MarkdownEditor::highlightSearchText(const QString &searchText) {
+	m_highlightPat = searchText;	//	[#1062] 増分更新用に、このエディタのパターンを保持する
 	QList<QTextEdit::ExtraSelection> extraSelections;
 	if (searchText.isEmpty()) {
 		setExtraSelections(extraSelections);

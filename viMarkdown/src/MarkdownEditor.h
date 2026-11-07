@@ -312,6 +312,7 @@ protected:
 #endif
     void	updateLnArea(const QRect &rect, int dy);
     void	onContentsChanged(int position, int charsRemoved, int charsAdded);
+    void	updateSearchHighlight(int position, int charsRemoved, int charsAdded);	//	[#1062] 検索ハイライト増分更新
     int		nColumn(const QString&) const;		//	表示カラム数を計算
     void	setLineSpacing(int percentage);
     void	tagJump_sub(QTextCursor);
@@ -333,6 +334,7 @@ private:
 	bool	m_ignoreContentsChanged = false;
 	bool	m_processing = false;			//	罫線保護処理中
 	bool	m_isComposing = false;			// IME入力中フラグ
+	QString	m_highlightPat;					//	[#1062] このエディタに表示中の検索ハイライトのパターン（空なら非表示）
 	bool	m_lnAreaPressed = false;
 	bool	m_isCursorAboveAnchor = false;		//	アンカーから上（ドキュメント先頭方向）に向かって選択されている
 	bool	m_diffMode = false;
