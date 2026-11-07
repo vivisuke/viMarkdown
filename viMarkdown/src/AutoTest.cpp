@@ -546,8 +546,21 @@ void MainWindow::do_test(DocWidget *docWidget, int type) {
 							}
 							if( atSep && allSpc )
 								expected = k0+offset-prevLen;
-							else if( allCsvQ && k - k0 == 2 )
+							else if( allCsvQ && k - k0 == 2 ) {
 								expected = k0+1+offset-prevLen;
+								if( atSep ) {
+									//	引用符付き空セルが連続する場合、アプリは先行する空セルの数だけ後方に着地する
+									int runStart = k0, nPrec = 0;
+									while( runStart >= 3 && block1.text()[runStart-1] == u',' && data->m_charFlags[runStart-1] == PCF_CELL_SEPARATOR
+										&& block1.text()[runStart-2] == u'"' && data->m_charFlags[runStart-2] == PCF_CSV
+										&& block1.text()[runStart-3] == u'"' && data->m_charFlags[runStart-3] == PCF_CSV ) {
+										runStart -= 3;
+										++nPrec;
+									}
+									if( nPrec > 0 )
+										expected = runStart+1+nPrec+offset-prevLen;
+								}
+							}
 						}
 					}
 					if( !ASSERT_EQ( expected, k1, block1.blockNumber() , ch, i, TEST_PtoE_CUR_SYNC) ) {
