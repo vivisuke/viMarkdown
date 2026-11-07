@@ -903,6 +903,7 @@ void MainWindow::setup_connections() {
 	connect(ui->treeWidget, &QTreeWidget::currentItemChanged, this, &MainWindow::onTreeCurrentItemChanged);
 	//connect(ui->treeWidget, &QTreeWidget::itemDoubleClicked, this, &MainWindow::onTreeItemDoubleClicked);
 	connect(ui->treeWidget, &QTreeWidget::itemActivated, this, &MainWindow::onTreeItemActivated);				//	ダブルクリック or Enter 押下
+	connect(ui->action_UserAuth, &QAction::triggered, this, &MainWindow::onAction_UserAuth);
 	connect(ui->action_AboutViMarkdown, &QAction::triggered, this, &MainWindow::onAction_About);
 	connect(ui->calendarWidget, &QCalendarWidget::currentPageChanged, this, &MainWindow::onCalendarPageChanged);
 	connect(ui->calendarWidget, &QCalendarWidget::clicked, this, &MainWindow::onCalendarClicked);
@@ -3386,6 +3387,9 @@ void MainWindow::onMdEditCurPosChanged() {
 		statusBar()->showMessage(mess);
 	}
 #endif
+}
+void MainWindow::onAction_UserAuth() {
+	qDebug() << "MainWindow::onAction_UserAuth()";
 }
 void MainWindow::onAction_About() {
 	//##qDebug() << "MainWindow::onAction_About()";

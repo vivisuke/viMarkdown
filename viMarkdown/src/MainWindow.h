@@ -475,6 +475,7 @@ protected:
     void	onAction_ToggleFocus();				//	Ctrl + ￥　 
     void	onAction_SwitchToAltFile();
     void	onAction_TagJump();
+    void	onAction_UserAuth();
     void	onAction_About();
     void	onAction_AddThisFavorite();
     void	onAction_Language();

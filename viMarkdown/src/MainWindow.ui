@@ -213,6 +213,7 @@
     <addaction name="menu_CheatSheet"/>
     <addaction name="menu_Test"/>
     <addaction name="menu_Benchmark"/>
+    <addaction name="action_UserAuth"/>
     <addaction name="action_AboutViMarkdown"/>
     <addaction name="separator"/>
    </widget>
@@ -773,7 +774,7 @@
      <normaloff>:/MainWindow/images/exit_to_app_48.png</normaloff>:/MainWindow/images/exit_to_app_48.png</iconset>
    </property>
    <property name="text">
-    <string>E&amp;xit</string>
+    <string>e&amp;xit</string>
    </property>
   </action>
   <action name="action_AsHTML">
@@ -1384,6 +1385,14 @@
     <string>Ctrl+Alt+S</string>
    </property>
   </action>
+  <action name="action_UserAuth">
+   <property name="text">
+    <string>&amp;UserAuthentication...</string>
+   </property>
+   <property name="toolTip">
+    <string>UserAuthentication</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
@@ -1395,7 +1404,7 @@
   <customwidget>
    <class>CalendarWidget</class>
    <extends>QCalendarWidget</extends>
-   <header>CalendarWidget.h</header>
+   <header>calendarwidget.h</header>
   </customwidget>
  </customwidgets>
  <resources>
