@@ -563,6 +563,14 @@ void MainWindow::do_test(DocWidget *docWidget, int type) {
 							}
 						}
 					}
+					if( blockType(block1) == BT_TABLE && k > k0 && k < block1.text().size() && block1.text()[k] == u'|' ) {
+						//	セル末尾の空白はプレビューに現れないため、セル末尾位置では空白の手前を期待する
+						bool allSpc = true;
+						for(int j = k0; j < k; ++j)
+							if( block1.text()[j] != u' ' ) allSpc = false;
+						if( allSpc )
+							expected = k0+offset-prevLen;
+					}
 					if( !ASSERT_EQ( expected, k1, block1.blockNumber() , ch, i, TEST_PtoE_CUR_SYNC) ) {
 						qDebug() << "ch1 = " << ch1;
 					}
