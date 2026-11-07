@@ -2238,8 +2238,14 @@ int MarkdownEditor::findPosition(const PosContext &context) {
 			//if( ch == STX && data->m_charFlags[ix] != PCF_CELL_SEPARATOR && data->m_charFlags[ix] != PCF_VISIBLE )
 			//	++pos;
 			//else
-			if( ch == ETX && ix > 0 && data->m_charFlags[ix-1] != PCF_CELL_SEPARATOR && data->m_charFlags[ix-1] != PCF_VISIBLE )
+			if( ch == ETX && ix > 0 && data->m_charFlags[ix-1] != PCF_CELL_SEPARATOR && data->m_charFlags[ix-1] != PCF_VISIBLE ) {
 				--pos;
+				--ix;
+				while( ix > 0 && data->m_charFlags[ix-1] == PCF_EMPHASIZED ) {
+					--pos;
+					--ix;
+				}
+			}
 		}
 		return pos;
 	} else
