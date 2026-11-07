@@ -16,6 +16,11 @@
 #include "MarkdownPreview.h"
 #include "UndoMgr.h"
 
+#ifdef	Q_OS_WIN
+#include <windows.h>
+#include <imm.h>
+#endif
+
 extern Global g;
 extern ViStatus gvi;
 extern CharType getCharType(QChar ch);
@@ -2534,4 +2539,18 @@ void MainWindow::close_cmdLine() {
 	//gvi.m_cmdlineMode = false;
 	gvi.m_pendingCommand.clear();
 	gvi.m_prevFocusWidget->setFocus();
+#ifdef Q_OS_WIN
+	HWND hwnd;
+	if( qobject_cast<MarkdownEditor*>(gvi.m_prevFocusWidget) != nullptr
+		|| qobject_cast<MarkdownPreview*>(gvi.m_prevFocusWidget) != nullptr )
+		hwnd = (HWND)gvi.m_prevFocusWidget->winId();
+	else
+		hwnd = (HWND)this->winId();
+	HIMC himc = ImmGetContext(hwnd);
+	if( himc ) {
+		ImmSetOpenStatus(himc, FALSE);
+		ImmReleaseContext(hwnd, himc);
+	}
+#endif
+
 }
