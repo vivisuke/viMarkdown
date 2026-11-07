@@ -43,6 +43,7 @@
 #include "OutputView.h"
 #include "SlideShow.h"
 #include "CalendarWidget.h"
+#include "UserAuthDialog.h"
 
 #ifdef Q_OS_WIN
 //#ifdef _WIN32
@@ -3389,7 +3390,9 @@ void MainWindow::onMdEditCurPosChanged() {
 #endif
 }
 void MainWindow::onAction_UserAuth() {
-	qDebug() << "MainWindow::onAction_UserAuth()";
+	//qDebug() << "MainWindow::onAction_UserAuth()";
+	UserAuthDialog dlg(this);
+	dlg.exec();
 }
 void MainWindow::onAction_About() {
 	//##qDebug() << "MainWindow::onAction_About()";

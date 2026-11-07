@@ -145,6 +145,7 @@
     <ClCompile Include="SettingsDialog.cpp" />
     <ClCompile Include="SlideShow.cpp" />
     <ClCompile Include="UndoMgr.cpp" />
+    <ClCompile Include="UserAuthDialog.cpp" />
     <ClCompile Include="vicmd.cpp" />
     <QtRcc Include="MainWindow.qrc" />
     <QtUic Include="GrepDialog.ui" />
@@ -160,6 +161,7 @@
     <ClCompile Include="main.cpp" />
     <QtUic Include="ReplaceDialog.ui" />
     <QtUic Include="SettingsDialog.ui" />
+    <QtUic Include="UserAuthDialog.ui" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\3rdparty\lunasvg\3rdparty\plutovg\include\plutovg.h" />
@@ -193,6 +195,7 @@
     <QtMoc Include="OutputView.h" />
     <QtMoc Include="SlideShow.h" />
     <ClInclude Include="UndoMgr.h" />
+    <QtMoc Include="UserAuthDialog.h" />
     <ClInclude Include="ver.h" />
   </ItemGroup>
   <ItemGroup>

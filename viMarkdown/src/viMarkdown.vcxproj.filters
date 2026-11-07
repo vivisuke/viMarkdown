@@ -145,6 +145,9 @@
     <ClCompile Include="CalendarWidget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="UserAuthDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DocWidget.h">
@@ -250,6 +253,9 @@
     <QtMoc Include="CalendarWidget.h">
       <Filter>Header Files</Filter>
     </QtMoc>
+    <QtMoc Include="UserAuthDialog.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="SettingsDialog.ui">
@@ -262,6 +268,9 @@
       <Filter>Form Files</Filter>
     </QtUic>
     <QtUic Include="GrepDialog.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
+    <QtUic Include="UserAuthDialog.ui">
       <Filter>Form Files</Filter>
     </QtUic>
   </ItemGroup>
