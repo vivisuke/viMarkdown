@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <QDialog>
 #include "ui_UserAuthDialog.h"
@@ -14,6 +14,9 @@ class UserAuthDialog : public QDialog
 public:
 	UserAuthDialog(QWidget *parent = nullptr);
 	~UserAuthDialog();
+
+protected:
+	void accept() override;
 
 private:
 	Ui::UserAuthDialogClass *ui;

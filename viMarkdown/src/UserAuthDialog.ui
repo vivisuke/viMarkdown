@@ -6,12 +6,12 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>367</width>
+    <width>410</width>
     <height>212</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>UserAuthDialog</string>
+   <string>User Authentication</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_3">
    <item>
@@ -69,7 +69,7 @@
            <widget class="QLineEdit" name="lineEdit">
             <property name="minimumSize">
              <size>
-              <width>200</width>
+              <width>250</width>
               <height>0</height>
              </size>
             </property>
