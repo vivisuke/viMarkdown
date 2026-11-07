@@ -534,6 +534,22 @@ void MainWindow::do_test(DocWidget *docWidget, int type) {
 					//	ただしプレビュー行末位置（i == buf2.size()）はエディタ行末に対応する（末尾の非表示部分・空白を含む）
 					int expected = (i == buf2.size() && k0 > 0 && lineEndIsLineEnd) ? (int)data->m_charFlags.size()+offset-prevLen
 															: (ch1 == u' ' || ch1 == u'\n' ? k0 : k)+offset-prevLen;
+					if( blockType(block1) == BT_CSV_BLOCK && k > k0 ) {
+						//	空セルの先頭では、非表示部分だけからなるフィールドの開始位置（引用符付きの場合は引用符の内側）を期待する
+						bool atSep = k < data->m_charFlags.size() && data->m_charFlags[k] == PCF_CELL_SEPARATOR;
+						bool atEnd = k >= data->m_charFlags.size();
+						if( atSep || atEnd ) {
+							bool allSpc = true, allCsvQ = true;
+							for(int j = k0; j < k; ++j) {
+								if( block1.text()[j] != u' ' ) allSpc = false;
+								if( block1.text()[j] != u'"' || data->m_charFlags[j] != PCF_CSV ) allCsvQ = false;
+							}
+							if( atSep && allSpc )
+								expected = k0+offset-prevLen;
+							else if( allCsvQ && k - k0 == 2 )
+								expected = k0+1+offset-prevLen;
+						}
+					}
 					if( !ASSERT_EQ( expected, k1, block1.blockNumber() , ch, i, TEST_PtoE_CUR_SYNC) ) {
 						qDebug() << "ch1 = " << ch1;
 					}

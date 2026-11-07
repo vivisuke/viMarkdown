@@ -2086,7 +2086,7 @@ int MarkdownEditor::findPosition(const PosContext &context) {
 				block = block.next();
 			continue;
 		}
-		if( blockType(block) == BT_KEISEN_BLOCK ) {
+		if( blockType(block) == BT_KEISEN_BLOCK || blockType(block) == BT_SVG_BLOCK ) {
 			//	最初の罫線ブロック以外の場合
 			block = block.next();
 			continue;
@@ -2127,6 +2127,12 @@ int MarkdownEditor::findPosition(const PosContext &context) {
 					break;
 				}
 			}
+			if( blockType(block) == BT_SVG_BEGIN ) {
+				if( --nth == 0 ) {
+					block = block.next();	//	SVG開始行の次行
+					break;
+				}
+			}
 			if( !block.text().startsWith("```") &&
 				!(isLineEmpty && isPrevLineEmpty) )
 				//!(block.text().isEmpty() && isPrevEmptyBlock(block)) )
@@ -2146,6 +2152,13 @@ int MarkdownEditor::findPosition(const PosContext &context) {
 			if( blockType(block) == BT_KEISEN_BEGIN ) {
 				if( --nth == 0 ) {
 					while( block.next().isValid() && blockType(block.next()) == BT_CODE_BLOCK )
+						block = block.next();
+					ix = block.text().size();
+					break;
+				}
+			} else if( blockType(block) == BT_SVG_BEGIN ) {
+				if( --nth == 0 ) {
+					while( block.next().isValid() && blockType(block.next()) == BT_SVG_BLOCK )
 						block = block.next();
 					ix = block.text().size();
 					break;
