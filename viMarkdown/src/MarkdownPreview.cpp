@@ -1264,7 +1264,7 @@ void MarkdownPreview::do_CSV(int bn0, int nBlocks, QTextBlock& srcBlock, QTextCu
 			srcBlock.setUserData(data);
 		}
 	}
-	if( (srcBlock = srcBlock.next()).isValid() ) {
+	if( srcBlock.isValid() && srcBlock.blockNumber() == m_ix && srcBlock.text().startsWith("```") ) {
 		setBlockType(srcBlock, BT_CSV_BLOCK);
 		BlockData *data = getBlockData(srcBlock);
 		data->m_charFlags.fill(PCF_CSV);
@@ -1315,8 +1315,8 @@ void MarkdownPreview::do_keisen_block(int bn0, int nBlocks, QTextBlock& srcBlock
 		setBlockType(srcBlock, BT_KEISEN_BLOCK);
 		width = qMax(width, fm.horizontalAdvance(srcBlock.text())+10);
 	}
-	srcBlock = srcBlock.next();
-	if( srcBlock.isValid() ) {
+	if( srcBlock.isValid() && srcBlock.blockNumber() == m_ix && srcBlock.text().startsWith("```") ) {
+
 		setBlockType(srcBlock, BT_KEISEN_BLOCK);
 		data = getBlockData(srcBlock);
 		data->m_charFlags.fill(PCF_KEISEN);
@@ -1467,7 +1467,7 @@ void MarkdownPreview::do_code(int bn0, int nBlocks, QTextBlock srcBlock, QTextCu
 		buf += srcBlock.text();
 		lst += srcBlock.text();
 	}
-	if( (srcBlock = srcBlock.next()).isValid() ) {
+	if( srcBlock.isValid() && srcBlock.blockNumber() == m_ix && srcBlock.text().startsWith("```") ) {
 		setBlockType(srcBlock, BT_CODE_BLOCK_END);
 		BlockData *data = getBlockData(srcBlock);
 		data->m_charFlags.fill(PCF_CODE);

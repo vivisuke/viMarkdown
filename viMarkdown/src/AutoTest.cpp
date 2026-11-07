@@ -512,6 +512,11 @@ void MainWindow::do_test(DocWidget *docWidget, int type) {
 				const BlockData *data = getBlockData(block1);
 				//int nvcnt = 0;	//	非表示文字数
 				int k = 0;		//	エディタカーソルインデックス
+				bool hasImage = false;		//	行内に画像があるか
+				for(int j = 0; j < data->m_charFlags.size(); ++j)
+					if( data->m_charFlags[j] == PCF_IMAGE || data->m_charFlags[j] == PCF_IMAGE_BEGIN ) hasImage = true;
+				//	プレビュー行末がエディタ行末に対応するのは、通常行・番号リスト行（画像なし）のみ
+				const bool lineEndIsLineEnd = (blockType(block1) == BT_DEFAULT || blockType(block1) == BT_NUMLIST) && !hasImage;
 				for(int i = 0; i <= buf2.size(); ++i) {		//	１行分のテキストについてチェック
 					docWidget->m_preview->setTextCursor(cur2);
 					QCoreApplication::processEvents();		//	溜まっているイベント処理
@@ -526,7 +531,10 @@ void MainWindow::do_test(DocWidget *docWidget, int type) {
 					int k1 = cur1.position() - cur1.block().position();		//	実際のエディタカーソルインデックス
 					QChar ch = document->characterAt(cur2.position());
 					//	"** " の様な場合は、カーソルは "** " 先頭位置（k0）を期待
-					if( !ASSERT_EQ( (ch1 == u' ' || ch1 == u'\n' ? k0 : k)+offset-prevLen, k1, block1.blockNumber() , ch, i, TEST_PtoE_CUR_SYNC) ) {
+					//	ただしプレビュー行末位置（i == buf2.size()）はエディタ行末に対応する（末尾の非表示部分・空白を含む）
+					int expected = (i == buf2.size() && k0 > 0 && lineEndIsLineEnd) ? (int)data->m_charFlags.size()+offset-prevLen
+															: (ch1 == u' ' || ch1 == u'\n' ? k0 : k)+offset-prevLen;
+					if( !ASSERT_EQ( expected, k1, block1.blockNumber() , ch, i, TEST_PtoE_CUR_SYNC) ) {
 						qDebug() << "ch1 = " << ch1;
 					}
 					cur2.movePosition(QTextCursor::Right);		//	カーソル右移動
