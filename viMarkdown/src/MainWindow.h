@@ -51,6 +51,7 @@ QT_END_NAMESPACE
 #define	KEY_NUM_LOW_FIRE			u"numLowFire"
 #define	KEY_NUM_HIGH_FIRE			u"numHighFire"
 #define	KEY_USER_TYPE				u"userType"
+#define	KEY_AUTH_PASSWORD			u"authPassword"
 
 enum {
     SystemDefault = 0,  // Localeに従う（OSの設定に依存）
@@ -157,6 +158,7 @@ struct Global {
 	int		m_userType = UT_NONCOMMERCIAL;	//	ユーザ種別
     QString	m_defaultDir;			//	（load, save) デフォルトディレクトリ
     QString	m_lastSearchedPat;		//	最新検索文字列
+    QString	m_authPassword;		//	認証パスワード
     //QTextCursor	m_matchedCursor;	//	一致位置カーソル
 	QColor	m_activeLnColor;		//	アクティブ時アンダーライン行カーソル色
 	QColor	m_inactiveLnColor;		//	非アクティブ時アンダーライン行カーソル色

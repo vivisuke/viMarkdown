@@ -18,6 +18,7 @@ UserAuthDialog::UserAuthDialog(QWidget *parent)
 	case UT_COMMERCIAL:	ui->radioButton_3->setChecked(true);	break;
 	default:			ui->radioButton_2->setChecked(true);	break;	//	UT_NONCOMMERCIAL
 	}
+	ui->lineEdit->setText(g.m_authPassword);
 }
 
 UserAuthDialog::~UserAuthDialog()

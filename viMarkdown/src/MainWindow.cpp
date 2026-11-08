@@ -309,6 +309,7 @@ void MainWindow::load_settings() {
 	g.m_notesOnlyColor = settings.value(KEY_NOTES_ONLY_COLOR, QColor("#c0c0f0")).value<QColor>();		//	淡青
 	g.m_firstDayOfWeek = settings.value(KEY_FIRST_DAY_OF_WEEK, 1).toInt();		//	1 for 月曜日
 	g.m_userType = settings.value(KEY_USER_TYPE, UT_NONCOMMERCIAL).toInt();
+	g.m_authPassword = settings.value(KEY_AUTH_PASSWORD).toString();
 }
 void MainWindow::save_settings() {
     QSettings settings;
@@ -341,6 +342,7 @@ void MainWindow::save_settings() {
     settings.setValue(KEY_NOTES_ONLY_COLOR, g.m_notesOnlyColor);
     settings.setValue(KEY_FIRST_DAY_OF_WEEK, g.m_firstDayOfWeek);
     settings.setValue(KEY_USER_TYPE, g.m_userType);
+    settings.setValue(KEY_AUTH_PASSWORD, g.m_authPassword);
 }
 void MainWindow::insertSearchComboBox() {
 	m_searchCB = new QComboBox;
@@ -3396,22 +3398,20 @@ void MainWindow::onAction_UserAuth() {
 	//qDebug() << "MainWindow::onAction_UserAuth()";
 	int prevUserType = g.m_userType;
 	UserAuthDialog dlg(this);
-	if( dlg.exec() == QDialog::Accepted ) {
-		UserAuthDialog dlg(this);
-		if( dlg.exec() != QDialog::Accepted ) return;
-		if( g.m_userType == UT_COMMERCIAL ) {
-			//	商用ユーザの場合はパスワード照合
-			static const QString PASSWORD_HASH = QStringLiteral("dea57880e02b5a6aca5c1eec6f09305010af19f0e5a534c7c467bd06cb6f3fcd");		//	undone: 正規パスワードのハッシュに置き換える（現在は試用文字列のもの）
-			QString hash = QString::fromLatin1(QCryptographicHash::hash(dlg.password().toUtf8(), QCryptographicHash::Sha256).toHex());
-			if( hash != PASSWORD_HASH ) {
-				QMessageBox::warning(this, tr("User Authentication"), tr("Incorrect password."));
-				g.m_userType = prevUserType;		//	認証失敗時は種別を元に戻す
-				return;
-			}
-			QMessageBox::information(this, tr("User Authentication"), tr("You have been authenticated as a legitimate user."));
+	if( dlg.exec() != QDialog::Accepted ) return;
+	if( g.m_userType == UT_COMMERCIAL ) {
+		//	商用ユーザの場合はパスワード照合
+		static const QString PASSWORD_HASH = QStringLiteral("dea57880e02b5a6aca5c1eec6f09305010af19f0e5a534c7c467bd06cb6f3fcd");		//	undone: 正規パスワードのハッシュに置き換える（現在は試用文字列のもの）
+		QString hash = QString::fromLatin1(QCryptographicHash::hash(dlg.password().toUtf8(), QCryptographicHash::Sha256).toHex());
+		if( hash != PASSWORD_HASH ) {
+			QMessageBox::warning(this, tr("User Authentication"), tr("Incorrect password."));
+			g.m_userType = prevUserType;		//	認証失敗時は種別を元に戻す
+			return;
 		}
-		save_settings();		//	設定を全て保存
+		g.m_authPassword = dlg.password();		//	認証成功時のみパスワードを保持
+		QMessageBox::information(this, tr("User Authentication"), tr("You have been authenticated as a legitimate user."));
 	}
+	save_settings();		//	設定を全て保存
 }
 void MainWindow::onAction_About() {
 	//##qDebug() << "MainWindow::onAction_About()";
