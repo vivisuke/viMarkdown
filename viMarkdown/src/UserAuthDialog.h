@@ -15,10 +15,16 @@ public:
 	UserAuthDialog(QWidget *parent = nullptr);
 	~UserAuthDialog();
 
+	//QString	password() const;		//	入力されたパスワード
+	QString password() const {
+		return ui->lineEdit->text();
+	}
+
 protected:
 	void accept() override;
 
 private:
+
 	Ui::UserAuthDialogClass *ui;
 };
 
