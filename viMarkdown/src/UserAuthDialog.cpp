@@ -8,6 +8,7 @@ UserAuthDialog::UserAuthDialog(QWidget *parent)
 	, ui(new Ui::UserAuthDialogClass())
 {
 	ui->setupUi(this);
+	connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &UserAuthDialog::accept);
 	switch (g.m_userType) {
 	case UT_STUDENT:	ui->radioButton->setChecked(true);	break;
 	case UT_COMMERCIAL:	ui->radioButton_3->setChecked(true);	break;
