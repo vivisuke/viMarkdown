@@ -9,6 +9,10 @@ UserAuthDialog::UserAuthDialog(QWidget *parent)
 {
 	ui->setupUi(this);
 	connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &UserAuthDialog::accept);
+	connect(ui->radioButton_3, &QRadioButton::toggled, ui->lineEdit, &QWidget::setEnabled);
+	connect(ui->radioButton_3, &QRadioButton::toggled, ui->label, &QWidget::setEnabled);
+	ui->lineEdit->setEnabled(g.m_userType == UT_COMMERCIAL);
+	ui->label->setEnabled(g.m_userType == UT_COMMERCIAL);
 	switch (g.m_userType) {
 	case UT_STUDENT:	ui->radioButton->setChecked(true);	break;
 	case UT_COMMERCIAL:	ui->radioButton_3->setChecked(true);	break;
