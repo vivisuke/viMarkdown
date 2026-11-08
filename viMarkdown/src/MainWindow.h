@@ -50,6 +50,7 @@ QT_END_NAMESPACE
 #define	KEY_ALL_COMPLETED_STAR		u"allCompletedStar"
 #define	KEY_NUM_LOW_FIRE			u"numLowFire"
 #define	KEY_NUM_HIGH_FIRE			u"numHighFire"
+#define	KEY_USER_TYPE				u"userType"
 
 enum {
     SystemDefault = 0,  // Localeに従う（OSの設定に依存）

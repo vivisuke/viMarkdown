@@ -307,6 +307,7 @@ void MainWindow::load_settings() {
 	g.m_pendingColor = settings.value(KEY_PENDING_COLOR, QColor("#f0c0c0")).value<QColor>();		//	淡赤
 	g.m_notesOnlyColor = settings.value(KEY_NOTES_ONLY_COLOR, QColor("#c0c0f0")).value<QColor>();		//	淡青
 	g.m_firstDayOfWeek = settings.value(KEY_FIRST_DAY_OF_WEEK, 1).toInt();		//	1 for 月曜日
+	g.m_userType = settings.value(KEY_USER_TYPE, UT_NONCOMMERCIAL).toInt();
 }
 void MainWindow::save_settings() {
     QSettings settings;
@@ -338,6 +339,7 @@ void MainWindow::save_settings() {
     settings.setValue(KEY_PENDING_COLOR, g.m_pendingColor);
     settings.setValue(KEY_NOTES_ONLY_COLOR, g.m_notesOnlyColor);
     settings.setValue(KEY_FIRST_DAY_OF_WEEK, g.m_firstDayOfWeek);
+    settings.setValue(KEY_USER_TYPE, g.m_userType);
 }
 void MainWindow::insertSearchComboBox() {
 	m_searchCB = new QComboBox;
