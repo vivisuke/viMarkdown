@@ -34,6 +34,9 @@ set(PROJECT_SOURCES
         diff.cpp
         UndoMgr.cpp
         CalendarWidget.cpp
+        UserAuthDialog.cpp
+        UserAuthDialog.h
+        UserAuthDialog.ui
         ver.h
         ${TS_FILES}
 )
