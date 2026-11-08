@@ -131,6 +131,10 @@ public:
 	}
 };
 
+#define		UT_STUDENT			0		//	学生
+#define		UT_NONCOMMERCIAL	1		//	非商用ユーザ
+#define		UT_COMMERCIAL		2		//	商用ユーザ
+
 struct Global {
 	bool	m_cursorVisible = true;
 	bool	m_ignoreCase;			//	検索時：大文字小文字同一視
@@ -149,6 +153,7 @@ struct Global {
 	int		m_firstDayOfWeek = 1;	//	週開始曜日（1 for 月曜日、2 for 火曜日、... 7 for 日曜日）
 	int		m_numOfLowFire;			//	薄炎表示 ToDo 件数
 	int		m_numOfHighFire;		//	濃炎表示 ToDo 件数
+	int		m_userType = UT_NONCOMMERCIAL;	//	ユーザ種別
     QString	m_defaultDir;			//	（load, save) デフォルトディレクトリ
     QString	m_lastSearchedPat;		//	最新検索文字列
     //QTextCursor	m_matchedCursor;	//	一致位置カーソル
