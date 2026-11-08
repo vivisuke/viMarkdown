@@ -2144,6 +2144,12 @@ int MarkdownEditor::findPosition(const PosContext &context) {
 						if( ix < block.text().size() && block.text()[ix] == u'"' )
 							break;	//	"" の場合は最初の " だけスキップ
 					}
+					if( ix < charFlags.size() && charFlags[ix] == PCF_IMAGE_BEGIN && context.m_offset > 0 ) {
+						//	行頭の内容が画像の場合、offset の1つ分は画像全体を越える（画像はプレビュー上では1要素のため）
+						while( ix < charFlags.size() && (charFlags[ix] == PCF_IMAGE_BEGIN || charFlags[ix] == PCF_IMAGE) )
+							++ix;
+						offset -= 1;
+					}
 					break;
 				}
 			}
