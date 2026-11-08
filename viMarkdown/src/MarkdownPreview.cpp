@@ -1174,6 +1174,7 @@ void MarkdownPreview::do_heading(QTextBlock& srcBlock, QTextCursor& cursor, QStr
 	//	buf は行頭空白を除いた文字列。charFlags は元ブロック基準なので、先行空白も含め接頭辞全体に設定する
 	for(int k = 0; k < m_nSpaces + i && k < data->m_charFlags.size(); ++k)
 		data->m_charFlags[k] = PCF_HEADING;
+	updateCharFlags(data, srcBlock.text(), m_nSpaces + i, srcBlock.text().size(), true);	//	見出し本文中の強調マーカー等にもフラグを設定
 	srcBlock.setUserData(data);
 	setBlockType(srcBlock, BT_HEADING);
 	do_heading_sub(cursor, buf.mid(i), h, m_ix);

@@ -214,6 +214,8 @@ bool parseCsvLine(QStringList &fields, QByteArray& ba, const QString &line, bool
 	}
 	return inQuotes;
 }
+static QRegularExpression link_re(R"((?<![!\\])\[([^\]]+)\]\(([^)]+)\))");
+static QRegularExpression image_re(R"((?<!\\)!\[([^\]]+)\]\(([^)]+)\))");
 bool isTableLine(const QString& lnStr0, const QString& lnStr, QStringList &tableTokens, BlockData* data) {
 	assert( data == nullptr || data->m_charFlags.size() == lnStr0.size() );
 	QString sv(lnStr);
@@ -245,6 +247,25 @@ bool isTableLine(const QString& lnStr0, const QString& lnStr, QStringList &table
 			for(int i = ix + 1; i < lnStr0.size() && lnStr0[i] == u' '; ++i)	//	| 直後空白も非表示
 				data->m_charFlags[i] = PCF_NOT_VISIBLE;
 			updateCharFlags(data, lnStr0, ix0, ix, true);		//	true for エスケープ文字処理
+			auto imatch = image_re.match(lnStr0, ix0);	//	セル内画像にも PCF_IMAGE を設定
+			while( imatch.hasMatch() && imatch.capturedStart() < ix ) {
+				int start = imatch.capturedStart();
+				int end = qMin(imatch.capturedEnd(), ix);
+				data->m_charFlags[start] = PCF_IMAGE_BEGIN;	//	'!'
+				for(int i = start + 1; i < end; ++i)
+					data->m_charFlags[i] = PCF_IMAGE;
+				imatch = image_re.match(lnStr0, end);
+			}
+			auto lmatch = link_re.match(lnStr0, ix0);	//	セル内リンクの記号にも PCF_LINK を設定
+			while( lmatch.hasMatch() && lmatch.capturedStart() < ix ) {
+				int start = lmatch.capturedStart();
+				int end = qMin(lmatch.capturedEnd(), ix);
+				data->m_charFlags[start] = PCF_LINK;	//	'['
+				int ixr = lnStr0.indexOf(u']', start);
+				for(int i = ixr; i < end; ++i)
+					data->m_charFlags[i] = PCF_LINK;	//	'](url)' 部分
+				lmatch = link_re.match(lnStr0, end);
+			}
 		}
 		++ix;			//	'|' スキップ
 	}
@@ -291,8 +312,8 @@ bool isEscapedChar(QChar ch) {
 			ch.unicode() >= u'[' && ch.unicode() <= u']' ||		//	[ \ ]
 			ch.unicode() == u'>';
 }
-static QRegularExpression image_re(R"((?<!\\)!\[([^\]]+)\]\(([^)]+)\))");
-static QRegularExpression link_re(R"((?<![!\\])\[([^\]]+)\]\(([^)]+)\))");
+
+
 //	ボールド、イタリック、打ち消し線 部分に PCF_EMPHASIZED 設定
 bool updateCharFlags(BlockData* data, const QString &buf, int ix, int ix9, bool esc) {
 	bool modified = false;
