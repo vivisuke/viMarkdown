@@ -519,11 +519,11 @@ void MainWindow::do_test(DocWidget *docWidget, int type) {
 						k1 = i == 0 ? 0 : (int)buf2.size();	//	表示文字が無いテーブル行（空セルのみ）は、先頭以外は行末に集約される
 					else if( i == 0 )
 						k1 = 0;
-					else if( data->m_charFlags[i-1] == PCF_VISIBLE || data->m_charFlags[i-1] == PCF_CELL_SEPARATOR )
+					else if( data->m_charFlags[i-1] == PCF_VISIBLE || data->m_charFlags[i-1] == PCF_CELL_SEPARATOR || data->m_charFlags[i-1] == PCF_IMAGE_BEGIN )
 						k1 = elemPref[i];
 					else {
 						int m = i;
-						while( m < n && data->m_charFlags[m] != PCF_VISIBLE && data->m_charFlags[m] != PCF_CELL_SEPARATOR )
+						while( m < n && data->m_charFlags[m] != PCF_VISIBLE && data->m_charFlags[m] != PCF_CELL_SEPARATOR && data->m_charFlags[m] != PCF_IMAGE_BEGIN )
 							++m;
 						if( m < n && data->m_charFlags[i] == PCF_CELL_SEPARATOR && blockType(block1) == BT_TABLE )
 							k1 = elemPref[i+1];	//	GFM表のセル区切りは次のセル先頭に同期する
@@ -593,6 +593,10 @@ void MainWindow::do_test(DocWidget *docWidget, int type) {
 							}
 							if( atSep && allSpc )
 								expected = k0+offset-prevLen;
+							else if( (atSep || atEnd) && !(allCsvQ && k - k0 == 2) ) {
+								//	フィールド末尾の非表示部分（閉じ引用符・強調マーカー等）は内容に含めず、内容末尾位置を期待する
+								expected = k0+offset-prevLen;
+							}
 							else if( allCsvQ && k - k0 == 2 ) {
 								expected = k0+1+offset-prevLen;
 								if( atSep ) {

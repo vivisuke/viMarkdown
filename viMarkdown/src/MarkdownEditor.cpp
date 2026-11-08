@@ -4278,16 +4278,36 @@ PosContext MarkdownEditor::contextAt(int pos) {	//	pos 位置から PosContext �
 		ch = ETX;
 	} else {
 		bool found = false;
+		bool imageAnchor = false;	//	#1327: カーソルが画像の範囲内にある場合は、画像自体をアンカーとする
 		if( ix != data->m_charFlags.size() && (ix == 0 || ix > 0 && data->m_charFlags[ix-1] != PCF_VISIBLE) ) {		//	直前が非表示文字の場合
 			//	undone: CSV内で ',' を見つけた場合は、行頭方向にアンカー文字を探す
 			found = true;
-			while( ix < data->m_charFlags.size() && data->m_charFlags[ix] != PCF_VISIBLE ) {
-				if( blockType(block) == BT_CSV_BLOCK && buf[ix] == u',' ) {
-					found = false;
-					break;
+			int imgBegin = -1;
+			if( ix > 0 && data->m_charFlags[ix-1] == PCF_IMAGE_BEGIN )
+				imgBegin = ix - 1;
+			else {
+				for(int j = ix - 1; j >= 1 && data->m_charFlags[j] == PCF_IMAGE; --j)
+					if( data->m_charFlags[j-1] == PCF_IMAGE_BEGIN ) { imgBegin = j - 1; break; }
+			}
+			if( imgBegin < 0 && ix < data->m_charFlags.size() && data->m_charFlags[ix] == PCF_IMAGE_BEGIN )
+				imgBegin = ix;
+			if( imgBegin >= 0 ) {
+				if( ix > imgBegin )
+					pc.m_offset += 1;
+				pos = block.position() + imgBegin;
+				ix = imgBegin;
+				imageAnchor = true;
+			} else {
+				while( ix < data->m_charFlags.size() && data->m_charFlags[ix] != PCF_VISIBLE ) {
+					if( blockType(block) == BT_CSV_BLOCK && buf[ix] == u',' ) {
+						found = false;
+						break;
+					}
+					++pos;
+					++ix;
 				}
-				++pos;
-				++ix;
+
+
 			}
 		}
 		if( !found && ix < data->m_charFlags.size() ) {	//	改行位置でない場合
@@ -4327,7 +4347,9 @@ PosContext MarkdownEditor::contextAt(int pos) {	//	pos 位置から PosContext �
 			pc.m_offset += 1;
 		}
 		ch = doc->characterAt(pos);
-		if( pos > 0 && doc->characterAt(pos-1) != u'\\' ) {
+		if( imageAnchor ) {
+			ch = QChar(CODE_IMAGE);	//	#1327: 画像自体をアンカーとする
+		} else if( pos > 0 && doc->characterAt(pos-1) != u'\\' ) {
 			//while( ch == u'*' || ch == u'_' || ch == u'~' )
 			while( ix < data->m_charFlags.size() && data->m_charFlags[ix] != PCF_VISIBLE ) {
 				++ix;
@@ -4470,8 +4492,9 @@ int MarkdownEditor::countCharUntil(QTextBlock block, int pos, QChar ch) const
 								finished = true;
 								break;
 							}
-							if( ix < buf.size() && data->m_charFlags[ix] == PCF_VISIBLE &&
-								(buf[ix] == ch || (ch == QChar(0x00a0) && QStringView(buf).mid(ix).startsWith(u"&nbsp;"))) )
+							if( ix < buf.size() && ((data->m_charFlags[ix] == PCF_VISIBLE &&
+								(buf[ix] == ch || (ch == QChar(0x00a0) && QStringView(buf).mid(ix).startsWith(u"&nbsp;")))) ||
+								(ch == QChar(CODE_IMAGE) && data->m_charFlags[ix] == PCF_IMAGE_BEGIN)) )
 								++count;
 							++ix;
 						}
