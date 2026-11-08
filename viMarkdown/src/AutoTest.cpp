@@ -482,20 +482,49 @@ void MainWindow::do_test(DocWidget *docWidget, int type) {
 		{
 			if( type == TEST_EtoP_CUR_SYNC ) {
 				//	エディタ → プレビュー カーソル同期テスト
-				//		![v](url) の場合、m_charFlags[] = {I, I, I, ... I}
-				//		column: 0 -> 0, 1 ～ 9 -> 1 （画像があるため１ずれる）
+				//	期待値はプレビュー表示上の要素（表示文字・セル区切り・画像）単位で数える。
+				//	非表示文字の位置は、直前が表示要素ならその直後、そうでなければ次の表示要素の位置とする。
+				//	テーブル行では、実測値をセル文字列を半角空白で連結した行内カラムに換算して比較する。
 				QTextDocument *document = docWidget->m_editor->document();
 				QTextCursor cursor(block1);
 				const BlockData *data = getBlockData(block1);
-				int nvcnt = 0;	//	非表示文字数
-				for(int i = 0; i < block1.text().size(); ++i) {
-					int k1 = i - nvcnt;			//	k1: 期待されるカーソル位置
-					if( i != 0 && data->m_charFlags[i-1] == PCF_IMAGE && data->m_charFlags[i] == PCF_IMAGE )
-						++k1;
-					if( data->m_charFlags[i] != PCF_VISIBLE ) ++nvcnt;
+				const int n = block1.text().size();
+				QVector<int> elemPref(n + 1, 0);	//	elemPref[i]: 先頭から i 文字目までに含まれる表示要素数
+				bool hasVisible = false;
+				for(int j = 0; j < n; ++j) {
+					int f = data->m_charFlags[j];
+					if( f == PCF_VISIBLE ) hasVisible = true;
+					elemPref[j+1] = elemPref[j] + (f == PCF_VISIBLE || f == PCF_CELL_SEPARATOR || f == PCF_IMAGE_BEGIN ? 1 : 0);
+				}
+				for(int i = 0; i < n; ++i) {
+					int k1;			//	k1: 期待されるカーソル位置
+					if( table != nullptr && !hasVisible )
+						k1 = i == 0 ? 0 : (int)buf2.size();	//	表示文字が無いテーブル行（空セルのみ）は、先頭以外は行末に集約される
+					else if( i == 0 )
+						k1 = 0;
+					else if( data->m_charFlags[i-1] == PCF_VISIBLE || data->m_charFlags[i-1] == PCF_CELL_SEPARATOR )
+						k1 = elemPref[i];
+					else {
+						int m = i;
+						while( m < n && data->m_charFlags[m] != PCF_VISIBLE && data->m_charFlags[m] != PCF_CELL_SEPARATOR )
+							++m;
+						if( m < n && data->m_charFlags[i] == PCF_CELL_SEPARATOR && blockType(block1) == BT_TABLE )
+							k1 = elemPref[i+1];	//	GFM表のセル区切りは次のセル先頭に同期する
+						else if( m < n )
+							k1 = elemPref[m];
+						else
+							k1 = elemPref[n];
+					}
 					docWidget->m_editor->setTextCursor(cursor);
 					QTextCursor cur2 = docWidget->m_preview->textCursor();		//	プレビューカーソル
 					int k2 = cur2.position() - cur2.block().position();			//	k2: プレビューカーソルカラム
+					if( table != nullptr ) {	//	テーブル行では、前のセル分を加算して行内カラムに換算
+						QTextBlock pb = docWidget->m_preview->document()->findBlock(lineStartPos);
+						for(int c = 0; c < table->columns() && pb.isValid() && pb.blockNumber() != cur2.block().blockNumber(); ++c) {
+							k2 += (int)pb.text().trimmed().size() + 1;
+							pb = pb.next();
+						}
+					}
 					QChar ch = document->characterAt(cursor.position());
 					if( !ASSERT_EQ( k2, k1, block1.blockNumber(), ch, i, TEST_EtoP_CUR_SYNC ) ) {
 						qDebug() << "ch = " << ch;
