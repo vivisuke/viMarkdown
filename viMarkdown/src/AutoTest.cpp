@@ -486,8 +486,14 @@ void MainWindow::do_test(DocWidget *docWidget, int type) {
 		buf1.resize(k);
 		buf2.remove(QChar(CODE_IMAGE));
 		static QRegularExpression allspc("^ +$");
-		if( !allspc.match(buf1).hasMatch() )	//	空白以外を含んでいる
-			buf1 = buf1.trimmed();
+		if( !allspc.match(buf1).hasMatch() ) {	//	空白以外を含んでいる
+			if( table != nullptr ) {
+				//	テーブル行：buf1 の空白はセル区切り由来のみ。先頭の空セル分の空白は buf2 の連結空白と対応するため、末尾の区切り分だけを落とす
+				if( buf1.endsWith(u' ') )
+					buf1.chop(1);
+			} else
+				buf1 = buf1.trimmed();
+		}
 		ASSERT_EQ( buf1, buf2, block1.blockNumber());
 		//if( ASSERT_EQ( buf1.trimmed(), buf2, block1.blockNumber()) )	//	表示テキストが一致した場合
 		{
