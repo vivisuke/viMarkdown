@@ -129,21 +129,27 @@ const QString QA_MD_TEXT_2 =
 	"TEST\n"
 	"<!-- comment -->\n"
 	"# title\n"
+	"# ti**tl**e\n"
 	"hoge<!-- -->\n"
 	"<!-- -->fuga\n"
 	"text\n"
 	" text\n"
 	"text \n"
+	"あいう**えお**かき\n"
+	"あ [v](url) い\n"
 	"abc \\xyzzz\n"		//	x はエスケープされず \x と表示される
+	"a\\\\b\n"
 	"hoge*fuga*foo\n"
 	"hoge\\*fuga\\*foo\n"
 	"hoge**fuga**foo\n"
 	"hoge**fuga** **fuga**\n"
 	"hoge***fuga***foo\n"
 	"hoge~~fuga~~foo\n"
+	"abc **def**\n"
 	"h'a\\*bc*xyz*abc'x\n"
 	"[v](url)\n"	//	リンク
 	"x[v](url)y\n"	//	リンク
+	"x[*v*](url)y\n"
 	"![v](url)\n"	//	画像
 	"x![v](url)y\n"	//	画像
 	"x![v](url)y![v](url)z\n"	//	画像が複数
@@ -165,6 +171,7 @@ const QString QA_MD_TEXT_2 =
 	"1. item3\n"
 	"1. **bold** *italic* ~~strike~~\n"
 	"1. [link](url)\n"
+	"10. item10\n"
 	"\n"
 	"\\1. item\n"
 	"\n"
@@ -210,6 +217,8 @@ const QString QA_MD_TEXT_2 =
 	",,\n"
 	"\"\",\"\",\n"	//	途中のセルが ""
 	",,\"\"\n"	//	最後のセルが ""
+	"\"a,b\", c, d\n"
+	"\"**h**\", x, y\n"
 	"```\n"		//	CSVブロック終了
 	"text\n"
 #endif
@@ -220,6 +229,8 @@ const QString QA_MD_TEXT_2 =
 	"| a |xyz|\n"
 	"|a|\\[xyz\\]|\n"
 	"|f\\*o\\*o|bar|\n"
+	"|a|[v](url)|\n"
+	"|![v](url)|b|\n"
 #endif
 	"text\n"
 #endif
