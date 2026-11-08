@@ -1,10 +1,18 @@
 ﻿#include "UserAuthDialog.h"
+#include "MainWindow.h"
+
+extern Global g;
 
 UserAuthDialog::UserAuthDialog(QWidget *parent)
 	: QDialog(parent)
 	, ui(new Ui::UserAuthDialogClass())
 {
 	ui->setupUi(this);
+	switch (g.m_userType) {
+	case UT_STUDENT:	ui->radioButton->setChecked(true);	break;
+	case UT_COMMERCIAL:	ui->radioButton_3->setChecked(true);	break;
+	default:			ui->radioButton_2->setChecked(true);	break;	//	UT_NONCOMMERCIAL
+	}
 }
 
 UserAuthDialog::~UserAuthDialog()
@@ -19,5 +27,11 @@ void UserAuthDialog::accept() {
 	//	return;
 	//}
 	//	undone: ユーザタイプ保存
+	if( ui->radioButton->isChecked() )
+		g.m_userType = UT_STUDENT;
+	else if( ui->radioButton_3->isChecked() )
+		g.m_userType = UT_COMMERCIAL;
+	else
+		g.m_userType = UT_NONCOMMERCIAL;
 	QDialog::accept();
 }

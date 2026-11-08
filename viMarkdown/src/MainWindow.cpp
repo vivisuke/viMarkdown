@@ -3394,7 +3394,8 @@ void MainWindow::onMdEditCurPosChanged() {
 void MainWindow::onAction_UserAuth() {
 	//qDebug() << "MainWindow::onAction_UserAuth()";
 	UserAuthDialog dlg(this);
-	dlg.exec();
+	if( dlg.exec() == QDialog::Accepted )
+		save_settings();		//	設定を全て保存
 }
 void MainWindow::onAction_About() {
 	//##qDebug() << "MainWindow::onAction_About()";
