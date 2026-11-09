@@ -1121,9 +1121,11 @@ void MainWindow::do_vi_motion(QChar cmd, QTextCursor& cursor, int rcnt, DocWidge
 				if( is_folded(block) ) {
 					do_unfold(block);
 					docWidget->m_editor->drawFoldLine(cursor, block);
+					onMDTextChanged();
 				} else if( is_foldable(block) ) {
 					do_fold(block);
 					docWidget->m_editor->clearFoldLine();
+					onMDTextChanged();
 				}
 			}
 		} else {

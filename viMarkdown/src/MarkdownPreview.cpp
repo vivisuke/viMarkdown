@@ -817,7 +817,7 @@ void MarkdownPreview::setMarkdown(QTextDocument *doc) {		//	doc: markdown ソー
 	cursor.movePosition(QTextCursor::Start);
 	//QString mdtext = doc->toPlainText();
 	//m_lst = mdtext.split(u'\n');
-	insertMarkdown(doc, 0, doc->lineCount(), cursor);
+	insertMarkdown(doc, 0, doc->blockCount(), cursor);	//	lineCount() は非表示（折り畳み）ブロックを数えないため blockCount() を使う（#1337）
 	cursor.endEditBlock();
 	m_processing = false;
 	m_lastDocText = document()->toPlainText();	//	再変換後のスナップショットに更新
