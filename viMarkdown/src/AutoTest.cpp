@@ -3546,6 +3546,16 @@ const QList<ViTestCase> viTestCases = {
 			//"p", "abc dab┃c ef\n",
 		}
 	},
+	{ "Visual - change (c) and undo",		//	v0.3 #1336
+		"┃abcdef\n",
+		{
+			"vl", "《a┃b》cdef\n",
+			"l", "《ab┃c》def\n",
+			"cXY", "X┃Ydef\n",		//	選択削除＋XY入力、Escで Y にスナップ
+			"u", "┃abcdef\n",		//	u 1回で削除＋挿入がまるごと復元される
+			"U", "X┃Ydef\n",		//	redo で再適用される
+		}
+	},
 	// ------------------------------------------------------------------
 	{ "dG with trailing newline (empty EOF line)",
 	    "one\n"

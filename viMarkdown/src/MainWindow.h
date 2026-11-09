@@ -214,6 +214,7 @@ struct ViStatus {
     int		m_nRange = 0;				//	指定された行番号数
     int		m_rangeEnd = 1;
     int		m_exhist_ix = -1;			//	現コマンド履歴インデックス
+    int		m_searchhist_ix = -1;		//	現検索履歴インデックス
 	QString	m_autotext;					//	オートインデント・テキスト
 	QString	m_lastEditCommand;			//	最後に実行した vi 編集コマンド
 	QString	m_lastMoveCommand;			//	最後に実行した vi 移動コマンド

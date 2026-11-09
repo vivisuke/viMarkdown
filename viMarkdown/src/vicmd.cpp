@@ -750,10 +750,10 @@ bool MainWindow::do_cdy(QChar cmd, QTextCursor& cursor) {
 			switch( cmd.unicode() ) {
 			case 'c':	//	選択状態で c
 				gvi.m_yankBuffer = cursor.selectedText();
-				cursor.beginEditBlock();
-				cursor.deleteChar();
-				cursor.endEditBlock();
-				//gvi.m_joinEditBlock = true;
+				if( gvi.m_editor != nullptr ) {
+					gvi.m_editor->openUndoBlock();
+					gvi.m_editor->do_deleteText(cursor);
+				}
 				//gvi.m_viCmdMode = false;
 				gvi.m_currentMode = ViMode::Insert;
 				gvi.m_vMode = u' ';
@@ -1422,6 +1422,8 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 			//gvi.m_exhist.push_front(":");
 			while( gvi.m_exhist.size() > 64 ) gvi.m_exhist.pop_back();
 			gvi.m_exhist_ix = -1;
+		} else if( cmd == '/' || cmd == '?' ) {
+			gvi.m_searchhist_ix = -1;
 		}
 		return;
 	} else if( gvi.m_fFtT == 'f' || gvi.m_fFtT == 'F' || gvi.m_fFtT == 't' || gvi.m_fFtT == 'T' ) {
@@ -2231,6 +2233,7 @@ void MainWindow::do_vi_search(const QString& text, QTextCursor& cursor, int rcnt
     statusBar()->showMessage(tr("Searched: %1").arg(pat), 3000);
 	m_searchHist.push_front(pat);
 	m_searchHist.removeDuplicates();	//	重複削除
+	gvi.m_searchhist_ix = -1;
 	m_searchCB->clear();
     m_searchCB->addItems(m_searchHist);
     m_searchCB->setCurrentText(pat);
@@ -2511,9 +2514,9 @@ void MainWindow::on_cmdLine_up() {	//	コマンドライン履歴
 			m_cmdLine->setText(gvi.m_exhist[++gvi.m_exhist_ix]);
 		}
 	} else if( ch == '/' || ch == '?' ) {
-		if( gvi.m_exhist_ix + 1 < m_searchHist.size() ) {
-			if( gvi.m_exhist_ix == 0 ) m_searchHist[0] = m_cmdLine->text();
-			m_cmdLine->setText(/*ch +*/ m_searchHist[++gvi.m_exhist_ix]);
+		if( gvi.m_searchhist_ix + 1 < m_searchHist.size() ) {
+			if( gvi.m_searchhist_ix == 0 ) m_searchHist[0] = m_cmdLine->text();
+			m_cmdLine->setText(/*ch +*/ m_searchHist[++gvi.m_searchhist_ix]);
 		}
 	}
 }
@@ -2526,8 +2529,8 @@ void MainWindow::on_cmdLine_down() {
 			m_cmdLine->setText(gvi.m_exhist[--gvi.m_exhist_ix]);
 		}
 	} else if( ch == '/' || ch == '?' ) {
-		if( gvi.m_exhist_ix > 0 ) {
-			m_cmdLine->setText(/*ch +*/ m_searchHist[--gvi.m_exhist_ix]);
+		if( gvi.m_searchhist_ix > 0 ) {
+			m_cmdLine->setText(/*ch +*/ m_searchHist[--gvi.m_searchhist_ix]);
 		}
 	}
 }
