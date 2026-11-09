@@ -1623,6 +1623,26 @@ void MarkdownEditor::make_link() {
 	cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, 3);	//	url 選択
 	setTextCursor(cursor);
 }
+void MarkdownEditor::mousePressEvent(QMouseEvent *event) {
+	//	Shift + クリックでは、現在のアンカーを起点に選択を拡張する。
+	//	基底クラスの処理がアンカーをクリック位置へ移してしまった場合は、元のアンカーから張り直す。
+	if( event->button() == Qt::LeftButton
+		&& (event->modifiers() & Qt::ShiftModifier) != 0
+		&& (event->modifiers() & Qt::ControlModifier) == 0 )
+	{
+		int anchor = textCursor().anchor();
+		MarkdownBaseEdit::mousePressEvent(event);
+		QTextCursor cursor = textCursor();
+		if( cursor.anchor() != anchor ) {
+			int pos = cursor.position();
+			cursor.setPosition(anchor);
+			cursor.setPosition(pos, QTextCursor::KeepAnchor);
+			setTextCursor(cursor);
+		}
+		return;
+	}
+	MarkdownBaseEdit::mousePressEvent(event);
+}
 void MarkdownEditor::mouseReleaseEvent(QMouseEvent *event) {
 	m_mouseDoubleClicked = false;
 	if( (event->modifiers() & Qt::ControlModifier) != 0 ) {
