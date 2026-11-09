@@ -3984,6 +3984,34 @@ void MarkdownEditor::lnAreaMousePressEvent(QMouseEvent *event) {
 		return;
 	}
 	if( pos.x() < m_lnAreaWidget->width() - m_charWidth*2 ) {			//	非折り畳みマークより左をクリック
+		if( (event->modifiers() & Qt::ShiftModifier) != 0 ) {		//	Shift + クリック：アンカー行からクリック行まで行選択を拡張
+			//	アンカー行の決め方：現在の選択範囲内に前回の行選択のアンカー行が含まれていればそれを使い、
+			//	そうでなければ選択範囲の先頭行（選択が無ければカーソル行）とする。
+			//	※ textCursor().anchor() は下方向へのドラッグ選択後に選択の遠い端（次行先頭）へ移るため、アンカー行の判定には使えない
+			QTextCursor cur = textCursor();
+			int anchorBn;
+			if( cur.hasSelection() ) {
+				int sb = document()->findBlock(cur.selectionStart()).blockNumber();
+				int eb = document()->findBlock(cur.selectionEnd() - 1).blockNumber();
+				anchorBn = (sb <= m_anchorBlockNum && m_anchorBlockNum <= eb) ? m_anchorBlockNum : sb;
+			} else
+				anchorBn = cur.blockNumber();
+			QTextBlock anchorBlock = document()->findBlockByNumber(anchorBn);
+			if( anchorBlock.isValid() ) {
+				m_anchorBlockNum = anchorBlock.blockNumber();
+				m_anchorStartPosition = anchorBlock.position();
+				QTextCursor ac(anchorBlock);
+				if( anchorBlock == document()->lastBlock() )
+					ac.movePosition(QTextCursor::End);		//	文書末尾まで
+				else
+					ac.movePosition(QTextCursor::NextBlock);	//	アンカー行の末尾（＝次行先頭）
+				m_selEnd = ac.position();
+				m_curBlockNum = -1;		//	ドラッグ継続時と同じ経路で選択し直すため
+				m_lnAreaPressed = true;
+				lnAreaMouseMoveEvent(event);
+				return;
+			}
+		}
 		cursor.movePosition(QTextCursor::StartOfBlock);			 // 行頭へ移動
 		m_anchorStartPosition = cursor.position();
 		if( cursor.block() == document()->lastBlock() ) {	//	EOF行の場合
