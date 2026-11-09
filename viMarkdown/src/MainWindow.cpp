@@ -3394,16 +3394,25 @@ void MainWindow::onMdEditCurPosChanged() {
 	}
 #endif
 }
+//	パスワードが正規パスワードと一致するか照合する
+bool checkAuthPassword(const QString& password) {
+	static const QString PASSWORD_HASH = QStringLiteral("dea57880e02b5a6aca5c1eec6f09305010af19f0e5a534c7c467bd06cb6f3fcd");		//	undone: 正規パスワードのハッシュに置き換える（現在は試用文字列のもの）
+	QString hash = QString::fromLatin1(QCryptographicHash::hash(password.toUtf8(), QCryptographicHash::Sha256).toHex());
+	return hash == PASSWORD_HASH;
+}
 void MainWindow::onAction_UserAuth() {
 	//qDebug() << "MainWindow::onAction_UserAuth()";
 	int prevUserType = g.m_userType;
-	UserAuthDialog dlg(this);
+	bool authenticated = g.m_userType == UT_COMMERCIAL && checkAuthPassword(g.m_authPassword);
+	UserAuthDialog dlg(this, authenticated);
 	if( dlg.exec() != QDialog::Accepted ) return;
 	if( g.m_userType == UT_COMMERCIAL ) {
 		//	商用ユーザの場合はパスワード照合
-		static const QString PASSWORD_HASH = QStringLiteral("dea57880e02b5a6aca5c1eec6f09305010af19f0e5a534c7c467bd06cb6f3fcd");		//	undone: 正規パスワードのハッシュに置き換える（現在は試用文字列のもの）
-		QString hash = QString::fromLatin1(QCryptographicHash::hash(dlg.password().toUtf8(), QCryptographicHash::Sha256).toHex());
-		if( hash != PASSWORD_HASH ) {
+		//static const QString PASSWORD_HASH = QStringLiteral("dea57880e02b5a6aca5c1eec6f09305010af19f0e5a534c7c467bd06cb6f3fcd");		//	undone: 正規パスワードのハッシュに置き換える（現在は試用文字列のもの）
+		//QString hash = QString::fromLatin1(QCryptographicHash::hash(dlg.password().toUtf8(), QCryptographicHash::Sha256).toHex());
+		//if( hash != PASSWORD_HASH )
+		if( !checkAuthPassword(dlg.password()) )
+		{
 			QMessageBox::warning(this, tr("User Authentication"), tr("Incorrect password."));
 			g.m_userType = prevUserType;		//	認証失敗時は種別を元に戻す
 			return;

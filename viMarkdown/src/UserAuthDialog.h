@@ -12,7 +12,7 @@ class UserAuthDialog : public QDialog
 	Q_OBJECT
 
 public:
-	UserAuthDialog(QWidget *parent = nullptr);
+	UserAuthDialog(QWidget *parent = nullptr, bool authenticated = false);
 	~UserAuthDialog();
 
 	//QString	password() const;		//	入力されたパスワード
@@ -20,11 +20,15 @@ public:
 		return ui->lineEdit->text();
 	}
 
+	void	onModified();
+
 protected:
 	void accept() override;
 
-private:
+	void	updateMessLabel();
 
+private:
 	Ui::UserAuthDialogClass *ui;
+	bool	m_authenticated;
 };
 
