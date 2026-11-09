@@ -225,7 +225,9 @@ void MarkdownEditor::removeAllDummyLines() {
 // -------------------------------------------------------------
 const QColor COLOR_DIFF_MINIMAP_DELETED   = QColor("#e8e8e8"); // 明るいグレイ（削除）
 const QColor COLOR_DIFF_MINIMAP_ADDED   = QColor("#ffa0a0"); // 明るい赤（挿入）
-const QColor COLOR_DIFF_MINIMAP_MODIFIED = QColor("#ffffa0"); // 明るい黄色（変更）
+//const QColor COLOR_DIFF_MINIMAP_MODIFIED = QColor("#ffffa0"); // 明るい黄色（変更）
+//const QColor COLOR_DIFF_MINIMAP_MODIFIED = QColor("#ffff00"); // 黄色（変更）
+const QColor COLOR_DIFF_MINIMAP_MODIFIED = QColor("#e0e000"); // 少し暗い黄色（変更）
 #if 0
 void updateMapSub(QPainter &p, int x, int width, QTextDocument* doc, int totalLines, int mapHeight) {
 	if (totalLines <= 0) return;
