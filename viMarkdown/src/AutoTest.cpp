@@ -3553,7 +3553,7 @@ const QList<ViTestCase> viTestCases = {
 			"l", "《ab┃c》def\n",
 			"cXY", "X┃Ydef\n",		//	選択削除＋XY入力、Escで Y にスナップ
 			"u", "┃abcdef\n",		//	u 1回で削除＋挿入がまるごと復元される
-			"U", "X┃Ydef\n",		//	redo で再適用される
+			"U", "XY┃def\n",		//	redo で再適用される
 		}
 	},
 	// ------------------------------------------------------------------
