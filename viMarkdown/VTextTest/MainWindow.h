@@ -15,6 +15,8 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    void do_output(const QString& txt);
+
 private:
     Ui::MainWindowClass *ui;
 };
