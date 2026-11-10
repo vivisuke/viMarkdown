@@ -70,7 +70,7 @@
 |Search|FindWord|Search for word at cursor|Ctrl + F3|
 |Search|ClearHighlight|Clear search match highlights|Alt + F3|
 |Search|Replace...|Show search dialog|F4|
-|Search|grep...|Find in files|Shift + F4|
+|Search|Grep...|Find in files|Shift + F4|
 |Search|IgnoreCase|Case-insensitive search||
 |Search|Regexp|Regular expression search||
 
