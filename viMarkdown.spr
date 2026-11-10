@@ -1366,7 +1366,7 @@ SPR# 状 P Open Close ver     Type  概要
 1351 ◎ C 11/11 11/11 03215│問題│docs/menu.md に docs/ja/menu.md の修正を反映させる必要がある
 1352 ◎ C 11/11 11/11 03215│問題│docs/menu.md：Settings... の説明リンクが日本語アンカー（dialogs.md#設定ダイアログ）を指している（Muse）
 1353 ◎ C 11/11 11/11 03215│問題│docs：Grep メニュー項目名の表記が不統一（dialogs.md は「grep...」、menu.md は「Grep検索...」）→「Grep...」に統一（Muse）
-1354 ● C 11/11            │問題│
+1354 ◎ C 11/11 11/11 03215│問題│docs/dialog.md が無い（Muse）
 1355 ● C 11/11            │問題│
 1356 ● C 11/11            │問題│
 1357 ● C 11/11            │問題│
