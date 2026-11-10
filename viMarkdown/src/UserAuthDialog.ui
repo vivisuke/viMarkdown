@@ -30,28 +30,28 @@
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
-         <widget class="QRadioButton" name="radioButton_4">
+         <widget class="QRadioButton" name="radioButton_trial">
           <property name="text">
            <string>Trial use</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QRadioButton" name="radioButton">
+         <widget class="QRadioButton" name="radioButton_student">
           <property name="text">
            <string>Student</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QRadioButton" name="radioButton_2">
+         <widget class="QRadioButton" name="radioButton_noncommercial">
           <property name="text">
            <string>Non-commercial use</string>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QRadioButton" name="radioButton_3">
+         <widget class="QRadioButton" name="radioButton_commercial">
           <property name="text">
            <string>Commercial use</string>
           </property>
