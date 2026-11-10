@@ -119,7 +119,7 @@
 |Category|Item|Description|Shortcut|
 |---|---|---|---|
 |Other|Language...|Show language settings dialog|Alt + F8|
-|Other|Settings...|Show [Settings Dialog](dialogs.md#設定ダイアログ)|F8|
+|Other|Settings...|Show [Settings Dialog](dialogs.md#settings-dialog)|F8|
 |Other|Color Settings...|Show color settings dialog|Shift + F8|
 |Other|vi Keybindings|Enable/Disable vi commands||
 |Other|Help|Show help document|F1|
