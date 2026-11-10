@@ -3396,7 +3396,7 @@ void MainWindow::onMdEditCurPosChanged() {
 }
 //	パスワードが正規パスワードと一致するか照合する
 bool checkAuthPassword(const QString& password) {
-	static const QString PASSWORD_HASH = QStringLiteral("dea57880e02b5a6aca5c1eec6f09305010af19f0e5a534c7c467bd06cb6f3fcd");		//	undone: 正規パスワードのハッシュに置き換える（現在は試用文字列のもの）
+	static const QString PASSWORD_HASH = QStringLiteral("acf1983a74876e026faca476a03b7fc21dd85ce24aad212a1b7672602de9b776");		//	done: 正規パスワードのハッシュ
 	QString hash = QString::fromLatin1(QCryptographicHash::hash(password.toUtf8(), QCryptographicHash::Sha256).toHex());
 	return hash == PASSWORD_HASH;
 }

@@ -14,6 +14,7 @@
 
 //#include <QtCore>
 #include <cstdint>
+#include <type_traits>
 #include <memory>
 #include <vector>
 #include <iostream>
@@ -172,6 +173,13 @@ public:
 		memcpy((void *)buf, (void *)(m_data + ix), bufSize*sizeof(value_type));
 		return bufSize + copiedSize;
 	}
+	static value_type toLowerCase(value_type ch)	//	大文字小文字を区別しない検索用
+	{
+		if constexpr (std::is_integral_v<value_type>)
+			return (value_type)::tolower((int)ch);
+		else
+			return ch.toLower();	//	QChar 等
+	}
 	bool isMatch(pos_t ix, const value_type *pat, ssize_t sz) const
 	{
 		while( ix < size() ) {
@@ -185,7 +193,7 @@ public:
 	bool isMatchLC(pos_t ix, const value_type *pat, size_t sz) const
 	{
 		while( ix < size() ) {
-			if( *pat != tolower(operator[](ix)) ) break;
+			if( *pat != toLowerCase(operator[](ix)) ) break;
 			if( --sz <= 0 ) return true;
 			++pat;
 			++ix;
@@ -200,8 +208,8 @@ public:
 				++ix;
 			}
 		} else {
-			std::vector<value_type> lcpat(sz, 0);
-			for(pos_t i = 0; i < sz; ++i) lcpat[i] = tolower(pat[i]);
+			std::vector<value_type> lcpat(sz, value_type());
+			for(pos_t i = 0; i < sz; ++i) lcpat[i] = toLowerCase(pat[i]);
 			while( ix + sz < size() ) {
 				if( isMatchLC(ix, &lcpat[0], sz) ) return ix;
 				++ix;
