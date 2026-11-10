@@ -99,6 +99,8 @@
     <QtRcc Include="MainWindow.qrc"/>
     <QtUic Include="MainWindow.ui"/>
     <QtMoc Include="MainWindow.h"/>
+    <ClCompile Include="GapBufferTest.cpp"/>
+    <ClInclude Include="GapBufferTest.h"/>
     <ClCompile Include="MainWindow.cpp"/>
     <ClCompile Include="main.cpp"/>
 

@@ -1,11 +1,13 @@
 #include "MainWindow.h"
+#include "GapBufferTest.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindowClass())
 {
     ui->setupUi(this);
-    do_output("hello\n");
+    //do_output("hello\n");
+    do_test_gapBuffer(this);
 }
 
 MainWindow::~MainWindow()

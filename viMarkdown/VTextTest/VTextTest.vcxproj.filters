@@ -32,6 +32,12 @@
     <QtMoc Include="MainWindow.h">
       <Filter>Header Files</Filter>
     </QtMoc>
+    <ClCompile Include="GapBufferTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClInclude Include="GapBufferTest.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClCompile Include="MainWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
