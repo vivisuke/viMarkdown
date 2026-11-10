@@ -4,4 +4,5 @@
   </Configurations>
   <Project Path="benchmark/benchmark.vcxproj" Id="93f8dffb-ca41-4602-9c85-50ade3148ed4" />
   <Project Path="src/viMarkdown.vcxproj" Id="febe64db-6ef0-4bc8-8dfc-f347bd0a629f" />
+  <Project Path="VTextTest/VTextTest.vcxproj" Id="d7b77bbe-f2b8-4c83-b79e-f9ed6cae1186" />
 </Solution>
