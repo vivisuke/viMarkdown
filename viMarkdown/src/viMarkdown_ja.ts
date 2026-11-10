@@ -50,6 +50,22 @@ Do you want to save your changes?</source>
         <translation type="obsolete">ドキュメントが変更されています。
 変更を保存しますか？</translation>
     </message>
+    <message>
+        <location filename="MainWindow.cpp" line="3416"/>
+        <location filename="MainWindow.cpp" line="3421"/>
+        <source>User Authentication</source>
+        <translation>ユーザ認証</translation>
+    </message>
+    <message>
+        <location filename="MainWindow.cpp" line="3416"/>
+        <source>Incorrect password.</source>
+        <translation>パスワードが正しくありません。</translation>
+    </message>
+    <message>
+        <location filename="MainWindow.cpp" line="3421"/>
+        <source>You have been authenticated as a legitimate user.</source>
+        <translation>正規ユーザとして認証されました。</translation>
+    </message>
 </context>
 <context>
     <name>MainWindowClass</name>
@@ -1019,6 +1035,16 @@ Do you want to save your changes?</source>
         <source>Ctrl+Alt+C</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="MainWindow.ui" line="1390"/>
+        <source>&amp;UserAuthentication...</source>
+        <translation>ユーザ認証(&amp;U)...</translation>
+    </message>
+    <message>
+        <location filename="MainWindow.ui" line="1393"/>
+        <source>UserAuthentication</source>
+        <translation>ユーザ認証</translation>
+    </message>
 </context>
 <context>
     <name>ReplaceDialogClass</name>
@@ -1240,6 +1266,67 @@ Do you want to save your changes?</source>
     <message>
         <source>All completed tasks ★</source>
         <translation>全タスク完了で ★ を表示</translation>
+    </message>
+</context>
+<context>
+    <name>UserAuthDialog</name>
+    <message>
+        <location filename="UserAuthDialog.cpp" line="44"/>
+        <source>You are already authenticated.</source>
+        <translation>すでに認証済みです。</translation>
+    </message>
+    <message>
+        <location filename="UserAuthDialog.cpp" line="46"/>
+        <source>Please enter the password.</source>
+        <translation>パスワードを入力してください。</translation>
+    </message>
+    <message>
+        <location filename="UserAuthDialog.cpp" line="48"/>
+        <source>If you purchased a license, authenticate as Commercial use.</source>
+        <translation>ライセンスをご購入の場合は、商用利用として認証してください。</translation>
+    </message>
+</context>
+<context>
+    <name>UserAuthDialogClass</name>
+    <message>
+        <location filename="UserAuthDialog.ui" line="14"/>
+        <source>User Authentication</source>
+        <translation>ユーザ認証</translation>
+    </message>
+    <message>
+        <location filename="UserAuthDialog.ui" line="20"/>
+        <source>If you purchased a license, authenticate as Commercial use.</source>
+        <translation>ライセンスをご購入の場合は、商用利用として認証してください。</translation>
+    </message>
+    <message>
+        <location filename="UserAuthDialog.ui" line="29"/>
+        <source>User Type</source>
+        <translation>ユーザタイプ</translation>
+    </message>
+    <message>
+        <location filename="UserAuthDialog.ui" line="35"/>
+        <source>Trial use</source>
+        <translation>試用中</translation>
+    </message>
+    <message>
+        <location filename="UserAuthDialog.ui" line="42"/>
+        <source>Student</source>
+        <translation>学生</translation>
+    </message>
+    <message>
+        <location filename="UserAuthDialog.ui" line="49"/>
+        <source>Non-commercial use</source>
+        <translation>非商用利用</translation>
+    </message>
+    <message>
+        <location filename="UserAuthDialog.ui" line="56"/>
+        <source>Commercial use</source>
+        <translation>商用利用</translation>
+    </message>
+    <message>
+        <location filename="UserAuthDialog.ui" line="78"/>
+        <source>Password:</source>
+        <translation>パスワード：</translation>
     </message>
 </context>
 </TS>
