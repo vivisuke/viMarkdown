@@ -10,20 +10,22 @@ UserAuthDialog::UserAuthDialog(QWidget *parent, bool authenticated)
 {
 	ui->setupUi(this);
 	connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &UserAuthDialog::accept);
-	connect(ui->radioButton_3, &QRadioButton::toggled, ui->lineEdit, &QWidget::setEnabled);
-	connect(ui->radioButton_3, &QRadioButton::toggled, ui->label, &QWidget::setEnabled);
+	connect(ui->radioButton_commercial, &QRadioButton::toggled, ui->lineEdit, &QWidget::setEnabled);
+	connect(ui->radioButton_commercial, &QRadioButton::toggled, ui->label, &QWidget::setEnabled);
 	ui->lineEdit->setEnabled(g.m_userType == UT_COMMERCIAL);
 	ui->label->setEnabled(g.m_userType == UT_COMMERCIAL);
 	switch (g.m_userType) {
-	case UT_STUDENT:	ui->radioButton->setChecked(true);	break;
-	case UT_COMMERCIAL:	ui->radioButton_3->setChecked(true);	break;
-	default:			ui->radioButton_2->setChecked(true);	break;	//	UT_NONCOMMERCIAL
+	case UT_STUDENT:	ui->radioButton_student->setChecked(true);	break;
+	case UT_NONCOMMERCIAL:	ui->radioButton_noncommercial->setChecked(true);	break;
+	case UT_COMMERCIAL:	ui->radioButton_commercial->setChecked(true);	break;
+	default:			ui->radioButton_trial->setChecked(true);	break;	//	UT_TRIAL
 	}
 	//ui->lineEdit->setText(g.m_authPassword);
 	ui->lineEdit->setText(g.m_userType == UT_COMMERCIAL ? g.m_authPassword : QString());
-	connect(ui->radioButton, &QRadioButton::toggled, this, &UserAuthDialog::onModified);
-	connect(ui->radioButton_2, &QRadioButton::toggled, this, &UserAuthDialog::onModified);
-	connect(ui->radioButton_3, &QRadioButton::toggled, this, &UserAuthDialog::onModified);
+	connect(ui->radioButton_student, &QRadioButton::toggled, this, &UserAuthDialog::onModified);
+	connect(ui->radioButton_noncommercial, &QRadioButton::toggled, this, &UserAuthDialog::onModified);
+	connect(ui->radioButton_commercial, &QRadioButton::toggled, this, &UserAuthDialog::onModified);
+	connect(ui->radioButton_trial, &QRadioButton::toggled, this, &UserAuthDialog::onModified);
 	connect(ui->lineEdit, &QLineEdit::textChanged, this, &UserAuthDialog::onModified);
 	updateMessLabel();
 }
@@ -40,7 +42,7 @@ void UserAuthDialog::onModified() {
 void UserAuthDialog::updateMessLabel() {
 	if( m_authenticated )
 		ui->messLabel->setText(tr("You are already authenticated."));
-	else if( ui->radioButton_3->isChecked() )
+	else if( ui->radioButton_commercial->isChecked() )
 		ui->messLabel->setText(tr("Please enter the password."));
 	else
 		ui->messLabel->setText(tr("If you purchased a license, authenticate as Commercial use."));
@@ -52,11 +54,13 @@ void UserAuthDialog::accept() {
 	//	return;
 	//}
 	//	undone: ユーザタイプ保存
-	if( ui->radioButton->isChecked() )
+	if( ui->radioButton_student->isChecked() )
 		g.m_userType = UT_STUDENT;
-	else if( ui->radioButton_3->isChecked() )
+	else if( ui->radioButton_noncommercial->isChecked() )
+		g.m_userType = UT_NONCOMMERCIAL;
+	else if( ui->radioButton_commercial->isChecked() )
 		g.m_userType = UT_COMMERCIAL;
 	else
-		g.m_userType = UT_NONCOMMERCIAL;
+		g.m_userType = UT_TRIAL;
 	QDialog::accept();
 }
