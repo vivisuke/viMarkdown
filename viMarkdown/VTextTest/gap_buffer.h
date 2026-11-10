@@ -13,6 +13,7 @@
 #define		_HEADER_GAP_BUFFER_H
 
 //#include <QtCore>
+#include <cstdint>
 #include <memory>
 #include <vector>
 #include <iostream>
@@ -46,19 +47,19 @@ class gap_buffer
 	};
 public:
 	typedef Type value_type;
-#ifdef		_WIN64
-	typedef __int64 size_type;
-	typedef __int64 ssize_t;
-	typedef __int64 difference_type;	//	ギャップが無いとみなした場合のインデックス差
-	typedef __int64 index_type;			//	バッファインデックス [0, size()]
-	typedef __int64 pos_t;					//	バッファインデックス [0, size()]
-#else
-	typedef __int32 size_type;
-	typedef __int32 ssize_t;
-	typedef __int32 difference_type;	//	ギャップが無いとみなした場合のインデックス差
-	typedef __int32 index_type;			//	バッファインデックス [0, size()]
-	typedef __int32 pos_t;					//	バッファインデックス [0, size()]
-#endif
+	typedef int64_t size_type;
+	typedef int64_t ssize_t;
+	typedef int64_t difference_type;	//	ギャップが無いとみなした場合のインデックス差
+	typedef int64_t index_type;			//	バッファインデックス [0, size()]
+	typedef int64_t pos_t;				//	バッファインデックス [0, size()]
+
+
+
+
+
+
+
+
 	typedef Type& reference;
 	typedef const Type& const_reference;
 	typedef Type* pointer;
