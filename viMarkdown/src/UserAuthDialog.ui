@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>410</width>
-    <height>212</height>
+    <height>267</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +17,7 @@
    <item>
     <widget class="QLabel" name="messLabel">
      <property name="text">
-      <string>* If you purchased a license, authenticate as Commercial use.</string>
+      <string>If you purchased a license, authenticate as Commercial use.</string>
      </property>
     </widget>
    </item>
@@ -29,6 +29,13 @@
         <string>User Type</string>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <widget class="QRadioButton" name="radioButton_4">
+          <property name="text">
+           <string>Trial use</string>
+          </property>
+         </widget>
+        </item>
         <item>
          <widget class="QRadioButton" name="radioButton">
           <property name="text">
