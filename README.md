@@ -32,6 +32,8 @@ It is designed for researchers, engineers, writers, and STEM students who value 
 - [What'sNew in Ver 0.3](docs/WhatsNewV03.md)
 - [Help](docs/help.md)
 - [quickstart](docs/quickstart.md)
+- [Menu List](docs/menu.md)
+- [Dialogs List](docs/dialogs.md)
 ## License
 This app is published under a Source Available license.  
 Please refer to the [LICENSE](LICENSE) file for more details.  

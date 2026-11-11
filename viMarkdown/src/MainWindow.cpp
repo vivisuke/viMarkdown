@@ -3400,6 +3400,7 @@ bool checkAuthPassword(const QString& password) {
 	QString hash = QString::fromLatin1(QCryptographicHash::hash(password.toUtf8(), QCryptographicHash::Sha256).toHex());
 	return hash == PASSWORD_HASH;
 }
+
 void MainWindow::onAction_UserAuth() {
 	//qDebug() << "MainWindow::onAction_UserAuth()";
 	int prevUserType = g.m_userType;

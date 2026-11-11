@@ -774,7 +774,7 @@
      <normaloff>:/MainWindow/images/exit_to_app_48.png</normaloff>:/MainWindow/images/exit_to_app_48.png</iconset>
    </property>
    <property name="text">
-    <string>e&amp;xit</string>
+    <string>E&amp;xit</string>
    </property>
   </action>
   <action name="action_AsHTML">
