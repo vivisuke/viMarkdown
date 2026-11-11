@@ -3,6 +3,7 @@
 #include "TextDocument.h"
 #include "LineMgrTest.h"
 #include "VLineMgrTest.h"
+#include "TextDocumentTest.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -14,6 +15,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->action_PerformanceTest, &QAction::triggered, this, &MainWindow::onAction_PerformanceTest);
     connect(ui->action_TestLineMgr, &QAction::triggered, this, &MainWindow::onAction_TestLineMgr);
     connect(ui->action_TestVLineMgr, &QAction::triggered, this, &MainWindow::onAction_TestVLineMgr);
+    connect(ui->action_TestTextDocument, &QAction::triggered, this, &MainWindow::onAction_TestTextDocument);
 }
 
 MainWindow::~MainWindow()
@@ -49,4 +51,9 @@ void MainWindow::onAction_TestLineMgr()
 void MainWindow::onAction_TestVLineMgr()
 {
     do_test_vlineMgr(this);
+}
+
+void MainWindow::onAction_TestTextDocument()
+{
+    do_test_textDocument(this);
 }

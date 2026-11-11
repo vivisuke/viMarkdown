@@ -22,6 +22,7 @@ private slots:
     void onAction_PerformanceTest();
     void onAction_TestLineMgr();
     void onAction_TestVLineMgr();
+    void onAction_TestTextDocument();
 
 private:
     Ui::MainWindowClass *ui;
