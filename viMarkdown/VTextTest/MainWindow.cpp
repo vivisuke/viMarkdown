@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 #include "GapBufferTest.h"
+#include "TextDocument.h"
 #include "LineMgrTest.h"
 #include "VLineMgrTest.h"
 
