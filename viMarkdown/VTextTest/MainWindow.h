@@ -7,6 +7,8 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindowClass; };
 QT_END_NAMESPACE
 
+class TextEdit;
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -26,5 +28,6 @@ private slots:
 
 private:
     Ui::MainWindowClass *ui;
+    TextEdit *m_editor = nullptr;
 };
 

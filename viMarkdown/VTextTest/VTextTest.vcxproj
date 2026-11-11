@@ -92,12 +92,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="TextDocument.cpp" />
     <ClCompile Include="TextDocumentTest.cpp" />
+    <ClCompile Include="TextEdit.cpp" />
     <ClCompile Include="UndoMgr.cpp" />
     <ClCompile Include="VLineMgrTest.cpp" />
     <ClInclude Include="LineBlock.h" />
     <ClInclude Include="TextCursor.h" />
     <ClInclude Include="TextDocument.h" />
+    <ClInclude Include="TextEdit.h" />
     <ClInclude Include="UndoMgr.h" />
     <ClInclude Include="TextDocumentTest.h" />
     <ClInclude Include="VLineBlock.h" />

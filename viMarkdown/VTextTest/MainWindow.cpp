@@ -4,6 +4,7 @@
 #include "LineMgrTest.h"
 #include "VLineMgrTest.h"
 #include "TextDocumentTest.h"
+#include "TextEdit.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -11,6 +12,16 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     //do_output("hello\n");
+    m_editor = new TextEdit(this);
+    setCentralWidget(m_editor);
+    m_editor->setPlainText(QStringLiteral(
+        "TextEdit (自前テキストスタックの最小エディタ)\n"
+        "\n"
+        "The quick brown fox jumps over the lazy dog. 0123456789\n"
+        "あいうえお、かきくけこ、さしすせそ。日本語の行はウィンドウ幅で折り返されます。\n"
+        "\n"
+        "キー入力・選択・マウス・スクロール・Ctrl+Z が使えます。行間は setLineSpacing() で変更可能です。\n"));
+    m_editor->setFocus();
     connect(ui->action_AutoTest, &QAction::triggered, this, &MainWindow::onAction_AutoTest);
     connect(ui->action_PerformanceTest, &QAction::triggered, this, &MainWindow::onAction_PerformanceTest);
     connect(ui->action_TestLineMgr, &QAction::triggered, this, &MainWindow::onAction_TestLineMgr);
