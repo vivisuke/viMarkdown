@@ -84,5 +84,14 @@
     <ClInclude Include="TextDocumentTest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="LineBlock.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VLineBlock.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TextCursor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -203,14 +203,14 @@ public:
 	pos_t indexOf(const value_type *pat, size_t sz, pos_t ix = 0, bool ic = false) const
 	{
 		if( !ic ) {
-			while( ix + sz < size() ) {
+			while( ix + sz <= size() ) {
 				if( isMatch(ix, pat, sz) ) return ix;
 				++ix;
 			}
 		} else {
 			std::vector<value_type> lcpat(sz, value_type());
 			for(pos_t i = 0; i < sz; ++i) lcpat[i] = toLowerCase(pat[i]);
-			while( ix + sz < size() ) {
+			while( ix + sz <= size() ) {
 				if( isMatchLC(ix, &lcpat[0], sz) ) return ix;
 				++ix;
 			}
