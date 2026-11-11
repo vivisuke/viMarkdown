@@ -7,7 +7,8 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     //do_output("hello\n");
-    do_test_gapBuffer(this);
+    connect(ui->action_AutoTest, &QAction::triggered, this, &MainWindow::onAction_AutoTest);
+    connect(ui->action_PerformanceTest, &QAction::triggered, this, &MainWindow::onAction_PerformanceTest);
 }
 
 MainWindow::~MainWindow()
@@ -24,3 +25,13 @@ void MainWindow::do_output(const QString& txt)
     ui->plainTextEdit->setTextCursor(cursor);
 }
 
+
+void MainWindow::onAction_AutoTest()
+{
+    do_test_gapBuffer(this);
+}
+
+void MainWindow::onAction_PerformanceTest()
+{
+    do_perf_gapBuffer(this);
+}

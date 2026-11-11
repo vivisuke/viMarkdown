@@ -17,6 +17,10 @@ public:
 
     void do_output(const QString& txt);
 
+private slots:
+    void onAction_AutoTest();
+    void onAction_PerformanceTest();
+
 private:
     Ui::MainWindowClass *ui;
 };
