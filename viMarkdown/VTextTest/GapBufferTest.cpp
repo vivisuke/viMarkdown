@@ -1,6 +1,7 @@
 #include "GapBufferTest.h"
 #include "MainWindow.h"
 #include "gap_buffer.h"
+#include "PieceTable.h"
 
 #include <random>
 #include <QElapsedTimer>
@@ -32,7 +33,8 @@ static void verify(bool cond, const QString& what)
 	}
 }
 //	get_data で全内容を取り出す
-static QString contentByBulk(const GBuf& buf)
+template<typename Buf>
+static QString contentByBulk(const Buf& buf)
 {
 	QString s;
 	QChar chunk[1024];
@@ -47,7 +49,8 @@ static QString contentByBulk(const GBuf& buf)
 	return s;
 }
 //	operator[] で全内容を取り出す
-static QString contentByIndex(const GBuf& buf)
+template<typename Buf>
+static QString contentByIndex(const Buf& buf)
 {
 	QString s;
 	s.reserve((qsizetype)buf.size());
@@ -56,7 +59,8 @@ static QString contentByIndex(const GBuf& buf)
 	return s;
 }
 //	サイズと全内容（両経路）が期待値と一致するか
-static bool checkContent(const GBuf& buf, const QString& expected, const QString& what)
+template<typename Buf>
+static bool checkContent(const Buf& buf, const QString& expected, const QString& what)
 {
 	++g_tested_count;
 	QString bulk = contentByBulk(buf);
@@ -74,8 +78,10 @@ static bool checkContent(const GBuf& buf, const QString& expected, const QString
 
 //----------------------------------------------------------------------
 //	固定ケース
+template<typename Buf>
 static void test_fixed()
 {
+	typedef Buf GBuf;
 	//	空バッファ
 	output("  test: empty buffer\n");
 	{
@@ -404,8 +410,10 @@ static void test_fixed()
 
 //----------------------------------------------------------------------
 //	ランダムテスト（QString を参照モデルにする）
+template<typename Buf>
 static void test_random(uint64_t seed, int nOps)
 {
+	typedef Buf GBuf;
 	output(QString("  test: random (seed = %1, %2 ops)\n").arg(seed).arg(nOps));
 	std::mt19937_64 rng(seed);
 	static const QChar alphabet[] = {
@@ -490,29 +498,38 @@ static void test_random(uint64_t seed, int nOps)
 	}
 }
 
-void do_test_gapBuffer(MainWindow *mw)
+template<typename Buf>
+static void runAllTests(MainWindow *mw, const char *name)
 {
 	g_mw = mw;
 	g_tested_count = 0;
 	g_failed_count = 0;
-	output("\n# Test gap_buffer\n\n");
-	test_fixed();
+	output(QString("\n# Test %1\n\n").arg(name));
+	test_fixed<Buf>();
 	output(QString("  fixed cases: %1 failed / %2 tested.\n").arg(g_failed_count).arg(g_tested_count));
 	const uint64_t seeds[] = {1, 42, 20261110};
 	for( uint64_t seed : seeds )
-		test_random(seed, 3000);
-	output(QString("\nTest gap_buffer: %1 failed / %2 tested.\n\n")
-		.arg(g_failed_count).arg(g_tested_count));
+		test_random<Buf>(seed, 3000);
+	output(QString("\nTest %1: %2 failed / %3 tested.\n\n")
+		.arg(name).arg(g_failed_count).arg(g_tested_count));
+}
+
+void do_test_gapBuffer(MainWindow *mw)
+{
+	runAllTests< gap_buffer<QChar> >(mw, "gap_buffer");
+	runAllTests< piece_table<QChar> >(mw, "piece_table");
 }
 
 //----------------------------------------------------------------------
 //	gap_buffer<QChar> の性能計測
 //	目標規模：1行約100文字×100,000行＝約1,000万文字
 //----------------------------------------------------------------------
-void do_perf_gapBuffer(MainWindow *mw)
+template<typename Buf>
+static void runPerf(MainWindow *mw, const char *name)
 {
+	typedef Buf GBuf;
 	g_mw = mw;
-	output("\n# Performance gap_buffer\n\n");
+	output(QString("\n# Performance %1\n\n").arg(name));
 	QElapsedTimer timer;
 
 	//	1行＝99文字＋改行＝100文字の行データ
@@ -585,5 +602,35 @@ void do_perf_gapBuffer(MainWindow *mw)
 	output(QString("random insert+erase (%1 times x %2 chars): %3 ms\n")
 		.arg(nRandEdit).arg(line.size()).arg(timer.elapsed()));
 
-	output("\nPerformance gap_buffer: done.\n\n");
+	//	全置換： "abcde入ってる。"x10＋改行 の行を10万行作り、abcde→XYZ を全置換する（:%s/abcde/XYZ/g 相当）
+	{
+		QString unit = QString::fromUtf8("abcde入ってる。");
+		QString line2;
+		for( int i = 0; i < 10; ++i ) line2 += unit;
+		line2 += QChar('\n');
+		GBuf buf2;
+		for( int i = 0; i < nLines/100; ++i )
+			buf2.insert(buf2.size(), line2.constData(), line2.size());
+		QString pat = "abcde";
+		QString rep = "XYZ";
+		timer.restart();
+		pos_t pos = 0;
+		int nReplaced = 0;
+		while( (pos = buf2.indexOf(pat.constData(), (size_t)pat.size(), pos)) >= 0 ) {
+			buf2.erase((size_t)pos, (size_t)pat.size());
+			buf2.insert(pos, rep.constData(), rep.size());
+			pos += rep.size();
+			++nReplaced;
+		}
+		output(QString("replace all (abcde->XYZ, %1 places): %2 ms\n")
+			.arg(nReplaced).arg(timer.elapsed()));
+	}
+
+	output(QString("\nPerformance %1: done.\n\n").arg(name));
+}
+
+void do_perf_gapBuffer(MainWindow *mw)
+{
+	runPerf< gap_buffer<QChar> >(mw, "gap_buffer");
+	runPerf< piece_table<QChar> >(mw, "piece_table");
 }

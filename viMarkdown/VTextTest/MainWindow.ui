@@ -22,6 +22,7 @@
     </property>
     <addaction name="action_AutoTest" />
     <addaction name="action_PerformanceTest" />
+    <addaction name="action_TestLineMgr" />
    </widget>
    <addaction name="menu_Other" />
   </widget>
@@ -88,6 +89,11 @@
   <action name="action_PerformanceTest" >
    <property name="text" >
     <string>Performance Test</string>
+   </property>
+  </action>
+  <action name="action_TestLineMgr" >
+   <property name="text" >
+    <string>Test LineMgr</string>
    </property>
   </action>
  </widget>

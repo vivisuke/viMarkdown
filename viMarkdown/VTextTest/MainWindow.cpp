@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 #include "GapBufferTest.h"
+#include "LineMgrTest.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -9,6 +10,7 @@ MainWindow::MainWindow(QWidget *parent)
     //do_output("hello\n");
     connect(ui->action_AutoTest, &QAction::triggered, this, &MainWindow::onAction_AutoTest);
     connect(ui->action_PerformanceTest, &QAction::triggered, this, &MainWindow::onAction_PerformanceTest);
+    connect(ui->action_TestLineMgr, &QAction::triggered, this, &MainWindow::onAction_TestLineMgr);
 }
 
 MainWindow::~MainWindow()
@@ -34,4 +36,9 @@ void MainWindow::onAction_AutoTest()
 void MainWindow::onAction_PerformanceTest()
 {
     do_perf_gapBuffer(this);
+}
+
+void MainWindow::onAction_TestLineMgr()
+{
+    do_test_lineMgr(this);
 }

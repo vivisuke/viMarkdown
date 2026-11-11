@@ -35,7 +35,16 @@
     <ClCompile Include="GapBufferTest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="LineMgrTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClInclude Include="GapBufferTest.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LineMgrTest.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PieceTable.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClCompile Include="MainWindow.cpp">

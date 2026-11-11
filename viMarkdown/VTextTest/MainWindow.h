@@ -20,6 +20,7 @@ public:
 private slots:
     void onAction_AutoTest();
     void onAction_PerformanceTest();
+    void onAction_TestLineMgr();
 
 private:
     Ui::MainWindowClass *ui;

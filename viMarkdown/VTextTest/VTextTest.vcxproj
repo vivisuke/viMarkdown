@@ -101,6 +101,7 @@
     <QtMoc Include="MainWindow.h"/>
     <ClCompile Include="GapBufferTest.cpp"/>
     <ClInclude Include="GapBufferTest.h"/>
+    <ClInclude Include="PieceTable.h"/>
     <ClCompile Include="MainWindow.cpp"/>
     <ClCompile Include="main.cpp"/>
 
