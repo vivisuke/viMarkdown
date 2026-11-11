@@ -929,6 +929,13 @@ void MainWindow::restore_win() {
 	}
 	settings.endGroup();
 }
+void MainWindow::resizeEvent(QResizeEvent *event)
+{
+	QMainWindow::resizeEvent(event);
+	DocWidget *docWidget = getCurDocWidget();
+	if( docWidget != nullptr && docWidget->m_diffMode && !m_doing_diff )
+		m_diffTimer->start(500);	//	リサイズ終了後に1回だけ再diffする（v0.3 #1256）
+}
 void MainWindow::closeEvent(QCloseEvent *event) {
 	for(int ix = 0; ix < ui->tabWidget->count(); ++ix) {
 		DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(ix);

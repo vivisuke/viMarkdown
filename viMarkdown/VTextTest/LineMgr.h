@@ -23,6 +23,7 @@ public:
 	LineMgr() {
 		m_lines.push_back(0);	//	空テキストでも1行（開始位置0）
 	}
+	virtual ~LineMgr() = default;	//	VLineMgr が継承する
 
 	//	テキスト参照
 	pos_t size() const { return m_text.size(); }
@@ -31,7 +32,7 @@ public:
 	const gap_buffer<QChar>& text() const { return m_text; }
 
 	//	編集（行インデックスも同時に更新される）
-	void insert(pos_t pos, const QChar *data, pos_t len) {
+	virtual void insert(pos_t pos, const QChar *data, pos_t len) {
 		if( len <= 0 ) return;
 		if( pos < 0 ) pos = 0;
 		if( pos > m_text.size() ) pos = m_text.size();
@@ -44,10 +45,10 @@ public:
 				m_lines.insert(m_lines.gapIndex(), pos + i + 1);	//	新しい行の開始位置（真の座標で保持）
 		}
 	}
-	void insert(pos_t pos, QChar ch) {
+	virtual void insert(pos_t pos, QChar ch) {
 		insert(pos, &ch, 1);
 	}
-	void erase(pos_t pos, pos_t len) {
+	virtual void erase(pos_t pos, pos_t len) {
 		if( len <= 0 ) return;
 		if( pos < 0 ) {
 			len += pos;
@@ -66,7 +67,7 @@ public:
 		m_offset -= len;				//	ギャップ以降の行は len だけ前へずれる（遅延更新）
 		m_text.erase((size_t)pos, (size_t)len);
 	}
-	void clear() {
+	virtual void clear() {
 		m_text.clear();
 		m_lines.clear();
 		m_lines.push_back(0);

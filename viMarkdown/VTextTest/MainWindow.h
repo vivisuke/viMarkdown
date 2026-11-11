@@ -21,6 +21,7 @@ private slots:
     void onAction_AutoTest();
     void onAction_PerformanceTest();
     void onAction_TestLineMgr();
+    void onAction_TestVLineMgr();
 
 private:
     Ui::MainWindowClass *ui;
