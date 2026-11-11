@@ -92,7 +92,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="TextDocumentTest.cpp" />
     <ClCompile Include="VLineMgrTest.cpp" />
+    <ClInclude Include="TextDocument.h" />
+    <ClInclude Include="TextDocumentTest.h" />
     <ClInclude Include="VLineMgr.h" />
     <ClInclude Include="VLineMgrTest.h" />
     <QtRcc Include="MainWindow.qrc" />
