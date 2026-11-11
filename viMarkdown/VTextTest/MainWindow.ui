@@ -24,6 +24,7 @@
     <addaction name="action_PerformanceTest" />
     <addaction name="action_TestLineMgr" />
     <addaction name="action_TestVLineMgr" />
+    <addaction name="action_TestTextDocument" />
    </widget>
    <addaction name="menu_Other" />
   </widget>
@@ -100,6 +101,11 @@
   <action name="action_TestVLineMgr" >
    <property name="text" >
     <string>Test VLineMgr</string>
+   </property>
+  </action>
+  <action name="action_TestTextDocument" >
+   <property name="text" >
+    <string>Test TextDocument</string>
    </property>
   </action>
  </widget>
