@@ -1498,6 +1498,20 @@ static void expandRangeForNbsp(QTextCursor &cursor, QTextDocument *doc) {
 		cursor.setPosition(to, QTextCursor::KeepAnchor);
 	}
 }
+//	[#1295] プレビューでの削除で、削除対象が &nbsp; だったために行末に通常空白だけが残った場合は、
+//	最後の通常空白を &nbsp; に置き換え、正規形（行末空白列では最後の1個だけが &nbsp;）に戻す。
+static void renormalizeTrailingNbsp(MarkdownEditor *editor, QTextCursor &cursor) {
+	const QTextBlock block = cursor.block();
+	const int bt = blockType(block);
+	if( bt != BT_DEFAULT && bt != BT_HEADING && bt != BT_LIST && bt != BT_CHECKBOX && bt != BT_NUMLIST )
+		return;
+	const QString btext = block.text();
+	if( cursor.position() != block.position() + btext.size() ) return;	//	削除が行末で終わった場合のみ対象
+	if( !btext.endsWith(u' ') ) return;		//	行末が通常空白の場合のみ（&nbsp; は ';' 終端なので対象外）
+	cursor.setPosition(block.position() + btext.size() - 1);
+	cursor.setPosition(block.position() + btext.size(), QTextCursor::KeepAnchor);
+	editor->do_insertText(cursor, "&nbsp;");
+}
 void MainWindow::onTextRemovedAtPreview(int charsRemoved) {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
@@ -1554,6 +1568,7 @@ void MainWindow::onDel_pressed(bool ctrl) {
 			docWidget->m_editor->do_deleteText(cursor);
 		}
 	}
+	renormalizeTrailingNbsp(docWidget->m_editor, cursor);
 	docWidget->m_editor->setTextCursor(cursor);
 }
 void MainWindow::onEnter_pressed() {
@@ -1624,6 +1639,7 @@ void MainWindow::onBS_pressed(bool ctrl) {
 #endif
 		}
 	}
+	renormalizeTrailingNbsp(docWidget->m_editor, cursor);
 	docWidget->m_editor->setTextCursor(cursor);
 	//syncPreviewCursorWithEditor();
 }
