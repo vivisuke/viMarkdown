@@ -3646,6 +3646,34 @@ void MarkdownEditor::paintEvent(QPaintEvent *e) {
 				p.drawRect(cr.adjusted(1, 1, -2, -2));
 			}
 		}
+		// 差分単語強調：隣接する範囲の境界に1pxの空白を描き、連続した単語を区別する（v0.3 #1359）
+		if( m_diffMode ) {
+			if (const auto *ud = dynamic_cast<const DiffBlockUserData*>(b.userData())) {
+				const auto &rs = ud->ranges;
+				for (int i = 1; i < rs.size(); ++i) {
+					int boundary = rs[i].start;
+					if (rs[i - 1].start + rs[i - 1].length != boundary) continue;
+					if (boundary <= 0 || boundary >= s.size()) continue;
+					// 英字列に続く半角空白は単語の一部とみなし、その手前には空白を描かない（v0.3 #1359）
+					if (boundary + rs[i].length <= s.size()) {
+						bool nextIsSpace = true;
+						for (int k = 0; k < rs[i].length; ++k) {
+							if (s[boundary + k] != u' ') { nextIsSpace = false; break; }
+						}
+						if (nextIsSpace) continue;
+					}
+					QTextCursor cur(b);
+					cur.setPosition(b.position() + boundary);
+					QRect crb = cursorRect(cur);
+					QTextCursor curPrev(b);
+					curPrev.setPosition(b.position() + boundary - 1);
+					if (cursorRect(curPrev).top() != crb.top()) continue;	// 折り返し境界は対象外
+					QColor gapCol = isDummyLine(this, b) ? COLOR_DIFF_DELETED :
+									getDiff(this, b) == ADDED_LINE ? COLOR_DIFF_ADDED : COLOR_DIFF_MODIFIED;
+					p.fillRect(QRectF(crb.left() - 1, crb.top(), 1, crb.height()), gapCol);
+				}
+			}
+		}
 	}
 	if( !isReadOnly() ) {
 		QRect rect = cursorRect();
