@@ -34,7 +34,8 @@ extern ViStatus gvi;
 const QColor COLOR_DIFF_DELETED   = QColor("#e8e8e8"); // 明るいグレイ（削除）
 const QColor COLOR_DIFF_ADDED   = QColor("#ffecec"); // 明るい赤（挿入）
 const QColor COLOR_DIFF_MODIFIED = QColor("#ffffec"); // 明るい黄色（変更）
-const QColor COLOR_DIFF_GAP      = QColor("#ff9999"); // 単語強調より一段暗い赤（欠落位置。v0.3 #1363）
+//const QColor COLOR_DIFF_GAP      = QColor("#ff9999"); // 単語強調より一段暗い赤（欠落位置。v0.3 #1363）
+const QColor COLOR_DIFF_GAP      = QColor("#f08888"); // 単語強調よりもう一段暗い赤（欠落位置。v0.3 #1363）
 
 bool isDummyLine(MarkdownEditor* editor, const QTextBlock &block);
 int lineNumber(MarkdownEditor* editor, const QTextBlock &block);
@@ -3650,7 +3651,7 @@ void MarkdownEditor::paintEvent(QPaintEvent *e) {
 					QTextCursor cur(b);
 					cur.setPosition(b.position() + gp);
 					QRect crg = cursorRect(cur);
-					p.fillRect(QRectF(crg.left() - 1, crg.top(), 3, crg.height()), COLOR_WORD_ADDED);
+					p.fillRect(QRectF(crg.left() - 1, crg.top(), 3, crg.height()), COLOR_DIFF_GAP);
 				}
 			}
 		}
