@@ -5,6 +5,8 @@
 
 #include <random>
 #include <QElapsedTimer>
+#include <QTextCursor>
+#include <QTextDocument>
 
 //----------------------------------------------------------------------
 //	gap_buffer<QChar> の動作確認テスト
@@ -629,8 +631,47 @@ static void runPerf(MainWindow *mw, const char *name)
 	output(QString("\nPerformance %1: done.\n\n").arg(name));
 }
 
+//	QTextDocument の全置換（比較用）：runPerf の全置換ケースと同一条件
+//	（"abcde入ってる。"x10＋改行 の行を nLines/100 行、abcde→XYZ を QTextCursor で置換）
+static void perfReplaceAllQt(MainWindow *mw)
+{
+	g_mw = mw;
+	output(QString("\n# Performance QTextDocument (replace all only)\n\n"));
+	const int nLines = 100000;
+	QString unit = QString::fromUtf8("abcde入ってる。");
+	QString line2;
+	for( int i = 0; i < 10; ++i ) line2 += unit;
+	line2 += QChar('\n');
+	QString text;
+	text.reserve(line2.size() * (nLines/100));
+	for( int i = 0; i < nLines/100; ++i )
+		text += line2;
+	QTextDocument doc;
+	doc.setPlainText(text);
+	const QString pat = "abcde";
+	const QString rep = "XYZ";
+	QElapsedTimer timer;
+	timer.start();
+	QTextCursor cur(&doc);
+	cur.beginEditBlock();
+	int nReplaced = 0;
+	int from = 0;
+	while( true ) {
+		QTextCursor found = doc.find(pat, from);
+		if( found.isNull() ) break;
+		found.insertText(rep);
+		from = found.position();
+		++nReplaced;
+	}
+	cur.endEditBlock();
+	output(QString("replace all (abcde->XYZ, %1 places): %2 ms\n")
+		.arg(nReplaced).arg(timer.elapsed()));
+	output(QString("\nPerformance QTextDocument: done.\n\n"));
+}
+
 void do_perf_gapBuffer(MainWindow *mw)
 {
 	runPerf< gap_buffer<QChar> >(mw, "gap_buffer");
 	runPerf< piece_table<QChar> >(mw, "piece_table");
+	perfReplaceAllQt(mw);
 }

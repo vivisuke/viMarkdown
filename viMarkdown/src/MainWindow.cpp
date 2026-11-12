@@ -906,6 +906,14 @@ void MainWindow::setup_connections() {
 	connect(ui->outlineBar, &QDockWidget::visibilityChanged, this, &MainWindow::onOutlineBarVisibilityChanged);
 	connect(ui->calendarBar, &QDockWidget::visibilityChanged, this, &MainWindow::onCalendarBarVisibilityChanged);
 	connect(ui->outputBar, &QDockWidget::visibilityChanged, this, &MainWindow::onOutputBarVisibilityChanged);
+	//	ドッキングバーの表示/非表示でも diff 領域の大きさが変わるため、リサイズ時と同様に再diffする（v0.3 #1357）
+	for (QDockWidget *dock : findChildren<QDockWidget*>()) {
+		connect(dock, &QDockWidget::visibilityChanged, this, [this](bool) {
+			DocWidget *docWidget = getCurDocWidget();
+			if( docWidget != nullptr && docWidget->m_diffMode && !m_doing_diff )
+				m_diffTimer->start(500);
+		});
+	}
 	connect(ui->treeWidget, &QTreeWidget::currentItemChanged, this, &MainWindow::onTreeCurrentItemChanged);
 	//connect(ui->treeWidget, &QTreeWidget::itemDoubleClicked, this, &MainWindow::onTreeItemDoubleClicked);
 	connect(ui->treeWidget, &QTreeWidget::itemActivated, this, &MainWindow::onTreeItemActivated);				//	ダブルクリック or Enter 押下
