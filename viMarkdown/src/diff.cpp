@@ -636,6 +636,12 @@ void applyInlineHighlight(QTextBlock &block, const DiffBlockUserData *userData, 
     }
 }
 #endif
+
+
+
+
+
+
 std::vector<WordToken> tokenize(const QString &text) {
     std::vector<WordToken> tokens;
     int i = 0;
