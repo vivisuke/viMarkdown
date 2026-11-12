@@ -3655,13 +3655,17 @@ void MarkdownEditor::paintEvent(QPaintEvent *e) {
 					if (rs[i - 1].start + rs[i - 1].length != boundary) continue;
 					if (boundary <= 0 || boundary >= s.size()) continue;
 					// 単語＝トークン＋後続の半角空白。次範囲が半角空白だけなら前の単語の一部なので、その手前には空白を描かない（v0.3 #1361）
-					if (boundary + rs[i].length <= s.size()) {
+					// 次範囲がブロック末尾を越える場合（行末の空白＋改行が1トークンになる場合）は、ブロック内の部分で判定する
+					{
+						int chkEnd = qMin(boundary + rs[i].length, (int)s.size());
 						bool nextIsSpace = true;
-						for (int k = 0; k < rs[i].length; ++k) {
-							if (s[boundary + k] != u' ') { nextIsSpace = false; break; }
+						for (int k = boundary; k < chkEnd; ++k) {
+							if (s[k] != u' ') { nextIsSpace = false; break; }
 						}
 						if (nextIsSpace) continue;
 					}
+					// 同一トークン内の境界には空白を描かない（文字単位diffで1トークンが複数範囲に分割された場合。v0.3 #1361）
+					if (getCharType(s[boundary - 1]) == getCharType(s[boundary])) continue;
 					QTextCursor cur(b);
 					cur.setPosition(b.position() + boundary);
 					QRect crb = cursorRect(cur);
