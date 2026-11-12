@@ -3568,6 +3568,43 @@ void MarkdownEditor::paintEvent(QPaintEvent *e) {
 			}
 		}
 #endif
+		// diff 単語ハイライトを角丸矩形で描画（v0.3 #1359）。連続した単語どうしを区別できるよう、範囲ごとに描く
+		p.setRenderHint(QPainter::Antialiasing);
+		for (QTextBlock blk = firstVisibleBlock(); blk.isValid(); blk = blk.next()) {
+			QRectF br = blockBoundingRect(blk).translated(contentOffset());
+			if (br.top() > viewport()->height()) break; // 画面外なら終了
+			if( !blk.isVisible() ) continue;
+			const auto *userData = dynamic_cast<const DiffBlockUserData*>(blk.userData());
+			if( userData == nullptr ) continue;
+			QTextLayout *layout = blk.layout();
+			if( layout == nullptr ) continue;
+			for (const auto &range : userData->ranges) {
+				int rStart = range.start;
+				int rEnd = range.start + range.length;
+				for (int li = 0; li < layout->lineCount(); ++li) {
+					QTextLine line = layout->lineAt(li);
+					int s = qMax(rStart, line.textStart());
+					int e2 = qMin(rEnd, line.textStart() + line.textLength());
+					if( s >= e2 ) continue;
+					qreal x1 = line.cursorToX(s);
+					qreal x2 = line.cursorToX(e2);
+					QRectF rr(br.left() + x1, br.top() + line.y(), x2 - x1, line.height());
+#if 1
+					// 矩形：幅を1px狭く描き、連続した単語の間に1pxの空白を空ける（v0.3 #1359、角丸との比較用）
+					p.fillRect(rr.adjusted(0, 0, -1, 0), COLOR_WORD_ADDED);
+#else
+					// 角丸矩形（v0.3 #1359）
+					if( line.height() < 8 )
+						p.fillRect(rr, COLOR_WORD_ADDED);
+					else {
+						p.setPen(Qt::NoPen);
+						p.setBrush(COLOR_WORD_ADDED);
+						p.drawRoundedRect(rr, 4, 4);
+					}
+#endif
+				}
+			}
+		}
 	}
 	MarkdownBaseEdit::paintEvent(e); // テキストを普通に描画
 

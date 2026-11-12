@@ -33,18 +33,18 @@ public:
 		rehighlight(); // これを呼ぶことでドキュメント全体の highlightBlock が再実行される
 	}
 protected:
-	void highlightBlock(const QString &text) override {
-		if( m_highlightDiff ) {
-			QTextBlock block = currentBlock();
-			const auto *userData = dynamic_cast<const DiffBlockUserData*>(block.userData());
-            if (userData) {
-                QTextCharFormat format;
-                format.setBackground(COLOR_WORD_ADDED); 
-                for (const auto &range : userData->ranges) {
-                    setFormat(range.start, range.length, format);
-                }
-            }
-		}
+	void highlightBlock(const QString & /*text*/) override {
+		// diff 単語ハイライトは MarkdownEditor::paintEvent() で角丸矩形描画する（v0.3 #1359）ため、ここでは背景色を付けない
+
+
+
+
+
+
+
+
+
+
 	}
 public:
 	bool	m_highlightDiff = false;
