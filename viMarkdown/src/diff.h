@@ -39,5 +39,6 @@ public:
 class DiffBlockUserData : public QTextBlockUserData {
 public:
     QList<DiffRange> ranges;
+    QList<int> gaps;	// 相手側にだけある単語の欠落位置（ブロック内文字位置。v0.3 #1363）
 };
 

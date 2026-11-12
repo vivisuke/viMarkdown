@@ -682,6 +682,7 @@ void calculateAndSetWordDiff(QTextBlock block1, QTextBlock block2, const QString
     auto ses = d.getSes().getSequence();
     DiffBlockUserData *userData1 = nullptr;
     DiffBlockUserData *userData2 = nullptr;
+    QTextBlock head1 = block1, head2 = block2;	// 欠落位置の配分用に先頭ブロックを保持（v0.3 #1363）
     int offset1 = 0, offset2 = 0;
     for (const auto &item : ses) {
     	const WordToken &token = item.first;
@@ -719,6 +720,52 @@ void calculateAndSetWordDiff(QTextBlock block1, QTextBlock block2, const QString
     if (block2.isValid()) {
         block2.setUserData(userData2);
     }
+    // 欠落位置（相手側にだけある単語の位置）を各ブロックに記録する（v0.3 #1363）
+    // 連続した削除・追加は1か所として記録する
+    std::vector<int> gaps1, gaps2;	// 各テキスト内の文字位置
+    {
+        int pos1 = 0, pos2 = 0;
+        int prevType = dtl::SES_COMMON;
+        for (const auto &item : ses) {
+            const WordToken &token = item.first;
+            dtl::elemInfo info = item.second;
+            int sz = (int)token.text.size();
+            switch (info.type) {
+            case dtl::SES_COMMON:
+                pos1 += sz; pos2 += sz;
+                break;
+            case dtl::SES_DELETE:	// doc1 にだけある単語 → doc2 側の現在位置が欠落位置
+                if (prevType != dtl::SES_DELETE) gaps2.push_back(pos2);
+                pos1 += sz;
+                break;
+            case dtl::SES_ADD:		// doc2 にだけある単語 → doc1 側の現在位置が欠落位置
+                if (prevType != dtl::SES_ADD) gaps1.push_back(pos1);
+                pos2 += sz;
+                break;
+            }
+            prevType = info.type;
+        }
+    }
+    auto distributeGaps = [](QTextBlock block, const std::vector<int> &gaps, int textLen) {
+        int start = 0;	// block のテキスト内開始位置
+        size_t gi = 0;
+        while (block.isValid() && gi < gaps.size()) {
+            int bsize = block.text().size();
+            while (gi < gaps.size() && qMin(gaps[gi], textLen - 1) - start <= bsize) {
+                auto *ud = dynamic_cast<DiffBlockUserData*>(block.userData());
+                if (!ud) {
+                    ud = new DiffBlockUserData();
+                    block.setUserData(ud);
+                }
+                ud->gaps.append(qMin(gaps[gi], textLen - 1) - start);
+                ++gi;
+            }
+            start += bsize + 1;
+            block = block.next();
+        }
+    };
+    distributeGaps(head1, gaps1, (int)text1.size());
+    distributeGaps(head2, gaps2, (int)text2.size());
 }
 //void calculateAndSetCharDiff(QTextBlock block1, QTextBlock block2, const std::vector<QChar>& text1, const std::vector<QChar>& text2) {
 void calculateAndSetCharDiff(QTextBlock block1, QTextBlock block2, const QString& text1, const QString& text2) {
