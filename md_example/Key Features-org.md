@@ -5,7 +5,7 @@
   Allows inserting and deleting text directly within the preview pane, not just the editor. You can complete your editing tasks in a true WYSIWYG (What You See Is What You Get) manner.
 - **Vi Keybindings (Vi Commands) Support**
   Supports vi commands, enabling fast text editing and cursor navigation without ever having to move your hands from the home row.
-- Powerful Grep (Global Search) Functionality**
+- Powerful Grep (Search) Functionality**
   Instantly extract target text across multiple files or entire directories, strongly supporting efficient document search and bulk editing. strongly supporting efficient document search and bulk editing. 
 - **Outline-based Navigation**
   Easily keep track of the overall document flow and quickly jump to target sections, even in long-form writing. This supports highly efficient editing aligned with the document structure.
