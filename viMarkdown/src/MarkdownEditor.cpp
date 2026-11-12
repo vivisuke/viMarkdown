@@ -3060,6 +3060,43 @@ bool findTableHeader(QTextCursor &cursor) {
 		return false;
 }
 void MarkdownEditor::convert_CSV_MarkdownTable() {
+	QTextCursor selCursor = this->textCursor();
+	if( selCursor.hasSelection() ) {
+		// 選択範囲にかかる CSV ブロックをすべて変換する（v0.3 #1362）
+		int selStart = selCursor.selectionStart();
+		int selEnd = selCursor.selectionEnd();
+		QList<int> starts;	// CSV ブロック開始（フェンス行）位置
+		QTextCursor probe(document());
+		probe.setPosition(selStart);
+		if( findCSVBlock(probe) )	// 選択開始位置が CSV ブロック内にある場合
+			starts.append(probe.position());
+		QTextBlock block = document()->findBlock(selStart);
+		while( block.isValid() && block.position() < selEnd ) {
+			if( block.text().startsWith("```CSV", Qt::CaseInsensitive) ) {
+				if( starts.isEmpty() || starts.last() != block.position() )
+					starts.append(block.position());
+				// 閉じフェンスまで読み飛ばす
+				block = block.next();
+				while( block.isValid() && !block.text().startsWith("```") )
+					block = block.next();
+			}
+			if( block.isValid() )
+				block = block.next();
+		}
+		if( starts.isEmpty() ) return;
+		openUndoBlock();
+		QTextCursor bcursor(document());
+		bcursor.beginEditBlock();
+		for( int i = starts.size() - 1; i >= 0; --i ) {	// 後方から変換し、前の位置をずらさない
+			QTextCursor c(document());
+			c.setPosition(starts[i]);
+			setTextCursor(c);
+			convert_CSV_MarkdownTable();
+		}
+		bcursor.endEditBlock();
+		closeUndoBlock();
+		return;
+	}
 	QTextCursor cursor = this->textCursor();
 	if( !findCSVBlock(cursor) ) return;
 	int startPosition = cursor.position();
@@ -3106,6 +3143,48 @@ void MarkdownEditor::convert_CSV_MarkdownTable() {
 	setTextCursor(cursor);
 }
 void MarkdownEditor::convert_MarkdownTable_CSV() {
+	QTextCursor selCursor = this->textCursor();
+	if( selCursor.hasSelection() ) {
+		// 選択範囲にかかる GFM 表をすべて変換する（v0.3 #1362）
+		int selStart = selCursor.selectionStart();
+		int selEnd = selCursor.selectionEnd();
+		QList<int> tops;	// 各表の先頭行位置
+		QTextBlock block = document()->findBlock(selStart);
+		while( block.isValid() && block.position() < selEnd ) {
+			QStringList tokens;
+			if( isTableLine(block.text(), block.text(), tokens) ) {
+				// 表の先頭行まで遡る（選択が表の途中から始まる場合）
+				QTextBlock top = block;
+				while( top.previous().isValid() ) {
+					QStringList t2;
+					if( !isTableLine(top.previous().text(), top.previous().text(), t2) ) break;
+					top = top.previous();
+				}
+				if( tops.isEmpty() || tops.last() != top.position() )
+					tops.append(top.position());
+				// 表の末尾行まで読み飛ばす
+				while( block.next().isValid() ) {
+					QStringList t3;
+					if( !isTableLine(block.next().text(), block.next().text(), t3) ) break;
+					block = block.next();
+				}
+			}
+			block = block.next();
+		}
+		if( tops.isEmpty() ) return;
+		openUndoBlock();
+		QTextCursor bcursor(document());
+		bcursor.beginEditBlock();
+		for( int i = tops.size() - 1; i >= 0; --i ) {	// 後方から変換し、前の位置をずらさない
+			QTextCursor c(document());
+			c.setPosition(tops[i]);
+			setTextCursor(c);
+			convert_MarkdownTable_CSV();
+		}
+		bcursor.endEditBlock();
+		closeUndoBlock();
+		return;
+	}
 	QTextCursor cursor = this->textCursor();
 	if( !findTableHeader(cursor) ) return;
 	QTextBlock block = cursor.block();
