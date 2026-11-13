@@ -232,6 +232,7 @@ void MainWindow::do_cdy_moved(QTextCursor& cursor) {
 	}
 }
 bool do_fFtT(QTextCursor& cursor, QChar cmd, QChar ch, int rcnt, bool isRepeat = false) {
+	gvi.m_linewiseMoved = false;	//	f/F/t/T は文字単位モーション（#1373）
 	QTextBlock block = cursor.block();
 	const QString buf = block.text();
 	int ix = cursor.position() - block.position();		//	ブロック内インデックス
