@@ -3948,6 +3948,137 @@ const QList<ViTestCase> viTestCases = {
 	              "three"           // 先頭行へ戻る
 	    }
 	},
+	// 演算子＋f/t 追加分（v0.3 #1369、期待値は実 Vim 9.1 で検証済み）
+	{ "Delete by find (df) - Basic",
+	    "┃abc.def.ghi\n",
+	    {
+	        "df.", "┃def.ghi\n" // "abc." を削除（対象文字を含む）
+	    }
+	},
+	{ "Delete till (dt) - Basic",
+	    "┃abc.def.ghi\n",
+	    {
+	        "dt.", "┃.def.ghi\n" // "abc" を削除（対象文字は残る）
+	    }
+	},
+	{ "Delete by find (df) - With count",
+	    "┃a.b.c.d\n",
+	    {
+	        "d2f.", "┃c.d\n" // 2つ目の "." まで削除
+	    }
+	},
+	{ "Delete by find (df) - From middle of line",
+	    "abc.┃def.ghi\n",
+	    {
+	        "df.", "abc.┃ghi\n" // "def." を削除
+	    }
+	},
+	{ "Change by find (cf) - With typing",
+	    "┃abc.def\n",
+	    {
+	        "cf.X", "┃Xdef\n" // "abc." を削除し "X" を挿入
+	    }
+	},
+	{ "Change till (ct) - With typing",
+	    "┃abc.def\n",
+	    {
+	        "ct.XY", "X┃Y.def\n" // "abc" を削除し "XY" を挿入
+	    }
+	},
+	{ "Yank by find (yf) - Paste after cursor char",
+	    "┃abc.def\n",
+	    {
+	        "yf.", "┃abc.def\n", // "abc." をヤンク、カーソルは不動
+	        "p",  "aabc┃.bc.def\n" // カーソル文字の直後にペースト
+	    }
+	},
+	{ "Delete by find backwards (dF) - Basic",
+	    "abc.de┃f\n",
+	    {
+	        "dF.", "abc┃f\n" // ".de" を削除（対象文字を含み、カーソル文字は残る）
+	    }
+	},
+	{ "Delete by find backwards (dF) - Adjacent target",
+	    "abc.d┃ef\n",
+	    {
+	        "dF.", "abc┃def\n" // "." のみを削除
+	    }
+	},
+	{ "Delete till backwards (dT) - Basic",
+	    "abc.de┃f\n",
+	    {
+	        "dT.", "abc.┃f\n" // "de" を削除（対象文字もカーソル文字も残る）
+	    }
+	},
+	{ "Change by find backwards (cF) - No typing",
+	    "abc.de┃f\n",
+	    {
+	        "cF.", "ab┃cf\n" // ".de" を削除、カーソルは削除位置の直前へ
+	    }
+	},
+	{ "Yank till backwards (yT) - Paste",
+	    "abc.de┃f\n",
+	    {
+	        "yT.", "abc.┃def\n", // "de" をヤンク、カーソルはヤンク開始位置へ
+	        "p",   "abc.dd┃eef\n"
+	    }
+	},
+	{ "Change by find (cf) - Failed find is no-op",
+	    "┃abc def\n",
+	    {
+	        "cfz", "┃abc def\n", // 対象が無いので何も起きない（挿入モードにも入らない）
+	        "x",   "┃bc def\n"   // 通常モードのままであることの確認
+	    }
+	},
+	{ "Delete by find backwards (dF) - Failed find is no-op",
+	    "abc de┃f\n",
+	    {
+	        "dFz", "abc de┃f\n",
+	        "x",   "abc d┃e\n"
+	    }
+	},
+	{ "Delete till (dt) - Adjacent target",
+	    "┃a.c\n",
+	    {
+	        "dt.", "┃.c\n" // "a" を削除（対象が直後でも1文字消える）
+	    }
+	},
+	{ "Delete by repeat find (d;) - Repeat twice",
+	    "┃a.b.c\n",
+	    {
+	        "f.", "a┃.b.c\n",
+	        "0",  "┃a.b.c\n",
+	        "d;", "┃b.c\n",
+	        "d;", "┃c\n"
+	    }
+	},
+	{ "Delete by find (df) - Target on other line is no-op",
+	    "┃abc\n"
+	    "def\n",
+	    {
+	        "dff", "┃abc\n"
+	               "def\n" // f は行内のみ検索するので対象なし
+	    }
+	},
+	{ "Yank by find backwards (yF) - Paste",
+	    "abc.de┃f\n",
+	    {
+	        "yF.", "abc┃.def\n", // ".de" をヤンク、カーソルはヤンク開始位置へ
+	        "p",   "abc..d┃edef\n"
+	    }
+	},
+	{ "Change till backwards (cT) - With typing",
+	    "abc.de┃f\n",
+	    {
+	        "cT.X", "abc.┃Xf\n" // "de" を削除し "X" を挿入
+	    }
+	},
+	{ "Delete by find backwards (dF) - With count",
+	    "a.b.┃c\n",
+	    {
+	        "d2F.", "a┃c\n" // 後方2つ目の "." まで削除
+	    }
+	},
 #endif
 //	ex commands
 #if 1
