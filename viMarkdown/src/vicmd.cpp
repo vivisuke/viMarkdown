@@ -1646,7 +1646,8 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 			break;
 		}
 		case ';':		//	同方向再検索
-			do_fFtT(cursor, gvi.m_last_fFtT, gvi.m_last_fFtT_char, rcnt, true);
+			if( do_fFtT(cursor, gvi.m_last_fFtT, gvi.m_last_fFtT_char, rcnt, true) )
+				do_cdy_moved(cursor);	//	演算子＋; 対応（#1375）
 #if 0
 			switch( gvi.m_last_fFtT.unicode() ) {
 			case 'f':
@@ -1672,7 +1673,8 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 				c = QChar(u'T' + u't' - gvi.m_last_fFtT.unicode());
 				break;
 			}
-			do_fFtT(cursor, c, gvi.m_last_fFtT_char, rcnt, true);
+			if( do_fFtT(cursor, c, gvi.m_last_fFtT_char, rcnt, true) )
+				do_cdy_moved(cursor);	//	演算子＋, 対応（#1375）
 			break;
 		case '.':	//	redo
 			if( gvi.m_redoing || gvi.m_lastEditCommand.isEmpty() ) break;
