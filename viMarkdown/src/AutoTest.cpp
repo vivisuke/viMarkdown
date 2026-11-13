@@ -3610,6 +3610,129 @@ const QList<ViTestCase> viTestCases = {
 	        "dw", "a┃b\ndef"
 	    }
 	},
+	// 演算子＋大文字モーション（v0.3 #1366、#1364 の再発防止。期待値は実 Vim 9.1 で検証済み）
+	{ "Delete WORD (dW) - Basic",
+	    "┃abc def ghi\n",
+	    {
+	        "dW", "┃def ghi\n", // "abc " を削除、カーソルは "def" の先頭へ
+	        "dW", "┃ghi\n"      // "def " を削除、カーソルは "ghi" の先頭へ
+	    }
+	},
+	{ "Delete WORD (dW) - WORD with symbols",
+	    "┃foo-bar.baz qux xyz\n",
+	    {
+	        "dW", "┃qux xyz\n", // 記号を含む "foo-bar.baz " を1つのWORDとして削除
+	        "dW", "┃xyz\n"       // "qux " を削除
+	    }
+	},
+	{ "Delete to end of WORD (dE) - Basic",
+	    "┃abc def ghi\n",
+	    {
+	        "dE", "┃ def ghi\n", // "abc" を削除（空白は残る）
+	        "dE", "┃ ghi\n"      // 先頭の空白＋"def" を削除
+	    }
+	},
+	{ "Delete to end of WORD (dE) - WORD with symbols",
+	    "┃foo-bar.baz qux\n",
+	    {
+	        "dE", "┃ qux\n" // "foo-bar.baz" 全体を1つのWORDとして削除（空白は残る）
+	    }
+	},
+	{ "Delete WORD backwards (dB) - Basic",
+	    "abc def ┃ghi\n",
+	    {
+	        "dB", "abc ┃ghi\n", // "def " を削除、カーソルは "ghi" の先頭へ
+	        "dB", "┃ghi\n"      // "abc " を削除
+	    }
+	},
+	{ "Delete WORD backwards (dB) - WORD with symbols",
+	    "foo-bar.baz ┃qux\n",
+	    {
+	        "dB", "┃qux\n" // "foo-bar.baz " を1つのWORDとして削除
+	    }
+	},
+	{ "Change WORD (cW) - Basic",
+	    "┃abc def ghi\n",
+	    {
+	        "cW", "┃ def ghi\n" // "abc" のみを削除（空白は残る）
+	    }
+	},
+	{ "Change WORD (cW) - WORD with symbols",
+	    "┃foo-bar.baz qux\n",
+	    {
+	        "cWxyz", "xy┃z qux\n" // "foo-bar.baz" を削除し "xyz" を挿入
+	    }
+	},
+	{ "Change to end of WORD (cE) - Basic",
+	    "┃abc def ghi\n",
+	    {
+	        "cE", "┃ def ghi\n" // "abc" のみを削除（空白は残る）
+	    }
+	},
+	{ "Change to end of WORD (cE) - WORD with symbols",
+	    "┃foo-bar.baz qux\n",
+	    {
+	        "cExyz", "xy┃z qux\n" // "foo-bar.baz" を削除し "xyz" を挿入
+	    }
+	},
+	{ "Change WORD backwards (cB) - Basic",
+	    "abc def ┃ghi\n",
+	    {
+	        "cB", "abc ┃ghi\n" // "def " を削除、カーソルは削除位置へ
+	    }
+	},
+	{ "Change WORD backwards (cB) - With typing",
+	    "abc def ┃ghi\n",
+	    {
+	        "cBxyz", "abc xy┃zghi\n" // "def " を削除し "xyz" を挿入
+	    }
+	},
+	{ "Yank WORD (yW) - Paste after cursor",
+	    "┃foo bar\n",
+	    {
+	        "yW", "┃foo bar\n",     // テキスト・カーソル不変（"foo " がヤンクされる）
+	        "W",  "foo ┃bar\n",
+	        "p",  "foo bfoo┃ ar\n"  // カーソルはペーストした最終文字（空白）へ
+	    }
+	},
+	{ "Yank WORD (yW) - WORD with symbols",
+	    "┃foo-bar baz\n",
+	    {
+	        "yW", "┃foo-bar baz\n",        // "foo-bar " がヤンクされる（yw なら "foo" のみ）
+	        "W",  "foo-bar ┃baz\n",
+	        "p",  "foo-bar bfoo-bar┃ az\n" // カーソルはペーストした最終文字（空白）へ
+	    }
+	},
+	{ "Yank to end of WORD (yE) - Paste after cursor",
+	    "┃foo bar\n",
+	    {
+	        "yE", "┃foo bar\n",     // テキスト不変（"foo" がヤンクされる）
+	        "W",  "foo ┃bar\n",
+	        "p",  "foo bfo┃oar\n"   // カーソルはペーストした最終文字へ
+	    }
+	},
+	{ "Yank to end of WORD (yE) - WORD with symbols",
+	    "┃foo-bar baz\n",
+	    {
+	        "yE", "┃foo-bar baz\n",        // "foo-bar" がヤンクされる
+	        "W",  "foo-bar ┃baz\n",
+	        "p",  "foo-bar bfoo-ba┃raz\n"  // カーソルはペーストした最終文字へ
+	    }
+	},
+	{ "Yank WORD backwards (yB) - Paste after cursor",
+	    "abc def ┃ghi\n",
+	    {
+	        "yB", "abc ┃def ghi\n",     // "def " がヤンクされ、カーソルはヤンク開始位置（"def" の先頭）へ移動
+	        "p",  "abc ddef┃ ef ghi\n"  // カーソルはペーストした最終文字（空白）へ
+	    }
+	},
+	{ "Yank WORD backwards (yB) - WORD with symbols",
+	    "foo-bar.baz ┃qux\n",
+	    {
+	        "yB", "┃foo-bar.baz qux\n",        // "foo-bar.baz " がヤンクされ、カーソルは先頭へ移動
+	        "p",  "ffoo-bar.baz┃ oo-bar.baz qux\n" // カーソルはペーストした最終文字（空白）へ
+	    }
+	},
 	{ "No trailing newline - x on last character",
 	    "first\n"
 	    "secon┃d",
