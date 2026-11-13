@@ -2858,7 +2858,7 @@ const QList<ViTestCase> viTestCases = {
         }
     },
     // cw 詳細ケース：#if 0 で無効化されていたものを 2026-11-03 に有効化（期待値は実 Vim 9.1 で検証済み）
-    { "Change word (cw) - Basic",
+    { "Change word (cw) - Basic (delete only)",
         "┃abc def ghi\n",
         {
             "cw", "┃ def ghi\n"  // "abc" のみを削除（空白は残る）
@@ -3889,7 +3889,7 @@ const QList<ViTestCase> viTestCases = {
 	             "┃second"          // Undo で末尾改行なしの状態が正確に復元される
 	    }
 	},
-	{ "No trailing newline - undo after dd on last line",
+	{ "No trailing newline - undo after dd on last line (indented)",
 	    "first\n"
 	    "  sec┃ond",
 	    {
