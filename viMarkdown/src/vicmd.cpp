@@ -254,7 +254,8 @@ bool do_fFtT(QTextCursor& cursor, QChar cmd, QChar ch, int rcnt, bool isRepeat =
 		if( cmd== 'T' ) ++ix;
 		if( ix2 < 0 ) ix = ix0;		//	未発見の場合
 	}
-	if( ix != ix0 ) {
+	//	順方向 't' で対象が直後の場合、着地位置は変わらないが演算子範囲は1文字ある（#1376）
+	if( ix != ix0 || (ix2 >= 0 && cmd == 't' && gvi.m_operator != ' ') ) {
 		if( !isRepeat ) {
 			gvi.m_last_fFtT = cmd;
 			gvi.m_last_fFtT_char = ch;
