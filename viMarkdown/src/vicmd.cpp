@@ -584,7 +584,22 @@ void MainWindow::do_prefix_cmd(QChar cmd, QTextCursor& cursor, int rcnt, DocWidg
 	case 'g':
 		switch( cmd.unicode() ) {
 		case 'g':		//	gg
-			if( gvi.m_repeatCount == 0 ) {
+			if( gvi.m_operator != ' ' ) {	//	演算子＋gg は行単位モーションとして処理（#1372）
+				if( gvi.m_repeatCount == 0 ) {
+					cursor.movePosition(QTextCursor::Start, QTextCursor::KeepAnchor);
+				} else {
+					if( !(block = doc->findBlockByNumber(gvi.m_repeatCount - 1)).isValid() ) {
+						cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
+						if( cursor.block().text().isEmpty() )
+							cursor.movePosition(QTextCursor::PreviousBlock, QTextCursor::KeepAnchor);
+					} else
+						cursor.setPosition(block.position(), QTextCursor::KeepAnchor);
+				}
+				hat(cursor, QTextCursor::KeepAnchor);
+				gvi.m_linewiseMoved = true;
+				gvi.m_lastMoveCommand = "gg";
+				do_cdy_moved(cursor);
+			} else if( gvi.m_repeatCount == 0 ) {
 				cursor.movePosition(QTextCursor::Start);
 			} else {
 				if( !(block = doc->findBlockByNumber(gvi.m_repeatCount - 1)).isValid() ) {
@@ -594,7 +609,8 @@ void MainWindow::do_prefix_cmd(QChar cmd, QTextCursor& cursor, int rcnt, DocWidg
 				} else
 					cursor.setPosition(block.position());
 			}
-			hat(cursor);
+			if( gvi.m_operator == ' ' )
+				hat(cursor);
 			break;
 		}
 		break;
