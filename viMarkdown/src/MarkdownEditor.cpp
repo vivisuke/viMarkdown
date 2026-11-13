@@ -3368,6 +3368,7 @@ void MarkdownEditor::syncPreviewCursorFromEditor() {
 }
 void MarkdownEditor::syncDiffViewCursorFromEditor() {
 	if( m_processing ) return;
+	if( !m_docWidget->m_diffMode ) return;	//	diff モードでない間は同期しない（#1365）
 	MarkdownEditor *peerView = this == m_docWidget->m_editor ? m_docWidget->m_diffview : m_docWidget->m_editor;
 	m_processing = true;
 	peerView->m_processing = true;

@@ -533,6 +533,7 @@ void MainWindow::onAction_DiffMode(bool checked) {
 		docWidget->setupDiffMode();
 		QCoreApplication::processEvents();
 		do_diff();
+		docWidget->m_editor->syncDiffViewCursorFromEditor();	//	diff 進入時に比較先カーソルをエディタ位置へ同期（#1365）
 		QCoreApplication::processEvents();
 		//QTimer::singleShot(0, this, [this]() {
         //    do_diff();
