@@ -795,6 +795,9 @@ bool MainWindow::do_cdy(QChar cmd, QTextCursor& cursor) {
 				//cursor.deleteChar();
 				if( gvi.m_editor != nullptr )
 					gvi.m_editor->do_deleteText(cursor);
+				//	選択が行末まで達していた場合、カーソルを最後の文字の上に置く（#1377）
+				if( cursor.block().text().length() > 0 && cursor.positionInBlock() >= cursor.block().text().length() )
+					cursor.movePosition(QTextCursor::Left);
 				gvi.m_vMode = u' ';
 				gvi.m_editor->highlightVText(cursor);
 				return true;
