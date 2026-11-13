@@ -3557,6 +3557,103 @@ const QList<ViTestCase> viTestCases = {
 		}
 	},
 	// ------------------------------------------------------------------
+	//	Visual 逆方向選択 追加分（v0.3 #1370、期待値は実 Vim 9.1 で検証済み）
+	{ "Visual - backward char (h) and delete",
+		"abc┃def\n",
+		{
+			"vh", "ab《┃cd》ef\n",	// アンカー d を含む逆方向選択
+			"d", "ab┃ef\n",
+		}
+	},
+	{ "Visual - backward word (b) and delete",
+		"foo bar ┃baz\n",
+		{
+			"vb", "foo 《┃bar b》az\n",
+			"d", "foo ┃az\n",
+		}
+	},
+	{ "Visual - backward WORD (B) and delete",
+		"aaa bbb.┃ccc\n",
+		{
+			"vB", "aaa 《┃bbb.c》cc\n",
+			"d", "aaa ┃cc\n",
+		}
+	},
+	{ "Visual - backward to line start (0) and delete",
+		"abc┃def\n",
+		{
+			"v0", "《┃abcd》ef\n",
+			"d", "┃ef\n",
+		}
+	},
+	{ "Visual - backward to first non-blank (^) and delete",
+		"  ab┃cd\n",
+		{
+			"v^", "  《┃abc》d\n",
+			"d", "  ┃d\n",
+		}
+	},
+	{ "Visual - backward yank and paste",
+		"abc┃def\n",
+		{
+			"vh", "ab《┃cd》ef\n",
+			"y", "ab┃cdef\n",	// yank 後カーソルは選択開始位置へ
+			"p", "abcc┃ddef\n",
+		}
+	},
+	{ "Visual - backward change (c) with typing",
+		"abc┃def\n",
+		{
+			"vh", "ab《┃cd》ef\n",
+			"cXY", "abX┃Yef\n",
+		}
+	},
+	{ "Visual - backward across lines (k) and delete",
+		"one\n"
+		"t┃wo\n"
+		"three\n",
+		{
+			"vk", "o《┃ne\ntw》o\nthree\n",
+			"d", "o┃o\nthree\n",
+		}
+	},
+	{ "Visual - backward count (2h) and delete (x)",
+		"abcde┃f\n",
+		{
+			"v2h", "abc《┃def》\n",
+			"x", "ab┃c\n",
+		}
+	},
+	{ "Visual - backward word end (ge) and delete",
+		"foo bar ┃baz\n",
+		{
+			"vge", "foo ba《┃r b》az\n",
+			"d", "foo ba┃az\n",
+		}
+	},
+	{ "Visual - backward find (F) and delete",
+		"a.b.┃c\n",
+		{
+			"vF.", "a.b《┃.c》\n",
+			"d", "a.┃b\n",
+		}
+	},
+	{ "Visual - shrink selection (h) and delete",
+		"┃abcdef\n",
+		{
+			"v2l", "《ab┃c》def\n",
+			"h", "《a┃b》def\n",	// アンカー固定のまま選択が縮む
+			"d", "┃cdef\n",
+		}
+	},
+	{ "Visual - backward till (T) single char and delete",
+		"a.b.┃c\n",
+		{
+			"vT.", "a.b.《┃c》\n",	// 移動量ゼロでもアンカーの1文字が選択される
+			"d", "a.b┃.\n",
+		}
+	},
+	// ------------------------------------------------------------------
 	{ "dG with trailing newline (empty EOF line)",
 	    "one\n"
 	    "t┃wo\n"
