@@ -3999,7 +3999,7 @@ const QList<ViTestCase> viTestCases = {
 	    }
 	},
 	{ "Delete by find backwards (dF) - Adjacent target",
-	    "abc.d┃ef\n",
+	    "abc.┃def\n",
 	    {
 	        "dF.", "abc┃def\n" // "." のみを削除
 	    }

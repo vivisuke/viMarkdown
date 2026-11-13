@@ -263,7 +263,8 @@ bool do_fFtT(QTextCursor& cursor, QChar cmd, QChar ch, int rcnt, bool isRepeat =
 			cursor.setPosition(block.position() + ix);
 		else {
 			cursor.setPosition(block.position() + ix0);
-			cursor.setPosition(block.position() + ix + 1, QTextCursor::KeepAnchor);
+			//	順方向は対象文字を含むため終端は ix+1、逆方向はカーソル文字を含まないため終端は ix（#1374）
+			cursor.setPosition(block.position() + ix + (cmd == 'f' || cmd == 't' ? 1 : 0), QTextCursor::KeepAnchor);
 		}
 		return true;
 	} else
