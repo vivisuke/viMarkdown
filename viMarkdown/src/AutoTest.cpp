@@ -3657,6 +3657,136 @@ const QList<ViTestCase> viTestCases = {
 	        "cW", "┃ def ghi\n" // "abc" のみを削除（空白は残る）
 	    }
 	},
+	//----------------------------------------------------------------------
+	// 演算子＋モーション追加分（v0.3 #1368、期待値は実 Vim 9.1 で検証済み）
+	{ "Delete word backwards (db) - Basic",
+	    "abc def ┃ghi\n",
+	    {
+	        "db", "abc ┃ghi\n", // "def " を削除、カーソルは "ghi" の先頭へ
+	        "db", "┃ghi\n"      // "abc " を削除
+	    }
+	},
+	{ "Delete word backwards (db) - From middle of word",
+	    "abc de┃f ghi\n",
+	    {
+	        "db", "abc ┃f ghi\n" // "de" を削除（単語の途中から先頭まで）
+	    }
+	},
+	{ "Delete word backwards (db) - Punctuation and symbols",
+	    "foo.bar ┃baz\n",
+	    {
+	        "db", "foo.┃baz\n" // "bar " を削除（"." は別単語として残る）
+	    }
+	},
+	{ "Change word backwards (cb) - Basic",
+	    "abc def ┃ghi\n",
+	    {
+	        "cb", "abc┃ ghi\n" // "def " を削除、カーソルは削除位置の直前へ
+	    }
+	},
+	{ "Change word backwards (cb) - With typing",
+	    "abc def ┃ghi\n",
+	    {
+	        "cbxyz", "abc xy┃zghi\n" // "def " を削除し "xyz" を挿入
+	    }
+	},
+	{ "Change to end of word (ce) - Basic",
+	    "┃abc def ghi\n",
+	    {
+	        "ce", "┃ def ghi\n" // "abc" を削除（空白は残る）。cw と同じ結果
+	    }
+	},
+	{ "Change to end of word (ce) - From middle of word",
+	    "he┃llo world\n",
+	    {
+	        "ce", "h┃e world\n" // "llo" を削除。cw と同じ結果
+	    }
+	},
+	{ "Change to end of word (ce) - Punctuation and symbols",
+	    "┃foo->bar = 1;\n",
+	    {
+	        "ce", "┃->bar = 1;\n" // "foo" のみを削除
+	    }
+	},
+	{ "Yank word backwards (yb) - Paste after cursor",
+	    "abc def ┃ghi\n",
+	    {
+	        "yb", "abc ┃def ghi\n",     // "def " がヤンクされ、カーソルはヤンク開始位置へ移動
+	        "p",  "abc ddef┃ ef ghi\n"  // カーソルはペーストした最終文字（空白）へ
+	    }
+	},
+	{ "Yank word backwards (yb) - Punctuation and symbols",
+	    "foo.bar ┃baz\n",
+	    {
+	        "yb", "foo.┃bar baz\n",     // "bar " がヤンクされ、カーソルはヤンク開始位置へ移動
+	        "p",  "foo.bbar┃ ar baz\n"  // カーソルはペーストした最終文字（空白）へ
+	    }
+	},
+	{ "Delete to line start (d0) - Basic",
+	    "abc def ┃ghi\n",
+	    {
+	        "d0", "┃ghi\n" // 行頭からカーソル直前まで（"abc def "）を削除
+	    }
+	},
+	{ "Change to line start (c0) - With typing",
+	    "abc def ┃ghi\n",
+	    {
+	        "c0xyz", "xy┃zghi\n" // "abc def " を削除し "xyz" を挿入
+	    }
+	},
+	{ "Yank to line start (y0) - Paste after cursor",
+	    "abc ┃def ghi\n",
+	    {
+	        "y0", "┃abc def ghi\n",     // "abc " がヤンクされ、カーソルは行頭へ移動
+	        "p",  "aabc┃ bc def ghi\n"  // カーソルはペーストした最終文字（空白）へ
+	    }
+	},
+	{ "Delete to first line (dgg) - From middle line",
+	    "one\n"
+	    "tw┃o\n"
+	    "three\n"
+	    "four\n",
+	    {
+	        "dgg", "┃three\n"
+	               "four\n" // 1〜2行目を行単位で削除、カーソルは残った先頭行の行頭へ
+	    }
+	},
+	{ "Delete to first line (dgg) - From third line",
+	    "one\n"
+	    "two\n"
+	    "thr┃ee\n"
+	    "four\n",
+	    {
+	        "dgg", "┃four\n" // 1〜3行目を行単位で削除
+	    }
+	},
+	{ "Yank to last line (yG) - Paste below",
+	    "┃one\n"
+	    "two\n"
+	    "three\n",
+	    {
+	        "yG", "┃one\n"
+	              "two\n"
+	              "three\n",       // テキスト・カーソル不変（1〜3行目が行単位でヤンクされる）
+	        "G",  "one\n"
+	              "two\n"
+	              "┃three\n",
+	        "p",  "one\n"
+	              "two\n"
+	              "three\n"
+	              "┃one\n"
+	              "two\n"
+	              "three\n"        // 最終行の下に行単位で貼り付け
+	    }
+	},
+	{ "Delete to end of word (de) - Repeated",
+	    "┃abc def ghi\n",
+	    {
+	        "de", "┃ def ghi\n", // "abc" を削除（空白は残る）
+	        "de", "┃ ghi\n"      // 先頭の空白＋"def" を削除
+	    }
+	},
+//
 	{ "Change WORD (cW) - WORD with symbols",
 	    "┃foo-bar.baz qux\n",
 	    {
@@ -3678,7 +3808,7 @@ const QList<ViTestCase> viTestCases = {
 	{ "Change WORD backwards (cB) - Basic",
 	    "abc def ┃ghi\n",
 	    {
-	        "cB", "abc ┃ghi\n" // "def " を削除、カーソルは削除位置へ
+	        "cB", "abc┃ ghi\n" // "def " を削除、カーソルは削除位置へ
 	    }
 	},
 	{ "Change WORD backwards (cB) - With typing",

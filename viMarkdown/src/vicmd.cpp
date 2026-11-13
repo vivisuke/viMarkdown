@@ -79,6 +79,18 @@ bool isSpaceChar(QChar ch) {
 bool isNewline(QChar ch) {
 	return ch == u'\n'|| ch.unicode() == 0x2029;	//	0x2029: 改行コード
 }
+bool clampCwToCurWORDEnd(QTextCursor& cursor) {
+	QTextDocument *doc = cursor.document();
+	const int end = doc->characterCount();	//	-1 しない（moveToNextWordEnd と同様）
+	int pos = cursor.position();
+	if( pos >= end - 1 ) return false;
+	if( isNewline(doc->characterAt(pos)) ) return false;
+	bool onSpace = isSpaceChar(doc->characterAt(pos));
+	while( pos + 1 < end && !isNewline(doc->characterAt(pos + 1)) && isSpaceChar(doc->characterAt(pos + 1)) == onSpace )
+		++pos;
+	cursor.setPosition(pos, QTextCursor::KeepAnchor);
+	return true;
+}
 void moveLeftIfAtEol(QTextCursor& cursor, QTextCursor::MoveMode moveMode = QTextCursor::MoveAnchor) {
 	QTextBlock block = cursor.block();
 	if( cursor.position() != block.position() && cursor.position() == block.position() + block.text().size() )
@@ -1069,6 +1081,10 @@ void MainWindow::do_vi_motion(QChar cmd, QTextCursor& cursor, int rcnt, DocWidge
 		cmd = u'e';		//	cw は ce として処理
 		isCw = true;
 	}
+	if( gvi.m_operator == 'c' && cmd == u'W' ) {
+		cmd = u'E';		//	cW は cE として処理
+		isCw = true;
+	}
 	gvi.m_lastMoveCommand = cmd;
 	switch( cmd.unicode() ) {
 	case 'k': {
@@ -1171,20 +1187,20 @@ void MainWindow::do_vi_motion(QChar cmd, QTextCursor& cursor, int rcnt, DocWidge
 		for(int i = 0; i < rcnt; ++i) {
 			// 現在の WORD(非空白の連続)をスキップ
 			if( cursor.block().text().isEmpty() ) {	//	空行にいる場合
-				if( !cursor.movePosition(QTextCursor::Right) ) goto doneW;
+				if( !cursor.movePosition(QTextCursor::Right, moveMode) ) goto doneW;
 			} else {
 				while( cursor.position() < maxPos && !isSpaceChar(doc->characterAt(cursor.position())) )
-					if( !cursor.movePosition(QTextCursor::Right) ) goto doneW;
+					if( !cursor.movePosition(QTextCursor::Right, moveMode) ) goto doneW;
 			}
 			// 空白をスキップ。ただし「行頭かつ改行文字」(=空行)に来たら停止
 			while( cursor.position() < maxPos && isSpaceChar(doc->characterAt(cursor.position())) ) {
 				if( cursor.block().text().isEmpty() ) break;	//	空行にいる場合
-				if( !cursor.movePosition(QTextCursor::Right) ) goto doneW;
+				if( !cursor.movePosition(QTextCursor::Right, moveMode) ) goto doneW;
 			}
 			if( cursor.position() >= maxPos ) break;
 		}
 doneW:
-		if (cursor.position() == maxPos)
+		if (cursor.position() == maxPos && moveMode == QTextCursor::MoveAnchor)
 			cursor.movePosition(QTextCursor::Left);
 		break;
 	}
@@ -1205,18 +1221,24 @@ doneW:
 	case 'E': {
 		const int maxPos = doc->characterCount() - 1;
 		for(int i = 0; i < rcnt; ++i) {
-			if( !cursor.movePosition(QTextCursor::Right) ) break;	// すでに末尾にいる場合はこれ以上進めないため、
-			// 1. スペース文字をスキップ（次の単語の先頭に達するまで右へ）
-			while( cursor.position() < maxPos && isSpaceChar(doc->characterAt(cursor.position())) )
-				if( !cursor.movePosition(QTextCursor::Right) ) break;
-			// 2. スペース以外の文字をスキップ（単語を通り過ぎるまで右へ）
-			while( cursor.position() < maxPos && !isSpaceChar(doc->characterAt(cursor.position())) )
-				if( !cursor.movePosition(QTextCursor::Right) ) break;
-			// 単語を通り過ぎてスペース（または終端）の上にいるので、
-			// 1文字左に戻ることで「単語の最後の文字の上」にカーソルを合わせます。
-			cursor.movePosition(QTextCursor::Left);
-			if( cursor.position() >= maxPos ) break;
+			if( isCw && rcnt == 1 && clampCwToCurWORDEnd(cursor) ) {
+				//	cW の場合は自WORDの末尾までに制限（cw と同様）
+			} else {
+				if( !cursor.movePosition(QTextCursor::Right, moveMode) ) break;	// すでに末尾にいる場合はこれ以上進めないため、
+				// 1. スペース文字をスキップ（次の単語の先頭に達するまで右へ）
+				while( cursor.position() < maxPos && isSpaceChar(doc->characterAt(cursor.position())) )
+					if( !cursor.movePosition(QTextCursor::Right, moveMode) ) break;
+				// 2. スペース以外の文字をスキップ（単語を通り過ぎるまで右へ）
+				while( cursor.position() < maxPos && !isSpaceChar(doc->characterAt(cursor.position())) )
+					if( !cursor.movePosition(QTextCursor::Right, moveMode) ) break;
+				// 単語を通り過ぎてスペース（または終端）の上にいるので、
+				// 1文字左に戻ることで「単語の最後の文字の上」にカーソルを合わせます。
+				cursor.movePosition(QTextCursor::Left, moveMode);
+				if( cursor.position() >= maxPos ) break;
+			}
 		}
+		if( gvi.m_operator == u'c' || gvi.m_operator == u'd' || gvi.m_operator == u'y' )
+			cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor);	//	cE、dE、yE の場合：WORD末尾も含める（#1274）
 	    break;
 	}
     case 'b':
@@ -1231,11 +1253,11 @@ doneW:
 	case 'B':
 		for(int i = 0; i < rcnt; ++i) {
 			while( cursor.position() > 0 && isSpaceChar(doc->characterAt(cursor.position()-1)) ) {
-				cursor.movePosition(QTextCursor::Left);
+				cursor.movePosition(QTextCursor::Left, moveMode);
 				if( cursor.block().text().isEmpty() ) break;	//	空行にいる場合
 			}
 			while( cursor.position() > 0 && !isSpaceChar(doc->characterAt(cursor.position()-1)) ) {
-				cursor.movePosition(QTextCursor::Left);
+				cursor.movePosition(QTextCursor::Left, moveMode);
 			}
 			if( cursor.position() == 0 ) break;
 		}
