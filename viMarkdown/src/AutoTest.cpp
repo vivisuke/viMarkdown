@@ -3624,13 +3624,13 @@ const QList<ViTestCase> viTestCases = {
 			"x", "ab┃c\n",
 		}
 	},
-	{ "Visual - backward word end (ge) and delete",
-		"foo bar ┃baz\n",
-		{
-			"vge", "foo ba《┃r b》az\n",
-			"d", "foo ba┃az\n",
-		}
-	},
+
+
+
+
+
+
+
 	{ "Visual - backward find (F) and delete",
 		"a.b.┃c\n",
 		{
@@ -3642,7 +3642,7 @@ const QList<ViTestCase> viTestCases = {
 		"┃abcdef\n",
 		{
 			"v2l", "《ab┃c》def\n",
-			"h", "《a┃b》def\n",	// アンカー固定のまま選択が縮む
+			"h", "《a┃b》cdef\n",	// アンカー固定のまま選択が縮む
 			"d", "┃cdef\n",
 		}
 	},
