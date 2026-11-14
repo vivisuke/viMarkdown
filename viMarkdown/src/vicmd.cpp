@@ -1849,6 +1849,8 @@ void MainWindow::exitInsertMode(QTextCursor& cursor) {
 	}
 	if( gvi.m_editor != nullptr )
 		gvi.m_editor->closeAllUndoBlock();
+	if( gvi.m_editor != nullptr )
+		gvi.m_editor->savePrefferedX(cursor);	//	j/k の着地列を挿入終了位置に合わせる（#1378）
 	//##setOverwriteMode(false);
 	gvi.m_currentMode = ViMode::Normal;
 	//gvi.m_viCmdMode = true;
