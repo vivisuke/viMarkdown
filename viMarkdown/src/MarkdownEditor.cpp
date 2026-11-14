@@ -1776,15 +1776,51 @@ void MarkdownEditor::contextMenuEvent(QContextMenuEvent *event) {
         int wordLength = -1;
         QString clickedWordText;
         if (auto *userData = dynamic_cast<DiffBlockUserData*>(block.userData())) {
-            const auto &ranges = userData->ranges; 
-            for (const auto &range : ranges) {
+            const auto &ranges = userData->ranges;
+            const QString btext = block.text();
+            // 範囲（ブロック内部分）が半角空白だけかどうか（単語＝トークン＋後続の半角空白。v0.3 #1361 と同じ判定）
+            auto isHalfSpaceRange = [&btext](int start, int length) {
+                int end = qMin(start + length, (int)btext.size());
+                if (end <= start) return false;
+                for (int k = start; k < end; ++k) {
+                    if (btext[k] != u' ') return false;
+                }
+                return true;
+            };
+            int rangeIndex = -1;
+            for (int i = 0; i < ranges.size(); ++i) {
+                const auto &range = ranges[i];
                 if (posInBlock >= range.start && posInBlock < (range.start + range.length)) {
-                    isOnInsertedWord = true;
-                    wordStart = range.start;
-                    wordLength = range.length;
-                    clickedWordText = block.text().mid(range.start, range.length);
+                    rangeIndex = i;
+
+
+
                     break;
                 }
+                // 単語直後の半角空白（共通トークンで範囲外）をクリックした場合も、その単語の上とみなす（v0.3 #1381）
+                if (posInBlock == range.start + range.length && posInBlock < (int)btext.size() && btext[posInBlock] == u' ') {
+                    rangeIndex = i;
+                    break;
+                }
+            }
+            if (rangeIndex >= 0) {
+                // クリックしたのが単語直後の空白範囲なら、単語本体を単位にする（v0.3 #1381）
+                if (isHalfSpaceRange(ranges[rangeIndex].start, ranges[rangeIndex].length)
+                    && rangeIndex > 0
+                    && ranges[rangeIndex - 1].start + ranges[rangeIndex - 1].length == ranges[rangeIndex].start
+                    && !isHalfSpaceRange(ranges[rangeIndex - 1].start, ranges[rangeIndex - 1].length)) {
+                    --rangeIndex;
+                }
+                wordStart = ranges[rangeIndex].start;
+                wordLength = ranges[rangeIndex].length;
+                // 直後に隣接する半角空白だけの範囲は、単語の一部として単位に含める（v0.3 #1381）
+                if (rangeIndex + 1 < ranges.size()
+                    && ranges[rangeIndex + 1].start == wordStart + wordLength
+                    && isHalfSpaceRange(ranges[rangeIndex + 1].start, ranges[rangeIndex + 1].length)) {
+                    wordLength += ranges[rangeIndex + 1].length;
+                }
+                isOnInsertedWord = true;
+                clickedWordText = btext.mid(wordStart, wordLength);
             }
         }
         if (isOnInsertedWord && !clickedWordText.isEmpty()) {
@@ -1916,6 +1952,31 @@ void MarkdownEditor::reflectWordToPeer(const QTextBlock &block, int start, int l
                 if (diffIndex < peerRanges.size()) {
                     peerStart = peerRanges[diffIndex].start;
                     peerLength = peerRanges[diffIndex].length;
+                    // 反映元の単位が「単語＋後続の半角空白」なら、相手側も対応する空白範囲までを置換対象に含める（v0.3 #1381）
+                    if (start + length > myRanges[diffIndex].start + myRanges[diffIndex].length
+                        && diffIndex + 1 < peerRanges.size()
+                        && peerRanges[diffIndex + 1].start == peerStart + peerLength) {
+                        const QString ptext = block2.text();
+                        int chkStart = peerRanges[diffIndex + 1].start;
+                        int chkEnd = qMin(chkStart + peerRanges[diffIndex + 1].length, (int)ptext.size());
+                        bool nextIsSpace = chkEnd > chkStart;
+                        for (int k = chkStart; k < chkEnd; ++k) {
+                            if (ptext[k] != u' ') { nextIsSpace = false; break; }
+                        }
+                        if (nextIsSpace) peerLength += peerRanges[diffIndex + 1].length;
+                    }
+                } else {
+                    // 相手側に対応する範囲が無い（相手には無い単語）場合は、座標を流用せず、
+                    // 相手側の欠落位置（gaps）へ挿入する（v0.3 #1381）
+                    // 自分側の範囲が属するラン（隣接範囲のまとまり）の順序が、相手側 gaps の順序に対応する
+                    int runIndex = 0;
+                    for (int i = 1; i <= diffIndex; ++i) {
+                        if (myRanges[i].start != myRanges[i - 1].start + myRanges[i - 1].length) ++runIndex;
+                    }
+                    if (runIndex < peerUserData->gaps.size()) {
+                        peerStart = peerUserData->gaps[runIndex];
+                        peerLength = 0;
+                    }
                 }
             }
         }
