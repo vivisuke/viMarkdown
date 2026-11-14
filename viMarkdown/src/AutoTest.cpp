@@ -4176,6 +4176,100 @@ const QList<ViTestCase> viTestCases = {
 	        "d2F.", "a┃c\n" // 後方2つ目の "." まで削除
 	    }
 	},
+	//	挿入系ドットリピート・undo 単位 追加分（v0.3 #1371、期待値は実 Vim 9.1 で検証済み）
+	{ "Insert repeat (.) - Basic",
+		"┃ab\n"
+		"cd\n",
+		{
+			"ix", "┃xab\ncd\n",
+			"j", "xab\n┃cd\n",
+			".", "xab\n┃xcd\n",
+		}
+	},
+	{ "Insert repeat (.) - Count insert (3i)",
+		"┃\n",
+		{
+			"3ia", "aa┃a\n",
+			".", "aaaa┃aa\n",	// 元のカウントごと繰り返す
+		}
+	},
+	{ "Insert repeat (.) - Count override (2.)",
+		"┃ab\n",
+		{
+			"ix", "┃xab\n",
+			"2.", "x┃xxab\n",
+		}
+	},
+	{ "Insert repeat (.) - Append (a)",
+		"┃ab\n"
+		"cd\n",
+		{
+			"ax", "a┃xb\ncd\n",
+			"j", "axb\nc┃d\n",
+			".", "axb\ncd┃x\n",
+		}
+	},
+	{ "Insert repeat (.) - Change with typing (ce)",
+		"┃foo bar\n"
+		"baz qux\n",
+		{
+			"ceXY", "X┃Y bar\nbaz qux\n",
+			"j", "XY bar\nb┃az qux\n",
+			".", "XY bar\nbX┃Y qux\n",
+		}
+	},
+	{ "Insert with newline - Single undo unit",
+		"┃\n",
+		{
+			"iab\ncd", "ab\nc┃d\n",
+			"u", "┃\n",	// 改行を含む挿入も u 1回で戻る
+			"U", "ab\ncd┃\n",	// redo のカーソルは挿入文字列の直後（現行仕様）
+		}
+	},
+	{ "Undo units - Two insert sessions (different lines)",
+		"┃ab\n"
+		"cd\n",
+		{
+			"ix", "┃xab\ncd\n",
+			"j", "xab\n┃cd\n",
+			"iy", "xab\n┃ycd\n",
+			"u", "xab\n┃cd\n",	// 2回目の挿入だけ戻る
+			"u", "┃ab\ncd\n",
+		}
+	},
+	{ "Undo units - Two insert sessions (same line)",
+		"┃\n",
+		{
+			"ia", "┃a\n",
+			"Ab", "a┃b\n",
+			"u", "┃a\n",	// 同一行でも挿入セッションごとに undo 単位が分かれる
+			"u", "┃\n",
+		}
+	},
+	{ "Empty insert - Overwrites dot repeat",
+		"┃ab\n",
+		{
+			"ix", "┃xab\n",
+			"i", "┃xab\n",	// 空の挿入（何も入れず Esc）
+			".", "┃xab\n",	// 最後の変更が空の挿入になるため . は無動作（Vim 実測）
+		}
+	},
+	{ "Empty insert - No undo step",
+		"┃ab\n",
+		{
+			"ix", "┃xab\n",
+			"i", "┃xab\n",
+			"u", "┃ab\n",	// 空の挿入は undo 単位を作らず、x の挿入が戻る
+		}
+	},
+	{ "Insert repeat (.) - Open line (o)",
+		"┃one\n"
+		"two\n",
+		{
+			"oabc", "one\nab┃c\ntwo\n",
+			".", "one\nabc\nab┃c\ntwo\n",
+		}
+	},
 #endif
 //	ex commands
 #if 1
