@@ -15,6 +15,8 @@
 #include <QElapsedTimer>
 #include <QMimeData>
 #include <assert.h>
+#include <QApplication>
+#include <QInputMethod>
 #include "MarkdownPreview.h"
 #include "MainWindow.h"
 #include "DocWidget.h"
@@ -33,6 +35,30 @@ extern ViStatus gvi;
 
 uchar blockType(const QTextBlock &block);
 void setBlockType(QTextBlock block, uchar type);
+
+#ifdef	Q_OS_WIN
+static void setImePosition(QWidget *widget, const QRect& rect)	//	rect：トップレベルウィンドウのクライアント座標でのキャレット矩形
+{
+    HWND hwnd = (HWND)widget->winId();
+    HIMC himc = ImmGetContext(hwnd);
+    if (!himc) return;
+
+    // ── 変換候補ウィンドウの位置 ──────────────────
+    CANDIDATEFORM cf = {};
+    cf.dwIndex      = 0;
+    cf.dwStyle      = CFS_CANDIDATEPOS;
+    cf.ptCurrentPos = { rect.left(), rect.bottom() };
+    ImmSetCandidateWindow(himc, &cf);
+
+    // ── 変換中文字列（コンポジション）の位置 ────────
+    COMPOSITIONFORM compForm = {};
+    compForm.dwStyle      = CFS_POINT;
+    compForm.ptCurrentPos = { rect.left(), rect.top() };
+    ImmSetCompositionWindow(himc, &compForm);
+
+    ImmReleaseContext(hwnd, himc);
+}
+#endif
 
 #if 0
 class SvgImage : public QImage {
@@ -196,6 +222,12 @@ void MarkdownPreview::onCursorPosChanged() {
 	emit posContextChanged(context, acontext);
 	m_mainWindow->setCursorCyncing(false);
 	m_processing = false;
+	qApp->inputMethod()->update(Qt::ImCursorRectangle);	//	IME にカーソル位置を再通知
+#ifdef Q_OS_WIN
+	QRect r = cursorRect();
+	r.moveTopLeft(viewport()->mapTo(window(), r.topLeft()));	//	viewport 座標 → トップレベルウィンドウのクライアント座標
+	setImePosition(this, r);
+#endif
 }
 void MarkdownPreview::onContentsChanged(int position, int charsRemoved, int charsAdded) {
 	if( m_processing ) return;

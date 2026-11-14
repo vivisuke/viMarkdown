@@ -165,7 +165,7 @@ bool isTableHyphenLine(const QString& lnStr) {
 	return isTableHyphenLine(lnStr, tableAlign);
 }
 #ifdef	Q_OS_WIN
-void setImePosition(QWidget *widget, QPoint pos)
+void setImePosition(QWidget *widget, const QRect& rect)	//	rect：トップレベルウィンドウのクライアント座標でのキャレット矩形
 {
     HWND hwnd = (HWND)widget->winId();
     HIMC himc = ImmGetContext(hwnd);
@@ -175,13 +175,13 @@ void setImePosition(QWidget *widget, QPoint pos)
     CANDIDATEFORM cf = {};
     cf.dwIndex      = 0;
     cf.dwStyle      = CFS_CANDIDATEPOS;
-    cf.ptCurrentPos = { pos.x(), pos.y() };
+    cf.ptCurrentPos = { rect.left(), rect.bottom() };
     ImmSetCandidateWindow(himc, &cf);
 
     // ── 変換中文字列（コンポジション）の位置 ────────
     COMPOSITIONFORM compForm = {};
     compForm.dwStyle      = CFS_POINT;
-    compForm.ptCurrentPos = { pos.x(), pos.y() };
+    compForm.ptCurrentPos = { rect.left(), rect.top() };
     ImmSetCompositionWindow(himc, &compForm);
 
     ImmReleaseContext(hwnd, himc);
@@ -3486,14 +3486,14 @@ void MarkdownEditor::onCursorPosChanged() {
 	}
 	drawFoldLine(cursor, block);
 	qApp->inputMethod()->update(Qt::ImCursorRectangle);	//	IME にカーソル位置を再通知
-#if 0
+
 #ifdef Q_OS_WIN
 	QRect r = cursorRect();
-    // ビューポート座標 → ウィジェット座標
-    QPoint pos = viewport()->mapTo(this, r.bottomLeft());
-    setImePosition(this, pos);
+	r.moveTopLeft(viewport()->mapTo(window(), r.topLeft()));	//	viewport 座標 → トップレベルウィンドウのクライアント座標
+	setImePosition(this, r);
+
 #endif
-#endif
+
 }
 int MarkdownEditor::getVisualLineNumber(const QTextCursor &cursor) const {
 	int visualLineNum = 0;
