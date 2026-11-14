@@ -4223,7 +4223,7 @@ const QList<ViTestCase> viTestCases = {
 		{
 			"iab\ncd", "ab\nc┃d\n",
 			"u", "┃\n",	// 改行を含む挿入も u 1回で戻る
-			"U", "ab\ncd┃\n",	// redo のカーソルは挿入文字列の直後（現行仕様）
+			"U", "ab\nc┃d\n",	// redo のカーソルは挿入文字列の直後。ただし行末に達する場合は最後の文字の上（現行仕様）
 		}
 	},
 	{ "Undo units - Two insert sessions (different lines)",
