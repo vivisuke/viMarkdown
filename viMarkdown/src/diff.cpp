@@ -1407,7 +1407,7 @@ void MainWindow::do_merge_file(const DiffFile &file, bool wrapRight) {
 		QString msg = tr("Merge: cannot apply patch (%1)").arg(error);
 		statusBar()->showMessage(msg, 5000);
 		do_output(msg + "\n");
-		dumpLinesToOutput("buffer:", oldLines);
+		//dumpLinesToOutput("buffer:", oldLines);
 		return;		//	タブには元のテキストが残るだけ
 	}
 	QString newText = newLines.join('\n');
