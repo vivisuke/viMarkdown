@@ -136,6 +136,7 @@ QVariant MarkdownPreview::inputMethodQuery(Qt::InputMethodQuery query) const {
 		QRect r = cursorRect();
         int charWidth = fontMetrics().horizontalAdvance(QLatin1Char(' '));
         r.setWidth(charWidth > 0 ? charWidth : 10);
+        r.translate(viewport()->pos());	//	viewport 座標 → ウィジェット座標（#0274）
         //qDebug() << "IME query:" << r << " / cursorRect:" << cursorRect();
         return r;
     }

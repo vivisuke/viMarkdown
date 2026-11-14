@@ -562,6 +562,7 @@ QVariant MarkdownEditor::inputMethodQuery(Qt::InputMethodQuery query) const {
 		QRect r = cursorRect();
         int charWidth = fontMetrics().horizontalAdvance(QLatin1Char(' '));
         r.setWidth(charWidth > 0 ? charWidth : 10);
+        r.translate(viewport()->pos());	//	viewport 座標 → ウィジェット座標（#0274）
         //qDebug() << "IME query:" << r << " / cursorRect:" << cursorRect();
         return r;
     }
@@ -3484,6 +3485,7 @@ void MarkdownEditor::onCursorPosChanged() {
 		syncDiffViewCursorFromEditor();
 	}
 	drawFoldLine(cursor, block);
+	qApp->inputMethod()->update(Qt::ImCursorRectangle);	//	IME にカーソル位置を再通知
 #if 0
 #ifdef Q_OS_WIN
 	QRect r = cursorRect();
