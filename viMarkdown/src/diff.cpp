@@ -732,38 +732,38 @@ void calculateAndSetWordDiff(QTextBlock block1, QTextBlock block2, const QString
         block2.setUserData(userData2);
     }
     // 欠落位置（相手側にだけある単語の位置）を各ブロックに記録する（v0.3 #1363）
-    // 連続した削除・追加は1か所として記録する
-
+    // 変更区間（COMMON を挟まない削除・追加の連続）単位で記録する。
+    // 削除と追加が対になる分は置換であり欠落ではないため、余った分だけを欠落位置とする
     std::vector<int> gaps1, gaps2;	// 各テキスト内の文字位置
     {
         int pos1 = 0, pos2 = 0;
-        int prevType = dtl::SES_COMMON;
-
-
-
-
-
+        int runDel = 0, runAdd = 0;	// 変更区間内の削除・追加トークン数
+        auto flushRun = [&]() {
+            if (runDel > runAdd) gaps2.push_back(pos2);		// 削除が余る → doc2 側の現在位置が欠落位置
+            else if (runAdd > runDel) gaps1.push_back(pos1);	// 追加が余る → doc1 側の現在位置が欠落位置
+            runDel = runAdd = 0;
+        };
         for (const auto &item : ses) {
             const WordToken &token = item.first;
             dtl::elemInfo info = item.second;
             int sz = (int)token.text.size();
             switch (info.type) {
             case dtl::SES_COMMON:
-
+                flushRun();
                 pos1 += sz; pos2 += sz;
                 break;
-            case dtl::SES_DELETE:	// doc1 にだけある単語 → doc2 側の現在位置が欠落位置
-                if (prevType != dtl::SES_DELETE) gaps2.push_back(pos2);
+            case dtl::SES_DELETE:	// doc1 にだけある単語
+                ++runDel;
                 pos1 += sz;
                 break;
-            case dtl::SES_ADD:		// doc2 にだけある単語 → doc1 側の現在位置が欠落位置
-                if (prevType != dtl::SES_ADD) gaps1.push_back(pos1);
+            case dtl::SES_ADD:		// doc2 にだけある単語
+                ++runAdd;
                 pos2 += sz;
                 break;
             }
-            prevType = info.type;
-        }
 
+        }
+        flushRun();
     }
     auto distributeGaps = [](QTextBlock block, const std::vector<int> &gaps, int textLen) {
         int start = 0;	// block のテキスト内開始位置
