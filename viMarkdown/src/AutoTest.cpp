@@ -4564,6 +4564,20 @@ void MainWindow::onAction_TestViCommands() {
 	do_output(mess);
 }
 //----------------------------------------------------------------------
+/*
+{ "テスト名",
+  左テキスト, 右テキスト,          ← 初期文書 兼 最初の期待値
+  アクション, 左期待値, 右期待値,   ← 以後、この3つ組の繰り返し
+  ...
+}
+テキストは行ごとの文字列の連結で、各行の先頭1文字がマーカー：
+
+= 不変行、+ 追加行、! 変更行、- ダミー行（その側には存在しない行。実文書には入れない）
+アクション文字列：
+	先頭の >	＝右側に操作、< ＝左側（省略時も左）
+	x			＝カーソル位置の1文字削除、i...Esc ＝文字列挿入。カーソルは文書先頭（set_text が位置0に置く）固定
+*/
+
 QStringList g_diffTestCase[] = {
 #if 0
 	{"Basic diff test",
@@ -4589,7 +4603,7 @@ QStringList g_diffTestCase[] = {
 		"=ccc\n",
 	},
 #endif
-#if 1
+#if 0
 	{"Basic diff test",
 		"=aaa\n"
 		"-\n"		//	削除された２行目
@@ -4606,7 +4620,7 @@ QStringList g_diffTestCase[] = {
 		"=ccc\n",
 	},
 #endif
-#if 1
+#if 0
 	{"Basic diff test (2)",
 		"=aaa\n"
 		"+bbb\n"	//	挿入された２行目
