@@ -4679,6 +4679,7 @@ QStringList g_diffTestCase[] = {
 		"!《aa 》bbb\n",
 		"!《xyz 》bbb\n",
 	},
+//----------------------------------------------------------------------
 #if 0
 	{"Basic diff test",
 		"=aaa\n"
