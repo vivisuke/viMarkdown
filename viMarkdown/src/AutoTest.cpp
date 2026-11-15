@@ -42,6 +42,7 @@ extern ViStatus gvi;
 uchar blockType(const QTextBlock &block);
 void setBlockType(QTextBlock block, uchar type);
 bool isDummyLine(MarkdownEditor* editor, const QTextBlock &block);
+int getDiff(MarkdownEditor* editor, const QTextBlock &block);
 
 QChar g_flag_char[] = {
 	u'v',	//	PCF_VISIBLE = 0,	// プレビューに表示される
@@ -4583,21 +4584,22 @@ QStringList g_diffTestCase[] = {
 		"=aaa\n",
 		"=aaa\n",
 	},
+#if 1
 	{"Delete left/right with modify",
 		"=aaa\n"
-		"!bbb\n"
+		"!《bbb》《》\n"
 		"=ccc\n"
 		"+ddd\n",
 		"=aaa\n"
-		"!xxx\n"
+		"!《》《xxx》\n"
 		"=ccc\n"
 		"-\n",
 		"d4",
 		"=aaa\n"
-		"!bbb\n"
+		"!《bbb》《》\n"
 		"=ccc\n",
 		"=aaa\n"
-		"!xxx\n"
+		"!《》《xxx》\n"
 		"=ccc\n",
 		"Rd2",
 		"=aaa\n"
@@ -4606,6 +4608,76 @@ QStringList g_diffTestCase[] = {
 		"=aaa\n"
 		"-\n"
 		"=ccc\n",
+	},
+#endif
+	{"Char delete and undo redo",
+		"=aaa\n"
+		"=bbb\n",
+		"=aaa\n"
+		"=bbb\n",
+		"@1:2x",
+		"!《aa》\n"
+		"=bbb\n",
+		"!《aaa》\n"
+		"=bbb\n",
+		"u",
+		"=aaa\n"
+		"=bbb\n",
+		"=aaa\n"
+		"=bbb\n",
+		"U",
+		"!《aa》\n"
+		"=bbb\n",
+		"!《aaa》\n"
+		"=bbb\n",
+		"R@2:1x",
+		"!《aa》\n"
+		"!《bbb》\n",
+		"!《aaa》\n"
+		"!《bb》\n",
+	},
+	{"Insert word on left",
+		"=aaa bbb\n",
+		"=aaa bbb\n",
+		"L@1:5iXXX \x1b",
+		"!aaa 《XXX 》bbb\n",
+		"!aaa 《》bbb\n",
+	},
+	{"Insert word on right",
+		"=aaa bbb\n",
+		"=aaa bbb\n",
+		"R@1:5iXXX \x1b",
+		"!aaa 《》bbb\n",
+		"!aaa 《XXX 》bbb\n",
+	},
+	{"Join lines",
+		"!《aaa》\n"
+		"=bbb\n",
+		"!《aaabbb》\n"
+		"=bbb\n",
+		"J1",
+		"=aaabbb\n"
+		"-\n",
+		"=aaabbb\n"
+		"+bbb\n",
+		"RJ1",
+		"=aaabbb\n",
+		"=aaabbb\n",
+	},
+	{"Unequal modify lines",
+		"!《aaa》\n"
+		"!《bbb》\n"
+		"=ccc\n",
+		"!《xxx》《》\n"
+		"-\n"
+		"=ccc\n",
+	},
+	{"Replace word before space",
+		"!《aaa 》bbb\n",
+		"!《xyz 》bbb\n",
+		"@1:1x",
+		"!《aa 》bbb\n",
+		"!《xyz 》bbb\n",
 	},
 #if 0
 	{"Basic diff test",
@@ -4674,8 +4746,12 @@ void set_text(MarkdownEditor* editor, const QString& text) {
 	//if( text.back() == "\n" )
 	//	lst.pop_back();		//	余分な改行のみ最終行削除
 	for(const auto t: lst) {
-		if( !t.startsWith('-') )	//	削除行でなければ、
-			cursor.insertText(t.mid(1));
+		if( !t.startsWith('-') ) {	//	削除行でなければ、
+			QString t2 = t.mid(1);
+			t2.remove(u'《');	//	範囲指定の括弧は文書には入れない
+			t2.remove(u'》');
+			cursor.insertText(t2);
+		}
 	}
 	cursor.setPosition(0);
 	editor->setTextCursor(cursor);
@@ -4847,18 +4923,251 @@ bool do_action(MarkdownEditor* editor, MarkdownEditor* diffview, const QString& 
 	error = QStringLiteral("unknown action format");
 	return false;
 }
+//	期待値テキストを行ごとのリストに分割する
+static QStringList splitDiffRows(const QString& text) {
+	return text.split(QRegularExpression("(?<=\\n)"), Qt::SkipEmptyParts);
+}
+//	期待値の1行から、マーカーと末尾の改行を除いた本文を取り出す
+static QString diffRowBody(const QString& row) {
+	QString body = row.mid(1);
+	if( body.endsWith(u'\n') ) body.chop(1);
+	return body;
+}
+struct DiffExpect {
+	QString plain;					//	《》を取り除いた本文
+	QList<QPair<int, int>> ranges;	//	強調範囲（開始・長さ、いずれもコードポイント単位）
+	QList<int> gaps;				//	欠落位置（コードポイント単位）
+};
+//	期待値の行本文を解析し、強調範囲と欠落位置を取り出す。《》の対応が不正な場合は false
+static bool parseDiffExpect(const QString& body, DiffExpect& out) {
+	out.plain = body;
+	out.plain.remove(u'《');
+	out.plain.remove(u'》');
+	out.ranges.clear();
+	out.gaps.clear();
+	int cp = 0;		//	コードポイント単位の現在位置
+	int i = 0;
+	while( i < body.size() ) {
+		if( body[i] == u'《' ) {
+			int j = i + 1;
+			while( j < body.size() && body[j] != u'》' ) {
+				if( body[j] == u'《' ) return false;	//	ネストは不可
+				++j;
+			}
+			if( j >= body.size() ) return false;		//	閉じられていない
+			int innerCp = codePointCount(body.mid(i + 1, j - i - 1));
+			if( innerCp == 0 )
+				out.gaps.append(cp);
+			else
+				out.ranges.append({cp, innerCp});
+			cp += innerCp;
+			i = j + 1;
+		} else if( body[i] == u'》' ) {
+			return false;	//	対応する 《 が無い
+		} else {
+			i += (i + 1 < body.size() && body[i].isHighSurrogate() && body[i + 1].isLowSurrogate()) ? 2 : 1;
+			++cp;
+		}
+	}
+	return true;
+}
+//	《...》で囲まれた部分（中身ごと）と《》を取り除いた残りを返す
+static QString stripDiffRanges(const QString& body) {
+	QString out;
+	bool in = false;
+	for(int i = 0; i < body.size(); ++i) {
+		if( body[i] == u'《' )
+			in = true;
+		else if( body[i] == u'》' )
+			in = false;
+		else if( !in )
+			out += body[i];
+	}
+	return out;
+}
+//	期待値ペアの自己整合性チェック（lint）。不正な場合は false を返し、error に理由を格納する
+static bool lint_diff_pair(const QString& leftText, const QString& rightText, QString& error) {
+	auto lrows = splitDiffRows(leftText);
+	auto rrows = splitDiffRows(rightText);
+	if( lrows.size() != rrows.size() ) {
+		error = QStringLiteral("left/right line counts differ");
+		return false;
+	}
+	auto isMarker = [](QChar c) { return c == u'=' || c == u'+' || c == u'!' || c == u'-'; };
+	for(int r = 0; r < lrows.size(); ++r) {
+		QChar lm = lrows[r][0], rm = rrows[r][0];
+		if( !isMarker(lm) || !isMarker(rm) ) {
+			error = QString("bad line marker at row %1").arg(r + 1);
+			return false;
+		}
+		bool pairOK = (lm == u'+' && rm == u'-') || (lm == u'-' && rm == u'+')
+			|| (lm == u'!' && rm == u'!') || (lm == u'=' && rm == u'=')
+			|| (lm == u'!' && rm == u'-') || (lm == u'-' && rm == u'!');
+		if( !pairOK ) {
+			error = QString("marker mismatch at row %1").arg(r + 1);
+			return false;
+		}
+		QString lbody = diffRowBody(lrows[r]);
+		QString rbody = diffRowBody(rrows[r]);
+		if( (lm == u'-' && !lbody.isEmpty()) || (rm == u'-' && !rbody.isEmpty()) ) {
+			error = QString("dummy line has text at row %1").arg(r + 1);
+			return false;
+		}
+		if( lm == u'=' ) {
+			if( lbody.contains(u'《') || lbody.contains(u'》') || rbody.contains(u'《') || rbody.contains(u'》') ) {
+				error = QString("《》 on = line at row %1").arg(r + 1);
+				return false;
+			}
+			if( lbody != rbody ) {
+				error = QString("= lines differ at row %1").arg(r + 1);
+				return false;
+			}
+		}
+		if( (lm == u'+' && (lbody.contains(u'《') || lbody.contains(u'》')))
+			|| (rm == u'+' && (rbody.contains(u'《') || rbody.contains(u'》'))) ) {
+			error = QString("《》 on + line at row %1").arg(r + 1);
+			return false;
+		}
+		if( lm == u'!' || rm == u'!' ) {
+			DiffExpect le, re;
+			if( !parseDiffExpect(lbody, le) || !parseDiffExpect(rbody, re) ) {
+				error = QString("bad 《》 pairing at row %1").arg(r + 1);
+				return false;
+			}
+			if( lm == u'!' && rm == u'!' ) {
+				if( le.plain == re.plain ) {
+					error = QString("! lines have identical text at row %1").arg(r + 1);
+					return false;
+				}
+				if( le.ranges.isEmpty() && le.gaps.isEmpty() && re.ranges.isEmpty() && re.gaps.isEmpty() ) {
+					error = QString("! line without ranges or gaps at row %1").arg(r + 1);
+					return false;
+				}
+				if( stripDiffRanges(lbody) != stripDiffRanges(rbody) ) {
+					error = QString("common parts of ! lines differ at row %1").arg(r + 1);
+					return false;
+				}
+			}
+		}
+	}
+	return true;
+}
+//	実測の diff 状態を、期待値と同じ記法のテキストに変換する（失敗時のダンプ用）
+static QString dump_diff_side(MarkdownEditor* editor) {
+	QList<QTextBlock> blocks;
+	for(QTextBlock b = editor->document()->begin(); b.isValid(); b = b.next())
+		blocks.append(b);
+	if( blocks.size() > 1 && blocks.last().text().isEmpty() )
+		blocks.removeLast();	//	末尾改行に対応する余分な最終ブロックは除く
+	QString out;
+	for(const auto& block: blocks) {
+		if( isDummyLine(editor, block) ) {
+			out += "-\n";
+			continue;
+		}
+		QString text = block.text();
+		int diff = getDiff(editor, block);
+		QChar marker = diff == 0 ? u'=' : diff == MODIFIED_LINE ? u'!' : u'+';
+		if( marker != u'!' ) {
+			out += marker + text + "\n";
+			continue;
+		}
+		//	変更行：範囲と欠落位置を《》で表す（実測側は行の長さで切り取る）
+		QList<QPair<int, int>> ranges;
+		QList<int> gaps;
+		if( auto *ud = dynamic_cast<DiffBlockUserData*>(block.userData()) ) {
+			int textLen = (int)text.size();
+			for(const auto& r: ud->ranges) {
+				int start = qMin(r.start, textLen);
+				int end = qMin(r.start + r.length, textLen);
+				ranges.append({start, end - start});
+			}
+			for(int g: ud->gaps)
+				gaps.append(qMin(g, textLen));
+		}
+		QString annotated;
+		int ri = 0, gi = 0, openEnd = -1;
+		for(int pos = 0; pos <= text.size(); ++pos) {
+			if( openEnd == pos ) {
+				annotated += u'》';
+				openEnd = -1;
+			}
+			while( gi < gaps.size() && gaps[gi] == pos ) {
+				annotated += "《》";
+				++gi;
+			}
+			if( ri < ranges.size() && ranges[ri].first == pos ) {
+				annotated += u'《';
+				openEnd = pos + ranges[ri].second;
+				++ri;
+			}
+			if( pos < text.size() )
+				annotated += text[pos];
+		}
+		if( openEnd >= 0 )
+			annotated += u'》';
+		out += marker + annotated + "\n";
+	}
+	return out;
+}
 bool MainWindow::test_diff_line(MarkdownEditor* editor, const QString& text, int& total_failed) {
 	QTextBlock block = editor->document()->begin();
-	auto lst = text.split(QRegularExpression("(?<=\n)"), Qt::SkipEmptyParts);
+	auto lst = splitDiffRows(text);
 	for(const auto t: lst) {
-		if( t[0] == u'-' && !isDummyLine(editor, block) ) {
-			do_output(QString("[FAILED #%1] Expected block %2 to be a dummy line\n").arg(++total_failed).arg(block.blockNumber()));
-			return false;
+		QChar marker = t[0];
+		DiffExpect exp;
+		parseDiffExpect(diffRowBody(t), exp);	//	《》の対応の正しさは lint で検証済み
+		if( marker == u'-' ) {
+			if( !isDummyLine(editor, block) ) {
+				do_output(QString("[FAILED #%1] Expected block %2 to be a dummy line\n").arg(++total_failed).arg(block.blockNumber()));
+				return false;
+			}
+		} else {
+			if( isDummyLine(editor, block) ) {
+				do_output(QString("[FAILED #%1] Expected block %2 NOT to be a dummy line\n").arg(++total_failed).arg(block.blockNumber()));
+				return false;
+			}
+			if( block.text() != exp.plain ) {
+				do_output(QString("[FAILED #%1] Block %2 text mismatch: expected '%3', got '%4'\n").arg(++total_failed).arg(block.blockNumber()).arg(exp.plain).arg(block.text()));
+				return false;
+			}
+			int expectedDiff = marker == u'=' ? 0 : marker == u'+' ? ADDED_LINE : MODIFIED_LINE;
+			int actualDiff = getDiff(editor, block);
+			if( actualDiff != expectedDiff ) {
+				do_output(QString("[FAILED #%1] Block %2 diff state mismatch: expected %3, got %4\n").arg(++total_failed).arg(block.blockNumber()).arg(expectedDiff).arg(actualDiff));
+				return false;
+			}
+			if( marker == u'!' ) {
+				QList<QPair<int, int>> expRanges;
+				for(const auto& r: exp.ranges) {
+					int start = indexOfCodePoint(exp.plain, r.first);
+					expRanges.append({start, indexOfCodePoint(exp.plain, r.first + r.second) - start});
+				}
+				QList<int> expGaps;
+				for(int g: exp.gaps)
+					expGaps.append(indexOfCodePoint(exp.plain, g));
+				QList<QPair<int, int>> actRanges;
+				QList<int> actGaps;
+				if( auto *ud = dynamic_cast<DiffBlockUserData*>(block.userData()) ) {
+					int textLen = (int)block.text().size();
+					for(const auto& r: ud->ranges) {
+						int start = qMin(r.start, textLen);
+						int end = qMin(r.start + r.length, textLen);
+						actRanges.append({start, end - start});
+					}
+					for(int g: ud->gaps)
+						actGaps.append(qMin(g, textLen));
+				}
+				if( actRanges != expRanges || actGaps != expGaps ) {
+					do_output(QString("[FAILED #%1] Block %2 word ranges/gaps mismatch\n").arg(++total_failed).arg(block.blockNumber()));
+					return false;
+				}
+			}
 		}
-		if( t[0] != u'-' && isDummyLine(editor, block) ) {
-			do_output(QString("[FAILED #%1] Expected block %2 NOT to be a dummy line\n").arg(++total_failed).arg(block.blockNumber()));
-			return false;
-		}
+
+
+
+
 		if( !(block = block.next()).isValid() ) return false;
 	}
 	return true;
@@ -4876,6 +5185,20 @@ void MainWindow::onAction_TestDiff() {
 	MarkdownEditor *editor = docWidget->m_editor;
 	MarkdownEditor *diffview = docWidget->m_diffview;
 	for(const auto &tc: g_diffTestCase) {
+		//	期待値の自己整合性チェック（lint）。不正なケースは実行しない
+		QString lintError;
+		bool lintOK = tc.size() >= 3 && (tc.size() - 3) % 3 == 0;
+		if( !lintOK )
+			lintError = QStringLiteral("malformed test case (item count)");
+		for(int s = 0; lintOK && s * 3 + 2 < tc.size(); ++s) {
+			if( !lint_diff_pair(tc[s * 3 + 1], tc[s * 3 + 2], lintError) )
+				lintOK = false;
+		}
+		if( !lintOK ) {
+			++total_tested;
+			do_output(QString("\n[FAILED #%1] %2: lint: %3\n").arg(++total_failed).arg(tc.isEmpty() ? QStringLiteral("(unnamed)") : tc[0]).arg(lintError));
+			continue;
+		}
 		//do_output(tc[0] + "\n");
 		for(int i = 0; i < tc.size();) {
 			++total_tested;
@@ -4896,12 +5219,17 @@ void MainWindow::onAction_TestDiff() {
 			QCoreApplication::processEvents();
             do_diff();
 			QCoreApplication::processEvents();
-			if( !test_diff_line(editor, tc[i-2], total_failed) ) {
+			bool ok = test_diff_line(editor, tc[i-2], total_failed);
+			if( ok )
+				ok = test_diff_line(diffview, tc[i-1], total_failed);
+			if( !ok ) {
+				do_output("\nActual state (left):\n" + dump_diff_side(editor));
+				do_output("Actual state (right):\n" + dump_diff_side(diffview));
 				break;
 			}
-			if( !test_diff_line(diffview, tc[i-1], total_failed) ) {
-				break;
-			}
+
+
+
 			//if( i + 1 >= tc.size() ) break;
 		}
 	}
