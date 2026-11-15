@@ -1623,12 +1623,12 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 		case 'u': {
 			docWidget->removeDummyBlocks();
 			int pos = 0;
-			uchar f = docWidget->m_editor->undoActionFlags();
+			uchar f = gvi.m_editor->undoActionFlags();
 			for(int i = 0; i < rcnt; ++i) {
 				pos = gvi.m_editor->do_undo();
 				//pos = docWidget->m_editor->do_undo();
 			}
-			cursor = docWidget->m_editor->textCursor();
+			cursor = gvi.m_editor->textCursor();
 			cursor.setPosition(pos);
 			if( (f&UndoAction::FLAG_SHIFT) != 0 || (f&UndoAction::FLAG_LINEWISE) != 0 )
 				hat(cursor);
@@ -1637,12 +1637,12 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 		}
 		case 'U': {
 			int pos = 0;
-			uchar f = docWidget->m_editor->redoActionFlags();
+			uchar f = gvi.m_editor->redoActionFlags();
 			for(int i = 0; i < rcnt; ++i) {
 				pos = gvi.m_editor->do_redo();
 				//pos = docWidget->m_editor->do_redo();
 			}
-			cursor = docWidget->m_editor->textCursor();
+			cursor = gvi.m_editor->textCursor();
 			cursor.setPosition(pos);
 			if( (f&UndoAction::FLAG_SHIFT) != 0 || (f&UndoAction::FLAG_LINEWISE) != 0 )
 				hat(cursor);

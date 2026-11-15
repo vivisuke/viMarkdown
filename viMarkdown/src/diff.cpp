@@ -1167,7 +1167,13 @@ void MainWindow::do_diff() {
     const auto flg1 = docWidget->m_editor->diffFlags();
     const auto vbn2 = docWidget->m_diffview->diffBlockNumbers();
     const auto flg2 = docWidget->m_diffview->diffFlags();
+    if( vbn1.size() != flg1.size() ) {
+    	qDebug() << "vbn1.size(): " << vbn1.size() << ", flg1.size(): " << flg1.size();
+    }
     assert( vbn1.size() == flg1.size() );
+    if( vbn2.size() != flg2.size() ) {
+    	qDebug() << "vbn2.size(): " << vbn2.size() << ", flg2.size(): " << flg2.size();
+    }
     assert( vbn2.size() == flg2.size() );
 
     --m_processing;

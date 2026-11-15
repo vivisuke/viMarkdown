@@ -1,6 +1,8 @@
 ﻿abc
 xyz zzz
 
+abc def
+
 ## Key Features
 - **Real-time Editor-Preview Synchronization**
   The cursor position and edits are synchronized in real time. This allows for intuitive editing while fully preserving the structural integrity of your Markdown.
