@@ -4579,6 +4579,34 @@ void MainWindow::onAction_TestViCommands() {
 */
 
 QStringList g_diffTestCase[] = {
+	{"Basic diff test",
+		"=aaa\n",
+		"=aaa\n",
+	},
+	{"Delete left/right with modify",
+		"=aaa\n"
+		"!bbb\n"
+		"=ccc\n"
+		"+ddd\n",
+		"=aaa\n"
+		"!xxx\n"
+		"=ccc\n"
+		"-\n",
+		"d4",
+		"=aaa\n"
+		"!bbb\n"
+		"=ccc\n",
+		"=aaa\n"
+		"!xxx\n"
+		"=ccc\n",
+		"Rd2",
+		"=aaa\n"
+		"+bbb\n"
+		"=ccc\n",
+		"=aaa\n"
+		"-\n"
+		"=ccc\n",
+	},
 #if 0
 	{"Basic diff test",
 		"=aaa\n"
@@ -4652,44 +4680,172 @@ void set_text(MarkdownEditor* editor, const QString& text) {
 	cursor.setPosition(0);
 	editor->setTextCursor(cursor);
 }
-void do_action(MarkdownEditor* editor, MarkdownEditor* diffview, const QString& text) {
-	if( text.isEmpty() ) return;
-	//bool isEditor = true;
+//	コードポイント単位の文字数を返す
+static int codePointCount(const QString& s) {
+	int n = 0;
+	for(int i = 0; i < s.size(); ) {
+		i += (i + 1 < s.size() && s[i].isHighSurrogate() && s[i + 1].isLowSurrogate()) ? 2 : 1;
+		++n;
+	}
+	return n;
+}
+//	0始まりのコードポイント番号 nth に対応する UTF-16 インデックスを返す（nth == 文字数 の場合は s.size()）
+static int indexOfCodePoint(const QString& s, int nth) {
+	int idx = 0;
+	for(int k = 0; k < nth && idx < s.size(); ++k)
+		idx += (idx + 1 < s.size() && s[idx].isHighSurrogate() && s[idx + 1].isLowSurrogate()) ? 2 : 1;
+	return idx;
+}
+//	アクション文字列の pos から始まる10進数を読み取る。読めなければ false
+static bool parseNumber(const QString& text, int& pos, int& value) {
+	int start = pos;
+	while( pos < text.size() && text[pos].isDigit() )
+		++pos;
+	if( pos == start ) return false;
+	bool ok = false;
+	value = text.mid(start, pos - start).toInt(&ok);
+	return ok;
+}
+//	diff テストのアクションを実行する。不正な書式の場合は false を返し、error に理由を格納する
+//	書式：[L|R]（省略時は L）の後に、@行:カラムx / @行:カラムi文字列 / d行 / J行 / u / U のいずれか
+bool do_action(MarkdownEditor* editor, MarkdownEditor* diffview, const QString& text, QString& error) {
+	if( text.isEmpty() ) return true;
 	MarkdownEditor *ptr = editor;
 	int i = 0;
-	//QTextCursor cursor;
-	if( text[0] == u'>' ) {
-		ptr = diffview;
-		//isEditor = false;
-		//cursor = diffview->textCursor();
+	if( text[0] == u'L' ) {
 		++i;
-	} else {
-		//ptr == editor;
-		//cursor = editor->textCursor();
-		if( text[0] == u'<' )
-			++i;
+	} else if( text[0] == u'R' ) {
+		ptr = diffview;
+
+
+		++i;
+
+
+
+
+
 	}
-	QTextCursor cursor = ptr->textCursor();
-	for(; i < text.size(); ++i) {
-		switch( text[i].unicode() ) {
-		case u'x':
-			//cursor.deleteChar();
-			ptr->do_deleteText(cursor);
-			break;
-		case u'i': {
-			QString t = text.mid(1);
-			int ix = t.indexOf(QChar(0x1b));	//	Esc
-			if( ix >= 0 ) {
-				t = t.left(ix);
-				i += 2 + t.size();		//	2 for i, Esc
+	if( i >= text.size() ) {
+		error = QStringLiteral("no command");
+		return false;
+	}
+	QTextDocument *doc = ptr->document();
+	if( text[i] == u'@' ) {	//	@行:カラム の後に x か i が必須
+		++i;
+		int line = 0, col = 0;
+		if( !parseNumber(text, i, line) || i >= text.size() || text[i] != u':' ) {
+			error = QStringLiteral("bad @line:col");
+			return false;
+		}
+		++i;
+		if( !parseNumber(text, i, col) || i >= text.size() || (text[i] != u'x' && text[i] != u'i') ) {
+			error = QStringLiteral("@ must be followed by x or i");
+			return false;
+		}
+		QChar cmd = text[i];
+		++i;
+		if( line < 1 || line > doc->blockCount() ) {
+			error = QStringLiteral("line out of range");
+			return false;
+		}
+		QTextBlock block = doc->findBlockByNumber(line - 1);
+		if( isDummyLine(ptr, block) ) {
+			error = QStringLiteral("dummy line");
+			return false;
+		}
+		QString blockText = block.text();
+		int nChars = codePointCount(blockText);
+		if( col < 1 || col > nChars + 1 ) {
+			error = QStringLiteral("column out of range");
+			return false;
+		}
+		QTextCursor cursor(doc);
+		cursor.setPosition(block.position() + indexOfCodePoint(blockText, col - 1));
+		if( cmd == u'x' ) {
+			if( i != text.size() ) {
+				error = QStringLiteral("trailing characters after x");
+				return false;
 			}
-				i = text.size();
+			if( col == nChars + 1 ) {
+				error = QStringLiteral("no character at line end");
+				return false;
+			}
+			ptr->do_deleteText(cursor);
+		} else {	//	cmd == u'i'：残りの文字列を挿入（0x1b があればそこで打ち切り）
+			QString t = text.mid(i);
+
+			int ix = t.indexOf(QChar(0x1b));	//	Esc
+			if( ix >= 0 )
+				t = t.left(ix);
+
+
+
 			ptr->do_insertText(cursor, t);
-			break;
+
 		}
-		}
+		ptr->setTextCursor(cursor);
+		return true;
 	}
-	ptr->setTextCursor(cursor);
+	if( text[i] == u'd' || text[i] == u'J' ) {	//	d行：行削除、J行：次の行と連結
+		QChar cmd = text[i];
+		++i;
+		int line = 0;
+		if( !parseNumber(text, i, line) || i != text.size() ) {
+			error = QStringLiteral("bad line number");
+			return false;
+		}
+		if( line < 1 || line > doc->blockCount() ) {
+			error = QStringLiteral("line out of range");
+			return false;
+		}
+		QTextBlock block = doc->findBlockByNumber(line - 1);
+		if( isDummyLine(ptr, block) ) {
+			error = QStringLiteral("dummy line");
+			return false;
+		}
+		QTextCursor cursor(doc);
+		if( cmd == u'd' ) {
+			int start = block.position();
+			int end;
+			if( block.next().isValid() )
+				end = start + block.length();	//	改行ごと削除
+			else if( block.previous().isValid() ) {
+				start -= 1;	//	直前の改行ごと削除
+				end = block.position() + block.length() - 1;
+			} else
+				end = start + block.length() - 1;	//	唯一の行：本文のみ削除
+			cursor.setPosition(start);
+			cursor.setPosition(end, QTextCursor::KeepAnchor);
+			ptr->do_deleteText(cursor);
+		} else {	//	cmd == u'J'
+			QTextBlock next = block.next();
+			if( !next.isValid() ) {
+				error = QStringLiteral("no next line to join");
+				return false;
+			}
+			if( isDummyLine(ptr, next) ) {
+				error = QStringLiteral("next line is a dummy line");
+				return false;
+			}
+			cursor.setPosition(block.position() + block.length() - 1);	//	行末（改行位置）
+			ptr->do_deleteText(cursor);
+		}
+		ptr->setTextCursor(cursor);
+		return true;
+	}
+	if( text[i] == u'u' || text[i] == u'U' ) {
+		if( i + 1 != text.size() ) {
+			error = QStringLiteral("trailing characters");
+			return false;
+		}
+		if( text[i] == u'u' )
+			ptr->do_undo();
+		else
+			ptr->do_redo();
+		return true;
+	}
+	error = QStringLiteral("unknown action format");
+	return false;
 }
 bool MainWindow::test_diff_line(MarkdownEditor* editor, const QString& text, int& total_failed) {
 	QTextBlock block = editor->document()->begin();
@@ -4714,7 +4870,7 @@ void MainWindow::onAction_TestDiff() {
 	if( docWidget == nullptr ) return;
 	docWidget->setupDiffMode();
 	docWidget->updatePanes();
-	do_output("\nTest dif...\n\n");
+	do_output("\nTest diff...\n");
 	int total_tested = 0;
 	int total_failed = 0;
 	MarkdownEditor *editor = docWidget->m_editor;
@@ -4729,7 +4885,11 @@ void MainWindow::onAction_TestDiff() {
 				set_text(diffview, tc[++i]);
 				++i;
 			} else {
-				do_action(editor, diffview, tc[i]);
+				QString error;
+				if( !do_action(editor, diffview, tc[i], error) ) {
+					do_output(QString("\n[FAILED #%1] %2: invalid action \"%3\": %4\n").arg(++total_failed).arg(tc[0]).arg(tc[i]).arg(error));
+					break;
+				}
 				i += 3;
 			}
 			do_output(".");
@@ -4745,7 +4905,7 @@ void MainWindow::onAction_TestDiff() {
 			//if( i + 1 >= tc.size() ) break;
 		}
 	}
-	QString mess = QString("\nTotal: %1 failed / %2 tested. (Success:%3%)")
+	QString mess = QString("\n\nTotal: %1 failed / %2 tested. (Success:%3%)")
 					.arg(total_failed).arg(total_tested).arg(100.0 - total_failed*100.0/total_tested, 0, 'f', 1);
 	statusBar()->showMessage(mess);
 	do_output(mess);
