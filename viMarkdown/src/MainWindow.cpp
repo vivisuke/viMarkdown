@@ -75,6 +75,7 @@ void setBlockType(QTextBlock block, uchar type);
 void setPhysicalLine(MarkdownEditor*, QTextBlock &block, int ln, uchar flag);
 void do_fold(QTextBlock block /*, QTextDocument *doc*/);
 void do_unfold(QTextBlock block /*, QTextDocument *doc*/);
+bool isDummyLine(MarkdownEditor* editor, const QTextBlock &block);
 
 Global g;
 ViStatus gvi;
@@ -2286,7 +2287,17 @@ void MainWindow::do_save(const QString& fullPath) {
 		out.setEncoding(docWidget->m_encoding); 
 		out.setGenerateByteOrderMark(docWidget->m_withBOM);
 		MarkdownEditor *mdEditor = docWidget->m_editor;
-		out << mdEditor->toPlainText();
+		if( docWidget->m_diffMode && mdEditor->dummyInserted() ) {
+			//	diff 表示中はダミー行を除いて保存する（v0.3 #1388）
+			//	ダミー行は常に空行。テキストがある行は実テキストなので除かない（#1255 のガードと同様）
+			QStringList lines;
+			for(QTextBlock block = mdEditor->document()->firstBlock(); block.isValid(); block = block.next()) {
+				if( isDummyLine(mdEditor, block) && block.text().isEmpty() ) continue;
+				lines << block.text();
+			}
+			out << lines.join(u'\n');
+		} else
+			out << mdEditor->toPlainText();
 		file.close();
 		//QMessageBox::information(nullptr, "成功", "ファイルが保存されました:\n" + fullPath);
 		docWidget->setModified(false);		//	保存済み

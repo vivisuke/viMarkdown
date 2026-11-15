@@ -4587,19 +4587,19 @@ QStringList g_diffTestCase[] = {
 #if 1
 	{"Delete left/right with modify",
 		"=aaa\n"
-		"!《bbb》《》\n"
+		"!《bbb》\n"
 		"=ccc\n"
 		"+ddd\n",
 		"=aaa\n"
-		"!《》《xxx》\n"
+		"!《xxx》\n"
 		"=ccc\n"
 		"-\n",
 		"d4",
 		"=aaa\n"
-		"!《bbb》《》\n"
+		"!《bbb》\n"
 		"=ccc\n",
 		"=aaa\n"
-		"!《》《xxx》\n"
+		"!《xxx》\n"
 		"=ccc\n",
 		"Rd2",
 		"=aaa\n"
@@ -4673,11 +4673,11 @@ QStringList g_diffTestCase[] = {
 		"=ccc\n",
 	},
 	{"Replace word before space",
-		"!《aaa 》bbb\n",
-		"!《xyz 》bbb\n",
+		"!《aaa》 bbb\n",
+		"!《xyz》 bbb\n",
 		"@1:1x",
-		"!《aa 》bbb\n",
-		"!《xyz 》bbb\n",
+		"!《aa》 bbb\n",
+		"!《xyz》 bbb\n",
 	},
 //----------------------------------------------------------------------
 #if 0
