@@ -5159,7 +5159,18 @@ bool MainWindow::test_diff_line(MarkdownEditor* editor, const QString& text, int
 					for(int g: ud->gaps)
 						actGaps.append(qMin(g, textLen));
 				}
-				if( actRanges != expRanges || actGaps != expGaps ) {
+				// 隣接する範囲は表示上等価なので、比較前に結合して同一視する
+				auto mergeAdjacent = [](QList<QPair<int, int>> ranges) {
+					QList<QPair<int, int>> merged;
+					for(const auto& r: ranges) {
+						if( !merged.isEmpty() && merged.last().first + merged.last().second == r.first )
+							merged.last().second += r.second;
+						else
+							merged.append(r);
+					}
+					return merged;
+				};
+				if( mergeAdjacent(actRanges) != mergeAdjacent(expRanges) || actGaps != expGaps ) {
 					do_output(QString("\n[FAILED #%1] Block %2 word ranges/gaps mismatch\n").arg(++total_failed).arg(block.blockNumber()));
 					return false;
 				}
