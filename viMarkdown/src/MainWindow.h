@@ -311,6 +311,7 @@ public:
     void	applyDiffToDocuments(DocWidget*, const std::vector<QString>&, const std::vector<QString>&, const dtl::Ses<QString>&);
     void	close_cmdLine();
     bool	is_opening_file() const { return m_opening_file; }
+    bool	is_doing_diff() const { return m_doing_diff != 0; }
 
 protected:
     void	load_settings();

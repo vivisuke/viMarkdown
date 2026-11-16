@@ -533,6 +533,7 @@ void DocWidget::setEditorCurPos(int pos) {
 void DocWidget::syncScrollFromLeft(int value)
 {
     if (m_isSyncingScroll) return;
+    if (m_mainWindow->is_doing_diff()) return;
     m_isSyncingScroll = true;
     // 左が末尾までスクロールされたら、右も右自身の末尾に合わせる（最大値の差を吸収）
     QScrollBar *src = m_editor->verticalScrollBar();
@@ -544,6 +545,7 @@ void DocWidget::syncScrollFromLeft(int value)
 void DocWidget::syncScrollFromRight(int value)
 {
     if (m_isSyncingScroll) return;
+    if (m_mainWindow->is_doing_diff()) return;
     m_isSyncingScroll = true;
     // 右が末尾までスクロールされたら、左も左自身の末尾に合わせる（最大値の差を吸収）
     QScrollBar *src = m_diffview->verticalScrollBar();

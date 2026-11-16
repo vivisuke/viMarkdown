@@ -18,6 +18,8 @@
 #include <QFileSystemWatcher>
 #include <QPrinter>
 #include <QPrintDialog>
+#include <QPointer>
+#include <QSignalBlocker>
 #include <QDesktopServices>
 #include <QLineEdit>
 #include <QToolButton>
@@ -150,7 +152,25 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_diffTimer, &QTimer::timeout, this, [this]() {
 		//if( !m_doing_diff )
 		QCoreApplication::processEvents();
+		//	v0.3 #1390: do_diff() 後の遅延スクロール復元 (v2)。
+		//	do_diff() 内の即時復元 (v1) は setValue(0) まで正しく動くが、
+		//	その後、レイアウト確定時に Qt がスクロールを動かし直す。
+		//	イベントループを1周回してから保存値をもう一度戻す。
+		DocWidget *docWidget = getCurDocWidget();
+		QPointer<QScrollBar> vbar1 = docWidget ? docWidget->m_editor->verticalScrollBar() : nullptr;
+		QPointer<QScrollBar> vbar2 = docWidget ? docWidget->m_diffview->verticalScrollBar() : nullptr;
+		const int vscroll1 = vbar1 ? vbar1->value() : 0;
+		const int vscroll2 = vbar2 ? vbar2->value() : 0;
 		do_diff();
+		if( !vbar1.isNull() && !vbar2.isNull() ) {
+			QTimer::singleShot(0, this, [vbar1, vbar2, vscroll1, vscroll2]() {
+				if( vbar1.isNull() || vbar2.isNull() ) return;
+				QSignalBlocker b1(vbar1.data());
+				QSignalBlocker b2(vbar2.data());
+				vbar1->setValue(qMin(vscroll1, vbar1->maximum()));
+				vbar2->setValue(qMin(vscroll2, vbar2->maximum()));
+			});
+		}
     });
     //
 	QSettings settings;
@@ -2589,7 +2609,11 @@ int isNumListBlock(const QTextBlock& block) {		//	空白+ "数字. " で始ま�
 	return i + 3;
 }
 void MainWindow::onAction_Indent() {
-	MarkdownEditor *mdEditor = getCurDocWidget()->m_editor;
+	DocWidget *docWidget = getCurDocWidget();
+	MarkdownEditor *mdEditor = docWidget->m_editor;
+	//	[v0.3 #1392] diff 表示中は、フォーカスのあるビューに対して処理する（v0.3 #1267 と同様）
+	if( docWidget->m_diffMode && QApplication::focusWidget() == docWidget->m_diffview )
+		mdEditor = docWidget->m_diffview;
 	QTextCursor cursor = mdEditor->textCursor();
 	QTextDocument *doc = mdEditor->document();
 	mdEditor->openUndoBlock();
@@ -2625,7 +2649,11 @@ void MainWindow::onAction_Indent() {
 	mdEditor->closeUndoBlock();
 }
 void MainWindow::onAction_UnIndent() {
-	MarkdownEditor *mdEditor = getCurDocWidget()->m_editor;
+	DocWidget *docWidget = getCurDocWidget();
+	MarkdownEditor *mdEditor = docWidget->m_editor;
+	//	[v0.3 #1392] diff 表示中は、フォーカスのあるビューに対して処理する（v0.3 #1267 と同様）
+	if( docWidget->m_diffMode && QApplication::focusWidget() == docWidget->m_diffview )
+		mdEditor = docWidget->m_diffview;
 	QTextCursor cursor = mdEditor->textCursor();
 	QTextDocument *doc = mdEditor->document();
 	cursor.beginEditBlock();
@@ -3394,7 +3422,7 @@ void MainWindow::onMDTextChanged() {
 #endif
 	m_ignore_changed = false;
 	if( docWidget->m_diffMode && !m_doing_diff) {
-		m_diffTimer->start(100); 
+		m_diffTimer->start(1000); 
 	}
 }
 void MainWindow::onMdEditTabPressed() {

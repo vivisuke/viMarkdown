@@ -623,14 +623,14 @@ void MainWindow::do_prefix_cmd(QChar cmd, QTextCursor& cursor, int rcnt, DocWidg
 		case '\r':
 		case 't': {		// zt: カーソル行を画面最上行にする（カーソル位置はそのまま）
 			int blockNum = cursor.blockNumber();
-			docWidget->m_editor->verticalScrollBar()->setValue(blockNum);
+			gvi.m_editor->verticalScrollBar()->setValue(blockNum);
     		if( cmd.unicode() == u'\n' || cmd.unicode() == u'\r' ) hat(cursor);
     		break;
 		}
 		case '-':
 		case 'b': {		// zb: カーソル行を画面最下行にする（カーソル位置はそのまま）
 			int blockNum = cursor.blockNumber();
-		    auto editor = docWidget->m_editor;
+		    auto editor = gvi.m_editor;
 		    int visibleLines = editor->viewport()->height()
 		                     / editor->fontMetrics().height();
 		    editor->verticalScrollBar()->setValue(qMax(0, blockNum - visibleLines + 1));
@@ -639,7 +639,7 @@ void MainWindow::do_prefix_cmd(QChar cmd, QTextCursor& cursor, int rcnt, DocWidg
 		}
 		case '.':
 		case 'z': {		// zz: カーソル行を画面中央行にする（カーソル位置はそのまま）
-			auto editor = docWidget->m_editor;
+			auto editor = gvi.m_editor;
 		    int blockNum = cursor.blockNumber();
 		    int visibleLines = editor->viewport()->height() / editor->fontMetrics().height();
 		    editor->verticalScrollBar()->setValue( qMax(0, blockNum - visibleLines / 2) );
@@ -941,7 +941,7 @@ bool MainWindow::do_vi_operator(QChar cmd, QTextCursor& cursor, int rcnt, DocWid
 #endif
 		case '>': {	//	>>
 			int pos = cursor.position();
-			docWidget->m_editor->openUndoBlock();
+			gvi.m_editor->openUndoBlock();
 			cursor.beginEditBlock();
 			for(int i = 0; i < gvi.m_opCount; ++i) {
 				onAction_Indent();
@@ -950,12 +950,14 @@ bool MainWindow::do_vi_operator(QChar cmd, QTextCursor& cursor, int rcnt, DocWid
 				cursor.setPosition(block.position());
 				if( cursor.document() == docWidget->m_editor->document() )
 					docWidget->m_editor->setTextCursor(cursor);
+				else if( docWidget->m_diffview != nullptr && cursor.document() == docWidget->m_diffview->document() )
+					docWidget->m_diffview->setTextCursor(cursor);
 				else
 					docWidget->m_preview->setTextCursor(cursor);
 			}
 			cursor.endEditBlock();
-			docWidget->m_editor->closeUndoBlock();
-			docWidget->m_editor->setActionFlag(UndoAction::FLAG_SHIFT);
+			gvi.m_editor->closeUndoBlock();
+			gvi.m_editor->setActionFlag(UndoAction::FLAG_SHIFT);
 			cursor.setPosition(pos);
 			hat(cursor);
 			gvi.m_isEditCommand = true;
@@ -963,7 +965,7 @@ bool MainWindow::do_vi_operator(QChar cmd, QTextCursor& cursor, int rcnt, DocWid
 		}
 		case '<': {	//	<<
 			int pos = cursor.position();
-			docWidget->m_editor->openUndoBlock();
+			gvi.m_editor->openUndoBlock();
 			cursor.beginEditBlock();
 			for(int i = 0; i < gvi.m_opCount; ++i) {
 				onAction_UnIndent();
@@ -972,12 +974,14 @@ bool MainWindow::do_vi_operator(QChar cmd, QTextCursor& cursor, int rcnt, DocWid
 				cursor.setPosition(block.position());
 				if( cursor.document() == docWidget->m_editor->document() )
 					docWidget->m_editor->setTextCursor(cursor);
+				else if( docWidget->m_diffview != nullptr && cursor.document() == docWidget->m_diffview->document() )
+					docWidget->m_diffview->setTextCursor(cursor);
 				else
 					docWidget->m_preview->setTextCursor(cursor);
 			}
 			cursor.endEditBlock();
-			docWidget->m_editor->closeUndoBlock();
-			docWidget->m_editor->setActionFlag(UndoAction::FLAG_SHIFT);
+			gvi.m_editor->closeUndoBlock();
+			gvi.m_editor->setActionFlag(UndoAction::FLAG_SHIFT);
 			cursor.setPosition(pos);
 			hat(cursor);
 			gvi.m_isEditCommand = true;
@@ -1366,7 +1370,7 @@ doneW:
 	}
 	do_cdy_moved(cursor);
 	if( gvi.m_vMode != u' ' )
-		docWidget->m_editor->highlightVText(cursor);
+		gvi.m_editor->highlightVText(cursor);
 	//if( cmd.unicode() != u'$' && cmd.unicode() != u'j' && cmd.unicode() != u'k' ) {
 	//	auto r = docWidget->m_editor->cursorRect();
 	//	gvi.m_preferred_x = r.x();
@@ -1458,7 +1462,9 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 		gvi.m_currentMode = ViMode::CommandLine;
 		//gvi.m_cmdlineMode = true;
 		gvi.m_prevFocusWidget = cursor.document() == docWidget->m_editor->document() ?
-									(QWidget*)docWidget->m_editor : (QWidget*)docWidget->m_preview;
+									(QWidget*)docWidget->m_editor :
+									docWidget->m_diffview != nullptr && cursor.document() == docWidget->m_diffview->document() ?
+									(QWidget*)docWidget->m_diffview : (QWidget*)docWidget->m_preview;
 		m_prefixLabel->setText(QString(cmd));
 		m_prefixLabel->show();
 		m_cmdLine->setText("");
@@ -1495,7 +1501,7 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 		do_vi_insert(cmd, cursor, rcnt);
 	} else if( cmd == u'R' ) {
 		gvi.m_currentMode = ViMode::Replace;
-		docWidget->m_editor->setOverwriteMode(true);
+		gvi.m_editor->setOverwriteMode(true);
 	} else if( cmd == 'x' || cmd == 'X' || cmd == 'D' ) {
 		do_vi_delete(cmd, cursor,rcnt);
 	}
@@ -1711,7 +1717,7 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 				gvi.m_vMode = u'v';
 				gvi.m_vAnchor = cursor.position();
 			}
-			docWidget->m_editor->highlightVText(cursor);
+			gvi.m_editor->highlightVText(cursor);
 			break;
 		case 'V':
 			if( gvi.m_vMode == u'V' ) {
@@ -1721,7 +1727,7 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 				gvi.m_vMode = u'V';
 				gvi.m_vAnchorBlock = cursor.block().blockNumber();
 			}
-			docWidget->m_editor->highlightVText(cursor);
+			gvi.m_editor->highlightVText(cursor);
 			break;
 		default:	//	不正コマンド
 			//	undone: エラー表示
@@ -1762,8 +1768,8 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 		gvi.m_pendingCommand.clear();
 		gvi.m_isEditCommand = false;
 		if( docWidget != nullptr ) {
-			docWidget->m_editor->viewport()->update();
-			docWidget->m_editor->prohibitMergeUndo();
+			gvi.m_editor->viewport()->update();
+			gvi.m_editor->prohibitMergeUndo();
 			docWidget->m_preview->viewport()->update();
 		}
 		//##qDebug() << "gvi.m_lastEditCommand = " << gvi.m_lastEditCommand;
@@ -1816,8 +1822,8 @@ void MainWindow::do_viCmd_completed(QTextCursor& cursor, QChar cmd) {	//	vicmd �
 	gvi.m_pendingCommand.clear();
 	gvi.m_isEditCommand = false;
 	if( docWidget != nullptr ) {
-		docWidget->m_editor->viewport()->update();
-		docWidget->m_editor->prohibitMergeUndo();
+		gvi.m_editor->viewport()->update();
+		gvi.m_editor->prohibitMergeUndo();
 		docWidget->m_preview->viewport()->update();
 	}
 	//##qDebug() << "gvi.m_lastEditCommand = " << gvi.m_lastEditCommand;
@@ -2275,11 +2281,15 @@ void MainWindow::do_vi_search(const QString& text, QTextCursor& cursor, int rcnt
     //##unfoldParentHeadings(matchedBlock, docWidget);
     // 7. エディタにカーソルを設定し、画面をスクロールしてフォーカスを戻す
     matchCursor.setPosition(matchCursor.anchor());		//	非選択、マッチ先頭に
-    docWidget->m_editor->setTextCursor(matchCursor);
-    docWidget->m_editor->ensureCursorVisible();
-    docWidget->m_editor->setFocus();
+	//	[v0.3 #1392] マッチした文書を持つビューに着地する
+    MarkdownEditor *searchTarget = docWidget->m_editor;
+    if( docWidget->m_diffview != nullptr && matchCursor.document() == docWidget->m_diffview->document() )
+        searchTarget = docWidget->m_diffview;
+    searchTarget->setTextCursor(matchCursor);
+    searchTarget->ensureCursorVisible();
+    searchTarget->setFocus();
 	ui->action_RegExp->setChecked(g.m_regexp = true);
-    docWidget->m_editor->highlightSearchText(pat);
+    searchTarget->highlightSearchText(pat);
     statusBar()->showMessage(tr("Searched: %1").arg(pat), 3000);
 	m_searchHist.push_front(pat);
 	m_searchHist.removeDuplicates();	//	重複削除

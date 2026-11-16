@@ -1117,6 +1117,13 @@ void MainWindow::do_diff() {
     ++m_doing_diff;
     QSignalBlocker blocker(this); 
     QTextCursor cursor0 = docWidget->m_editor->textCursor();
+    //	diff 再計算でスクロール位置を変えないための保存（v0.3 #1390）。
+    //	再計算中のダミー行の抜き差しで Qt がスクロールバーを一時的に動かし、
+    //	末尾のカーソル復元時の最小スクロールでは元の位置に戻らないことがある。
+    QScrollBar *vbar1 = docWidget->m_editor->verticalScrollBar();
+    QScrollBar *vbar2 = docWidget->m_diffview->verticalScrollBar();
+    const int vscroll1 = vbar1->value();
+    const int vscroll2 = vbar2->value();
     //int pos0 = cursor.position();
     //qDebug() << "cursor.position() = " << pos0 << ", blockNumber() = " << cursor.blockNumber();;
 
@@ -1179,6 +1186,15 @@ void MainWindow::do_diff() {
     --m_processing;
 
     docWidget->m_editor->setTextCursor(cursor0);
+    //	スクロール位置を復元する（v0.3 #1390）。同期スロット経由で互いに
+    //	上書きし合わないよう、両バーのシグナルを止めて個別に戻す。
+    {
+        int v1, v2;
+        QSignalBlocker vblocker1(vbar1);
+        QSignalBlocker vblocker2(vbar2);
+        vbar1->setValue(v1 = qMin(vscroll1, vbar1->maximum()));
+        vbar2->setValue(v2 = qMin(vscroll2, vbar2->maximum()));
+    }
     //cursor = docWidget->m_editor->textCursor();
     //pos0 = cursor.position();
     //qDebug() << "cursor.position() = " << pos0 << ", blockNumber() = " << cursor.blockNumber();;
