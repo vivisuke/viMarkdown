@@ -1047,6 +1047,14 @@ Do you want to save your changes?</source>
     </message>
 </context>
 <context>
+    <name>MarkdownEditor</name>
+    <message>
+        <location filename="MarkdownEditor.cpp" line="1839"/>
+        <source>Reflect Word &apos;%1&apos; to Peer View</source>
+        <translation>単語 &apos;%1&apos; を相手ビューに反映</translation>
+    </message>
+</context>
+<context>
     <name>ReplaceDialogClass</name>
     <message>
         <source>Search Text:</source>

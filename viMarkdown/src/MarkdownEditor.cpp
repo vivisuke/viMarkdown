@@ -1836,7 +1836,7 @@ void MarkdownEditor::contextMenuEvent(QContextMenuEvent *event) {
                 menu->insertSeparator(menu->actions().first());
             }
 
-            QAction *reflectAct = new QAction(QString("Reflect Word '%1' to Peer View").arg(clickedWordText), menu);
+            QAction *reflectAct = new QAction(QString(tr("Reflect Word '%1' to Peer View")).arg(clickedWordText), menu);
             menu->insertAction(menu->actions().first(), reflectAct);
 
             connect(reflectAct, &QAction::triggered, this, [this, block, wordStart, wordLength, clickedWordText]() {

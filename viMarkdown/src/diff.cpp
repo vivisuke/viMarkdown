@@ -702,23 +702,27 @@ void calculateAndSetWordDiff(QTextBlock block1, QTextBlock block2, const QString
     	case dtl::SES_COMMON:
     		break;
     	case dtl::SES_DELETE:
-    		if( token.start > block1.text().size() + offset1 ) {
+    		// トークンが属するブロックまで進める（間に差分トークンのない行があっても配分を誤らない。v0.3 #1395）
+    		while( block1.isValid() && token.start > block1.text().size() + offset1 ) {
 		        offset1 += block1.text().size() + 1;
 		        block1.setUserData(userData1);
 		        block1 = block1.next();
                 userData1 = new DiffBlockUserData();
-    		} else if (userData1 == nullptr) {
+    		}
+    		if (userData1 == nullptr) {
                 userData1 = new DiffBlockUserData();
             }
             userData1->ranges.append({ token.start - offset1, (int)token.text.size() });
     		break;
     	case dtl::SES_ADD:
-    		if( token.start > block2.text().size() + offset2 ) {
+    		// トークンが属するブロックまで進める（間に差分トークンのない行があっても配分を誤らない。v0.3 #1395）
+    		while( block2.isValid() && token.start > block2.text().size() + offset2 ) {
 		        offset2 += block2.text().size() + 1;
 		        block2.setUserData(userData2);
 		        block2 = block2.next();
                 userData2 = new DiffBlockUserData();
-    		} else if (userData2 == nullptr) {
+    		}
+    		if (userData2 == nullptr) {
                 userData2 = new DiffBlockUserData();
             }
             userData2->ranges.append({token.start - offset2, (int)token.text.size()});
