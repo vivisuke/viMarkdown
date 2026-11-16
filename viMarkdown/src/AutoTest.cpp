@@ -5120,22 +5120,22 @@ bool MainWindow::test_diff_line(MarkdownEditor* editor, const QString& text, int
 		parseDiffExpect(diffRowBody(t), exp);	//	《》の対応の正しさは lint で検証済み
 		if( marker == u'-' ) {
 			if( !isDummyLine(editor, block) ) {
-				do_output(QString("[FAILED #%1] Expected block %2 to be a dummy line\n").arg(++total_failed).arg(block.blockNumber()));
+				do_output(QString("\n[FAILED #%1] Expected block %2 to be a dummy line\n").arg(++total_failed).arg(block.blockNumber()));
 				return false;
 			}
 		} else {
 			if( isDummyLine(editor, block) ) {
-				do_output(QString("[FAILED #%1] Expected block %2 NOT to be a dummy line\n").arg(++total_failed).arg(block.blockNumber()));
+				do_output(QString("\n[FAILED #%1] Expected block %2 NOT to be a dummy line\n").arg(++total_failed).arg(block.blockNumber()));
 				return false;
 			}
 			if( block.text() != exp.plain ) {
-				do_output(QString("[FAILED #%1] Block %2 text mismatch: expected '%3', got '%4'\n").arg(++total_failed).arg(block.blockNumber()).arg(exp.plain).arg(block.text()));
+				do_output(QString("\n[FAILED #%1] Block %2 text mismatch: expected '%3', got '%4'\n").arg(++total_failed).arg(block.blockNumber()).arg(exp.plain).arg(block.text()));
 				return false;
 			}
 			int expectedDiff = marker == u'=' ? 0 : marker == u'+' ? ADDED_LINE : MODIFIED_LINE;
 			int actualDiff = getDiff(editor, block);
 			if( actualDiff != expectedDiff ) {
-				do_output(QString("[FAILED #%1] Block %2 diff state mismatch: expected %3, got %4\n").arg(++total_failed).arg(block.blockNumber()).arg(expectedDiff).arg(actualDiff));
+				do_output(QString("\n[FAILED #%1] Block %2 diff state mismatch: expected %3, got %4\n").arg(++total_failed).arg(block.blockNumber()).arg(expectedDiff).arg(actualDiff));
 				return false;
 			}
 			if( marker == u'!' ) {
@@ -5160,7 +5160,7 @@ bool MainWindow::test_diff_line(MarkdownEditor* editor, const QString& text, int
 						actGaps.append(qMin(g, textLen));
 				}
 				if( actRanges != expRanges || actGaps != expGaps ) {
-					do_output(QString("[FAILED #%1] Block %2 word ranges/gaps mismatch\n").arg(++total_failed).arg(block.blockNumber()));
+					do_output(QString("\n[FAILED #%1] Block %2 word ranges/gaps mismatch\n").arg(++total_failed).arg(block.blockNumber()));
 					return false;
 				}
 			}
@@ -5224,6 +5224,9 @@ void MainWindow::onAction_TestDiff() {
 			if( ok )
 				ok = test_diff_line(diffview, tc[i-1], total_failed);
 			if( !ok ) {
+				// 失敗時は期待値も表示する（v0.3 #1398）
+				do_output("\nExpected state (left):\n" + tc[i-2]);
+				do_output("Expected state (right):\n" + tc[i-1]);
 				do_output("\nActual state (left):\n" + dump_diff_side(editor));
 				do_output("Actual state (right):\n" + dump_diff_side(diffview));
 				break;
