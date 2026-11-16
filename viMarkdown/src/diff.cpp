@@ -1198,6 +1198,10 @@ void MainWindow::do_diff() {
     //cursor = docWidget->m_editor->textCursor();
     //pos0 = cursor.position();
     //qDebug() << "cursor.position() = " << pos0 << ", blockNumber() = " << cursor.blockNumber();;
+    //	この時点の文書 revision を記録する。単語差分データ（DiffBlockUserData）は
+    //	この revision のテキストに対するスナップショットになる（v0.3 #1394）
+    docWidget->m_diffRev1 = doc1->revision();
+    docWidget->m_diffRev2 = doc2->revision();
     --m_doing_diff;
 }
 //----------------------------------------------------------------------

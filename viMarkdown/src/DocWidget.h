@@ -207,6 +207,8 @@ public:
 	MarkdownPreview		*m_preview = nullptr;	//	マークダウンプレビューワへのポインタ
 	MiniMap				*m_minimap = nullptr;
 	DiffView			*m_diffview = nullptr;	//	比較相手ビュー（QPlainTextEdit 派生クラス）
+	qint64				m_diffRev1 = -1;		//	最後の do_diff 完了時点の m_editor 文書 revision（v0.3 #1394）
+	qint64				m_diffRev2 = -1;		//	最後の do_diff 完了時点の m_diffview 文書 revision（v0.3 #1394）
 	std::vector<int>	m_srcHeadingBlocks;		//	各見出し行 ブロック番号（0 org.）in マークダウンソース
 	std::vector<int>	m_prvHeadingBlocks;		//	各見出し行 ブロック番号（0 org.）in マークダウンプレビューワ
     //MarkdownToHtmlConvertor	m_htmlComvertor;

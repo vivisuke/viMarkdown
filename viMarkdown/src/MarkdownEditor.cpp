@@ -1768,6 +1768,13 @@ void MarkdownEditor::contextMenuEvent(QContextMenuEvent *event) {
     }
     // 3. diff モード時の専用メニュー追加処理
     if (m_diffMode) {
+        // DiffBlockUserData は最後の do_diff 時点のスナップショットであり、編集後の
+        // 再計算（タイマー待ち）の間は現在のテキストと対応していないことがある。
+        // 古い範囲のまま単語反映すると相手文書を上書きしてしまうため、文書が
+        // 変わっていたらメニュー計算の前に再計算する（v0.3 #1394）
+        if (m_docWidget->m_diffRev1 != m_docWidget->m_editor->document()->revision()
+            || m_docWidget->m_diffRev2 != m_docWidget->m_diffview->document()->revision())
+            ((MainWindow*)m_mainWindow)->do_diff();
         QTextCursor cursor = cursorForPosition(clickPos);
         QTextBlock block = cursor.block();
         int posInBlock = cursor.positionInBlock();
