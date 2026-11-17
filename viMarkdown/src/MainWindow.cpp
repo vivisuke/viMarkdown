@@ -2164,8 +2164,11 @@ bool MainWindow::do_open(const QString& title0, const QString& fullPath, const Q
 				docWidget->m_editor->jumpToHeading(name);
 				appendToDocLoc(docWidget->m_title, docWidget->m_fullPath, docWidget->m_editor->textCursor().position());	//	ジャンプ後位置
 				docWidget->m_editor->scrollToTop(docWidget->m_editor->textCursor());
-				docWidget->m_editor->syncPreviewCursorFromEditor();	//	#0862: プレビュー側カーソルも見出し位置へ同期
-				syncEditorPreviewScroll();
+				//	プレビューのリンククリック時は、プレビュー側の処理中フラグが立っている間に同期が呼ばれ棄却されるため、イベント処理完了後に同期する（v0.3 #1412）
+				QTimer::singleShot(0, docWidget, [this, docWidget]() {
+					docWidget->m_editor->syncPreviewCursorFromEditor();	//	#0862: プレビュー側カーソルも見出し位置へ同期
+					syncEditorPreviewScroll();
+				});
 				printDocLocHist();
 			}
 		}
@@ -2177,7 +2180,10 @@ bool MainWindow::do_open(const QString& title0, const QString& fullPath, const Q
 		if( !name.isEmpty() ) {
 			DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(tix);
 			docWidget->m_editor->jumpToHeading(name);
-			docWidget->m_editor->syncPreviewCursorFromEditor();	//	#0862: プレビュー側カーソルも見出し位置へ同期
+			//	自タブへのリンクでは現文書内ジャンプと同じ棄却が起きるため、イベント処理完了後に同期する（v0.3 #1412）
+			QTimer::singleShot(0, docWidget, [docWidget]() {
+				docWidget->m_editor->syncPreviewCursorFromEditor();	//	#0862: プレビュー側カーソルも見出し位置へ同期
+			});
 		}
 		return true;
 	}

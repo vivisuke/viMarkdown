@@ -2025,7 +2025,17 @@ void MarkdownEditor::jumpToHeading(const QString& name) {
 			int i = 1;
 			while( i < text.size() && text[i] == u'#' ) ++i;
 			while( i < text.size() && text[i] == u' ' ) ++i;
-			if( text.mid(i) == name ) {
+			QString heading = text.mid(i);
+			if( heading != name ) {
+				//	見出し先頭の記号列＋半角空白は無視して照合する（v0.3 #1413、例:「## ■ 見出し」）
+				int j = 0;
+				while( j < heading.size() && (heading[j].isPunct() || heading[j].isSymbol()) ) ++j;
+				if( j > 0 ) {
+					while( j < heading.size() && heading[j] == u' ' ) ++j;
+					heading = heading.mid(j);
+				}
+			}
+			if( heading == name ) {
 				QTextCursor cursor = textCursor();
 				cursor.setPosition(block.position());		//	行頭位置
 				setTextCursor(cursor);
