@@ -4679,65 +4679,97 @@ QStringList g_diffTestCase[] = {
 		"!《aa》 bbb\n",
 		"!《xyz》 bbb\n",
 	},
-//----------------------------------------------------------------------
-#if 0
-	{"Basic diff test",
-		"=aaa\n"
-		"-\n"		//	削除された２行目
-		"=ccc\n",
-		"=aaa\n"
-		"+bbb\n"	//	挿入された２行目
-		"=ccc\n",
-		"x",		//	文書先頭一文字削除
-		"!aa\n"
-		"-\n"		//	パディング行
-		"=ccc\n",
-		"!aaa\n"
-		"!bbb\n"	//	
-		"=ccc\n",
-		"ixyz\x1b",
-		"!xyzaa\n"
-		"-\n"		//	パディング行
-		"=ccc\n",
-		"!aaa\n"
-		"!bbb\n"	//	
-		"=ccc\n",
+	//	追加 diff テストケース（Gemini先生レビューから Muse が選定、2026-11-17）
+	{"Multiple diffs in one line",
+		"=aaa bbb ccc\n",
+		"=aaa bbb ccc\n",
+		"L@1:5iXXX \x1b",
+		"!aaa 《XXX 》bbb ccc\n",
+		"!aaa 《》bbb ccc\n",
+		"R@1:9iYYY \x1b",
+		"!aaa 《XXX 》bbb 《》ccc\n",
+		"!aaa 《》bbb 《YYY 》ccc\n",
 	},
-#endif
-#if 0
-	{"Basic diff test",
-		"=aaa\n"
-		"-\n"		//	削除された２行目
-		"=ccc\n",
-		"=aaa\n"
-		"+bbb\n"	//	挿入された２行目
-		"=ccc\n",
-		">x",		//	右側文書先頭一文字削除
-		"!aaa\n"
-		"-\n"		//	パディング行
-		"=ccc\n",
-		"!aa\n"
-		"!bbb\n"	//	
-		"=ccc\n",
+	{"Japanese word boundary",
+		"!あいうえお《漢字》カタカナ\n",
+		"!あいうえお《幹事》カタカナ\n",
 	},
-#endif
-#if 0
-	{"Basic diff test (2)",
-		"=aaa\n"
-		"+bbb\n"	//	挿入された２行目
-		"=ccc\n",
-		"=aaa\n"
-		"-\n"		//	削除された２行目
-		"=ccc\n",
-		"x",		//	文書先頭一文字削除
-		"!aa\n"
-		"!bbb\n"	//	挿入された２行目
-		"=ccc\n",
-		"!aaa\n"
-		"-\n"		//	パディング行
-		"=ccc\n",
+	{"Symbol word boundary",
+		"!foo(《aaa》)\n",
+		"!foo(《bbb》)\n",
 	},
-#endif
+	{"Delete first line and undo",
+		"=aaa\n"
+		"=bbb\n",
+		"=aaa\n"
+		"=bbb\n",
+		"d1",
+		"-\n"
+		"=bbb\n",
+		"+aaa\n"
+		"=bbb\n",
+		"u",
+		"=aaa\n"
+		"=bbb\n",
+		"=aaa\n"
+		"=bbb\n",
+	},
+	{"Insert word at line head",
+		"=aaa bbb\n",
+		"=aaa bbb\n",
+		"L@1:1iXXX \x1b",
+		"!《XXX 》aaa bbb\n",
+		"!《》aaa bbb\n",
+	},
+	{"Delete empty line",
+		"=aaa\n"
+		"=\n"
+		"=bbb\n",
+		"=aaa\n"
+		"=\n"
+		"=bbb\n",
+		"d2",
+		"=aaa\n"
+		"-\n"
+		"=bbb\n",
+		"=aaa\n"
+		"+\n"
+		"=bbb\n",
+	},
+	{"Delete space between words",
+		"=aa bbb\n",
+		"=aa bbb\n",
+		"L@1:3x",
+		"!《aabbb》\n",
+		"!《aa bbb》\n",
+	},
+	{"Char delete on right and undo redo",
+		"=aaa\n"
+		"=bbb\n",
+		"=aaa\n"
+		"=bbb\n",
+		"R@1:2x",
+		"!《aaa》\n"
+		"=bbb\n",
+		"!《aa》\n"
+		"=bbb\n",
+		"Ru",
+		"=aaa\n"
+		"=bbb\n",
+		"=aaa\n"
+		"=bbb\n",
+		"RU",
+		"!《aaa》\n"
+		"=bbb\n",
+		"!《aa》\n"
+		"=bbb\n",
+	},
+	{"Unequal modify lines (reversed)",
+		"!aaa《 》bbb\n"
+		"-\n",
+		"!aaa《》\n"
+		"!bbb\n",
+	},
 };
 void set_text(MarkdownEditor* editor, const QString& text) {
 	editor->removeAllDummyLines();	//	前のケースのダミー行と diff 状態（ブロック番号表・挿入フラグ）を持ち越さない
