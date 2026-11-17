@@ -4770,6 +4770,76 @@ QStringList g_diffTestCase[] = {
 		"!aaa《》\n"
 		"!bbb\n",
 	},
+	//	Clause 提案テストケース
+	// 1. 行単位（#0583, 0593, 0659, 0720, 1122）
+	{"Extra line in middle",
+		"=aaa\n+bbb\n=ccc\n",
+		"=aaa\n-\n=ccc\n",
+	},
+	{"Extra lines at head and tail",
+		"+aaa\n=bbb\n+ccc\n",
+		"-\n=bbb\n-\n",
+	},
+	{"Blank line vs missing line",
+		"=aaa\n+\n=bbb\n",
+		"=aaa\n-\n=bbb\n",
+	},
+	// 2. ダミー行上の編集は無視（#1248〜1250）
+	{"Edit on dummy line is ignored",
+		"=aaa\n-\n=ccc\n",
+		"=aaa\n+bbb\n=ccc\n",
+		"@2:1x",
+		"=aaa\n-\n=ccc\n",
+		"=aaa\n+bbb\n=ccc\n",
+		"@2:1dd",
+		"=aaa\n-\n=ccc\n",
+		"=aaa\n+bbb\n=ccc\n",
+	},
+	// 3. 記号トークンの差（#1361）
+	{"Symbol run differs",
+		"!a《(》b\n",
+		"!a《((》b\n",
+	},
+	// 4. 行オープンと undo（#0831, 0834, 1162）。左右どちらのビューでも
+	{"Open line and undo",
+		"=aaa\n=bbb\n",
+		"=aaa\n=bbb\n",
+		"@1:1ofoo\x1b",
+		"=aaa\n+foo\n=bbb\n",
+		"=aaa\n-\n=bbb\n",
+		"u",
+		"=aaa\n=bbb\n",
+		"=aaa\n=bbb\n",
+		"R@1:1ofoo\x1b",
+		"=aaa\n-\n=bbb\n",
+		"=aaa\n+foo\n=bbb\n",
+	},
+	// 5. 変更系コマンドの再計算と undo 一括化（#0732, 0889, 0953, 0962）
+	{"cw and undo",
+		"=aaa bbb\n",
+		"=aaa bbb\n",
+		"@1:1cwXXX\x1b",
+		"!《XXX》 bbb\n",
+		"!《aaa》 bbb\n",
+		"u",
+		"=aaa bbb\n",
+		"=aaa bbb\n",
+	},
+	{"Case toggle and replace char",
+		"=abc\n",
+		"=abc\n",
+		"@1:1~",
+		"!《Abc》\n",
+		"!《abc》\n",
+		"@1:2rX",
+		"!《AXc》\n",
+		"!《abc》\n",
+	},
+	// 6. 不均等ブロックの拡張（2→1 の類推。実装の出力と要照合）
+	{"Unequal modify lines (3 to 1)",
+		"!《aaa》\n!《bbb》\n!《ccc》\n",
+		"!《xxx》《》\n-\n-\n",
+	},
 };
 void set_text(MarkdownEditor* editor, const QString& text) {
 	editor->removeAllDummyLines();	//	前のケースのダミー行と diff 状態（ブロック番号表・挿入フラグ）を持ち越さない
@@ -5237,7 +5307,16 @@ bool MainWindow::test_diff_line(MarkdownEditor* editor, const QString& text, int
 					}
 					return merged;
 				};
-				if( mergeAdjacent(actRanges) != mergeAdjacent(expRanges) || actGaps != expGaps ) {
+				auto actMerged = mergeAdjacent(actRanges);
+				// 結合後も残る長さ０の範囲（行末の改行トークンの差分等）は、表示上ギャップと区別がつかないためギャップとして比較する
+				QList<QPair<int, int>> actRangesCmp;
+				for(const auto& r: actMerged) {
+					if( r.second == 0 ) {
+						if( !actGaps.contains(r.first) ) actGaps.append(r.first);
+					} else
+						actRangesCmp.append(r);
+				}
+				if( actRangesCmp != mergeAdjacent(expRanges) || actGaps != expGaps ) {
 					do_output(QString("\n[FAILED #%1] Block %2 word ranges/gaps mismatch\n").arg(++total_failed).arg(block.blockNumber()));
 					return false;
 				}
