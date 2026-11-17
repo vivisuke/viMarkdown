@@ -4656,13 +4656,13 @@ QStringList g_diffTestCase[] = {
 		"!《aaabbb》\n"
 		"=bbb\n",
 		"J1",
-		"=aaabbb\n"
+		"!《aaa 》bbb\n"
 		"-\n",
-		"=aaabbb\n"
-		"+bbb\n",
+		"!《aaabbb》\n"
+		"!bbb\n",
 		"RJ1",
-		"=aaabbb\n",
-		"=aaabbb\n",
+		"!《aaa》 bbb\n",
+		"!《aaabbb》 bbb\n",
 	},
 	{"Unequal modify lines",
 		"!《aaa》\n"
@@ -4904,8 +4904,23 @@ bool do_action(MarkdownEditor* editor, MarkdownEditor* diffview, const QString& 
 				error = QStringLiteral("next line is a dummy line");
 				return false;
 			}
-			cursor.setPosition(block.position() + block.length() - 1);	//	行末（改行位置）
+			//	vi の J と同様に、現在行の行末空白と次行の行頭空白を取り除き、原則として空白を1つ挟んで連結する（v0.3 #1400）
+			QString curText = block.text();
+			QString nextText = next.text();
+			int trailing = 0;
+			while( trailing < curText.size() && (curText[curText.size() - 1 - trailing] == u' ' || curText[curText.size() - 1 - trailing] == u'\t') )
+				++trailing;
+			int leading = 0;
+			while( leading < nextText.size() && (nextText[leading] == u' ' || nextText[leading] == u'\t') )
+				++leading;
+			bool needsSpace = curText.size() != trailing && nextText.size() != leading && nextText[leading] != u')';
+			ptr->openUndoBlock();
+			cursor.setPosition(block.position() + (int)curText.size() - trailing);
+			cursor.setPosition(next.position() + leading, QTextCursor::KeepAnchor);
 			ptr->do_deleteText(cursor);
+			if( needsSpace )
+				ptr->do_insertText(cursor, QStringLiteral(" "));
+			ptr->closeUndoBlock();
 		}
 		ptr->setTextCursor(cursor);
 		return true;
