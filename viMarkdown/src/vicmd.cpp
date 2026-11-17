@@ -1295,6 +1295,12 @@ doneW:
 			cursor.movePosition(QTextCursor::NextBlock, moveMode, rcnt-1);
 			block = cursor.block();
 		}
+		if( block.text().isEmpty() && block.blockNumber() > 0 && block.blockNumber() == doc->blockCount() - 1 ) {
+			//	末尾改行で生じる空ブロックに着地した場合は、実在する最終行を対象にする（v0.3 #1409）
+			block = block.previous();
+			if( block.text().isEmpty() )
+				cursor.setPosition(block.position(), moveMode);
+		}
 		if( !block.text().isEmpty() ) {
 			cursor.setPosition(block.position() + block.text().size() - 1, moveMode);
 			if( gvi.m_operator == u'y' )
