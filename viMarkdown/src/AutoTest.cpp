@@ -4740,6 +4740,7 @@ QStringList g_diffTestCase[] = {
 #endif
 };
 void set_text(MarkdownEditor* editor, const QString& text) {
+	editor->removeAllDummyLines();	//	前のケースのダミー行と diff 状態（ブロック番号表・挿入フラグ）を持ち越さない
 	editor->clear();
 	QTextCursor cursor = editor->textCursor();
 	//auto lst = text.split(u'\n', Qt::SkipEmptyParts);
