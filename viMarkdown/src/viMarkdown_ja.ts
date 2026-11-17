@@ -78,6 +78,32 @@ Do you want to save your changes?</source>
         <source>You have been authenticated as a legitimate user.</source>
         <translation>正規ユーザとして認証されました。</translation>
     </message>
+    <message>
+        <source>diff with file</source>
+        <translation>ファイルと比較</translation>
+    </message>
+    <message>
+        <source>The file is already open in another tab:
+%1
+Close that tab and continue with diff?</source>
+        <translation>ファイルは既に別のタブで開かれています。
+%1
+そのタブを閉じて比較を続けますか？</translation>
+    </message>
+    <message>
+        <source>Close tab and diff</source>
+        <translation>タブを閉じて比較</translation>
+    </message>
+    <message>
+        <source>Cancel</source>
+        <translation>キャンセル</translation>
+    </message>
+    <message>
+        <source>Cannot diff a file with itself:
+%1</source>
+        <translation>ファイル自身とは比較できません：
+%1</translation>
+    </message>
 </context>
 <context>
     <name>MainWindowClass</name>

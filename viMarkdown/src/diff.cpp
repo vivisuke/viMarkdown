@@ -444,12 +444,12 @@ void MainWindow::onAction_DiffWithFile() {
 	if( ix >= 0 ) {
 		qDebug() << fullPath << " is already open.";
 		if( ui->tabWidget->widget(ix) == base ) {
-			QMessageBox::warning(this, "diff with file",
+			QMessageBox::warning(this, tr("diff with file"),
 				tr("Cannot diff a file with itself:\n%1").arg(fullPath));
 			return;
 		}
 		QMessageBox msgBox(this);
-		msgBox.setWindowTitle("diff with file");
+		msgBox.setWindowTitle(tr("diff with file"));
 		msgBox.setText(tr("The file is already open in another tab:\n%1\nClose that tab and continue with diff?").arg(fullPath));
 		QAbstractButton *closeButton = msgBox.addButton(tr("Close tab and diff"), QMessageBox::AcceptRole);
 		msgBox.addButton(tr("Cancel"), QMessageBox::RejectRole);
@@ -1198,10 +1198,17 @@ void MainWindow::do_diff() {
 
     --m_processing;
 
+    //##//	カーソル復元に伴う「カーソルを表示範囲に入れる」最小スクロールが、ダミー行の抜き差しで
+    //##//	レイアウトが未確定な状態のときに誤作動しないよう、先にカーソル位置のレイアウトを確定させる（v0.3 #1390）
+    //##(void)docWidget->m_editor->cursorRect(cursor0);
+    // 例：直前位置が正しい前提なら、シグナルを止めてから setTextCursor → 直後復元
+	QSignalBlocker sb(docWidget->m_editor->verticalScrollBar()); // 必要なら peer 側も
+	const int v = docWidget->m_editor->verticalScrollBar()->value();
     docWidget->m_editor->setTextCursor(cursor0);
+    docWidget->m_editor->verticalScrollBar()->setValue(v);
     //	スクロール位置を復元する（v0.3 #1390）。同期スロット経由で互いに
     //	上書きし合わないよう、両バーのシグナルを止めて個別に戻す。
-    {
+    if(0) {
         int v1, v2;
         QSignalBlocker vblocker1(vbar1);
         QSignalBlocker vblocker2(vbar2);
