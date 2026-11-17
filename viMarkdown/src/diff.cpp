@@ -677,9 +677,12 @@ std::vector<WordToken> tokenize(const QString &text) {
             tokens.push_back({text.mid(start, i - start), start});
         } 
         else {
-            // 記号（カンマ、ピリオド、ブラケットなど）は1文字ずつトークン化
-            tokens.push_back({text.mid(i, 1), i});
-            i++;
+            // 記号列（カンマ、ピリオド、ブラケット等の連続）はひとつの単語としてトークン化（v0.3 #1406）
+            int start = i;
+            while (i < len && !text[i].isSpace() && !text[i].isLetterOrNumber()) {
+                i++;
+            }
+            tokens.push_back({text.mid(start, i - start), start});
         }
     }
     return tokens;
