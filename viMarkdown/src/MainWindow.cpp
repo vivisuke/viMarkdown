@@ -1208,6 +1208,12 @@ MarkdownEditor *MainWindow::newEditor(DocWidget *docWidget, QSplitter *splitter,
 	connect(mdEditor, &MarkdownEditor::canUndoRedoChanged, this, &MainWindow::updateUndoRedoEnabled);
 	//connect(mdEditor, &MarkdownPreview::textChanged, this, &MainWindow::onMDTextChanged);
 	connect(mdEditor->document(), &QTextDocument::modificationChanged, this, &MainWindow::onModificationChanged);
+	connect(mdEditor->verticalScrollBar(), &QScrollBar::valueChanged, this, [](int value) {
+		qDebug().noquote() << QString("valueChanged(%1)").arg(value);	//	v0.3 #1390 調査用
+		if( value == 1 ) {
+			qDebug() << "value == 1";
+		}
+	});
 	mdEditor->setPlaceholderText(g.m_japanese ? R"(
 ここにMarkdownを入力
 マークダウン書式は Output を見てね
