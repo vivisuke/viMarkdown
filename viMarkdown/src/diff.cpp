@@ -742,10 +742,14 @@ void calculateAndSetWordDiff(QTextBlock block1, QTextBlock block2, const QString
     {
         int pos1 = 0, pos2 = 0;
         int runDel = 0, runAdd = 0;	// 変更区間内の削除・追加トークン数
+        int runDelNL = 0, runAddNL = 0;	// 変更区間内の削除・追加トークンに含まれる改行数
         auto flushRun = [&]() {
-            if (runDel > runAdd) gaps2.push_back(pos2);		// 削除が余る → doc2 側の現在位置が欠落位置
-            else if (runAdd > runDel) gaps1.push_back(pos1);	// 追加が余る → doc1 側の現在位置が欠落位置
+            // 対になる分は置換であり欠落ではない（同一行内の置換でトークン数が食い違うだけの場合は欠落とはしない）
+            // 欠落位置とするのは、片側が空の純挿入・純削除か、行構造（改行数）が食い違う場合に限る。
+            if (runDel > runAdd && (runAdd == 0 || runDelNL != runAddNL)) gaps2.push_back(pos2);		// 削除が余る → doc2 側の現在位置が欠落位置
+            else if (runAdd > runDel && (runDel == 0 || runDelNL != runAddNL)) gaps1.push_back(pos1);	// 追加が余る → doc1 側の現在位置が欠落位置
             runDel = runAdd = 0;
+            runDelNL = runAddNL = 0;
         };
         for (const auto &item : ses) {
             const WordToken &token = item.first;
@@ -758,10 +762,12 @@ void calculateAndSetWordDiff(QTextBlock block1, QTextBlock block2, const QString
                 break;
             case dtl::SES_DELETE:	// doc1 にだけある単語
                 ++runDel;
+                runDelNL += (int)token.text.count(u'\n');
                 pos1 += sz;
                 break;
             case dtl::SES_ADD:		// doc2 にだけある単語
                 ++runAdd;
+                runAddNL += (int)token.text.count(u'\n');
                 pos2 += sz;
                 break;
             }
