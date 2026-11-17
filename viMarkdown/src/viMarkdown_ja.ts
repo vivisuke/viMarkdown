@@ -41,13 +41,25 @@
     <message>
         <source>The document &apos;%1&apos; has been modified.
 Do you want to save your changes ?</source>
-        <translation type="vanished">ドキュメント「%1」は変更されています。
+        <translation>ドキュメント「%1」は変更されています。
 変更内容を保存しますか？</translation>
     </message>
     <message>
         <source>The document has been modified.
 Do you want to save your changes?</source>
         <translation type="obsolete">ドキュメントが変更されています。
+変更を保存しますか？</translation>
+    </message>
+    <message>
+        <source>Confirm save</source>
+        <translation>保存の確認</translation>
+    </message>
+    <message>
+        <source>The document has been modified.
+&apos;%1&apos; 
+Do you want to save your changes?</source>
+        <translation>ドキュメントが変更されています。
+&apos;%1&apos; 
 変更を保存しますか？</translation>
     </message>
     <message>

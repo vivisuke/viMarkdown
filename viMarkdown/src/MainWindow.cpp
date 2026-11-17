@@ -972,7 +972,7 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 			ui->tabWidget->setCurrentIndex(ix);
 			QString mess = QString(tr("The document '%1' has been modified.\nDo you want to save your changes ?")).arg(docWidget->m_title);
 			QMessageBox::StandardButton reply = QMessageBox::question(this,
-								  "Confirm save",
+								  tr("Confirm save"),
 								  mess,
 								  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel); // ボタンの種類
 
@@ -2359,7 +2359,7 @@ void MainWindow::do_close(bool forced) {
 	if( !forced && docWidget->isModified() ) {
 		QString path = docWidget->m_fullPath.isEmpty() ? docWidget->m_title : docWidget->m_fullPath;
 		QMessageBox::StandardButton reply = QMessageBox::question(this,
-								  "Confirm save",				 // タイトル
+								  tr("Confirm save"),				 // タイトル
 								  QString(tmp).arg(path), // 本文
 								  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel); // ボタンの種類
 		if (reply == QMessageBox::Yes) {
@@ -2372,7 +2372,7 @@ void MainWindow::do_close(bool forced) {
 		qDebug() << "diffview is modified.";
 		QString path = docWidget->m_diffPeerFullPath;
 		QMessageBox::StandardButton reply = QMessageBox::question(this,
-								  "Confirm save",				 // タイトル
+								  tr("Confirm save"),				 // タイトル
 								  QString(tmp).arg(path), // 本文
 								  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel); // ボタンの種類
 		if (reply == QMessageBox::Yes) {

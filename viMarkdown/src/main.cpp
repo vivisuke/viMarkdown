@@ -4,6 +4,7 @@
 #include <QSettings>
 #include <QLocale>
 #include <QTranslator>
+#include <QLibraryInfo>
 
 extern Global g;
 
@@ -27,6 +28,11 @@ int main(int argc, char *argv[])
 	    if (systemLocale.language() == QLocale::Japanese)		//	日本語環境の場合
 	    	lang = Japanese;
 	}
+
+    QTranslator qtTranslator;
+    if( lang == Japanese && qtTranslator.load("qtbase_ja", QLibraryInfo::path(QLibraryInfo::TranslationsPath))) {
+        app.installTranslator(&qtTranslator);	//	Qt 標準ボタン等を日本語化
+    }
 
     QTranslator translator;
     if( lang == Japanese && translator.load(":/MainWindow/viMarkdown_ja.qm")) {
