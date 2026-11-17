@@ -5059,11 +5059,30 @@ static bool lint_diff_pair(const QString& leftText, const QString& rightText, QS
 					error = QString("! line without ranges or gaps at row %1").arg(r + 1);
 					return false;
 				}
-				if( stripDiffRanges(lbody) != stripDiffRanges(rbody) ) {
-					error = QString("common parts of ! lines differ at row %1").arg(r + 1);
-					return false;
-				}
+
+
+
+
 			}
+		}
+	}
+	//	共通部分のチェックは、連続する ! 行（変更ハンク）をまとめて行う。
+	//	単語単位比較はハンク全体を連結して比較する仕様のため、共通部分が行をまたぐことがある。
+	auto isHunkRow = [](QChar lm, QChar rm) {
+		return (lm == u'!' && rm == u'!') || (lm == u'!' && rm == u'-') || (lm == u'-' && rm == u'!');
+	};
+	for(int r = 0; r < lrows.size();) {
+		if( !isHunkRow(lrows[r][0], rrows[r][0]) ) { ++r; continue; }
+		int start = r;
+		QString lCommon, rCommon;
+		while( r < lrows.size() && isHunkRow(lrows[r][0], rrows[r][0]) ) {
+			lCommon += stripDiffRanges(diffRowBody(lrows[r]));
+			rCommon += stripDiffRanges(diffRowBody(rrows[r]));
+			++r;
+		}
+		if( lCommon != rCommon ) {
+			error = QString("common parts of ! lines differ at row %1").arg(start + 1);
+			return false;
 		}
 	}
 	return true;
