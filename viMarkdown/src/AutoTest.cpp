@@ -1489,6 +1489,22 @@ const QList<ViTestCase> viTestCases = {
             "10$", "abc\n  defgh\n\nij\n┃", // 10$: 範囲外の大きなカウントは最終行（4行目）の末尾 'j' で止まる？
         }
     },
+	{ "Move to end of last line with excessive count (<num>$)",
+       "┃aaa\nbbb\n",
+       {
+           "3$", "aaa\nbb┃b\n", // 3$: カウント(3)が行数(2)を超過 → 最終行の末尾文字 'b' に移動（v0.3 #0803）
+           "0", "aaa\n┃bbb\n",  // 0: 最終行の行頭に戻る
+           "9$", "aaa\nbb┃b\n", // 9$: 大きなカウントでも最終行の末尾文字 'b' で止まる
+       }
+    },
+	{ "Move to end of last line with excessive count (<num>$) - three lines",
+	       "┃aaa\nbbb\nccc\n",
+	       {
+	           "2$", "aaa\nbb┃b\nccc\n", // 2$: 範囲内。2行目の末尾 'b' に移動
+	           "0", "aaa\n┃bbb\nccc\n",  // 0: 2行目の行頭に戻る
+	           "4$", "aaa\nbbb\ncc┃c\n", // 4$: カウント(4)が行数(3)を超過 → 最終行の末尾文字 'c' に移動
+	       }
+	},
 	{ "Jump to matching bracket (%) - Basic and Search",
         "┃(abc [def] {ghi})\n",
         {
