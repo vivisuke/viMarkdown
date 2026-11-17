@@ -5215,15 +5215,22 @@ void MainWindow::onAction_TestDiff() {
 		//	期待値の自己整合性チェック（lint）。不正なケースは実行しない
 		QString lintError;
 		bool lintOK = tc.size() >= 3 && (tc.size() - 3) % 3 == 0;
+		int lintStep = -1;	//	lint で落ちたステップ（期待値ペア表示用）
 		if( !lintOK )
 			lintError = QStringLiteral("malformed test case (item count)");
 		for(int s = 0; lintOK && s * 3 + 2 < tc.size(); ++s) {
-			if( !lint_diff_pair(tc[s * 3 + 1], tc[s * 3 + 2], lintError) )
+			if( !lint_diff_pair(tc[s * 3 + 1], tc[s * 3 + 2], lintError) ) {
 				lintOK = false;
+				lintStep = s;
+			}
 		}
 		if( !lintOK ) {
 			++total_tested;
-			do_output(QString("\n[FAILED #%1] %2: lint: %3\n").arg(++total_failed).arg(tc.isEmpty() ? QStringLiteral("(unnamed)") : tc[0]).arg(lintError));
+			do_output(QString("\n%1:\n[FAILED #%2] lint: %3\n").arg(tc.isEmpty() ? QStringLiteral("(unnamed)") : tc[0]).arg(++total_failed).arg(lintError));
+			if( lintStep >= 0 ) {
+				do_output("Expected state (left):\n" + tc[lintStep * 3 + 1]);
+				do_output("Expected state (right):\n" + tc[lintStep * 3 + 2]);
+			}
 			continue;
 		}
 		//do_output(tc[0] + "\n");
@@ -5237,7 +5244,7 @@ void MainWindow::onAction_TestDiff() {
 			} else {
 				QString error;
 				if( !do_action(editor, diffview, tc[i], error) ) {
-					do_output(QString("\n[FAILED #%1] %2: invalid action \"%3\": %4\n").arg(++total_failed).arg(tc[0]).arg(tc[i]).arg(error));
+					do_output(QString("\n[FAILED #%1] invalid action \"%2\": %3\n").arg(++total_failed).arg(tc[i]).arg(error));
 					break;
 				}
 				i += 3;
