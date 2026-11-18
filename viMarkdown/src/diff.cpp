@@ -1340,7 +1340,7 @@ bool parseUnifiedDiff(const QString &text, QVector<DiffFile> &files, QString *er
 	return true;
 }
 //	oldLines に file のハンクを適用し、結果を newLines に返す（失敗時は error に理由）
-bool applyDiffFile(const QStringList &oldLines, const DiffFile &file, QStringList &newLines, QString *error = nullptr) {
+bool applyDiffFile(const QStringList &oldLines, const DiffFile &file, QStringList &newLines, QString *error = nullptr, QString *detail = nullptr) {
 	newLines.clear();
 	int srcPos = 0;		//	oldLines の読み進み位置
 	for( int hi = 0; hi < file.m_hunks.size(); ++hi ) {
@@ -1370,6 +1370,16 @@ bool applyDiffFile(const QStringList &oldLines, const DiffFile &file, QStringLis
 					if( matchesAt(p) && (found < 0 || qAbs(p - pos) < qAbs(found - pos)) ) found = p;
 				if( found < 0 ) {
 					if( error != nullptr ) *error = QString("hunk %1: context mismatch").arg(hi + 1);
+					if( detail != nullptr ) {
+						QStringList d;
+						d << QString("hunk %1: patch expected (at line %2):").arg(hi + 1).arg(pos + 1);
+						for( const QString &s : oldSide ) d << s;
+						d << "current:";
+						int end = qMin(pos + (int)oldSide.size(), (int)oldLines.size());
+						for( int i = pos; i < end; ++i ) d << oldLines[i];
+						if( end <= pos ) d << "(no lines: beyond end of file)";
+						*detail = d.join('\n');
+					}
 					return false;
 				}
 				pos = found;
@@ -1472,10 +1482,12 @@ void MainWindow::do_merge_file(const DiffFile &file, bool wrapRight) {
 	QStringList oldLines = oldText.split('\n');
 	if( oldText.endsWith('\n') ) oldLines.removeLast();
 	QStringList newLines;
-	if( !applyDiffFile(oldLines, file, newLines, &error) ) {
+	QString detail;
+	if( !applyDiffFile(oldLines, file, newLines, &error, &detail) ) {
 		QString msg = tr("Merge: cannot apply patch (%1)").arg(error);
 		statusBar()->showMessage(msg, 5000);
 		do_output(msg + "\n");
+		if( !detail.isEmpty() ) do_output(detail + "\n");
 		//dumpLinesToOutput("buffer:", oldLines);
 		return;		//	タブには元のテキストが残るだけ
 	}
