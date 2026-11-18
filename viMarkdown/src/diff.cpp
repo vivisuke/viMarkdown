@@ -156,6 +156,12 @@ void MarkdownEditor::removeAllDummyLines() {
     QTextDocument *doc = document();
     if (!doc) return;
     if (!m_dummyInserted) return;
+    //	文字挿入などで do_diff() より先にダミー行が除去される場合、除去前のスクロール位置を退避する（v0.3 #1390）
+    if (m_docWidget && m_docWidget->m_diffMode && !m_docWidget->m_hasSavedDiffScroll) {
+        m_docWidget->m_savedDiffScroll1 = m_docWidget->m_editor->verticalScrollBar()->value();
+        m_docWidget->m_savedDiffScroll2 = m_docWidget->m_diffview->verticalScrollBar()->value();
+        m_docWidget->m_hasSavedDiffScroll = true;
+    }
     qDebug() << "removeAllDummyLines()";
     // シグナルを一時的に止めて、途中で do_diff が呼ばれないようにする
     QSignalBlocker blocker(this); 
@@ -542,6 +548,7 @@ void MainWindow::onAction_DiffMode(bool checked) {
 		//qDebug() << "modified = " << b;
 	} else {
 		docWidget->m_diffMode = false;
+		docWidget->m_hasSavedDiffScroll = false;
 		docWidget->m_diffPeerFullPath.clear();
 		docWidget->m_editor->setDiffMode(false);
 		QScrollBar *bar1 = docWidget->m_editor->horizontalScrollBar();
@@ -1120,8 +1127,6 @@ void MainWindow::applyDiffToDocuments(
 
     cur1.endEditBlock();
     cur2.endEditBlock();
-    docWidget->m_editor->setTextCursor(cur1);
-    docWidget->m_diffview->setTextCursor(cur2);
 }
 void MainWindow::do_diff() {
 	if (m_processing != 0) return;
@@ -1136,8 +1141,8 @@ void MainWindow::do_diff() {
     //	末尾のカーソル復元時の最小スクロールでは元の位置に戻らないことがある。
     QScrollBar *vbar1 = docWidget->m_editor->verticalScrollBar();
     QScrollBar *vbar2 = docWidget->m_diffview->verticalScrollBar();
-    const int vscroll1 = vbar1->value();
-    const int vscroll2 = vbar2->value();
+    const int vscroll1 = docWidget->m_hasSavedDiffScroll ? docWidget->m_savedDiffScroll1 : vbar1->value();
+    const int vscroll2 = docWidget->m_hasSavedDiffScroll ? docWidget->m_savedDiffScroll2 : vbar2->value();
     //int pos0 = cursor.position();
     //qDebug() << "cursor.position() = " << pos0 << ", blockNumber() = " << cursor.blockNumber();;
 
@@ -1203,23 +1208,22 @@ void MainWindow::do_diff() {
     //##//	レイアウトが未確定な状態のときに誤作動しないよう、先にカーソル位置のレイアウトを確定させる（v0.3 #1390）
     //##(void)docWidget->m_editor->cursorRect(cursor0);
     // 例：直前位置が正しい前提なら、シグナルを止めてから setTextCursor → 直後復元
-	QSignalBlocker sb(docWidget->m_editor->verticalScrollBar()); // 必要なら peer 側も
-	const int v = docWidget->m_editor->verticalScrollBar()->value();
 	//	カーソル復元に伴う同期（逆流）で復元結果が上書きされないよう、両ビューのシグナルを止めてから復元する（v0.3 #1393）
-	QSignalBlocker sbEditor(docWidget->m_editor);
-	QSignalBlocker sbDiffView(docWidget->m_diffview);
-    docWidget->m_editor->setTextCursor(cursor0);
-    docWidget->m_diffview->setTextCursor(cursor2);
-    docWidget->m_editor->verticalScrollBar()->setValue(v);
+    {
+        QSignalBlocker sbEditor(docWidget->m_editor);
+        QSignalBlocker sbDiffView(docWidget->m_diffview);
+        docWidget->m_editor->setTextCursor(cursor0);
+        docWidget->m_diffview->setTextCursor(cursor2);
+    }
     //	スクロール位置を復元する（v0.3 #1390）。同期スロット経由で互いに
     //	上書きし合わないよう、両バーのシグナルを止めて個別に戻す。
-    if(0) {
-        int v1, v2;
+    {
         QSignalBlocker vblocker1(vbar1);
         QSignalBlocker vblocker2(vbar2);
-        vbar1->setValue(v1 = qMin(vscroll1, vbar1->maximum()));
-        vbar2->setValue(v2 = qMin(vscroll2, vbar2->maximum()));
+        vbar1->setValue(qMin(vscroll1, vbar1->maximum()));
+        vbar2->setValue(qMin(vscroll2, vbar2->maximum()));
     }
+    docWidget->m_hasSavedDiffScroll = false;
     //cursor = docWidget->m_editor->textCursor();
     //pos0 = cursor.position();
     //qDebug() << "cursor.position() = " << pos0 << ", blockNumber() = " << cursor.blockNumber();;

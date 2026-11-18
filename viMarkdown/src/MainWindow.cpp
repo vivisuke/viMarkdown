@@ -159,8 +159,8 @@ MainWindow::MainWindow(QWidget *parent)
 		DocWidget *docWidget = getCurDocWidget();
 		QPointer<QScrollBar> vbar1 = docWidget ? docWidget->m_editor->verticalScrollBar() : nullptr;
 		QPointer<QScrollBar> vbar2 = docWidget ? docWidget->m_diffview->verticalScrollBar() : nullptr;
-		const int vscroll1 = vbar1 ? vbar1->value() : 0;
-		const int vscroll2 = vbar2 ? vbar2->value() : 0;
+		const int vscroll1 = (docWidget && docWidget->m_hasSavedDiffScroll) ? docWidget->m_savedDiffScroll1 : (vbar1 ? vbar1->value() : 0);
+		const int vscroll2 = (docWidget && docWidget->m_hasSavedDiffScroll) ? docWidget->m_savedDiffScroll2 : (vbar2 ? vbar2->value() : 0);
 		do_diff();
 		if( !vbar1.isNull() && !vbar2.isNull() ) {
 			QTimer::singleShot(0, this, [vbar1, vbar2, vscroll1, vscroll2]() {
