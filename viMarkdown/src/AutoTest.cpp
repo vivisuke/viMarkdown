@@ -4287,6 +4287,93 @@ const QList<ViTestCase> viTestCases = {
 			".", "one\nabc\nab┃c\ntwo\n",
 		}
 	},
+	{ "Fold (za) - Fold and unfold a section (v0.3 #1419)",
+		"┃# Sec\n",
+		"body1\n",
+		"body2\n",
+		"# Sec2\n",
+		"tail\n",
+		{
+			"za", "┃# Sec\n# Sec2\ntail\n",	//	折り畳まれて body1, body2 が見えなくなる
+			"za", "┃# Sec\nbody1\nbody2\n# Sec2\ntail\n",	//	展開されて再び見える
+		}
+	},
+	{ "Fold (za) - Nested headings fold together (v0.3 #1419)",
+		"┃# H1\n",
+		"body1\n",
+		"## H2\n",
+		"body2\n",
+		"# H1b\n",
+		"tail\n",
+		{
+			"za", "┃# H1\n# H1b\ntail\n",	//	子見出しごと折り畳まれる
+			"za", "┃# H1\nbody1\n## H2\nbody2\n# H1b\ntail\n",	//	子見出しごと展開される
+		}
+	},
+	{ "Fold (za) - Inner fold survives outer unfold (v0.3 #1419)",
+		"# H1\n",
+		"body1\n",
+		"┃## H2\n",
+		"body2\n",
+		"# H1b\n",
+		"tail\n",
+		{
+			"za", "# H1\nbody1\n┃## H2\n# H1b\ntail\n",	//	H2 を折り畳む（body2 が見えなくなる）
+			"gg", "┃# H1\nbody1\n## H2\n# H1b\ntail\n",	//	先頭へ。body2 は見えないまま
+			"za", "┃# H1\n# H1b\ntail\n",	//	H1 を折り畳む
+			"za", "┃# H1\nbody1\n## H2\n# H1b\ntail\n",	//	H1 を展開しても body2 は見えないまま（H2 の折り畳みが残る）
+		}
+	},
+	{ "Fold (zc/zo) - Close and open (v0.3 #1419)",
+		"┃# Sec\n",
+		"body1\n",
+		"# Sec2\n",
+		"tail\n",
+		{
+			"zc", "┃# Sec\n# Sec2\ntail\n",
+			"zc", "┃# Sec\n# Sec2\ntail\n",	//	既に折り畳まれている：変化なし
+			"zo", "┃# Sec\nbody1\n# Sec2\ntail\n",
+			"zo", "┃# Sec\nbody1\n# Sec2\ntail\n",	//	既に展開されている：変化なし
+		}
+	},
+	{ "Fold (za) - On a body line does nothing (v0.3 #1419)",
+		"# Sec\n",
+		"bo┃dy1\n",
+		"# Sec2\n",
+		"tail\n",
+		{
+			"za", "# Sec\nbo┃dy1\n# Sec2\ntail\n",	//	非見出し行では何も折り畳まれない
+		}
+	},
+	{ "Fold (za) - Heading without a section does nothing (v0.3 #1419)",
+		"┃# H1\n",
+		"# H2\n",
+		"body\n",
+		{
+			"za", "┃# H1\n# H2\nbody\n",	//	直後が同レベル見出しで、折り畳む範囲が無い
+		}
+	},
+	{ "Fold (zM/zR) - Fold all and unfold all (v0.3 #1419)",
+		"┃# H1\n",
+		"body1\n",
+		"# H2\n",
+		"body2",
+		{
+			"zM", "┃# H1\n# H2",
+			"zR", "┃# H1\nbody1\n# H2\nbody2",
+		}
+	},
+	{ "Search (/) - Match in folded region unfolds (v0.3 #1416)",
+		"┃# Sec\n",
+		"needle line\n",
+		"body\n",
+		"# Sec2\n",
+		"tail\n",
+		{
+			"za", "┃# Sec\n# Sec2\ntail\n",	//	折り畳み。needle line は見えない
+			"/needle", "# Sec\n┃needle line\nbody\n# Sec2\ntail\n",	//	マッチ行が展開され、カーソルはマッチ先頭
+		}
+	},
 #endif
 //	ex commands
 #if 1
