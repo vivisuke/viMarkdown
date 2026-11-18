@@ -4287,6 +4287,93 @@ const QList<ViTestCase> viTestCases = {
 			".", "one\nabc\nab┃c\ntwo\n",
 		}
 	},
+	{ "Fold (za) - Fold and unfold a section (v0.3 #1417)",
+		"┃# Sec\n"
+		"body1\n"
+		"body2\n"
+		"# Sec2\n"
+		"tail\n",
+		{
+		"za", "┃# Sec\n『body1\nbody2\n』# Sec2\ntail\n", // セクションが折り畳まれる
+		"za", "┃# Sec\n# Sec2\ntail\n", // 展開されたことを明示
+		}
+	},
+	{ "Fold (za) - Nested headings fold together (v0.3 #1417)",
+		"┃# H1\n"
+		"body1\n"
+		"## H2\n"
+		"body2\n"
+		"# H1b\n"
+		"tail\n",
+		{
+		"za", "┃# H1\n『body1\n## H2\nbody2\n』# H1b\ntail\n", // 子見出しごと折り畳まれる
+		"za", "┃# H1\n# H1b\ntail\n", // 子見出しごと展開される
+		}
+	},
+	{ "Fold (za) - Inner fold survives outer unfold (v0.3 #1417)",
+		"# H1\n"
+		"body1\n"
+		"┃## H2\n"
+		"body2\n"
+		"# H1b\n"
+		"tail\n",
+		{
+		"za", "# H1\nbody1\n┃## H2\n『body2\n』# H1b\ntail\n", // H2 を折り畳む
+		"gg", "┃# H1\nbody1\n## H2\n『body2\n』# H1b\ntail\n", // 先頭へ。H2 の折り畳みは維持される
+		"za", "┃# H1\n『body1\n## H2\nbody2\n』# H1b\ntail\n", // H1 を折り畳む
+		"za", "┃# H1\n『body2\n』# H1b\ntail\n", // H1 を展開しても H2 の折り畳みは残る
+		}
+	},
+	{ "Fold (zc/zo) - Close and open (v0.3 #1417)",
+		"┃# Sec\n"
+		"body1\n"
+		"# Sec2\n"
+		"tail\n",
+		{
+		"zc", "┃# Sec\n『body1\n』# Sec2\ntail\n",
+		"zc", "┃# Sec\n『body1\n』# Sec2\ntail\n", // 既に折り畳まれている：変化なし
+		"zo", "┃# Sec\n# Sec2\ntail\n",
+		"zo", "┃# Sec\n# Sec2\ntail\n", // 既に展開されている：変化なし
+		}
+	},
+	{ "Fold (za) - On a body line does nothing (v0.3 #1417)",
+		"# Sec\n"
+		"bo┃dy1\n"
+		"# Sec2\n"
+		"tail\n",
+		{
+		"za", "# Sec\n# Sec2\ntail\n", // 非見出し行では折り畳まれず、表示のまま
+		}
+		},
+	{ "Fold (za) - Heading without a section does nothing (v0.3 #1417)",
+		"┃# H1\n"
+		"# H2\n"
+		"body\n",
+		{
+		"za", "", // 直後が同レベル見出しで、折り畳む範囲が無い
+		}
+	},
+	{ "Fold (zM/zR) - Fold all and unfold all (v0.3 #1417)",
+		"┃# H1\n"
+		"body1\n"
+		"# H2\n"
+		"body2",
+		{
+		"zM", "┃# H1\n『body1\n』# H2\n『body2』",
+		"zR", "┃# H1\n# H2\n",
+		}
+	},
+	{ "Search (/) - Match in folded region unfolds (v0.3 #1416)",
+		"┃# Sec\n"
+		"needle line\n"
+		"body\n"
+		"# Sec2\n"
+		"tail\n",
+		{
+		"za", "┃# Sec\n『needle line\nbody\n』# Sec2\ntail\n", // 折り畳み。needle line は非表示
+		"/needle", "# Sec\n# Sec2\ntail\n", // マッチ行が展開され、カーソルはマッチ先頭
+		}
+	},
 #endif
 //	ex commands
 #if 1
@@ -4481,6 +4568,56 @@ QString actualText(const QTextCursor& cursor) {
 	act.replace('\n', "\\n");
 	return act;
 }
+//	期待値テキスト中の 『...』（折り畳まれて非表示のはずの行範囲）と
+//	【...】（展開されて表示のはずの行範囲）を取り除き、
+//	非表示のはずの行番号（0 org.）の集合を返す（v0.3 #1417）。
+//	『』【】はステップの期待値テキスト専用で、初期テキスト（m_initialText）では使わない。
+QSet<int> parseFoldMarkers(const QString &src, QString &stripped) {
+	QSet<int> hidden;
+	stripped.clear();
+	bool inFold = false;
+	int line = 0;
+	for(auto ch: src) {
+		if( ch == u'『' ) {
+			inFold = true;
+		} else if( ch == u'』' ) {
+			inFold = false;
+		} else if( ch == u'【' || ch == u'】' ) {
+			//	表示のはずの範囲のマーカー：取り除くだけ（非表示集合には影響しない）
+		} else {
+			if( inFold ) hidden.insert(line);
+			stripped += ch;
+			if( ch == u'\n' ) ++line;
+		}
+	}
+	return hidden;
+}
+//	実際の文書テキストを、非表示行を 『...』 で囲み、カーソル位置に ┃ を挿入した表記で返す（v0.3 #1417）
+QString actualFoldText(const QTextCursor& cursor) {
+	QTextDocument *doc = cursor.document();
+	QStringList lines = doc->toPlainText().split(u'\n');
+	int pos = cursor.position();
+	int p = 0;
+	for(int i = 0; i < lines.size(); ++i) {
+		if( pos <= p + lines[i].size() ) {
+			lines[i].insert(pos - p, u'┃');
+			break;
+		}
+		p += lines[i].size() + 1;
+	}
+	QString act;
+	bool inFold = false;
+	int ln = 0;
+	for( QTextBlock b = doc->begin(); b.isValid(); b = b.next(), ++ln ) {
+		if( !b.isVisible() && !inFold ) { act += u'『'; inFold = true; }
+		if( b.isVisible() && inFold ) { act += u'』'; inFold = false; }
+		if( ln < lines.size() ) act += lines[ln];
+		if( b.next().isValid() ) act += u'\n';
+	}
+	if( inFold ) act += u'』';
+	act.replace('\n', "\\n");
+	return act;
+}
 void MainWindow::onAction_TestViCommands() {
 	qDebug() << "MainWindow::onAction_TestViCommands()";
 	addTab(QString("QA-%1").arg(++m_QA_tab_number));
@@ -4543,7 +4680,9 @@ void MainWindow::onAction_TestViCommands() {
 			QCoreApplication::processEvents();		//	溜まっているイベント処理
 			cursor = editor->textCursor();
 			int cpos1 = cursor.position();
-			QString exp = removeCursor(steps[k+1], pos, anchor);
+			QString expNoFold;
+			QSet<int> expHidden = parseFoldMarkers(steps[k+1], expNoFold);
+			QString exp = removeCursor(expNoFold, pos, anchor);
 			//cursor = editor->textCursor();
 			//int cpos2 = cursor.position();
 			if( cursor.document()->toPlainText() != exp ) {
@@ -4571,6 +4710,23 @@ void MainWindow::onAction_TestViCommands() {
 				//cursor.setPosition(pos);
 				//editor->setTextCursor(cursor);
 				break;
+			}
+			if( steps[k+1].contains(u'『') || steps[k+1].contains(u'【') ) {
+				QSet<int> actHidden;
+				int ln = 0;
+				for( QTextBlock b = cursor.document()->begin(); b.isValid(); b = b.next(), ++ln )
+					if( !b.isVisible() ) actHidden.insert(ln);
+				if( actHidden != expHidden ) {
+					QString exp = steps[k+1];
+					exp.replace('\n', "\\n");
+					QString act = actualFoldText(cursor);
+					++total_failed;
+					do_output(QString("\n[FAILED #%1] wrong fold state.\n").arg(total_failed));
+					do_output(QString("Before:   '%1'\n").arg(before));
+					do_output("Commands: '" + cmd_text + "'\n");
+					do_output(QString("Expected: '%1'\nActual:   '%2'\n").arg(exp).arg(act));
+					break;
+				}
 			}
 		}
 		do_output("\n");
