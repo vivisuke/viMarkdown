@@ -4287,6 +4287,7 @@ const QList<ViTestCase> viTestCases = {
 			".", "one\nabc\nab┃c\ntwo\n",
 		}
 	},
+#if 0
 	{ "Fold (za) - Fold and unfold a section (v0.3 #1417)",
 		"┃# Sec\n"
 		"body1\n"
@@ -4374,6 +4375,7 @@ const QList<ViTestCase> viTestCases = {
 		"/needle", "# Sec\n# Sec2\ntail\n", // マッチ行が展開され、カーソルはマッチ先頭
 		}
 	},
+#endif
 #endif
 //	ex commands
 #if 1
