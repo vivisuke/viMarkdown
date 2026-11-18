@@ -1130,6 +1130,7 @@ void MainWindow::do_diff() {
     ++m_doing_diff;
     QSignalBlocker blocker(this); 
     QTextCursor cursor0 = docWidget->m_editor->textCursor();
+    QTextCursor cursor2 = docWidget->m_diffview->textCursor();	//	右ビューのカーソルも保存する（v0.3 #1393）
     //	diff 再計算でスクロール位置を変えないための保存（v0.3 #1390）。
     //	再計算中のダミー行の抜き差しで Qt がスクロールバーを一時的に動かし、
     //	末尾のカーソル復元時の最小スクロールでは元の位置に戻らないことがある。
@@ -1204,7 +1205,11 @@ void MainWindow::do_diff() {
     // 例：直前位置が正しい前提なら、シグナルを止めてから setTextCursor → 直後復元
 	QSignalBlocker sb(docWidget->m_editor->verticalScrollBar()); // 必要なら peer 側も
 	const int v = docWidget->m_editor->verticalScrollBar()->value();
+	//	カーソル復元に伴う同期（逆流）で復元結果が上書きされないよう、両ビューのシグナルを止めてから復元する（v0.3 #1393）
+	QSignalBlocker sbEditor(docWidget->m_editor);
+	QSignalBlocker sbDiffView(docWidget->m_diffview);
     docWidget->m_editor->setTextCursor(cursor0);
+    docWidget->m_diffview->setTextCursor(cursor2);
     docWidget->m_editor->verticalScrollBar()->setValue(v);
     //	スクロール位置を復元する（v0.3 #1390）。同期スロット経由で互いに
     //	上書きし合わないよう、両バーのシグナルを止めて個別に戻す。

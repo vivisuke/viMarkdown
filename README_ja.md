@@ -79,7 +79,7 @@
 ## ■ インストール・起動方法（Windows）
 下記より viMarkdown-0xxxx.zip をダウンロード・解凍し、viMarkdown.exe を起動します。
 
-- 開発版（ver 0.3.x）ダウンロード：[Release](https://github.com/vivisuke/viMarkdown/releases)
+- 最新版（ver 0.3.x）ダウンロード：[Release](https://github.com/vivisuke/viMarkdown/releases)
 - 安定版（ver 0.2.x）ダウンロード：[Release](https://github.com/vivisuke/viMarkdown/releases/v0.2.004)
 
 ## ■ ビルド方法
