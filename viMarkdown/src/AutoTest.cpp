@@ -4287,95 +4287,6 @@ const QList<ViTestCase> viTestCases = {
 			".", "one\nabc\nab┃c\ntwo\n",
 		}
 	},
-#if 0
-	{ "Fold (za) - Fold and unfold a section (v0.3 #1417)",
-		"┃# Sec\n"
-		"body1\n"
-		"body2\n"
-		"# Sec2\n"
-		"tail\n",
-		{
-		"za", "┃# Sec\n『body1\nbody2\n』# Sec2\ntail\n", // セクションが折り畳まれる
-		"za", "┃# Sec\n# Sec2\ntail\n", // 展開されたことを明示
-		}
-	},
-	{ "Fold (za) - Nested headings fold together (v0.3 #1417)",
-		"┃# H1\n"
-		"body1\n"
-		"## H2\n"
-		"body2\n"
-		"# H1b\n"
-		"tail\n",
-		{
-		"za", "┃# H1\n『body1\n## H2\nbody2\n』# H1b\ntail\n", // 子見出しごと折り畳まれる
-		"za", "┃# H1\n# H1b\ntail\n", // 子見出しごと展開される
-		}
-	},
-	{ "Fold (za) - Inner fold survives outer unfold (v0.3 #1417)",
-		"# H1\n"
-		"body1\n"
-		"┃## H2\n"
-		"body2\n"
-		"# H1b\n"
-		"tail\n",
-		{
-		"za", "# H1\nbody1\n┃## H2\n『body2\n』# H1b\ntail\n", // H2 を折り畳む
-		"gg", "┃# H1\nbody1\n## H2\n『body2\n』# H1b\ntail\n", // 先頭へ。H2 の折り畳みは維持される
-		"za", "┃# H1\n『body1\n## H2\nbody2\n』# H1b\ntail\n", // H1 を折り畳む
-		"za", "┃# H1\n『body2\n』# H1b\ntail\n", // H1 を展開しても H2 の折り畳みは残る
-		}
-	},
-	{ "Fold (zc/zo) - Close and open (v0.3 #1417)",
-		"┃# Sec\n"
-		"body1\n"
-		"# Sec2\n"
-		"tail\n",
-		{
-		"zc", "┃# Sec\n『body1\n』# Sec2\ntail\n",
-		"zc", "┃# Sec\n『body1\n』# Sec2\ntail\n", // 既に折り畳まれている：変化なし
-		"zo", "┃# Sec\n# Sec2\ntail\n",
-		"zo", "┃# Sec\n# Sec2\ntail\n", // 既に展開されている：変化なし
-		}
-	},
-	{ "Fold (za) - On a body line does nothing (v0.3 #1417)",
-		"# Sec\n"
-		"bo┃dy1\n"
-		"# Sec2\n"
-		"tail\n",
-		{
-		"za", "# Sec\n# Sec2\ntail\n", // 非見出し行では折り畳まれず、表示のまま
-		}
-		},
-	{ "Fold (za) - Heading without a section does nothing (v0.3 #1417)",
-		"┃# H1\n"
-		"# H2\n"
-		"body\n",
-		{
-		"za", "", // 直後が同レベル見出しで、折り畳む範囲が無い
-		}
-	},
-	{ "Fold (zM/zR) - Fold all and unfold all (v0.3 #1417)",
-		"┃# H1\n"
-		"body1\n"
-		"# H2\n"
-		"body2",
-		{
-		"zM", "┃# H1\n『body1\n』# H2\n『body2』",
-		"zR", "┃# H1\n# H2\n",
-		}
-	},
-	{ "Search (/) - Match in folded region unfolds (v0.3 #1416)",
-		"┃# Sec\n"
-		"needle line\n"
-		"body\n"
-		"# Sec2\n"
-		"tail\n",
-		{
-		"za", "┃# Sec\n『needle line\nbody\n』# Sec2\ntail\n", // 折り畳み。needle line は非表示
-		"/needle", "# Sec\n# Sec2\ntail\n", // マッチ行が展開され、カーソルはマッチ先頭
-		}
-	},
-#endif
 #endif
 //	ex commands
 #if 1
@@ -4555,24 +4466,58 @@ QString removeCursor(const QString &src, int &pos, int &anchor) {
 	}
 	return dst;
 }
+//	表示されているブロックのみからなる文書テキストを返す（折り畳まれた行はスキップする）
+QString visiblePlainText(QTextDocument *doc) {
+	QString text;
+	bool first = true;
+	for( QTextBlock b = doc->begin(); b.isValid(); b = b.next() ) {
+		if( !b.isVisible() ) continue;	//	折り畳まれた行はスキップ
+		if( !first ) text += u'\n';
+		first = false;
+		text += b.text();
+	}
+	return text;
+}
+//	文書上の絶対位置を、表示テキスト上の位置に変換する。
+//	折り畳まれたブロック内の位置は、その直前の表示テキスト末尾の位置に変換する。
+int toVisiblePos(QTextDocument *doc, int pos) {
+	int vpos = 0;
+	bool first = true;
+	for( QTextBlock b = doc->begin(); b.isValid(); b = b.next() ) {
+		if( b.isVisible() ) {
+			if( !first ) vpos += 1;	//	区切りの '\n'
+			first = false;
+			if( pos <= b.position() + (int)b.text().size() )
+				return vpos + qMax(0, pos - b.position());
+			vpos += (int)b.text().size();
+		} else if( pos >= b.position() && pos < b.position() + b.length() ) {
+			return vpos;	//	折り畳まれたブロック内
+		}
+	}
+	return vpos;
+}
 QString actualText(const QTextCursor& cursor) {
-	QString act = cursor.document()->toPlainText();
-	act.insert(cursor.position(), u'┃');
+	QTextDocument *doc = cursor.document();
+	QString act = visiblePlainText(doc);
+	int vpos = toVisiblePos(doc, cursor.position());
+	act.insert(vpos, u'┃');
 	if( gvi.m_vMode == u'v' ) {
-		if( gvi.m_vAnchor <= cursor.position() ) {
-			act.insert(gvi.m_vAnchor, u'《');
-			act.insert(cursor.position() + 3, u'》');
+		int vanchor = toVisiblePos(doc, gvi.m_vAnchor);
+		if( vanchor <= vpos ) {
+			act.insert(vanchor, u'《');
+			act.insert(vpos + 3, u'》');
 		} else {
-			act.insert(cursor.position(), u'《');
-			act.insert(gvi.m_vAnchor + 3, u'》');
+			act.insert(vpos, u'《');
+			act.insert(vanchor + 3, u'》');
 		}
 	}
 	act.replace('\n', "\\n");
 	return act;
 }
 //	期待値テキスト中の 『...』（折り畳まれて非表示のはずの行範囲）と
-//	【...】（展開されて表示のはずの行範囲）を取り除き、
+//	【...】（展開されて表示のはずの行範囲）のマーカーを取り除き、
 //	非表示のはずの行番号（0 org.）の集合を返す（v0.3 #1417）。
+//	actual テキストは折り畳まれた行を含まないので、『...』 の中身は stripped にも含めない。
 //	『』【】はステップの期待値テキスト専用で、初期テキスト（m_initialText）では使わない。
 QSet<int> parseFoldMarkers(const QString &src, QString &stripped) {
 	QSet<int> hidden;
@@ -4587,8 +4532,10 @@ QSet<int> parseFoldMarkers(const QString &src, QString &stripped) {
 		} else if( ch == u'【' || ch == u'】' ) {
 			//	表示のはずの範囲のマーカー：取り除くだけ（非表示集合には影響しない）
 		} else {
-			if( inFold ) hidden.insert(line);
-			stripped += ch;
+			if( inFold )
+				hidden.insert(line);	//	折り畳まれた行は stripped に含めない
+			else
+				stripped += ch;
 			if( ch == u'\n' ) ++line;
 		}
 	}
@@ -4650,8 +4597,8 @@ void MainWindow::onAction_TestViCommands() {
 		for(int k = 0; k < steps.size(); k+=2) {
 			++total_tested;
 			do_output(".");
-			QString before = cursor.document()->toPlainText();
-			before.insert(cursor.position(), u'┃');
+			QString before = visiblePlainText(cursor.document());
+			before.insert(toVisiblePos(cursor.document(), cursor.position()), u'┃');
 			before.replace('\n', "\\n");
 			const QString cmd_text = steps[k];
 			for(int i = 0; i < cmd_text.size(); ++i) {
@@ -4687,7 +4634,7 @@ void MainWindow::onAction_TestViCommands() {
 			QString exp = removeCursor(expNoFold, pos, anchor);
 			//cursor = editor->textCursor();
 			//int cpos2 = cursor.position();
-			if( cursor.document()->toPlainText() != exp ) {
+			if( visiblePlainText(cursor.document()) != exp ) {
 				QString exp = steps[k+1];
 				exp.replace('\n', "\\n");
 				QString act = actualText(cursor);
@@ -4699,7 +4646,7 @@ void MainWindow::onAction_TestViCommands() {
 				//do_output("expected:\n'" + exp + "', but:\n'" + cursor.document()->toPlainText() + "'\n");
 				break;
 			}
-			if( cursor.position() != pos ) {
+			if( toVisiblePos(cursor.document(), cursor.position()) != pos ) {
 				//do_output(QString("wrong cursor position. pos = %1 expected, but %2\n").arg(pos).arg(cursor.position()));
 				QString exp = steps[k+1];
 				exp.replace('\n', "\\n");
