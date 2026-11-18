@@ -2282,9 +2282,15 @@ void MainWindow::do_vi_search(const QString& text, QTextCursor& cursor, int rcnt
         // 次のループ（rcntが2以上の場合）のために検索開始点を更新
         currentCursor = matchCursor;
     }
-    // 6. 折りたたまれている領域の中にマッチした場合は自動展開する処理
+    // 6. 折りたたまれている領域の中にマッチした場合は自動展開する処理（v0.3 #1416）
     QTextBlock matchedBlock = matchCursor.block();
-    //##unfoldParentHeadings(matchedBlock, docWidget);
+    while( !matchedBlock.isVisible() ) {
+        QTextBlock b = matchedBlock;
+        while( (b = b.previous()).isValid() && !b.isVisible() )
+            ;
+        if( !b.isValid() || !is_folded(b) ) break;
+        do_unfold(b);
+    }
     // 7. エディタにカーソルを設定し、画面をスクロールしてフォーカスを戻す
     matchCursor.setPosition(matchCursor.anchor());		//	非選択、マッチ先頭に
 	//	[v0.3 #1392] マッチした文書を持つビューに着地する

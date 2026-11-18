@@ -4287,11 +4287,12 @@ const QList<ViTestCase> viTestCases = {
 			".", "one\nabc\nab┃c\ntwo\n",
 		}
 	},
-	{ "Fold (za) - Fold and unfold a section (v0.3 #1419)",
-		"┃# Sec\n",
-		"body1\n",
-		"body2\n",
-		"# Sec2\n",
+	//
+		{ "Fold (za) - Fold and unfold a section (v0.3 #1419)",
+		"┃# Sec\n"
+		"body1\n"
+		"body2\n"
+		"# Sec2\n"
 		"tail\n",
 		{
 			"za", "┃# Sec\n# Sec2\ntail\n",	//	折り畳まれて body1, body2 が見えなくなる
@@ -4299,11 +4300,11 @@ const QList<ViTestCase> viTestCases = {
 		}
 	},
 	{ "Fold (za) - Nested headings fold together (v0.3 #1419)",
-		"┃# H1\n",
-		"body1\n",
-		"## H2\n",
-		"body2\n",
-		"# H1b\n",
+		"┃# H1\n"
+		"body1\n"
+		"## H2\n"
+		"body2\n"
+		"# H1b\n"
 		"tail\n",
 		{
 			"za", "┃# H1\n# H1b\ntail\n",	//	子見出しごと折り畳まれる
@@ -4311,11 +4312,11 @@ const QList<ViTestCase> viTestCases = {
 		}
 	},
 	{ "Fold (za) - Inner fold survives outer unfold (v0.3 #1419)",
-		"# H1\n",
-		"body1\n",
-		"┃## H2\n",
-		"body2\n",
-		"# H1b\n",
+		"# H1\n"
+		"body1\n"
+		"┃## H2\n"
+		"body2\n"
+		"# H1b\n"
 		"tail\n",
 		{
 			"za", "# H1\nbody1\n┃## H2\n# H1b\ntail\n",	//	H2 を折り畳む（body2 が見えなくなる）
@@ -4325,9 +4326,9 @@ const QList<ViTestCase> viTestCases = {
 		}
 	},
 	{ "Fold (zc/zo) - Close and open (v0.3 #1419)",
-		"┃# Sec\n",
-		"body1\n",
-		"# Sec2\n",
+		"┃# Sec\n"
+		"body1\n"
+		"# Sec2\n"
 		"tail\n",
 		{
 			"zc", "┃# Sec\n# Sec2\ntail\n",
@@ -4337,26 +4338,26 @@ const QList<ViTestCase> viTestCases = {
 		}
 	},
 	{ "Fold (za) - On a body line does nothing (v0.3 #1419)",
-		"# Sec\n",
-		"bo┃dy1\n",
-		"# Sec2\n",
+		"# Sec\n"
+		"bo┃dy1\n"
+		"# Sec2\n"
 		"tail\n",
 		{
 			"za", "# Sec\nbo┃dy1\n# Sec2\ntail\n",	//	非見出し行では何も折り畳まれない
 		}
 	},
 	{ "Fold (za) - Heading without a section does nothing (v0.3 #1419)",
-		"┃# H1\n",
-		"# H2\n",
+		"┃# H1\n"
+		"# H2\n"
 		"body\n",
 		{
 			"za", "┃# H1\n# H2\nbody\n",	//	直後が同レベル見出しで、折り畳む範囲が無い
 		}
 	},
 	{ "Fold (zM/zR) - Fold all and unfold all (v0.3 #1419)",
-		"┃# H1\n",
-		"body1\n",
-		"# H2\n",
+		"┃# H1\n"
+		"body1\n"
+		"# H2\n"
 		"body2",
 		{
 			"zM", "┃# H1\n# H2",
@@ -4364,10 +4365,10 @@ const QList<ViTestCase> viTestCases = {
 		}
 	},
 	{ "Search (/) - Match in folded region unfolds (v0.3 #1416)",
-		"┃# Sec\n",
-		"needle line\n",
-		"body\n",
-		"# Sec2\n",
+		"┃# Sec\n"
+		"needle line\n"
+		"body\n"
+		"# Sec2\n"
 		"tail\n",
 		{
 			"za", "┃# Sec\n# Sec2\ntail\n",	//	折り畳み。needle line は見えない
