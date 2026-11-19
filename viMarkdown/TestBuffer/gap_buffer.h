@@ -14,6 +14,7 @@
 
 //#include <QtCore>
 #include <cstdint>
+#include <cstring>
 #include <type_traits>
 #include <memory>
 #include <vector>
@@ -470,17 +471,27 @@ public:
 private:
 	void move_data_backward(index_type dst, index_type src, ssize_t sz) const
 	{
-		pointer dp = m_data + dst + sz;
-		const_pointer sp = m_data + src + sz;
-		while( --sz >= 0 )
-			*--dp = *--sp;
+		if constexpr (std::is_trivially_copyable_v<value_type>) {
+			if( sz > 0 )
+				std::memmove((void *)(m_data + dst), (const void *)(m_data + src), (size_t)sz * sizeof(value_type));
+		} else {
+			pointer dp = m_data + dst + sz;
+			const_pointer sp = m_data + src + sz;
+			while( --sz >= 0 )
+				*--dp = *--sp;
+		}
 	}
 	void move_data_forward(index_type dst, index_type src, ssize_t sz) const
 	{
-		pointer dp = m_data + dst;
-		const_pointer sp = m_data + src;
-		while( --sz >= 0 )
-			*dp++ = *sp++;
+		if constexpr (std::is_trivially_copyable_v<value_type>) {
+			if( sz > 0 )
+				std::memmove((void *)(m_data + dst), (const void *)(m_data + src), (size_t)sz * sizeof(value_type));
+		} else {
+			pointer dp = m_data + dst;
+			const_pointer sp = m_data + src;
+			while( --sz >= 0 )
+				*dp++ = *sp++;
+		}
 	}
 	void	move_gap(index_type ix) const
 	{

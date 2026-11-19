@@ -519,6 +519,10 @@ static void runAllTests(MainWindow *mw, const char *name)
 void do_test_gapBuffer(MainWindow *mw)
 {
 	runAllTests< gap_buffer<QChar> >(mw, "gap_buffer");
+}
+
+void do_test_pieceTable(MainWindow *mw)
+{
 	runAllTests< piece_table<QChar> >(mw, "piece_table");
 }
 
@@ -674,4 +678,41 @@ void do_perf_gapBuffer(MainWindow *mw)
 	runPerf< gap_buffer<QChar> >(mw, "gap_buffer");
 	runPerf< piece_table<QChar> >(mw, "piece_table");
 	perfReplaceAllQt(mw);
+}
+
+template<typename Buf>
+static void perfReplaceAll(MainWindow *mw, const char *name)
+{
+	g_mw = mw;
+	QString unit = QString::fromUtf8("abcde入ってる。");
+	QString line;
+	for( int i = 0; i < 10; ++i ) line += unit;
+	line += QChar('\n');
+	const int nLines = 1000;
+	Buf buf;
+	for( int i = 0; i < nLines; ++i )
+		buf.insert(buf.size(), line.constData(), line.size());
+	QString pat = "abcde";
+	QString rep = "XYZ";
+	QElapsedTimer timer;
+	timer.start();
+	typename Buf::pos_t pos = 0;
+	int nReplaced = 0;
+	while( (pos = buf.indexOf(pat.constData(), (size_t)pat.size(), pos)) >= 0 ) {
+		buf.erase((size_t)pos, (size_t)pat.size());
+		buf.insert(pos, rep.constData(), rep.size());
+		pos += rep.size();
+		++nReplaced;
+	}
+	output(QString("%1: replace all (abcde->XYZ, %2 places): %3 ms (%4 us)\n")
+		.arg(name).arg(nReplaced).arg(timer.elapsed()).arg(timer.nsecsElapsed() / 1000.0, 0, 'f', 1));
+}
+
+void do_perf_replaceAll(MainWindow *mw)
+{
+	g_mw = mw;
+	output(QString("\n# Performance Replace All (1000 lines)\n\n"));
+	perfReplaceAll< gap_buffer<QChar> >(mw, "gap_buffer");
+	perfReplaceAll< piece_table<QChar> >(mw, "piece_table");
+	output(QString("\n"));
 }

@@ -62,10 +62,9 @@ static bool checkAll(const LineMgr& lm, const QString& model, const QString& wha
 		else if( lm.lineEndPos(ln) != starts[ln] + len )
 			ng = QString("lineEndPos(%1)").arg(ln);
 	}
+	int expect = 0;
 	for( pos_t p = 0; ng.isEmpty() && p <= model.size(); ++p ) {
-		int expect = 0;
-		for( int ln = 0; ln < starts.size(); ++ln )
-			if( starts[ln] <= p ) expect = ln;
+		while( expect + 1 < starts.size() && starts[expect + 1] <= p ) ++expect;
 		if( lm.lineAtPos(p) != expect )
 			ng = QString("lineAtPos(%1): %2 expected %3").arg(p).arg(lm.lineAtPos(p)).arg(expect);
 	}

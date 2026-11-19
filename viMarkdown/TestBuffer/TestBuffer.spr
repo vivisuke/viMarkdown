@@ -11,4 +11,14 @@ SPR# 状 P Open  Close ver     Type  概要
 0007 ◎ C 11/20 11/20 0001 │問題│gap_buffer.h に using namespace std; があり、名前空間を汚染する（agy）
 0008 ◎ C 11/20 11/20 0001 │問題│gap_buffer.h には他にもいくつか問題がある（agy）
 0009 ◎ C 11/20 11/20 0001 │問題│PieceTable.h にいくつか問題がある（agy）
-0010 ● C 11/20            │ToDo│
+0010 ◎ C 11/20 11/20 0001 │ToDo│単体テスト組み込み
+0011 ● C 11/20            │ToDo│
+0012 ● C 11/20            │ToDo│
+0013 ● C 11/20            │ToDo│
+0014 ● C 11/20            │ToDo│
+0015 ● C 11/20            │ToDo│
+0016 ● C 11/20            │ToDo│
+0017 ● C 11/20            │ToDo│
+0018 ● C 11/20            │ToDo│
+0019 ● C 11/20            │ToDo│
+0020 ● C 11/20            │ToDo│

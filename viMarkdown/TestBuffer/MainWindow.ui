@@ -15,7 +15,21 @@
   </property>
   <property name="windowTitle" >
    <string>MainWindow</string>
-  </property>  <widget class="QMenuBar" name="menuBar" />
+  </property>
+  <widget class="QMenuBar" name="menuBar">
+   <widget class="QMenu" name="menuTest">
+    <property name="title">
+     <string>Test</string>
+    </property>
+    <addaction name="action_gap_buffer"/>
+    <addaction name="action_PieceTable"/>
+    <addaction name="action_replace_All"/>
+    <addaction name="action_LineMgr"/>
+    <addaction name="action_VLineMgr"/>
+    <addaction name="action_TextDocument"/>
+   </widget>
+   <addaction name="menuTest"/>
+  </widget>
   <widget class="QToolBar" name="mainToolBar" />
   <widget class="QWidget" name="centralWidget" />
   <widget class="QStatusBar" name="statusBar" />
@@ -46,6 +60,36 @@
     </layout>
    </widget>
   </widget>
+  <action name="action_gap_buffer">
+   <property name="text">
+    <string>gap_buffer</string>
+   </property>
+  </action>
+  <action name="action_PieceTable">
+   <property name="text">
+    <string>PieceTable</string>
+   </property>
+  </action>
+  <action name="action_replace_All">
+   <property name="text">
+    <string>replace All</string>
+   </property>
+  </action>
+  <action name="action_LineMgr">
+   <property name="text">
+    <string>LineMgr</string>
+   </property>
+  </action>
+  <action name="action_VLineMgr">
+   <property name="text">
+    <string>VLineMgr</string>
+   </property>
+  </action>
+  <action name="action_TextDocument">
+   <property name="text">
+    <string>TextDocument</string>
+   </property>
+  </action>
  </widget>
  <layoutDefault spacing="6" margin="11" />
  <pixmapfunction></pixmapfunction>
