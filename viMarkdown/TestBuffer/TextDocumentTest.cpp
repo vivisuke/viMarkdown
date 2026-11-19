@@ -254,6 +254,25 @@ static void test_undo_fixed()
 		verify(doc.isModified(), "modified: undo from save point");
 		doc.redo();
 		verify(!doc.isModified(), "modified: redo to save point");
+		//	保存点より前で分岐編集すると保存点は失効する
+		doc.undo();
+		doc.insert(0, QStringLiteral("\nz"));
+		verify(doc.isModified(), "modified: branch from before save point");
+		doc.undo();
+		verify(doc.isModified(), "modified: save point invalidated after branch");
+	}
+	{	//	undo 後の連続挿入（マージ）でも redo 破棄・保存点失効が保たれる
+		TextDocument doc;
+		doc.insert(0, QStringLiteral("a"));
+		doc.insert(1, QStringLiteral("\nb"));
+		doc.onSaved();
+		doc.undo();
+		doc.insert(1, QStringLiteral("c"));	//	"a" への連続挿入でマージが起きる位置
+		verify(!doc.canRedo(), "undo: redo cleared on merged branch");
+		verify(doc.isModified(), "modified: after merged branch");
+		doc.insert(2, QStringLiteral("\nd"));
+		doc.undo();
+		verify(doc.isModified(), "modified: save point invalidated on merged branch");
 	}
 	{	//	setPlainText / clear は undo 履歴を破棄する
 		TextDocument doc;

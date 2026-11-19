@@ -163,8 +163,12 @@ static void test_fixed()
 		GBuf buf;
 		QString init = "abc";
 		buf.insert(0, init.constData(), init.size());
+		buf.reserve(32);
+		auto cap0 = buf.capacity();
 		buf.clear();
 		verify(buf.isEmpty() && buf.size() == 0, "clear");
+		if constexpr (std::is_same_v<GBuf, gap_buffer<QChar>>)
+			verify(buf.capacity() == cap0, "clear preserves capacity");
 		buf.push_back(QChar('x'));
 		checkContent(buf, "x", "reuse after clear");
 	}
@@ -200,6 +204,23 @@ static void test_fixed()
 		copy.erase(0);
 		checkContent(buf, "hello!", "original independent of copy");
 	}
+	//	コピー代入演算子（独立性と自己代入）
+	output("  test: copy assign\n");
+	{
+		GBuf buf;
+		QString init = "hello";
+		buf.insert(0, init.constData(), init.size());
+		GBuf assigned;
+		assigned.push_back(QChar('Z'));
+		assigned = buf;
+		checkContent(assigned, "hello", "copy assign");
+		buf.push_back(QChar('!'));
+		checkContent(assigned, "hello", "assigned independent of original");
+		assigned.erase(0);
+		checkContent(buf, "hello!", "original independent of assigned");
+		assigned = assigned;
+		checkContent(assigned, "ello", "self assign");
+	}
 	//	ギャップ移動の不変性
 	output("  test: gap invariance\n");
 	{
@@ -234,6 +255,7 @@ static void test_fixed()
 		QString model = "abcd";
 		buf.insert(0, model.constData(), model.size());
 		buf.setGapIndex(0);					//	ギャップを先頭へ
+		verify(buf.front() == QChar('a'), "front with gap at head");
 		buf.insert(0, QChar('z'));
 		model.insert(0, QChar('z'));
 		checkContent(buf, model, "insert with gap at head");
