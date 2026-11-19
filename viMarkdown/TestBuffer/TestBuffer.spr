@@ -1,0 +1,14 @@
+﻿year=2026
+※ ●：Open状態、◎：Fixed & Closed、○：not Fixed & Closed、NPTF：No Plan To Fix
+SPR# 状 P Open  Close ver     Type  概要
+-------------------------------------------------------------------------------
+0001 ◎ C 11/19 11/19 0001 │ToDo│プロジェクト作成
+0002 ● C 11/19            │ToDo│gap_buffer, TextDocument 関連をプロジェクトに追加
+0003 ● C 11/19            │ToDo│
+0004 ● C 11/19            │ToDo│
+0005 ● C 11/19            │ToDo│
+0006 ● C 11/19            │ToDo│
+0007 ● C 11/19            │ToDo│
+0008 ● C 11/19            │ToDo│
+0009 ● C 11/19            │ToDo│
+0010 ● C 11/19            │ToDo│

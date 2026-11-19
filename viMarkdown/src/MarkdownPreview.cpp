@@ -1043,7 +1043,11 @@ void insertTable(QTextCursor& cursor, const QList<QStringList> &ll, const QList<
 
 				cellCursor.setPosition(cell.firstPosition());
 				cellCursor.setPosition(cell.lastPosition(), QTextCursor::KeepAnchor);
-				cellCursor.mergeCharFormat(charFormat); // setCharFormat ではなく mergeCharFormat で太字などを維持しつつ色だけ適用
+				QTextCharFormat mergeFormat;
+				mergeFormat.setForeground(g.m_CSVTextColor);
+				if( row == 0 )
+					mergeFormat.setFontWeight(QFont::Bold);		//	ヘッダ行は全体を太字にする
+				cellCursor.mergeCharFormat(mergeFormat);	//	色だけを適用し、セル内の **太字** などを維持する（v0.3 #1424）
 			}
 		}
 	}

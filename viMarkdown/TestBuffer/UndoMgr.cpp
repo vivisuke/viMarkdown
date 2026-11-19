@@ -1,0 +1,358 @@
+﻿#include "UndoMgr.h"
+#include "TextDocument.h"
+#include <QDebug>
+#include <algorithm>
+
+inline bool isNewLine(QChar ch) {
+	return ch == u'\r' || ch == u'\n';
+}
+// TextDocument に対する低レベルのテキスト操作ヘルパー（Raw 系＝undo 対象外を使う）
+namespace {
+	void basicInsertText(TextDocument *doc, int pos, const QString &text) {
+		doc->insertRaw(pos, text);
+	}
+
+	void basicDeleteText(TextDocument *doc, int pos, int size) {
+		doc->eraseRaw(pos, pos + size);
+	}
+
+	QString getText(TextDocument *doc, int pos, int size) {
+		//	改行は '\n' のままバッファに保持されているため、変換は不要
+		QString text;
+		text.resize(size);
+		for( int i = 0; i < size; ++i )
+			text[i] = doc->characterAt(pos + i);
+		return text;
+	}
+}
+
+UndoMgr::UndoMgr(Buffer *buffer)
+	: m_buffer(buffer)
+	, m_blockLevel(0)
+	, m_actInsPoolSize(0)
+	, m_actDelPoolSize(0)
+	, m_actRepPoolSize(0)
+{
+	init();
+}
+//template<typename T>
+UndoMgr::~UndoMgr()
+{
+}
+//template<typename T>
+void UndoMgr::init()
+{
+	m_cur = 0;
+	m_savePointCur = 0;
+	m_lastDelTextSize = 0;
+	m_lastInsTextSize = 0;
+	//m_blockOpened = false;
+	m_actionPushed = false;
+	m_stack.clear();
+	m_insText.clear();
+	m_delText.clear();
+}
+void UndoMgr::setFlag(uchar f) {
+	if( m_cur == 0 ) return;
+	auto ix = m_cur - 1;
+	UndoAction *ptr = m_stack[ix];
+	ptr->m_flags |= f;
+	if( (ptr->m_flags & UndoAction::FLAG_BLOCK) != 0 ) {
+		while( --ix >= 0 ) {
+			ptr = m_stack[ix];
+			ptr->m_flags |= f;
+			if( (ptr->m_flags & UndoAction::FLAG_BLOCK) != 0 )
+				break;
+		}
+	}
+}
+uchar UndoMgr::undoActionFlags() const {
+	if( !canUndo() ) return 0;
+	UndoAction *ptr = m_stack[m_cur - 1];
+	return ptr->m_flags;
+}
+uchar UndoMgr::redoActionFlags() const {
+	if( !canRedo() ) return 0;
+	UndoAction *ptr = m_stack[m_cur];
+	return ptr->m_flags;
+}
+void UndoMgr::openBlock()
+{
+	if( ++m_blockLevel != 1 ) return;
+	m_actionPushed = false;
+}
+
+void UndoMgr::closeAllBlock()
+{
+	if( !m_blockLevel ) return;
+	m_blockLevel = 0;
+	if( !m_actionPushed || m_stack.empty() )
+		return;
+	int last = m_stack.size() - 1;
+	m_stack[last]->m_flags ^= UndoAction::FLAG_BLOCK;
+}
+
+void UndoMgr::closeBlock()
+{
+	if( !m_blockLevel || --m_blockLevel != 0 )
+		return;
+	if( !m_actionPushed || m_stack.empty() )
+		return;
+	int last = m_stack.size() - 1;
+	m_stack[last]->m_flags ^= UndoAction::FLAG_BLOCK;
+}
+// 現状態を非モディファイ状態とする（保存時にコールされる）
+void UndoMgr::onSaved()
+{
+	m_savePointCur = m_cur;
+	// ※ 個別行の LINEFLAG_SAVED などのビットパック処理は削除
+}
+bool UndoMgr::push_back(UndoAction *ptr)
+{
+	try {
+		if( m_stack.size() > (size_t)m_cur ) {
+			int ix = m_insText.size();
+			for(int i = m_stack.size(); --i >= m_cur; ) {
+				switch( m_stack[i]->m_type ) {
+				case UndoAction::ACT_INSERT: {
+					auto p = (UndoActionInsert *)m_stack[i];
+					ix = std::min<int>(ix, p->m_ix);	//	<int> 明示：windows.h の min マクロ回避
+					break;
+				}
+				case UndoAction::ACT_DELETE: {
+					auto p = (UndoActionDelete *)m_stack[i];
+					break;
+				}
+				}
+			}
+			m_insText.resize(ix);
+			m_stack.resize(m_cur);
+		}
+		m_stack.push_back(ptr);
+	} catch(...) {
+		return false;
+	}
+	if( isBlockOpened() && !m_actionPushed ) {
+		int last = m_stack.size() - 1;
+		m_stack[last]->m_flags |= UndoAction::FLAG_BLOCK;
+		m_actionPushed = true;
+	}
+	if( m_savePointCur > m_cur )
+		m_savePointCur = -1;
+	++m_cur;
+	return true;
+}
+
+void UndoMgr::prohibitMergeUndo() // 挿入マージ禁止
+{
+	if( m_cur != 0 ) {
+		UndoActionInsert *ptr = (UndoActionInsert *)m_stack[m_cur - 1];
+		if( ptr->m_type == UndoAction::ACT_INSERT )
+			ptr->m_prohibitMerge = true;
+	}
+}
+bool UndoMgr::push_back_insText(int pos, int sz /*, int ln*/)
+{
+	// 改行以外の文字を連続した場所に挿入した場合は、直前のアクションに結合（マージ）する
+	if( m_cur != 0 && !isNewLine(m_buffer->characterAt(pos)) ) {
+		UndoActionInsert *ptr = (UndoActionInsert *)m_stack[m_cur - 1];
+		if( ptr->m_type == UndoAction::ACT_INSERT && !ptr->m_prohibitMerge
+			&& ptr->m_pos + ptr->m_size == pos )
+		{
+			ptr->m_size += sz;
+			m_stack.resize(m_cur);
+			return true;
+		}
+	}
+
+	UndoActionInsert *act = newActInsert();
+	if( act == 0 )
+		return false;
+	act->m_pos = pos;
+	act->m_size = sz;
+	// ※ 個別行の LINEFLAG_MODIFIED などの設定処理は削除し、QTextDocument側の modified で一元管理します。
+	push_back(act);
+	return true;
+}
+
+bool UndoMgr::push_back_delText(int pos, int sz, bool BS /*, int ln*/)
+{
+	const int ix = m_delText.size();
+	m_delText.resize(ix + sz); // 削除文字用バッファ容量確保
+	m_delText.replace(ix, sz, getText(m_buffer, pos, sz));
+
+	UndoActionDelete *act = newActDelete();
+	if( act == 0 )
+		return false;
+	if( BS )
+		act->m_flags |= UndoAction::FLAG_BS;
+	act->m_pos = pos;
+	act->m_size = sz;
+	act->m_ix = ix;
+	push_back(act);
+	qDebug() << "push_back_delText() pos = " << pos << ", sz = " << sz << ", ix = " << ix << ", delText = " << m_delText.mid(ix, sz);
+	return true;
+}
+
+UndoActionReplace *UndoMgr::push_back_repText(int pos, int dsz, int isz /*, int ln*/)
+{
+	const int ix = m_delText.size();
+	m_delText.resize(ix + dsz);
+	m_delText.replace(ix, dsz, getText(m_buffer, pos, dsz));
+
+	UndoActionReplace *act = newActReplace();
+	if( act == 0 )
+		return nullptr;
+	act->m_pos = pos;
+	act->m_sizeDel = dsz;
+	act->m_ixDel = ix;
+	act->m_sizeIns = isz;
+	push_back(act);
+	qDebug() << "push_back_repText() pos = " << pos << ", dsz = " << dsz << ", ix = " << ix << ", delText = " << m_delText.mid(ix, dsz);
+	return act;
+}
+int UndoMgr::undo()
+{
+	int pos = 0;
+	int firstPos = -1;
+	ushort f0 = undoActionFlags();
+	ushort flag = 0;
+	do {
+		if( !m_cur ) return false;
+		UndoAction *ptr = m_stack[--m_cur];
+		flag ^= (ptr->m_flags & UndoAction::FLAG_BLOCK);
+		switch( ptr->m_type ) {
+		case UndoAction::ACT_INSERT: {
+			auto p = (UndoActionInsert *)ptr;
+			pos = p->m_pos;
+			const int ix = p->m_ix = m_insText.size();
+			m_insText.resize(ix + p->m_size);
+			m_insText.replace(ix, p->m_size, getText(m_buffer, p->m_pos, p->m_size));
+			
+			// ドキュメントから挿入されたテキストを削除
+			basicDeleteText(m_buffer, p->m_pos, p->m_size);
+			break;
+		}
+		case UndoAction::ACT_DELETE: {
+			auto p = (UndoActionDelete *)ptr;
+			pos = (p->m_flags & UndoAction::FLAG_BS) ? p->m_pos + p->m_size : p->m_pos;
+			
+			// 削除されていたテキストを復元（再挿入）
+			basicInsertText(m_buffer, p->m_pos, m_delText.mid(p->m_ix, p->m_size));
+			m_delText.resize(p->m_ix);
+			break;
+		}
+		case UndoAction::ACT_REPLACE: {
+			auto p = (UndoActionReplace *)ptr;
+			pos = p->m_pos;
+			int ix = p->m_ixIns = m_insText.size();
+			m_insText.resize(ix + p->m_sizeIns);
+			m_insText.replace(ix, p->m_sizeIns, getText(m_buffer, p->m_pos, p->m_sizeIns));
+			
+			// 新しく挿入したテキストを削除し、元々あったテキストに置換（再挿入）
+			basicDeleteText(m_buffer, p->m_pos, p->m_sizeIns);
+			basicInsertText(m_buffer, p->m_pos, m_delText.mid(p->m_ixDel, p->m_sizeDel));
+			m_delText.resize(p->m_ixDel);
+			break;
+		}
+		}
+		if( (f0&UndoAction::FLAG_SHIFT) != 0 ) {
+			if( firstPos < 0 || pos < firstPos ) firstPos = pos;
+		}
+	} while( flag );
+	
+	m_buffer->setModified(m_cur != m_savePointCur);
+	return firstPos >= 0 ? firstPos : pos;
+}
+
+int UndoMgr::redo()
+{
+	int pos = 0;
+	int firstPos = -1;
+	ushort f0 = redoActionFlags();
+	ushort flag = 0;
+	do {
+		if( (size_t)m_cur >= m_stack.size() ) return false;
+		UndoAction *ptr = m_stack[m_cur++];
+		flag ^= (ptr->m_flags & UndoAction::FLAG_BLOCK);
+		switch( ptr->m_type ) {
+		case UndoAction::ACT_INSERT: {
+			auto p = (UndoActionInsert *)ptr;
+			basicInsertText(m_buffer, p->m_pos, m_insText.mid(p->m_ix, p->m_size));
+			m_insText.resize(p->m_ix);
+			pos = p->m_pos + p->m_size;
+			break;
+		}
+		case UndoAction::ACT_DELETE: {
+			auto p = (UndoActionDelete *)ptr;
+			const int ix = m_delText.size();
+			m_delText.resize(ix + p->m_size);
+			m_delText.replace(ix, p->m_size, getText(m_buffer, p->m_pos, p->m_size));
+			
+			// 再びテキストを削除
+			basicDeleteText(m_buffer, p->m_pos, p->m_size);
+			pos = p->m_pos;
+			break;
+		}
+		case UndoAction::ACT_REPLACE: {
+			auto p = (UndoActionReplace *)ptr;
+			int ix = p->m_ixDel; // undo時に縮小された位置（m_delText.size()）と一致します
+			m_delText.resize(ix + p->m_sizeDel);
+			m_delText.replace(ix, p->m_sizeDel, getText(m_buffer, p->m_pos, p->m_sizeDel));
+			
+			// 元々あったテキストを削除し、新しく挿入するテキストに置換（再挿入）
+			basicDeleteText(m_buffer, p->m_pos, p->m_sizeDel);
+			basicInsertText(m_buffer, p->m_pos, m_insText.mid(p->m_ixIns, p->m_sizeIns));
+			m_insText.resize(p->m_ixIns);
+			
+			// 置換されたテキストの末尾にカーソルを設定
+			pos = p->m_pos + p->m_sizeIns;
+			break;
+		}
+		}
+		if( (f0&UndoAction::FLAG_SHIFT) != 0 ) {
+			if( firstPos < 0 || pos < firstPos ) firstPos = pos;
+		}
+	} while( flag );
+	
+	m_buffer->setModified(m_cur != m_savePointCur);
+	return firstPos >= 0 ? firstPos : pos;
+}
+UndoActionInsert *UndoMgr::newActInsert()
+{
+	int pix = m_actInsPoolSize / POOL_SIZE;
+	int mod = m_actInsPoolSize % POOL_SIZE;
+	while( pix >= m_actInsPool.size() )
+		m_actInsPool.push_back((UndoActionInsert *)(new char[sizeof(UndoActionInsert)*POOL_SIZE]()));
+	UndoActionInsert *ptr = m_actInsPool[pix] + mod;
+	++m_actInsPoolSize;
+	ptr->m_type = UndoAction::ACT_INSERT;
+	ptr->m_flags = 0;
+	return ptr;
+}
+
+UndoActionDelete *UndoMgr::newActDelete()
+{
+	int pix = m_actDelPoolSize / POOL_SIZE;
+	int mod = m_actDelPoolSize % POOL_SIZE;
+	while( pix >= m_actDelPool.size() )
+		m_actDelPool.push_back((UndoActionDelete *)(new char[sizeof(UndoActionDelete)*POOL_SIZE]()));
+	UndoActionDelete *ptr = m_actDelPool[pix] + mod;
+	++m_actDelPoolSize;
+	ptr->m_type = UndoAction::ACT_DELETE;
+	ptr->m_flags = 0;
+	return ptr;
+}
+
+UndoActionReplace *UndoMgr::newActReplace()
+{
+	int pix = m_actRepPoolSize / POOL_SIZE;
+	int mod = m_actRepPoolSize % POOL_SIZE;
+	while( pix >= m_actRepPool.size() )
+		m_actRepPool.push_back((UndoActionReplace *)(new char[sizeof(UndoActionReplace)*POOL_SIZE]()));
+	UndoActionReplace *ptr = m_actRepPool[pix] + mod;
+	++m_actRepPoolSize;
+	ptr->m_type = UndoAction::ACT_REPLACE;
+	ptr->m_flags = 0;
+	return ptr;
+}
