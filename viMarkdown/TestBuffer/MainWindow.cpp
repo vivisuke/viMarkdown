@@ -1,4 +1,5 @@
 #include "MainWindow.h"
+#include "TextEdit.h"
 #include <QTextCursor>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -6,6 +7,9 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindowClass())
 {
     ui->setupUi(this);
+    m_textEdit = new TextEdit(this);
+    setCentralWidget(m_textEdit);
+    m_textEdit->setFocus();
 }
 
 void MainWindow::do_output(const QString& txt)

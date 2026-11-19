@@ -5,8 +5,8 @@ SPR# 状 P Open  Close ver     Type  概要
 0001 ◎ C 11/19 11/19 0001 │ToDo│プロジェクト作成
 0002 ◎ C 11/19 11/19 0001 │ToDo│gap_buffer, TextDocument 関連をプロジェクトに追加
 0003 ◎ C 11/19 11/19 0001 │ToDo│MainWindow 下部にアウトプットバー設置
-0004 ● C 11/19            │ToDo│
-0005 ● C 11/19            │ToDo│
+0004 ◎ C 11/19 11/19 0001 │ToDo│MainWindow のセントラルウィジェットに TextEdit を設定
+0005 ◎ C 11/19 11/19 0001 │問題│TextEdit に 'a' が挿入できない
 0006 ● C 11/19            │ToDo│
 0007 ● C 11/19            │ToDo│
 0008 ● C 11/19            │ToDo│

@@ -270,7 +270,11 @@ void TextEdit::keyPressEvent(QKeyEvent *event)
 	}
 	if( handled )
 		afterChange();
-	else
+	else if( !ctrl && !event->text().isEmpty() ) {
+		//	専用 case が Ctrl なしで拾った文字キー（A/C/V/X/Y/Z 等）はテキストとして挿入する
+		m_cursor.insertText(event->text());
+		afterChange();
+	} else
 		QAbstractScrollArea::keyPressEvent(event);
 }
 
