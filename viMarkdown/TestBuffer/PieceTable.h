@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <stdexcept>
 #include <type_traits>
 #include <vector>
 
@@ -189,8 +190,12 @@ public:
 		const Piece& pc = m_pieces[pi];
 		return source(pc.m_fromAdd)[pc.m_start + off];
 	}
-	value_type at(pos_t ix) const { return operator[](ix); }
-	value_type& ref(pos_t ix) {
+	value_type at(pos_t ix) const {
+		if( ix < 0 || ix >= m_size )
+			throw std::out_of_range("piece_table: out of range");
+		return operator[](ix);
+	}
+	const value_type& ref(pos_t ix) const {
 		size_t pi;
 		pos_t off;
 		locate(ix, pi, off);
@@ -280,16 +285,18 @@ public:
 public:
 	void clear()
 	{
+		m_original.clear();
+		m_add.clear();
 		m_pieces.clear();
 		m_size = 0;		//	バッファ側は保持する（再利用のため）
 		m_cacheIx = 0;
 		m_cacheStart = 0;
 	}
-	value_type& front()
+	const value_type& front() const
 	{
 		return ref(0);
 	}
-	value_type& back()
+	const value_type& back() const
 	{
 		return ref(m_size - 1);
 	}

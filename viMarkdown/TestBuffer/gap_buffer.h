@@ -89,8 +89,16 @@ public:
 #ifdef OS_WIN32
 		VirtualFree((void *)m_data, 0, MEM_RELEASE);
 #else
-		delete m_data;
+		delete[] m_data;
 #endif
+	}
+	gap_buffer<value_type>& operator=(const gap_buffer<value_type> &x)
+	{
+		if( this != &x ) {
+			gap_buffer<value_type> tmp(x);
+			swap(tmp);
+		}
+		return *this;
 	}
 
 public:
@@ -334,7 +342,7 @@ public:
 #ifdef OS_WIN32
 		VirtualFree((LPVOID)m_data, 0, MEM_RELEASE);
 #else
-		delete m_data;
+		delete[] m_data;
 #endif
 		m_data = data;
 		return true;
@@ -450,7 +458,7 @@ public:
 	void swap(gap_buffer<value_type> &x)
 	{
 		pointer p = m_data;	m_data = x.m_data;			x.m_data = p;
-		int s = m_gapIndex;	m_gapIndex = x.m_gapIndex;		x.m_gapIndex = s;
+		size_type s = m_gapIndex;	m_gapIndex = x.m_gapIndex;		x.m_gapIndex = s;
 		s = m_gapSize;		m_gapSize = x.m_gapSize;	x.m_gapSize = s;
 		s = m_size;			m_size = x.m_size;			x.m_size = s;
 	}

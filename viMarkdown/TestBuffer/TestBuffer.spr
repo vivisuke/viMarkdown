@@ -9,6 +9,6 @@ SPR# 状 P Open  Close ver     Type  概要
 0005 ◎ C 11/19 11/19 0001 │問題│TextEdit に 'a' が挿入できない
 0006 ◎ C 11/19 11/19 0001 │ToDo│TextEdit 左に行番号エリア設置
 0007 ◎ C 11/20 11/20 0001 │問題│gap_buffer.h に using namespace std; があり、名前空間を汚染する（agy）
-0008 ◎ C 11/20 11/20 0001 │問題│gap_buffer.h には他にもいくつか問題ある（agy）
-0009 ● C 11/20            │ToDo│
+0008 ◎ C 11/20 11/20 0001 │問題│gap_buffer.h には他にもいくつか問題がある（agy）
+0009 ◎ C 11/20 11/20 0001 │問題│PieceTable.h にいくつか問題がある（agy）
 0010 ● C 11/20            │ToDo│
