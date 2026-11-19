@@ -32,7 +32,6 @@
 #include <windows.h>
 #endif
 
-using namespace std;
 
 typedef const char cchar;
 //typedef unsigned int uint;
@@ -118,7 +117,7 @@ public:
 	{
 		if( ix < 0 || ix >= size() ) {
 			//	done: out_of_range 例外スロー
-			throw out_of_range("gap_buffer: out of range");
+			throw std::out_of_range("gap_buffer: out of range");
 			//throw (cchar*)"gap_buffer: out of range";
 			//return value_type();
 		}
@@ -129,7 +128,7 @@ public:
 	{
 		if( ix < 0 || ix >= size() ) {
 			//	done: out_of_range 例外スロー
-			throw out_of_range("gap_buffer: out of range");
+			throw std::out_of_range("gap_buffer: out of range");
 			//throw (cchar*)"gap_buffer: out of range";
 			//static value_type t;
 			//return t;
@@ -234,13 +233,13 @@ public:
 	void clear()
 	{
 		if( !size() ) return;
-		m_gapSize = size();
+		m_gapSize += m_size;
 		m_gapIndex = m_size = 0;
 	}
 	value_type& front()
 	{
 		//	undone: データが無い場合対応
-		return m_data[0];
+		return ref(0);
 	}
 	value_type& back()
 	{
@@ -306,7 +305,7 @@ public:
 		pointer data = new value_type[cp];
 #endif
 		if( !data ) {
-			throw bad_alloc();
+			throw std::bad_alloc();
 			//throw (cchar*)"gap_buffer: length error";
 			//return false;
 		}

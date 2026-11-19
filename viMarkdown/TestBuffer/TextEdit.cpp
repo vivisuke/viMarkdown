@@ -21,8 +21,11 @@ TextEdit::TextEdit(QWidget *parent)
 	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 	viewport()->setCursor(Qt::IBeamCursor);
+	m_lineNumberArea = new LineNumberArea(this);
+	setViewportMargins(lineNumberAreaWidth(), 0, 0, 0);
+	updateLineNumberAreaGeometry();
 	connect(verticalScrollBar(), &QScrollBar::valueChanged, this,
-			[this](int) { viewport()->update(); });
+			[this](int) { viewport()->update(); m_lineNumberArea->update(); });
 }
 
 void TextEdit::setPlainText(const QString &text)
@@ -32,6 +35,7 @@ void TextEdit::setPlainText(const QString &text)
 	verticalScrollBar()->setValue(0);
 	updateScrollBars();
 	viewport()->update();
+	m_lineNumberArea->update();
 }
 
 void TextEdit::setTextCursor(const TextCursor &cursor)
@@ -48,6 +52,7 @@ void TextEdit::setLineSpacing(int extraPx)
 	m_lineSpacing = extraPx < 0 ? 0 : extraPx;
 	updateScrollBars();
 	viewport()->update();
+	m_lineNumberArea->update();
 }
 
 void TextEdit::undo()
@@ -147,6 +152,39 @@ void TextEdit::afterChange()
 	updateScrollBars();
 	ensureCursorVisible();
 	viewport()->update();
+	m_lineNumberArea->update();
+}
+
+int TextEdit::lineNumberAreaWidth() const
+{
+	return fontMetrics().horizontalAdvance(QChar(' ')) * 8;	//	半角8文字分
+}
+
+void TextEdit::updateLineNumberAreaGeometry()
+{
+	QRect cr = contentsRect();
+	m_lineNumberArea->setGeometry(QRect(cr.left(), cr.top(), lineNumberAreaWidth(), cr.height()));
+}
+
+void TextEdit::lineNumberAreaPaintEvent(QPaintEvent *event)
+{
+	QPainter painter(m_lineNumberArea);
+	painter.fillRect(event->rect(), palette().color(QPalette::Window));
+	const QFontMetrics fm = fontMetrics();
+	const int lh = lineHeight();
+	const int top = verticalScrollBar()->value();
+	const VLineMgr &mgr = m_doc.lineMgr();
+	const int rows = m_lineNumberArea->height() / lh + 1;
+	const int right = m_lineNumberArea->width() - 2;	//	右端に 2px 空ける
+	painter.setPen(palette().color(QPalette::Text));
+	for( int i = 0; i < rows; ++i ) {
+		int vline = top + i;
+		if( vline >= mgr.vlineCount() ) break;
+		int ln = mgr.vlineToLine(vline);
+		if( vline != mgr.lineToVline(ln) ) continue;	//	折り返しの継続行には番号を付けない
+		QString num = QString::number(ln + 1);
+		painter.drawText(right - fm.horizontalAdvance(num), i * lh + fm.ascent(), num);
+	}
 }
 
 void TextEdit::paintEvent(QPaintEvent *event)
@@ -312,6 +350,7 @@ void TextEdit::mouseReleaseEvent(QMouseEvent *event)
 void TextEdit::resizeEvent(QResizeEvent *event)
 {
 	QAbstractScrollArea::resizeEvent(event);
+	updateLineNumberAreaGeometry();
 	updateWrapWidth();
 	updateScrollBars();
 	viewport()->update();
