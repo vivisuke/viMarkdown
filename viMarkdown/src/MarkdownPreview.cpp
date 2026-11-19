@@ -87,7 +87,10 @@ extern void drawTextCursor(QWidget *viewport, QPainter& p, QTextCursor cursor, Q
 
 void insertInlineMD(QTextCursor& cursor, const QString text, bool inTable = false) {
 	static QTextDocument tempDoc;
-	tempDoc.setMarkdown(text);
+	QString mdText = text;
+	if( inTable && (mdText.startsWith("- ") || mdText.startsWith("+ ") || mdText.startsWith("* ")) )
+		mdText.prepend('\\');		//	セル先頭行のリストマーカーが setMarkdown() に消費されないようにする（v0.3 #1423）
+	tempDoc.setMarkdown(mdText);
 	// 解析されたテキストと文字装飾（太字など）を取り出して、リスト内に直接挿入
 	QTextBlock block = tempDoc.begin();
 	for (auto it = block.begin(); !it.atEnd(); ++it) {

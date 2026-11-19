@@ -1334,6 +1334,8 @@ doneW:
 			cursor.setPosition(block.position(), moveMode);
 		}
 		hat(cursor, moveMode);
+		if( gvi.m_operator != ' ' && !cursor.hasSelection() )	//	開始位置＝着地位置だと選択範囲が空になり、演算子が効かない（v0.3 #1226）
+			cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor);
 		gvi.m_linewiseMoved = true;
 		break;
 	case 'H':

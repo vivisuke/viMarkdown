@@ -3688,7 +3688,24 @@ const QList<ViTestCase> viTestCases = {
 	              "┃two\n"          // 最終行のみ削除され、カーソルは直前行の行頭へ
 	    }
 	},
-
+	{ "dG on last line from line head with trailing newline (empty EOF line)",
+	    "one\n"
+	    "two\n"
+	    "┃three\n",
+	    {
+	        "dG", "one\n"
+	              "┃two\n"          // 最終行の先頭からでも最終行が削除され、カーソルは直前行の行頭へ
+	    }
+	},
+	{ "dG on last indented line from first non-blank with trailing newline (empty EOF line)",
+	    "one\n"
+	    "two\n"
+	    "  ┃three\n",
+	    {
+	        "dG", "one\n"
+	              "┃two\n"          // 字下げした最終行でも、最初の非空白文字位置から最終行が削除されること
+	    }
+	},
 	// ------------------------------------------------------------------
 	// 末尾改行なし文書 × オペレータ（#1207）
 	// ------------------------------------------------------------------
