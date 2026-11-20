@@ -3740,6 +3740,11 @@ void MarkdownEditor::paintEvent(QPaintEvent *e) {
 	QFontMetrics fm(this->font());
 	int zWidth = fm.horizontalAdvance("□"); 
 	//	diff表示時背景、全角空白 □、改行マーク描画
+	QTextBlock lastRealBlock = document()->lastBlock();
+	if( m_diffMode ) {
+		while( lastRealBlock.isValid() && isDummyLine(this, lastRealBlock) )
+			lastRealBlock = lastRealBlock.previous();
+	}
 	for (QTextBlock b = firstVisibleBlock(); b.isValid(); b = b.next()) {
 		QRectF r = blockBoundingRect(b).translated(contentOffset());
 		if (r.top() > viewport()->height()) break; // 画面外なら終了
@@ -3750,7 +3755,7 @@ void MarkdownEditor::paintEvent(QPaintEvent *e) {
 			cursor.movePosition(QTextCursor::EndOfBlock);
 			QRect cr = cursorRect(cursor);
 			cr.setWidth(zWidth);
-			if( b != document()->lastBlock() ) {
+			if( b != lastRealBlock ) {
 				drawCRLF(p, cr);		 
 				if( is_folded(b) ) {
 					int nx = cr.right() + zWidth;
