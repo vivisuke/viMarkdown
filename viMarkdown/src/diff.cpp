@@ -172,11 +172,10 @@ void MarkdownEditor::removeAllDummyLines() {
     cursor.beginEditBlock();
 
     // 末尾のブロックから先頭に向かって逆順に巡回します
-    QTextBlock block = doc->lastBlock();
-    while (block.isValid()) {
-        // 削除操作によってブロックが破棄される前に、前のブロックへの参照を確保しておく
-        QTextBlock prevBlock = block.previous();
-
+    // （空の prevBlock との結合で QTextBlock ハンドルが無効化されるのを防ぐため、ブロック番号で辿る）
+    for (int bn = doc->blockCount() - 1; bn >= 0; --bn) {
+        QTextBlock block = doc->findBlockByNumber(bn);
+        if (!block.isValid()) continue;
         //if (isDummyLine(this, block))
         if (isDummyLine(this, block) && block.text().isEmpty())
         	//	ダミー行は常に空行。テキストがある場合は diffBlockNumbers がずれている（#1255）ので、
@@ -192,7 +191,7 @@ void MarkdownEditor::removeAllDummyLines() {
                 cursor.removeSelectedText();
             } else {
                 // パターンB: 末尾のブロックを削除する場合
-                if (prevBlock.isValid()) {
+                if (bn > 0) {
                     // 前の行が存在する場合、手前の改行コードも含めて後方から選択・削除します
                     cursor.movePosition(QTextCursor::EndOfBlock);
                     cursor.movePosition(QTextCursor::StartOfBlock, QTextCursor::KeepAnchor);
@@ -205,9 +204,6 @@ void MarkdownEditor::removeAllDummyLines() {
                 }
             }
         }
-
-        // 次の巡回先（手前のブロック）に移行
-        block = prevBlock;
     }
 
     cursor.endEditBlock(); // レイアウトを再計算して画面を更新
