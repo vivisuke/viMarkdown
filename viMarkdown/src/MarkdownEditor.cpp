@@ -3505,8 +3505,8 @@ void MarkdownEditor::syncDiffViewCursorFromEditor() {
 					offset = lastR2End + (srcTarget - lastR1End);
 				}
 			}
-			offset = qBound(0, offset, block2.text().length());
 		}
+		offset = qBound(0, offset, block2.text().length());
 	}
 	cur2.setPosition(block2.position() + offset);
 	peerView->setTextCursor(cur2);
