@@ -1811,20 +1811,40 @@ void MarkdownEditor::contextMenuEvent(QContextMenuEvent *event) {
                 }
             }
             if (rangeIndex >= 0) {
-                // クリックしたのが単語直後の空白範囲なら、単語本体を単位にする（v0.3 #1381）
-                if (isHalfSpaceRange(ranges[rangeIndex].start, ranges[rangeIndex].length)
+                auto isLeadingSpace = [&](int idx) {
+                    return isHalfSpaceRange(ranges[idx].start, ranges[idx].length)
+                        && (idx == 0 || ranges[idx - 1].start + ranges[idx - 1].length != ranges[idx].start)
+                        && idx + 1 < ranges.size()
+                        && ranges[idx + 1].start == ranges[idx].start + ranges[idx].length
+                        && !isHalfSpaceRange(ranges[idx + 1].start, ranges[idx + 1].length);
+                };
+                if (isLeadingSpace(rangeIndex)) {
+                    // 行末挿入などの「先行半角空白＋単語」は空白ごと1単位にする
+                    wordStart = ranges[rangeIndex].start;
+                    wordLength = ranges[rangeIndex].length + ranges[rangeIndex + 1].length;
+                } else if (!isHalfSpaceRange(ranges[rangeIndex].start, ranges[rangeIndex].length)
                     && rangeIndex > 0
                     && ranges[rangeIndex - 1].start + ranges[rangeIndex - 1].length == ranges[rangeIndex].start
-                    && !isHalfSpaceRange(ranges[rangeIndex - 1].start, ranges[rangeIndex - 1].length)) {
-                    --rangeIndex;
-                }
-                wordStart = ranges[rangeIndex].start;
-                wordLength = ranges[rangeIndex].length;
-                // 直後に隣接する半角空白だけの範囲は、単語の一部として単位に含める（v0.3 #1381）
-                if (rangeIndex + 1 < ranges.size()
-                    && ranges[rangeIndex + 1].start == wordStart + wordLength
-                    && isHalfSpaceRange(ranges[rangeIndex + 1].start, ranges[rangeIndex + 1].length)) {
-                    wordLength += ranges[rangeIndex + 1].length;
+                    && isLeadingSpace(rangeIndex - 1)) {
+                    // 先行半角空白に続く単語本体をクリックした場合も「空白＋単語」を1単位にする
+                    wordStart = ranges[rangeIndex - 1].start;
+                    wordLength = ranges[rangeIndex - 1].length + ranges[rangeIndex].length;
+                } else {
+                    // クリックしたのが単語直後の空白範囲なら、単語本体を単位にする（v0.3 #1381）
+                    if (isHalfSpaceRange(ranges[rangeIndex].start, ranges[rangeIndex].length)
+                        && rangeIndex > 0
+                        && ranges[rangeIndex - 1].start + ranges[rangeIndex - 1].length == ranges[rangeIndex].start
+                        && !isHalfSpaceRange(ranges[rangeIndex - 1].start, ranges[rangeIndex - 1].length)) {
+                        --rangeIndex;
+                    }
+                    wordStart = ranges[rangeIndex].start;
+                    wordLength = ranges[rangeIndex].length;
+                    // 直後に隣接する半角空白だけの範囲は、単語の一部として単位に含める（v0.3 #1381）
+                    if (rangeIndex + 1 < ranges.size()
+                        && ranges[rangeIndex + 1].start == wordStart + wordLength
+                        && isHalfSpaceRange(ranges[rangeIndex + 1].start, ranges[rangeIndex + 1].length)) {
+                        wordLength += ranges[rangeIndex + 1].length;
+                    }
                 }
                 isOnInsertedWord = true;
                 clickedWordText = btext.mid(wordStart, wordLength);
@@ -3793,6 +3813,14 @@ void MarkdownEditor::paintEvent(QPaintEvent *e) {
 							if (s[k] != u' ') { nextIsSpace = false; break; }
 						}
 						if (nextIsSpace) continue;
+					}
+					// 先行する単独の半角空白＋単語（行末挿入の「 英単語」など）も1単位なので境界空白を描かない
+					if (i == 1 || rs[i - 2].start + rs[i - 2].length != rs[i - 1].start) {
+						bool prevIsSpace = true;
+						for (int k = rs[i - 1].start; k < boundary; ++k) {
+							if (s[k] != u' ') { prevIsSpace = false; break; }
+						}
+						if (prevIsSpace) continue;
 					}
 					// 同一トークン内の境界には空白を描かない（文字単位diffで1トークンが複数範囲に分割された場合。v0.3 #1361）
 					if (getCharType(s[boundary - 1]) == getCharType(s[boundary])) continue;
