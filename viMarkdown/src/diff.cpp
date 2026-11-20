@@ -1161,6 +1161,24 @@ void MainWindow::do_diff() {
 
     if (docWidget->m_editor->dummyInserted())   docWidget->m_editor->removeAllDummyLines();
     if (docWidget->m_diffview->dummyInserted()) docWidget->m_diffview->removeAllDummyLines();
+    //	ダミー行除去後の実テキスト基準でカーソル位置（物理行＋列）を保存する（v0.3 #1426）。
+    //	末尾へのダミー行挿入（atEnd）で QTextCursor が最終ダミー行へ押し出されるのを防ぐため。
+    struct SavedCursorPos {
+        int anchorLine = 0, anchorCol = 0;
+        int posLine = 0, posCol = 0;
+    };
+    auto saveCursorPos = [](const QTextCursor &c, const QTextDocument *doc) -> SavedCursorPos {
+        QTextBlock ab = doc->findBlock(c.anchor());
+        QTextBlock pb = doc->findBlock(c.position());
+        return {
+            ab.isValid() ? ab.blockNumber() : 0,
+            ab.isValid() ? c.anchor() - ab.position() : 0,
+            pb.isValid() ? pb.blockNumber() : 0,
+            pb.isValid() ? c.position() - pb.position() : 0
+        };
+    };
+    const SavedCursorPos savedCur0 = saveCursorPos(cursor0, doc1);
+    const SavedCursorPos savedCur2 = saveCursorPos(cursor2, doc2);
 	//	前回の単語差分強調 (DiffBlockUserData) を全てクリアする。
 	//	「変更→共通」になったブロックは calculateAndSet* を通らないため、
 	//	クリアしないと古い強調が残り続ける (SPR #1182)
@@ -1210,10 +1228,32 @@ void MainWindow::do_diff() {
     // 例：直前位置が正しい前提なら、シグナルを止めてから setTextCursor → 直後復元
 	//	カーソル復元に伴う同期（逆流）で復元結果が上書きされないよう、両ビューのシグナルを止めてから復元する（v0.3 #1393）
     {
+        auto restoreCursorPos = [](MarkdownEditor *ed, QTextDocument *doc, const SavedCursorPos &sc) -> QTextCursor {
+            const auto &vbn = ed->diffBlockNumbers();
+            auto toDocPos = [&](int physLine, int col) -> int {
+                int targetBn = -1;
+                for (size_t bn = 0; bn < vbn.size(); ++bn) {
+                    if (vbn[bn] == physLine) {
+                        targetBn = (int)bn;
+                        break;
+                    }
+                }
+                QTextBlock b = (targetBn >= 0) ? doc->findBlockByNumber(targetBn) : doc->lastBlock();
+                if (!b.isValid()) return 0;
+                return b.position() + qBound(0, col, b.text().size());
+            };
+            QTextCursor c(doc);
+            int apos = toDocPos(sc.anchorLine, sc.anchorCol);
+            int ppos = toDocPos(sc.posLine, sc.posCol);
+            c.setPosition(apos);
+            if (ppos != apos)
+                c.setPosition(ppos, QTextCursor::KeepAnchor);
+            return c;
+        };
         QSignalBlocker sbEditor(docWidget->m_editor);
         QSignalBlocker sbDiffView(docWidget->m_diffview);
-        docWidget->m_editor->setTextCursor(cursor0);
-        docWidget->m_diffview->setTextCursor(cursor2);
+        docWidget->m_editor->setTextCursor(restoreCursorPos(docWidget->m_editor, doc1, savedCur0));
+        docWidget->m_diffview->setTextCursor(restoreCursorPos(docWidget->m_diffview, doc2, savedCur2));
     }
     //	スクロール位置を復元する（v0.3 #1390）。同期スロット経由で互いに
     //	上書きし合わないよう、両バーのシグナルを止めて個別に戻す。
