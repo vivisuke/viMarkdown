@@ -3,6 +3,7 @@
 #include <QTextCursor>
 #include <QDebug>
 #include <algorithm>
+#include <new>
 
 inline bool isNewLine(QChar ch) {
 	return ch == u'\r' || ch == u'\n';
@@ -32,6 +33,34 @@ namespace {
 		text.replace(QChar::ParagraphSeparator, QChar('\n'));
 		return text;
 	}
+
+	template<typename T>
+	T *allocPoolItem(std::vector<T*> &pool, int &usedSize) {
+		int pix = usedSize / POOL_SIZE;
+		int mod = usedSize % POOL_SIZE;
+		while( pix >= (int)pool.size() )
+			pool.push_back(reinterpret_cast<T*>(new char[sizeof(T) * POOL_SIZE]));
+		T *ptr = pool[pix] + mod;
+		++usedSize;
+		return new (ptr) T();
+	}
+
+	template<typename T>
+	void destroyPoolItems(std::vector<T*> &pool, int &usedSize) {
+		for( int i = 0; i < usedSize; ++i ) {
+			T *ptr = pool[i / POOL_SIZE] + (i % POOL_SIZE);
+			ptr->~T();
+		}
+		usedSize = 0;
+	}
+
+	template<typename T>
+	void releasePool(std::vector<T*> &pool, int &usedSize) {
+		destroyPoolItems(pool, usedSize);
+		for( T *chunk : pool )
+			delete[] reinterpret_cast<char*>(chunk);
+		pool.clear();
+	}
 }
 
 UndoMgr::UndoMgr(Buffer *buffer)
@@ -46,6 +75,9 @@ UndoMgr::UndoMgr(Buffer *buffer)
 //template<typename T>
 UndoMgr::~UndoMgr()
 {
+	releasePool(m_actInsPool, m_actInsPoolSize);
+	releasePool(m_actDelPool, m_actDelPoolSize);
+	releasePool(m_actRepPool, m_actRepPoolSize);
 }
 //template<typename T>
 void UndoMgr::init()
@@ -59,6 +91,9 @@ void UndoMgr::init()
 	m_stack.clear();
 	m_insText.clear();
 	m_delText.clear();
+	destroyPoolItems(m_actInsPool, m_actInsPoolSize);
+	destroyPoolItems(m_actDelPool, m_actDelPoolSize);
+	destroyPoolItems(m_actRepPool, m_actRepPoolSize);
 }
 void UndoMgr::setFlag(uchar f) {
 	if( m_cur == 0 ) return;
@@ -115,27 +150,31 @@ void UndoMgr::onSaved()
 	m_savePointCur = m_cur;
 	// ※ 個別行の LINEFLAG_SAVED などのビットパック処理は削除
 }
+void UndoMgr::truncateRedo()
+{
+	if( m_stack.size() <= (size_t)m_cur ) return;
+	int ix = m_insText.size();
+	for(int i = m_stack.size(); --i >= m_cur; ) {
+		switch( m_stack[i]->m_type ) {
+		case UndoAction::ACT_INSERT: {
+			auto p = (UndoActionInsert *)m_stack[i];
+			ix = std::min<int>(ix, p->m_ix);
+			break;
+		}
+		case UndoAction::ACT_REPLACE: {
+			auto p = (UndoActionReplace *)m_stack[i];
+			ix = std::min<int>(ix, p->m_ixIns);
+			break;
+		}
+		}
+	}
+	m_insText.resize(ix);
+	m_stack.resize(m_cur);
+}
 bool UndoMgr::push_back(UndoAction *ptr)
 {
 	try {
-		if( m_stack.size() > (size_t)m_cur ) {
-			int ix = m_insText.size();
-			for(int i = m_stack.size(); --i >= m_cur; ) {
-				switch( m_stack[i]->m_type ) {
-				case UndoAction::ACT_INSERT: {
-					auto p = (UndoActionInsert *)m_stack[i];
-					ix = std::min(ix, p->m_ix);
-					break;
-				}
-				case UndoAction::ACT_DELETE: {
-					auto p = (UndoActionDelete *)m_stack[i];
-					break;
-				}
-				}
-			}
-			m_insText.resize(ix);
-			m_stack.resize(m_cur);
-		}
+		truncateRedo();
 		m_stack.push_back(ptr);
 	} catch(...) {
 		return false;
@@ -153,22 +192,24 @@ bool UndoMgr::push_back(UndoAction *ptr)
 
 void UndoMgr::prohibitMergeUndo() // 挿入マージ禁止
 {
-	if( m_cur != 0 ) {
+	if( m_cur != 0 && m_stack[m_cur - 1]->m_type == UndoAction::ACT_INSERT ) {
 		UndoActionInsert *ptr = (UndoActionInsert *)m_stack[m_cur - 1];
-		if( ptr->m_type == UndoAction::ACT_INSERT )
-			ptr->m_prohibitMerge = true;
+		ptr->m_prohibitMerge = true;
 	}
 }
 bool UndoMgr::push_back_insText(int pos, int sz /*, int ln*/)
 {
 	// 改行以外の文字を連続した場所に挿入した場合は、直前のアクションに結合（マージ）する
-	if( m_cur != 0 && !isNewLine(m_buffer->characterAt(pos)) ) {
+	if( m_cur != 0 && m_stack[m_cur - 1]->m_type == UndoAction::ACT_INSERT
+		&& !isNewLine(m_buffer->characterAt(pos)) )
+	{
 		UndoActionInsert *ptr = (UndoActionInsert *)m_stack[m_cur - 1];
-		if( ptr->m_type == UndoAction::ACT_INSERT && !ptr->m_prohibitMerge
-			&& ptr->m_pos + ptr->m_size == pos )
+		if( !ptr->m_prohibitMerge && ptr->m_pos + ptr->m_size == pos )
 		{
 			ptr->m_size += sz;
-			m_stack.resize(m_cur);
+			truncateRedo();
+			if( m_savePointCur >= m_cur )
+				m_savePointCur = -1;
 			return true;
 		}
 	}
@@ -328,39 +369,15 @@ int UndoMgr::redo()
 }
 UndoActionInsert *UndoMgr::newActInsert()
 {
-	int pix = m_actInsPoolSize / POOL_SIZE;
-	int mod = m_actInsPoolSize % POOL_SIZE;
-	while( pix >= m_actInsPool.size() )
-		m_actInsPool.push_back((UndoActionInsert *)(new char[sizeof(UndoActionInsert)*POOL_SIZE]()));
-	UndoActionInsert *ptr = m_actInsPool[pix] + mod;
-	++m_actInsPoolSize;
-	ptr->m_type = UndoAction::ACT_INSERT;
-	ptr->m_flags = 0;
-	return ptr;
+	return allocPoolItem(m_actInsPool, m_actInsPoolSize);
 }
 
 UndoActionDelete *UndoMgr::newActDelete()
 {
-	int pix = m_actDelPoolSize / POOL_SIZE;
-	int mod = m_actDelPoolSize % POOL_SIZE;
-	while( pix >= m_actDelPool.size() )
-		m_actDelPool.push_back((UndoActionDelete *)(new char[sizeof(UndoActionDelete)*POOL_SIZE]()));
-	UndoActionDelete *ptr = m_actDelPool[pix] + mod;
-	++m_actDelPoolSize;
-	ptr->m_type = UndoAction::ACT_DELETE;
-	ptr->m_flags = 0;
-	return ptr;
+	return allocPoolItem(m_actDelPool, m_actDelPoolSize);
 }
 
 UndoActionReplace *UndoMgr::newActReplace()
 {
-	int pix = m_actRepPoolSize / POOL_SIZE;
-	int mod = m_actRepPoolSize % POOL_SIZE;
-	while( pix >= m_actRepPool.size() )
-		m_actRepPool.push_back((UndoActionReplace *)(new char[sizeof(UndoActionReplace)*POOL_SIZE]()));
-	UndoActionReplace *ptr = m_actRepPool[pix] + mod;
-	++m_actRepPoolSize;
-	ptr->m_type = UndoAction::ACT_REPLACE;
-	ptr->m_flags = 0;
-	return ptr;
+	return allocPoolItem(m_actRepPool, m_actRepPoolSize);
 }

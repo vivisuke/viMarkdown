@@ -274,6 +274,58 @@ static void test_undo_fixed()
 		doc.undo();
 		verify(doc.isModified(), "modified: save point invalidated on merged branch");
 	}
+	{	//	prohibitMergeUndo により連続挿入が分離される
+		TextDocument doc;
+		doc.insert(0, QStringLiteral("a"));
+		doc.undoMgr().prohibitMergeUndo();
+		doc.insert(1, QStringLiteral("b"));
+		verify(doc.undo() == 1, "undo: prohibitMerge pos 1");
+		checkDoc(doc, QStringLiteral("a"), "undo: prohibitMerge separated");
+		verify(doc.undo() == 0, "undo: prohibitMerge pos 0");
+		checkDoc(doc, QString(), "undo: prohibitMerge empty");
+	}
+	{	//	保存直後に直前挿入末尾へ追記マージしても保存点は失効する
+		TextDocument doc;
+		doc.insert(0, QStringLiteral("a"));
+		doc.onSaved();
+		doc.insert(1, QStringLiteral("b"));
+		verify(doc.isModified(), "modified: merged right after onSaved");
+		doc.insert(2, QStringLiteral("\nc"));
+		doc.undo();
+		verify(doc.isModified(), "modified: save point invalidated after merge at save point");
+	}
+	{	//	undo / redo の戻り値（通常削除・BS 削除）
+		TextDocument doc;
+		doc.insert(0, QStringLiteral("abcde"));
+		verify(doc.undo() == 0, "undo: insert return pos");
+		verify(doc.redo() == 5, "redo: insert return pos");
+		doc.erase(1, 3);	//	"bc" 削除 -> "ade"
+		verify(doc.undo() == 1, "undo: delete return pos");
+		verify(doc.redo() == 1, "redo: delete return pos");
+		doc.undo();
+		doc.undoMgr().push_back_delText(1, 2, true);	//	BS 削除
+		doc.eraseRaw(1, 3);
+		verify(doc.undo() == 3, "undo: BS delete return pos");
+		verify(doc.redo() == 1, "redo: BS delete return pos");
+	}
+	{	//	ACT_REPLACE（push_back_repText）の undo / redo と分岐切り捨て
+		TextDocument doc;
+		doc.setPlainText(QStringLiteral("abcdef"));
+		doc.undoMgr().push_back_repText(1, 3, 2);	//	"bcd" -> "XY"
+		doc.eraseRaw(1, 4);
+		doc.insertRaw(1, QStringLiteral("XY"));
+		checkDoc(doc, QStringLiteral("aXYef"), "replace: applied");
+		verify(doc.undo() == 1, "replace: undo return pos");
+		checkDoc(doc, QStringLiteral("abcdef"), "replace: undone");
+		verify(doc.redo() == 3, "replace: redo return pos");
+		checkDoc(doc, QStringLiteral("aXYef"), "replace: redone");
+		doc.undo();
+		doc.insert(0, QStringLiteral("Z"));	//	ACT_REPLACE が redo 側にある状態で分岐
+		checkDoc(doc, QStringLiteral("Zabcdef"), "replace: branched");
+		verify(!doc.canRedo(), "replace: redo truncated");
+		doc.undo();
+		checkDoc(doc, QStringLiteral("abcdef"), "replace: branch undone");
+	}
 	{	//	setPlainText / clear は undo 履歴を破棄する
 		TextDocument doc;
 		doc.insert(0, QStringLiteral("abc"));

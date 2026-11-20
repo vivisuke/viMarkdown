@@ -97,6 +97,7 @@ public:
 		, m_ln(ln)
 		, m_sizeIns(sizeIns)
 		, m_ixIns(ixIns)
+		, m_lcIns(lcIns)
 		, m_sizeDel(sizeDel)
 		, m_ixDel(ixDel)
 		, m_lcDel(lcDel)
@@ -109,6 +110,8 @@ class UndoMgr
 public:
 	UndoMgr(Buffer* = nullptr);
 	~UndoMgr();
+	UndoMgr(const UndoMgr&) = delete;
+	UndoMgr& operator=(const UndoMgr&) = delete;
 
 public:
 	bool	canUndo() const { return m_cur != 0; }
@@ -140,6 +143,7 @@ protected:
 	UndoActionInsert	*newActInsert();
 	UndoActionDelete	*newActDelete();
 	UndoActionReplace	*newActReplace();
+	void				truncateRedo();
 
 //private:
 public:
