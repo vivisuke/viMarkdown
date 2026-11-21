@@ -1428,43 +1428,51 @@ void MarkdownPreview::do_SVG(int bn0, int nBlocks, QTextBlock& srcBlock, QTextCu
 				auto txt = reader.attributes().value("width");
 				if( !txt.isEmpty() && txt[txt.size() - 1] == u'%' )
 					wd = txt.left(txt.size() - 1).toInt() / 100.0;
-				else
-					width = txt.toInt();
+				else {
+					if( txt.endsWith(u"px", Qt::CaseInsensitive) ) txt.chop(2);
+					width = qRound(txt.toDouble());
+				}
 			}
 			if (reader.attributes().hasAttribute("height")) {
 				//height = reader.attributes().value("height").toInt();
 				auto txt = reader.attributes().value("height");
 				if( !txt.isEmpty() && txt[txt.size() - 1] == u'%' )
 					ht = txt.left(txt.size() - 1).toInt() / 100.0;
-				else
-					height = txt.toInt();
+				else {
+					if( txt.endsWith(u"px", Qt::CaseInsensitive) ) txt.chop(2);
+					height = qRound(txt.toDouble());
+				}
 			}
 			if (reader.attributes().hasAttribute("viewBox")) {
 				auto viewBox = reader.attributes().value("viewBox");
 				auto list = viewBox.split(QRegularExpression("[\\s,]+"), Qt::SkipEmptyParts);
-				width = list.value(2).toDouble();
-				height = list.value(3).toDouble();
+				if( list.size() >= 4 ) {
+					width = qRound(list[2].toDouble());
+					height = qRound(list[3].toDouble());
+				}
 			}
 			width *= wd;
 			height *= ht;
 			break;
 		}
 	}
-	srcBlock = srcBlock.next();
-	if( srcBlock.isValid() ) {
+	if( srcBlock.isValid() && srcBlock.text().startsWith("```") ) {
 		setBlockType(srcBlock, BT_SVG_BLOCK);
 		data = getBlockData(srcBlock);
 		data->m_charFlags.fill(PCF_SVG);
 		srcBlock.setUserData(data);
 	}
-	QImage image(width, height, QImage::Format_ARGB32);
-	image.fill(Qt::white);
     auto document = lunasvg::Document::loadFromData(buf.toUtf8());
     if (!document) {
         // ロード失敗（SVGの構文エラーなど）
         //##qDebug() << "load failed.";
         return;
     }
+    if( width <= 0 ) width = qMax(1, qRound(document->width()));
+    if( height <= 0 ) height = qMax(1, qRound(document->height()));
+    QImage image(width, height, QImage::Format_ARGB32);
+    if( image.isNull() ) return;
+    image.fill(Qt::white);
     lunasvg::Bitmap bitmap(
         image.bits(),
         image.width(),
