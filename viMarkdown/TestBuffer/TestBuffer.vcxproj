@@ -96,7 +96,7 @@
     <ClCompile Include="TextDocumentTest.cpp" />
     <ClCompile Include="TextEdit.cpp" />
     <ClCompile Include="UndoMgr.cpp" />
-    <ClCompile Include="VLineMgrTest.cpp" />
+    <ClCompile Include="ViewLineMgrTest.cpp" />
     <QtRcc Include="MainWindow.qrc" />
     <QtUic Include="MainWindow.ui" />
     <QtMoc Include="MainWindow.h" />

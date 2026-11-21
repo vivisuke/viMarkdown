@@ -2111,6 +2111,10 @@ void MainWindow::do_load(const QString& fullPath) {
 		return;
 	}
 	QString content = file.readAll();
+	docWidget->m_editor->setDummyInserted(false);
+	docWidget->m_editor->diffBlockNumbers().clear();
+	docWidget->m_editor->diffFlags().clear();
+	docWidget->m_editor->clearNDummyLines();
 	docWidget->m_editor->setPlainText(content);
 	docWidget->setModified(false);
 	ui->tabWidget->setTabText(tix, docWidget->m_title);

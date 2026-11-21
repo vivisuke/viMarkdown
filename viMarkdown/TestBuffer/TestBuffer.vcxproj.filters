@@ -58,7 +58,7 @@
     <ClCompile Include="UndoMgr.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="VLineMgrTest.cpp">
+    <ClCompile Include="ViewLineMgrTest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
