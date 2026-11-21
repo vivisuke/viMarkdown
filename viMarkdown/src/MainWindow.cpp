@@ -983,6 +983,48 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 				return;
 			}
 		}
+		if( docWidget->m_diffMode && docWidget->m_diffview->document()->isModified() ) {
+			ui->tabWidget->setCurrentIndex(ix);
+			QString path = docWidget->m_diffPeerFullPath;
+			QString name = path.isEmpty() ? docWidget->m_diffPeerTitle : path;
+			QString mess = QString(tr("The document '%1' has been modified.\nDo you want to save your changes ?")).arg(name);
+			QMessageBox::StandardButton reply = QMessageBox::question(this,
+								  tr("Confirm save"),
+								  mess,
+								  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+			if (reply == QMessageBox::Yes) {
+				if( path.isEmpty() ) {
+					path = QFileDialog::getSaveFileName(
+								this,
+								"Save File",
+								QString(),
+								"markdown (*.md)",
+								nullptr,
+								QFileDialog::DontUseNativeDialog
+							);
+					if( path.isEmpty() ) { event->ignore(); return; }
+					if( QFileInfo(path).suffix().isEmpty() ) path += ".md";
+					docWidget->m_diffPeerFullPath = path;
+				}
+				docWidget->m_diffview->removeAllDummyLines();
+				QFile file(path);
+				if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+					QTextStream out(&file);
+					out.setEncoding(docWidget->m_encoding);
+					out.setGenerateByteOrderMark(docWidget->m_withBOM);
+					out << docWidget->m_diffview->toPlainText();
+					file.close();
+					docWidget->m_diffview->document()->setModified(false);
+				} else {
+					QMessageBox::warning(this, tr("Error"), tr("Cannot write file:\n%1").arg(path));
+					event->ignore();
+					return;
+				}
+			} else if (reply == QMessageBox::Cancel) {
+				event->ignore();
+				return;
+			}
+		}
 	}
 	QSettings settings;
 	//QStringList history;
