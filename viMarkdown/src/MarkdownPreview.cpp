@@ -897,13 +897,16 @@ void MarkdownPreview::insertMarkdown(QTextDocument *doc, int bn0, int nBlocks, /
 					m_inComment = true;
 					break;
 				} else {			//	"-->" 有り
-					buf2 += buf.mid(start, ix-start) + buf.mid(ix2+3);
-					for(int i = ix; i < ix2+3; ++i)
+					buf2 += buf.mid(start, ix-start);
+					for(int i = ix; i < ix2+3 && i < data->m_charFlags.size(); ++i)
 						data->m_charFlags[i] = PCF_COMMENTED;
 					start = ix2+3;
 				}
 			}
-			if( modified ) buf = buf2;
+			if( modified ) {
+				if( !m_inComment ) buf2 += buf.mid(start);
+				buf = buf2;
+			}
 			srcBlock.setUserData(data);
 			if( bComment && buf.isEmpty() ) continue;
 		} else {
