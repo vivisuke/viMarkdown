@@ -12,7 +12,7 @@
 //	・行間は setLineSpacing() で追加ピクセルを指定できる
 //	  （QPlainTextEdit では行間が変えられないことが自前化の動機）
 //	・折り返しはウィンドウ幅に追従する。横スクロールは無し
-//	・IME・カーソル点滅は未実装（後で拡張）
+//	・カーソル点滅は未実装（後で拡張）
 //----------------------------------------------------------------------
 
 class LineNumberArea;
@@ -41,10 +41,12 @@ public:
 
 	void undo();
 	void redo();
+	QVariant inputMethodQuery(Qt::InputMethodQuery query) const override;
 
 protected:
 	void paintEvent(QPaintEvent *event) override;
 	void keyPressEvent(QKeyEvent *event) override;
+	void inputMethodEvent(QInputMethodEvent *event) override;
 	void mousePressEvent(QMouseEvent *event) override;
 	void mouseMoveEvent(QMouseEvent *event) override;
 	void mouseReleaseEvent(QMouseEvent *event) override;
@@ -67,6 +69,8 @@ private:
 	TextCursor m_cursor;
 	int m_lineSpacing = 0;
 	bool m_dragging = false;
+	QString m_preedit;
+	int m_preeditCursor = 0;
 	LineNumberArea *m_lineNumberArea = nullptr;
 };
 

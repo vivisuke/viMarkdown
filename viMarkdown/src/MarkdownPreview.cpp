@@ -1653,24 +1653,25 @@ int nLeadingSpaces(const QString& text)
     return n;
 }
 void MarkdownPreview::do_numlist(int bn0, int nBlocks, QTextBlock srcBlock, QTextCursor& cursor, QString buf) {
+	const int startIx = m_ix;
 #if 1	//	insertMarkdown() を使用せず QTextListFormat を適用
 	cursor.beginEditBlock();
 	QTextListFormat listFormat;
 	listFormat.setStyle(QTextListFormat::ListDecimal); // 1. 2. 3. の連番リスト
 	auto *list = cursor.createList(listFormat);
-	auto match = re_numlist.match(srcBlock.text());
+	QString text = buf;
+	auto match = re_numlist.match(text);
 	//int seq = 1;
 	while( match.hasMatch() ) {
 		updateCharFlags(srcBlock);
 		setBlockType(srcBlock, BT_NUMLIST);
 		BlockData* data = getBlockData(srcBlock);
-		for(int i = 0; i < match.capturedLength(); ++i)
+		for(int i = 0; i < match.capturedLength() && i < data->m_charFlags.size(); ++i)
 			data->m_charFlags[i] = PCF_NUM_LIST;
 		srcBlock.setUserData(data);
 		//QTextBlock b = list->item(list->count() - 1);
 		//cursor.insertText(m_lst[m_ln].remove(re_numlist) /*+ "\n"*/);
 		setBlockType(cursor.block(), BT_NUMLIST);
-		auto text = srcBlock.text();
 		//##text.replace(re_tailspc, ZWSP);
 		if( text.size() > 3 && text.back() == u' ' ) {	//	"1. " 部分は無視
 			text.back() = ZWSP;
@@ -1693,7 +1694,8 @@ void MarkdownPreview::do_numlist(int bn0, int nBlocks, QTextBlock srcBlock, QTex
 		//cursor.insertBlock(QTextBlockFormat());
 		if( ++m_ix >= nBlocks ) break;
 		srcBlock = srcBlock.next();
-		match = re_numlist.match(srcBlock.text());
+		text = srcBlock.text();
+		match = re_numlist.match(text);
 		if( !match.hasMatch() ) break;
 	}
 #if 0
@@ -1724,7 +1726,7 @@ void MarkdownPreview::do_numlist(int bn0, int nBlocks, QTextBlock srcBlock, QTex
 	//cursor.insertBlock();
 	//QTextBlockFormat blockFormat;
 	//cursor.setBlockFormat(blockFormat);
-	--m_ix;
+	if( m_ix > startIx ) --m_ix;
 	//m_nEmptyLines = 0;
 }
 void MarkdownPreview::do_checkbox(int bn0, int nBlocks, QTextBlock srcBlock, QTextCursor& cursor, QString buf) {

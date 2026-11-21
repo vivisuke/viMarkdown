@@ -15,7 +15,7 @@ SPR# 状 P Open  Close ver     Type  概要
 0011 ◎ C 11/22 11/22 0001 │ToDo│TextEdit：Esc 押下すると変な記号が入力されてしまう
 0012 ◎ C 11/22 11/22 0001 │ToDo│TextEdit：起動時は、アウトプットではなくエディタ部分にフォーカスをあてる
 0013 ◎ C 11/22 11/22 0001 │ToDo│TextEdit：Ctrl + ← → で単語単位カーソル移動（cursor.movePosition も要修正）
-0014 ● C 11/22            │ToDo│
+0014 ◎ C 11/22 11/22 0001 │問題│TextEdit：IME ON できない
 0015 ● C 11/22            │ToDo│
 0016 ● C 11/22            │ToDo│
 0017 ● C 11/22            │ToDo│

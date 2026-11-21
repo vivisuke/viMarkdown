@@ -3,6 +3,8 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QFontMetrics>
+#include <QInputMethod>
+#include <QInputMethodEvent>
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPainter>
@@ -18,6 +20,7 @@ TextEdit::TextEdit(QWidget *parent)
 	: QAbstractScrollArea(parent), m_cursor(&m_doc)
 {
 	setFocusPolicy(Qt::StrongFocus);
+	setAttribute(Qt::WA_InputMethodEnabled, true);
 	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 	viewport()->setCursor(Qt::IBeamCursor);
@@ -153,6 +156,7 @@ void TextEdit::afterChange()
 	ensureCursorVisible();
 	viewport()->update();
 	m_lineNumberArea->update();
+	QGuiApplication::inputMethod()->update(Qt::ImCursorRectangle);
 }
 
 int TextEdit::lineNumberAreaWidth() const
@@ -217,13 +221,30 @@ void TextEdit::paintEvent(QPaintEvent *event)
 		QString text = vb.text();
 		if( text.endsWith(QChar('\n')) ) text.chop(1);
 		painter.setPen(palette().color(QPalette::Text));
-		painter.drawText(LEFT_MARGIN, y + fm.ascent(), text);
+		if( !m_preedit.isEmpty() && viewLine == mgr.viewLineAtPos(m_cursor.position()) ) {
+			int curOff = (int)(m_cursor.position() - linePos);
+			if( curOff < 0 ) curOff = 0;
+			if( curOff > text.size() ) curOff = (int)text.size();
+			QString before = text.left(curOff);
+			QString after = text.mid(curOff);
+			int xBefore = LEFT_MARGIN;
+			painter.drawText(xBefore, y + fm.ascent(), before);
+			int xPre = xBefore + fm.horizontalAdvance(before);
+			int wPre = fm.horizontalAdvance(m_preedit);
+			painter.drawText(xPre, y + fm.ascent(), m_preedit);
+			painter.drawLine(xPre, y + fm.ascent() + 1, xPre + wPre, y + fm.ascent() + 1);
+			painter.drawText(xPre + wPre, y + fm.ascent(), after);
+		} else {
+			painter.drawText(LEFT_MARGIN, y + fm.ascent(), text);
+		}
 	}
 	//	カーソル（フォーカス時のみ）
 	if( hasFocus() && !hasSel ) {
 		int cv = mgr.viewLineAtPos(m_cursor.position());
 		if( cv >= top && cv < top + rows ) {
 			int x = xOfPos(m_cursor.position());
+			if( !m_preedit.isEmpty() )
+				x += fm.horizontalAdvance(m_preedit.left(m_preeditCursor));
 			painter.fillRect(x, (cv - top) * lh, 1, lh, palette().color(QPalette::Text));
 		}
 	}
@@ -363,10 +384,68 @@ void TextEdit::focusInEvent(QFocusEvent *event)
 {
 	QAbstractScrollArea::focusInEvent(event);
 	viewport()->update();
+	QGuiApplication::inputMethod()->update(Qt::ImCursorRectangle);
 }
 
 void TextEdit::focusOutEvent(QFocusEvent *event)
 {
 	QAbstractScrollArea::focusOutEvent(event);
 	viewport()->update();
+}
+
+void TextEdit::inputMethodEvent(QInputMethodEvent *event)
+{
+	if( event->replacementLength() > 0 ) {
+		TextDocument::pos_t pos = m_cursor.position() + event->replacementStart();
+		m_cursor.setPosition(pos);
+		m_cursor.setPosition(pos + event->replacementLength(), TextCursor::KeepAnchor);
+		m_cursor.removeSelectedText();
+	}
+	if( !event->commitString().isEmpty() ) {
+		m_cursor.insertText(event->commitString());
+	}
+	m_preedit = event->preeditString();
+	m_preeditCursor = (int)m_preedit.size();
+	for( const QInputMethodEvent::Attribute &attr : event->attributes() ) {
+		if( attr.type == QInputMethodEvent::Cursor ) {
+			m_preeditCursor = qBound(0, attr.start, (int)m_preedit.size());
+			break;
+		}
+	}
+	afterChange();
+	event->accept();
+}
+
+QVariant TextEdit::inputMethodQuery(Qt::InputMethodQuery query) const
+{
+	const ViewLineMgr &mgr = m_doc.lineMgr();
+	switch( query ) {
+	case Qt::ImEnabled:
+		return true;
+	case Qt::ImCursorRectangle: {
+		const int lh = lineHeight();
+		const int top = verticalScrollBar()->value();
+		const int cv = mgr.viewLineAtPos(m_cursor.position());
+		int x = xOfPos(m_cursor.position());
+		if( !m_preedit.isEmpty() )
+			x += fontMetrics().horizontalAdvance(m_preedit.left(m_preeditCursor));
+		int y = (cv - top) * lh;
+		QPoint pt = viewport()->mapTo(const_cast<TextEdit*>(this), QPoint(x, y));
+		return QRect(pt.x(), pt.y(), 1, lh);
+	}
+	case Qt::ImFont:
+		return font();
+	case Qt::ImCursorPosition: {
+		int ln = mgr.lineAtPos(m_cursor.position());
+		return (int)(m_cursor.position() - mgr.lineStartPos(ln));
+	}
+	case Qt::ImSurroundingText: {
+		int ln = mgr.lineAtPos(m_cursor.position());
+		return m_doc.findBlockByNumber(ln).text();
+	}
+	case Qt::ImCurrentSelection:
+		return m_cursor.selectedText();
+	default:
+		return QAbstractScrollArea::inputMethodQuery(query);
+	}
 }
