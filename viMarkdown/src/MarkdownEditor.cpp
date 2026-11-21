@@ -4213,11 +4213,18 @@ void MarkdownEditor::drawFoldLine(QTextCursor cursor, QTextBlock block) {
 }
 void MarkdownEditor::lnAreaMousePressEvent(QMouseEvent *event) {
 	auto pos = event->position();
+	if( m_diffMode && pos.x() < m_charWidth*2 ) {
+		if( m_docWidget->m_diffRev1 != m_docWidget->m_editor->document()->revision()
+			|| m_docWidget->m_diffRev2 != m_docWidget->m_diffview->document()->revision() )
+			((MainWindow*)m_mainWindow)->do_diff();
+	}
 	QTextCursor cursor = cursorForPosition(QPoint(0, (int)pos.y()));
 	QTextBlock block = cursor.block();
 	if( m_diffMode && pos.x() < m_charWidth*2 &&
-		((isDummyLine(this, block) && (!block.previous().isValid() || !isDummyLine(this, block.previous()))) ||
-		(hasDiff(this, block) && (!block.previous().isValid() || !hasDiff(this, block.previous())))) )
+		((isDummyLine(this, block) && !isPaddingLine(this, block) &&
+		  (!block.previous().isValid() || (!isDummyLine(this, block.previous()) && !isPaddingLine(this, block.previous())))) ||
+		 (hasDiff(this, block) && !isPaddingLine(this, block) &&
+		  (!block.previous().isValid() || (!hasDiff(this, block.previous()) && !isPaddingLine(this, block.previous()))))) )
 	{
 		applyDiffBlock(block);
 		return;
