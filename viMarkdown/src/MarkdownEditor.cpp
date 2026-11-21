@@ -1999,6 +1999,8 @@ void MarkdownEditor::reflectWordToPeer(const QTextBlock &block, int start, int l
     MarkdownEditor *peer = this == m_docWidget->m_editor ? m_docWidget->m_diffview : m_docWidget->m_editor;
     QTextDocument *doc2 = peer->document();
     QTextBlock block2 = peerBlockForPhysicalLine(block, this, peer, nullptr);
+    while (block2.isValid() && isPaddingLine(peer, block2))
+        block2 = block2.previous();
 	if( !block2.isValid() ) return;
     //QTextBlock block2 = doc2->findBlockByNumber(block.blockNumber());
     m_docWidget->m_editor->setProcessing(true);
@@ -4158,7 +4160,6 @@ void MarkdownEditor::applyDiffBlock(QTextBlock block) {
 	QTextBlock block2 = peerBlockForPhysicalLine(block, this, peer, nullptr);
 	if( !block2.isValid() ) return;
 
-	QTextCursor cur2(block2);
 	//	undone: 差分ブロックテキストを peerの対応ブロックにコピー
 	m_docWidget->m_editor->setProcessing(true);
 	m_docWidget->m_diffview->setProcessing(true);
@@ -4170,9 +4171,27 @@ void MarkdownEditor::applyDiffBlock(QTextBlock block) {
 	}
 	QTextBlock b2 = block2;
 	int count2 = 0;		//	差分・ダミーブロック行数
+	int realPeerCount = 0;
+	int firstRealPeerPhysLine = -1;
+	const auto &vbn2 = peer->diffBlockNumbers();
 	while (b2.isValid() && (isDummyLine(peer, b2) || hasDiff(peer, b2))) {
+		if (!isDummyLine(peer, b2)) {
+			int bn2 = b2.blockNumber();
+			if (firstRealPeerPhysLine < 0 && bn2 >= 0 && bn2 < (int)vbn2.size())
+				firstRealPeerPhysLine = vbn2[bn2];
+			++realPeerCount;
+		}
 		count2++;
 		b2 = b2.next();
+	}
+	int nextRealPeerPhysLine = -1;
+	if (realPeerCount == 0) {
+		while (b2.isValid() && isDummyLine(peer, b2)) b2 = b2.next();
+		if (b2.isValid()) {
+			int bn2 = b2.blockNumber();
+			if (bn2 >= 0 && bn2 < (int)vbn2.size())
+				nextRealPeerPhysLine = vbn2[bn2];
+		}
 	}
 	QStringList sourceTexts;	//	差分・ダミーブロックテキスト
     b1 = block;
@@ -4182,23 +4201,53 @@ void MarkdownEditor::applyDiffBlock(QTextBlock block) {
         }
         b1 = b1.next();
     }
+    //	ダミー行を残したまま cur2 を選択すると、末尾ダミー行・パディング行上で
+    //	do_insertText() のダミー行ガードに弾かれたり改行が抜けたりするため、
+    //	先に両側のダミー行を除去してから実ブロック基準で反映する（#1447）
+    m_docWidget->m_editor->removeAllDummyLines();
+    m_docWidget->m_diffview->removeAllDummyLines();
+
+    QTextCursor cur2(doc2);
     cur2.beginEditBlock();
-    cur2.movePosition(QTextCursor::StartOfBlock);
-    
-    bool moved = false;
-    for (int i = 0; i < count2; ++i) {
-        moved = cur2.movePosition(QTextCursor::NextBlock, QTextCursor::KeepAnchor);
-        if (!moved) {
-            cur2.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
-            break;
+    QString newText = sourceTexts.join('\n');
+    if (realPeerCount > 0 && firstRealPeerPhysLine >= 0) {
+        QTextBlock firstBlock = doc2->findBlockByNumber(firstRealPeerPhysLine);
+        if (firstBlock.isValid()) {
+            cur2.setPosition(firstBlock.position());
+            bool moved = false;
+            for (int i = 0; i < realPeerCount; ++i) {
+                moved = cur2.movePosition(QTextCursor::NextBlock, QTextCursor::KeepAnchor);
+                if (!moved) {
+                    cur2.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
+                    break;
+                }
+            }
+            if (moved && !sourceTexts.isEmpty()) {
+                newText += '\n';
+            } else if (!moved && sourceTexts.isEmpty() && firstBlock.previous().isValid()) {
+                const int endPos = cur2.position();
+                cur2.setPosition(firstBlock.position() - 1);
+                cur2.setPosition(endPos, QTextCursor::KeepAnchor);
+            }
+            peer->do_insertText(cur2, newText);
+        }
+    } else if (!sourceTexts.isEmpty()) {
+        if (nextRealPeerPhysLine >= 0) {
+            QTextBlock target = doc2->findBlockByNumber(nextRealPeerPhysLine);
+            if (target.isValid()) {
+                cur2.setPosition(target.position());
+                newText += '\n';
+                peer->do_insertText(cur2, newText);
+            }
+        } else {
+            QTextBlock last = doc2->lastBlock();
+            if (last.isValid()) {
+                cur2.setPosition(last.position() + last.text().size());
+                newText.prepend('\n');
+                peer->do_insertText(cur2, newText);
+            }
         }
     }
-    QString newText = sourceTexts.join('\n');
-    if (moved && !sourceTexts.isEmpty()) {
-        newText += '\n';
-    }
-    peer->do_insertText(cur2, newText);
-    //cur2.insertText(newText);
     cur2.endEditBlock();
     m_docWidget->m_editor->setProcessing(false);
     m_docWidget->m_diffview->setProcessing(false);
