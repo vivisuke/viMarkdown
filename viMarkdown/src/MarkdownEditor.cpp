@@ -541,8 +541,9 @@ void MarkdownEditor::copyVisibleText() {
 	}
 }
 void MarkdownEditor::cut() {
-	copy();
 	QTextCursor cursor = textCursor();
+	if( !cursor.hasSelection() ) return;
+	copy();
 	do_deleteText(cursor);
 	setTextCursor(cursor);
 }
@@ -2000,8 +2001,9 @@ void MarkdownEditor::reflectWordToPeer(const QTextBlock &block, int start, int l
                     for (int i = 1; i <= diffIndex; ++i) {
                         if (myRanges[i].start != myRanges[i - 1].start + myRanges[i - 1].length) ++runIndex;
                     }
-                    if (runIndex < peerUserData->gaps.size()) {
-                        peerStart = peerUserData->gaps[runIndex];
+                    if (!peerUserData->gaps.isEmpty()) {
+                        int gi = qMin(runIndex, (int)peerUserData->gaps.size() - 1);
+                        peerStart = peerUserData->gaps[gi];
                         peerLength = 0;
                     }
                 }
@@ -2013,6 +2015,9 @@ void MarkdownEditor::reflectWordToPeer(const QTextBlock &block, int start, int l
     cur2.beginEditBlock(); // Undo履歴を1ステップにまとめる
 
     // 相手の置換ターゲット範囲を選択
+    const int block2Len = (int)block2.text().size();
+    peerStart = qBound(0, peerStart, block2Len);
+    peerLength = qBound(0, peerLength, block2Len - peerStart);
     cur2.setPosition(block2.position() + peerStart);
     cur2.setPosition(block2.position() + peerStart + peerLength, QTextCursor::KeepAnchor);
     // 選択された範囲を指定単語に置換
