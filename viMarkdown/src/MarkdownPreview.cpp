@@ -1095,13 +1095,23 @@ void MarkdownPreview::do_table(int bn0, int nBlocks, QTextBlock& srcBlock, QText
 		assert( srcBlock.isValid() );
 		BlockData *data = getBlockData(srcBlock, true);
 		if( inComment ) {
-			if( (srcBlock = srcBlock.next()).isValid() && srcBlock.text().indexOf("-->") >= 0 )		//	とりあえず --> 以降は無視
+			if( srcBlock.text().indexOf("-->") >= 0 )		//	とりあえず --> 以降は無視
 				inComment = false;
+			setBlockType(srcBlock, BT_IN_COMMENT);
+			data->m_charFlags.fill(PCF_COMMENTED);
+			srcBlock.setUserData(data);
 			++m_ix;
+			srcBlock = srcBlock.next();
 			continue;
 		}
 		if( srcBlock.text().startsWith("<!--") ) {		//	とりあえず行頭の <!-- のみ認識
-			inComment = true;
+			if( srcBlock.text().indexOf("-->", 4) < 0 )
+				inComment = true;
+			setBlockType(srcBlock, BT_IN_COMMENT);
+			data->m_charFlags.fill(PCF_COMMENTED);
+			srcBlock.setUserData(data);
+			++m_ix;
+			srcBlock = srcBlock.next();
 			continue;
 		}
 		//data = getBlockData(srcBlock);
