@@ -25,7 +25,7 @@
     <addaction name="action_PieceTable"/>
     <addaction name="action_replace_All"/>
     <addaction name="action_LineMgr"/>
-    <addaction name="action_VLineMgr"/>
+    <addaction name="action_ViewLineMgr"/>
     <addaction name="action_TextDocument"/>
    </widget>
    <addaction name="menuTest"/>
@@ -80,9 +80,9 @@
     <string>LineMgr</string>
    </property>
   </action>
-  <action name="action_VLineMgr">
+  <action name="action_ViewLineMgr">
    <property name="text">
-    <string>VLineMgr</string>
+    <string>ViewLineMgr</string>
    </property>
   </action>
   <action name="action_TextDocument">

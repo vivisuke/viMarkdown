@@ -23,7 +23,7 @@ public:
 	LineMgr() {
 		m_lines.push_back(0);	//	空テキストでも1行（開始位置0）
 	}
-	virtual ~LineMgr() = default;	//	VLineMgr が継承する
+	virtual ~LineMgr() = default;	//	ViewLineMgr が継承する
 
 	//	テキスト参照
 	pos_t size() const { return m_text.size(); }

@@ -84,9 +84,9 @@ int TextEdit::pageLines() const
 
 int TextEdit::xOfPos(TextDocument::pos_t pos) const
 {
-	const VLineMgr &mgr = m_doc.lineMgr();
-	int vline = mgr.vlineAtPos(pos);
-	TextDocument::pos_t s = mgr.vlineStartPos(vline);
+	const ViewLineMgr &mgr = m_doc.lineMgr();
+	int viewLine = mgr.viewLineAtPos(pos);
+	TextDocument::pos_t s = mgr.viewLineStartPos(viewLine);
 	const QFontMetrics fm = fontMetrics();
 	int x = LEFT_MARGIN;
 	for( TextDocument::pos_t i = s; i < pos; ++i )
@@ -96,13 +96,13 @@ int TextEdit::xOfPos(TextDocument::pos_t pos) const
 
 TextDocument::pos_t TextEdit::posFromPoint(const QPoint &pt) const
 {
-	const VLineMgr &mgr = m_doc.lineMgr();
-	if( mgr.vlineCount() == 0 ) return 0;
-	int vline = verticalScrollBar()->value() + pt.y() / lineHeight();
-	if( vline < 0 ) vline = 0;
-	if( vline >= mgr.vlineCount() ) vline = mgr.vlineCount() - 1;
-	TextDocument::pos_t s = mgr.vlineStartPos(vline);
-	TextDocument::pos_t len = mgr.vlineLength(vline);
+	const ViewLineMgr &mgr = m_doc.lineMgr();
+	if( mgr.viewLineCount() == 0 ) return 0;
+	int viewLine = verticalScrollBar()->value() + pt.y() / lineHeight();
+	if( viewLine < 0 ) viewLine = 0;
+	if( viewLine >= mgr.viewLineCount() ) viewLine = mgr.viewLineCount() - 1;
+	TextDocument::pos_t s = mgr.viewLineStartPos(viewLine);
+	TextDocument::pos_t len = mgr.viewLineLength(viewLine);
 	const QFontMetrics fm = fontMetrics();
 	int x = LEFT_MARGIN;
 	for( TextDocument::pos_t i = 0; i < len; ++i ) {
@@ -115,7 +115,7 @@ TextDocument::pos_t TextEdit::posFromPoint(const QPoint &pt) const
 
 void TextEdit::updateScrollBars()
 {
-	int maxTop = m_doc.lineMgr().vlineCount() - pageLines();
+	int maxTop = m_doc.lineMgr().viewLineCount() - pageLines();
 	if( maxTop < 0 ) maxTop = 0;
 	QScrollBar *bar = verticalScrollBar();
 	bar->setRange(0, maxTop);
@@ -137,8 +137,8 @@ void TextEdit::updateWrapWidth()
 
 void TextEdit::ensureCursorVisible()
 {
-	const VLineMgr &mgr = m_doc.lineMgr();
-	int cv = mgr.vlineAtPos(m_cursor.position());
+	const ViewLineMgr &mgr = m_doc.lineMgr();
+	int cv = mgr.viewLineAtPos(m_cursor.position());
 	QScrollBar *bar = verticalScrollBar();
 	int top = bar->value();
 	if( cv < top )
@@ -173,15 +173,15 @@ void TextEdit::lineNumberAreaPaintEvent(QPaintEvent *event)
 	const QFontMetrics fm = fontMetrics();
 	const int lh = lineHeight();
 	const int top = verticalScrollBar()->value();
-	const VLineMgr &mgr = m_doc.lineMgr();
+	const ViewLineMgr &mgr = m_doc.lineMgr();
 	const int rows = m_lineNumberArea->height() / lh + 1;
 	const int right = m_lineNumberArea->width() - 2;	//	右端に 2px 空ける
 	painter.setPen(palette().color(QPalette::Text));
 	for( int i = 0; i < rows; ++i ) {
-		int vline = top + i;
-		if( vline >= mgr.vlineCount() ) break;
-		int ln = mgr.vlineToLine(vline);
-		if( vline != mgr.lineToVline(ln) ) continue;	//	折り返しの継続行には番号を付けない
+		int viewLine = top + i;
+		if( viewLine >= mgr.viewLineCount() ) break;
+		int ln = mgr.viewLineToLine(viewLine);
+		if( viewLine != mgr.lineToViewLine(ln) ) continue;	//	折り返しの継続行には番号を付けない
 		QString num = QString::number(ln + 1);
 		painter.drawText(right - fm.horizontalAdvance(num), i * lh + fm.ascent(), num);
 	}
@@ -194,7 +194,7 @@ void TextEdit::paintEvent(QPaintEvent *event)
 	const QFontMetrics fm = fontMetrics();
 	const int lh = lineHeight();
 	const int top = verticalScrollBar()->value();
-	const VLineMgr &mgr = m_doc.lineMgr();
+	const ViewLineMgr &mgr = m_doc.lineMgr();
 	const int rows = viewport()->height() / lh + 1;
 	const TextDocument::pos_t selS = m_cursor.selectionStart();
 	const TextDocument::pos_t selE = m_cursor.selectionEnd();
@@ -202,9 +202,9 @@ void TextEdit::paintEvent(QPaintEvent *event)
 
 	painter.fillRect(viewport()->rect(), palette().base());
 	for( int i = 0; i < rows; ++i ) {
-		int vline = top + i;
-		if( vline >= mgr.vlineCount() ) break;
-		VLineBlock vb = m_doc.findVLineByNumber(vline);
+		int viewLine = top + i;
+		if( viewLine >= mgr.viewLineCount() ) break;
+		ViewLineBlock vb = m_doc.findViewLineByNumber(viewLine);
 		TextDocument::pos_t linePos = vb.position();
 		const int y = i * lh;
 		if( hasSel && linePos + vb.length() > selS && linePos < selE ) {
@@ -221,7 +221,7 @@ void TextEdit::paintEvent(QPaintEvent *event)
 	}
 	//	カーソル（フォーカス時のみ）
 	if( hasFocus() && !hasSel ) {
-		int cv = mgr.vlineAtPos(m_cursor.position());
+		int cv = mgr.viewLineAtPos(m_cursor.position());
 		if( cv >= top && cv < top + rows ) {
 			int x = xOfPos(m_cursor.position());
 			painter.fillRect(x, (cv - top) * lh, 1, lh, palette().color(QPalette::Text));
@@ -248,22 +248,22 @@ void TextEdit::keyPressEvent(QKeyEvent *event)
 		break;
 	case Qt::Key_PageUp:
 	case Qt::Key_PageDown: {
-		const VLineMgr &mgr = m_doc.lineMgr();
-		int cv = mgr.vlineAtPos(m_cursor.position());
+		const ViewLineMgr &mgr = m_doc.lineMgr();
+		int cv = mgr.viewLineAtPos(m_cursor.position());
 		int target = cv + (event->key() == Qt::Key_PageDown ? pageLines() : -pageLines());
 		if( target < 0 ) target = 0;
-		if( target >= mgr.vlineCount() ) target = mgr.vlineCount() - 1;
+		if( target >= mgr.viewLineCount() ) target = mgr.viewLineCount() - 1;
 		//	表示カラムを保って目標表示行へ
-		TextDocument::pos_t s = mgr.vlineStartPos(cv);
+		TextDocument::pos_t s = mgr.viewLineStartPos(cv);
 		int col = 0;
 		for( TextDocument::pos_t i = s; i < m_cursor.position(); ++i )
-			col += VLineMgr::charWidth(m_doc.characterAt(i));
-		TextDocument::pos_t ts = mgr.vlineStartPos(target);
-		TextDocument::pos_t tlen = mgr.vlineLength(target);
+			col += ViewLineMgr::charWidth(m_doc.characterAt(i));
+		TextDocument::pos_t ts = mgr.viewLineStartPos(target);
+		TextDocument::pos_t tlen = mgr.viewLineLength(target);
 		int acc = 0;
 		TextDocument::pos_t ti = 0;
 		while( ti < tlen && acc < col ) {
-			acc += VLineMgr::charWidth(m_doc.characterAt(ts + ti));
+			acc += ViewLineMgr::charWidth(m_doc.characterAt(ts + ti));
 			++ti;
 		}
 		m_cursor.setPosition(ts + ti, mode);
@@ -299,8 +299,11 @@ void TextEdit::keyPressEvent(QKeyEvent *event)
 			if( !t.isEmpty() ) m_cursor.insertText(t);
 		} else handled = false;
 		break;
+	case Qt::Key_Escape:
+		m_cursor.clearSelection();
+		break;
 	default:
-		if( !ctrl && !event->text().isEmpty() )
+		if( !ctrl && !event->text().isEmpty() && event->text()[0] >= QChar(0x20) && event->text()[0] != QChar(0x7f) )
 			m_cursor.insertText(event->text());
 		else
 			handled = false;
@@ -308,7 +311,7 @@ void TextEdit::keyPressEvent(QKeyEvent *event)
 	}
 	if( handled )
 		afterChange();
-	else if( !ctrl && !event->text().isEmpty() ) {
+	else if( !ctrl && !event->text().isEmpty() && event->text()[0] >= QChar(0x20) && event->text()[0] != QChar(0x7f) ) {
 		//	専用 case が Ctrl なしで拾った文字キー（A/C/V/X/Y/Z 等）はテキストとして挿入する
 		m_cursor.insertText(event->text());
 		afterChange();

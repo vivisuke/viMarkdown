@@ -400,7 +400,7 @@ static void test_undo_random(unsigned int seed, int nOps)
 }
 
 //----------------------------------------------------------------------
-//	LineBlock / VLineBlock のテスト
+//	LineBlock / ViewLineBlock のテスト
 //----------------------------------------------------------------------
 static void test_blocks_fixed()
 {
@@ -409,8 +409,8 @@ static void test_blocks_fixed()
 		verify(!b.isValid(), "block: default invalid");
 		verify(b.position() == -1 && b.length() == 0 && b.text().isEmpty(), "block: invalid values");
 		verify(b.next().blockNumber() == -1, "block: next from -1 stays -1");
-		VLineBlock v;
-		verify(!v.isValid() && v.position() == -1 && v.length() == 0 && v.text().isEmpty(), "vline: invalid values");
+		ViewLineBlock v;
+		verify(!v.isValid() && v.position() == -1 && v.length() == 0 && v.text().isEmpty(), "viewLine: invalid values");
 	}
 	{	//	LineBlock の走査・位置・長さ・等価性
 		TextDocument doc;
@@ -436,33 +436,33 @@ static void test_blocks_fixed()
 		doc2.setPlainText(QStringLiteral("ab\ncde\n\nf"));
 		verify(doc2.firstBlock() != doc.firstBlock(), "block: different mgr neq");
 	}
-	{	//	VLineBlock（行幅3で折り返し）
+	{	//	ViewLineBlock（行幅3で折り返し）
 		TextDocument doc;
 		doc.setPlainText(QStringLiteral("abcdefg\nhi"));
 		doc.lineMgr().setLineWidth(3);
 		QStringList want = {QStringLiteral("abc"), QStringLiteral("def"), QStringLiteral("g\n"), QStringLiteral("hi")};
 		int i = 0;
 		QString cat;
-		for( VLineBlock v = doc.firstVLine(); v.isValid(); v = v.next(), ++i ) {
-			verify(v.text() == want[i], "vline: text");
-			verify(v.length() == (int)want[i].size(), "vline: length");
+		for( ViewLineBlock v = doc.firstViewLine(); v.isValid(); v = v.next(), ++i ) {
+			verify(v.text() == want[i], "viewLine: text");
+			verify(v.length() == (int)want[i].size(), "viewLine: length");
 			cat += v.text();
 		}
-		verify(i == 4, "vline: count");
-		verify(cat == doc.toPlainText(), "vline: concatenation == document");
-		verify(doc.findVLineByNumber(2).line() == 0, "vline: line of vline2");
-		verify(doc.findVLineByNumber(3).line() == 1, "vline: line of vline3");
-		verify(doc.findVLine(5) == doc.findVLineByNumber(1), "vline: findVLine");
+		verify(i == 4, "viewLine: count");
+		verify(cat == doc.toPlainText(), "viewLine: concatenation == document");
+		verify(doc.findViewLineByNumber(2).line() == 0, "viewLine: line of viewLine2");
+		verify(doc.findViewLineByNumber(3).line() == 1, "viewLine: line of viewLine3");
+		verify(doc.findViewLine(5) == doc.findViewLineByNumber(1), "viewLine: findViewLine");
 		verify(doc.findBlockByLineNumber(2) == doc.findBlockByNumber(0), "block: findBlockByLineNumber");
 		verify(doc.findBlockByLineNumber(99).isValid() == false, "block: findBlockByLineNumber oob");
 	}
-	{	//	VLineBlock（全角、行幅4）
+	{	//	ViewLineBlock（全角、行幅4）
 		TextDocument doc;
 		doc.setPlainText(QString(QChar(0x3042)) + QChar(0x3044) + QChar(0x3046) + QChar(0x3048) + QChar(0x304a));
 		doc.lineMgr().setLineWidth(4);
-		verify(doc.lineMgr().vlineCount() == 3, "vline wide: count");
-		verify(doc.findVLineByNumber(0).length() == 2, "vline wide: len 0");
-		verify(doc.findVLineByNumber(2).text() == QString(QChar(0x304a)), "vline wide: last text");
+		verify(doc.lineMgr().viewLineCount() == 3, "viewLine wide: count");
+		verify(doc.findViewLineByNumber(0).length() == 2, "viewLine wide: len 0");
+		verify(doc.findViewLineByNumber(2).text() == QString(QChar(0x304a)), "viewLine wide: last text");
 	}
 }
 
@@ -506,16 +506,16 @@ static void test_blocks_random(unsigned int seed)
 		QString vcat;
 		TextDocument::pos_t prevPos = -1;
 		int prevLine = -1;
-		for( VLineBlock v = doc.firstVLine(); v.isValid(); v = v.next() ) {
-			verify(v.position() > prevPos, "rvline: positions increasing");
-			verify(v.line() >= prevLine, "rvline: lines non-decreasing");
-			verify(v.length() == (int)v.text().size(), "rvline: length == text size");
-			verify(doc.findVLine(v.position()) == v, "rvline: findVLine");
+		for( ViewLineBlock v = doc.firstViewLine(); v.isValid(); v = v.next() ) {
+			verify(v.position() > prevPos, "rviewLine: positions increasing");
+			verify(v.line() >= prevLine, "rviewLine: lines non-decreasing");
+			verify(v.length() == (int)v.text().size(), "rviewLine: length == text size");
+			verify(doc.findViewLine(v.position()) == v, "rviewLine: findViewLine");
 			prevPos = v.position();
 			prevLine = v.line();
 			vcat += v.text();
 		}
-		verify(vcat == model, "rvline: concatenation == document");
+		verify(vcat == model, "rviewLine: concatenation == document");
 	}
 }
 

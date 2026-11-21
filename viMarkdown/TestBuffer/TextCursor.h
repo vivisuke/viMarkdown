@@ -185,28 +185,28 @@ private:
 		if( mode == MoveAnchor ) m_anchor = m_pos;
 	}
 	int displayColumn(pos_t pos) const {	//	表示行内での表示カラム（半角単位）
-		const VLineMgr &mgr = m_doc->lineMgr();
-		int vline = mgr.vlineAtPos(pos);
-		pos_t s = mgr.vlineStartPos(vline);
+		const ViewLineMgr &mgr = m_doc->lineMgr();
+		int viewLine = mgr.viewLineAtPos(pos);
+		pos_t s = mgr.viewLineStartPos(viewLine);
 		int col = 0;
 		for( pos_t i = s; i < pos; ++i )
-			col += VLineMgr::charWidth(m_doc->characterAt(i));
+			col += ViewLineMgr::charWidth(m_doc->characterAt(i));
 		return col;
 	}
-	pos_t posAtDisplayColumn(int vline, int goal) const {
-		const VLineMgr &mgr = m_doc->lineMgr();
-		pos_t s = mgr.vlineStartPos(vline);
-		pos_t len = mgr.vlineLength(vline);
+	pos_t posAtDisplayColumn(int viewLine, int goal) const {
+		const ViewLineMgr &mgr = m_doc->lineMgr();
+		pos_t s = mgr.viewLineStartPos(viewLine);
+		pos_t len = mgr.viewLineLength(viewLine);
 		int col = 0;
 		pos_t i = 0;
 		while( i < len && col < goal ) {
-			col += VLineMgr::charWidth(m_doc->characterAt(s + i));
+			col += ViewLineMgr::charWidth(m_doc->characterAt(s + i));
 			++i;
 		}
 		return s + i;
 	}
 	bool moveOnce(MoveOperation op, MoveMode mode) {
-		const VLineMgr &mgr = m_doc->lineMgr();
+		const ViewLineMgr &mgr = m_doc->lineMgr();
 		switch( op ) {
 		case Left:
 			if( m_pos <= 0 ) return false;
@@ -248,9 +248,9 @@ private:
 		}
 		case Up:
 		case Down: {
-			int vline = mgr.vlineAtPos(m_pos);
-			int target = vline + (op == Down ? 1 : -1);
-			if( target < 0 || target >= mgr.vlineCount() ) return false;
+			int viewLine = mgr.viewLineAtPos(m_pos);
+			int target = viewLine + (op == Down ? 1 : -1);
+			if( target < 0 || target >= mgr.viewLineCount() ) return false;
 			if( m_goalColumn < 0 ) m_goalColumn = displayColumn(m_pos);
 			int goal = m_goalColumn;
 			moveTo(posAtDisplayColumn(target, goal), mode);

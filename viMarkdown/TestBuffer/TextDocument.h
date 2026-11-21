@@ -1,9 +1,9 @@
 #pragma once
 
-#include "VLineMgr.h"
+#include "ViewLineMgr.h"
 #include "UndoMgr.h"
 #include "LineBlock.h"
-#include "VLineBlock.h"
+#include "ViewLineBlock.h"
 
 #include <QChar>
 #include <QString>
@@ -14,9 +14,9 @@ class TextCursor;
 //----------------------------------------------------------------------
 //	TextDocument: QTextDocument に対応するプレーンテキスト文書
 //
-//	・1次元の文字の並びを管理する。テキスト本体は VLineMgr（LineMgr）が
+//	・1次元の文字の並びを管理する。テキスト本体は ViewLineMgr（LineMgr）が
 //	  gap_buffer<QChar> に保持し、改行は '\n' としてバッファに含まれる
-//	・UndoMgr と VLineMgr を保持する
+//	・UndoMgr と ViewLineMgr を保持する
 //	・編集は undo 対象の insert / erase と、対象外の insertRaw / eraseRaw に分ける。
 //	  Undo/Redo の実行自体は Raw 系を使う（記録してしまうと無限ループになるため）
 //----------------------------------------------------------------------
@@ -98,8 +98,8 @@ public:
 	void onSaved() { m_undoMgr.onSaved(); m_modified = false; }	//	保存ポイントを現在位置へ
 
 	//	行管理・undo 管理へのアクセス
-	VLineMgr& lineMgr() { return m_lineMgr; }
-	const VLineMgr& lineMgr() const { return m_lineMgr; }
+	ViewLineMgr& lineMgr() { return m_lineMgr; }
+	const ViewLineMgr& lineMgr() const { return m_lineMgr; }
 	UndoMgr& undoMgr() { return m_undoMgr; }
 
 	//	ブロック取得（QTextDocument の findBlock 系に対応）
@@ -109,9 +109,9 @@ public:
 	LineBlock findBlockByNumber(int line) const {
 		return LineBlock(&m_lineMgr, line);
 	}
-	LineBlock findBlockByLineNumber(int vline) const {	//	表示行番号から、その行を含む論理行を返す
-		if( vline < 0 || vline >= m_lineMgr.vlineCount() ) return LineBlock();
-		return LineBlock(&m_lineMgr, m_lineMgr.vlineToLine(vline));
+	LineBlock findBlockByLineNumber(int viewLine) const {	//	表示行番号から、その行を含む論理行を返す
+		if( viewLine < 0 || viewLine >= m_lineMgr.viewLineCount() ) return LineBlock();
+		return LineBlock(&m_lineMgr, m_lineMgr.viewLineToLine(viewLine));
 	}
 	LineBlock firstBlock() const { return findBlockByNumber(0); }
 	LineBlock lastBlock() const { return findBlockByNumber(m_lineMgr.lineCount() - 1); }
@@ -119,14 +119,14 @@ public:
 	LineBlock end() const { return LineBlock(&m_lineMgr, m_lineMgr.lineCount()); }
 
 	//	表示行取得
-	VLineBlock findVLine(pos_t pos) const {
-		return VLineBlock(&m_lineMgr, m_lineMgr.vlineAtPos(pos));
+	ViewLineBlock findViewLine(pos_t pos) const {
+		return ViewLineBlock(&m_lineMgr, m_lineMgr.viewLineAtPos(pos));
 	}
-	VLineBlock findVLineByNumber(int vline) const {
-		return VLineBlock(&m_lineMgr, vline);
+	ViewLineBlock findViewLineByNumber(int viewLine) const {
+		return ViewLineBlock(&m_lineMgr, viewLine);
 	}
-	VLineBlock firstVLine() const { return findVLineByNumber(0); }
-	VLineBlock lastVLine() const { return findVLineByNumber(m_lineMgr.vlineCount() - 1); }
+	ViewLineBlock firstViewLine() const { return findViewLineByNumber(0); }
+	ViewLineBlock lastViewLine() const { return findViewLineByNumber(m_lineMgr.viewLineCount() - 1); }
 
 private:
 	//	登録カーソルへの編集通知（TextDocument.cpp で定義）
@@ -134,7 +134,7 @@ private:
 	void adjustCursorsForErase(pos_t pos1, pos_t pos2);
 	void adjustCursorsReset();
 
-	VLineMgr m_lineMgr;
+	ViewLineMgr m_lineMgr;
 	QVector<TextCursor*> m_cursors;
 	UndoMgr m_undoMgr;
 	bool m_modified = false;

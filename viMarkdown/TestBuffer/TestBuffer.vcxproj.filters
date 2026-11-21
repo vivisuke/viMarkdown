@@ -90,13 +90,13 @@
     <ClInclude Include="UndoMgr.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VLineBlock.h">
+    <ClInclude Include="ViewLineBlock.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VLineMgr.h">
+    <ClInclude Include="ViewLineMgr.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VLineMgrTest.h">
+    <ClInclude Include="ViewLineMgrTest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -3,7 +3,7 @@
 #include <QTextCursor>
 #include "GapBufferTest.h"
 #include "LineMgrTest.h"
-#include "VLineMgrTest.h"
+#include "ViewLineMgrTest.h"
 #include "TextDocumentTest.h"
 
 MainWindow::MainWindow(QWidget *parent)
@@ -26,8 +26,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->action_LineMgr, &QAction::triggered, this, [this]() {
         do_test_lineMgr(this);
     });
-    connect(ui->action_VLineMgr, &QAction::triggered, this, [this]() {
-        do_test_vlineMgr(this);
+    connect(ui->action_ViewLineMgr, &QAction::triggered, this, [this]() {
+        do_test_viewLineMgr(this);
     });
     connect(ui->action_TextDocument, &QAction::triggered, this, [this]() {
         do_test_textDocument(this);

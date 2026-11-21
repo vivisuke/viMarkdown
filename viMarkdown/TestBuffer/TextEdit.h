@@ -8,7 +8,7 @@
 //----------------------------------------------------------------------
 //	TextEdit: QPlainTextEdit に対応する最小限のプレーンテキスト編集ウィジェット
 //
-//	・TextDocument + TextCursor を保持し、表示行（VLineMgr）単位で描画する
+//	・TextDocument + TextCursor を保持し、表示行（ViewLineMgr）単位で描画する
 //	・行間は setLineSpacing() で追加ピクセルを指定できる
 //	  （QPlainTextEdit では行間が変えられないことが自前化の動機）
 //	・折り返しはウィンドウ幅に追従する。横スクロールは無し

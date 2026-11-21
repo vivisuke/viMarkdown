@@ -5,7 +5,7 @@
 #include <vector>
 
 //----------------------------------------------------------------------
-//	VLineMgr: LineMgr にソフト改行（折り返し）による表示行管理を加えたもの
+//	ViewLineMgr: LineMgr にソフト改行（折り返し）による表示行管理を加えたもの
 //
 //	・論理行を、行幅（半角単位、デフォルト70）で折り返した表示行に分割する
 //	・文字幅：半角=1、全角=2、タブ=2（半角空白2文字分として固定）
@@ -14,13 +14,13 @@
 //	・空行（長さ0の論理行）も表示行1行として数える
 //	・編集時は、影響を受けた論理行だけを再ラップする
 //	・表示行の開始番号（論理行ごと）は、LineMgr と同じ遅延オフセット方式で保持する
-//	・利用側は VLineMgr のみを参照・操作する（LineMgr は基底としてのみ使う）
+//	・利用側は ViewLineMgr のみを参照・操作する（LineMgr は基底としてのみ使う）
 //----------------------------------------------------------------------
 
-class VLineMgr : public LineMgr
+class ViewLineMgr : public LineMgr
 {
 public:
-	VLineMgr() {
+	ViewLineMgr() {
 		m_vinfo.push_back(SegInfo());
 		m_vStart.push_back(0);	//	空テキストでも論理行1行・表示行1行
 	}
@@ -50,7 +50,7 @@ public:
 			m_vStart.insert(m_vStart.gapIndex(), acc);	//	新しい行の開始番号（真の値で保持）
 		}
 		m_vOffset += delta;			//	ギャップ以降の行は delta だけずれる（遅延更新）
-		m_vlineTotal += delta;
+		m_viewLineTotal += delta;
 	}
 	void insert(pos_t pos, QChar ch) override {
 		insert(pos, &ch, 1);
@@ -78,7 +78,7 @@ public:
 		for( int i = 0; i < line2 - line1; ++i )
 			m_vStart.erase(m_vStart.gapIndex());	//	消えた行のエントリを除去
 		m_vOffset += delta;
-		m_vlineTotal += delta;
+		m_viewLineTotal += delta;
 	}
 	void clear() override {
 		LineMgr::clear();
@@ -87,7 +87,7 @@ public:
 		m_vStart.clear();
 		m_vStart.push_back(0);
 		m_vOffset = 0;
-		m_vlineTotal = 1;
+		m_viewLineTotal = 1;
 	}
 
 	//	行幅（半角単位）。0以下は折り返しなし
@@ -97,55 +97,55 @@ public:
 		//	全行を再ラップし、表示行開始番号を再構築する
 		m_vStart.clear();
 		m_vOffset = 0;
-		m_vlineTotal = 0;
+		m_viewLineTotal = 0;
 		pos_t acc = 0;
 		for( int ln = 0; ln < lineCount(); ++ln ) {
 			m_vStart.push_back(acc);
 			rewrapLine(ln);
 			acc += segCount(ln);
 		}
-		m_vlineTotal = (int)acc;
+		m_viewLineTotal = (int)acc;
 	}
 	int lineWidth() const { return m_lineWidth; }
 
 	//	表示行情報
-	int vlineCount() const { return m_vlineTotal; }
-	int vlineCountIn(int line) const { return segCount(line); }	//	論理行内の表示行数
-	int lineToVline(int line) const { return (int)vStartAt(line); }	//	論理行の先頭表示行
-	int vlineToLine(int vline) const {	//	表示行を含む論理行
-		int lo = 0, hi = lineCount() - 1;	//	vStartAt(0) == 0 <= vline が常に成立
+	int viewLineCount() const { return m_viewLineTotal; }
+	int viewLineCountIn(int line) const { return segCount(line); }	//	論理行内の表示行数
+	int lineToViewLine(int line) const { return (int)vStartAt(line); }	//	論理行の先頭表示行
+	int viewLineToLine(int viewLine) const {	//	表示行を含む論理行
+		int lo = 0, hi = lineCount() - 1;	//	vStartAt(0) == 0 <= viewLine が常に成立
 		while( lo < hi ) {
 			int mid = lo + (hi - lo + 1) / 2;
-			if( vStartAt(mid) <= vline )
+			if( vStartAt(mid) <= viewLine )
 				lo = mid;
 			else
 				hi = mid - 1;
 		}
 		return lo;
 	}
-	pos_t vlineStartPos(int vline) const {	//	表示行の開始位置（文字位置）
-		int line = vlineToLine(vline);
-		int seg = vline - lineToVline(line);
+	pos_t viewLineStartPos(int viewLine) const {	//	表示行の開始位置（文字位置）
+		int line = viewLineToLine(viewLine);
+		int seg = viewLine - lineToViewLine(line);
 		return lineStartPos(line) + (seg == 0 ? 0 : m_vinfo[line].breaks[seg - 1]);
 	}
-	pos_t vlineLength(int vline) const {	//	表示行の長さ（文字数、'\n' を含まない）
-		int line = vlineToLine(vline);
-		int seg = vline - lineToVline(line);
+	pos_t viewLineLength(int viewLine) const {	//	表示行の長さ（文字数、'\n' を含まない）
+		int line = viewLineToLine(viewLine);
+		int seg = viewLine - lineToViewLine(line);
 		const std::vector<pos_t>& breaks = m_vinfo[line].breaks;
 		pos_t start = (seg == 0) ? 0 : breaks[seg - 1];
 		pos_t end = (seg + 1 < segCount(line)) ? breaks[seg] : lineLength(line);
 		return end - start;
 	}
-	int vlineAtPos(pos_t pos) const {	//	pos を含む表示行
+	int viewLineAtPos(pos_t pos) const {	//	pos を含む表示行
 		int line = lineAtPos(pos);
 		pos_t offset = pos - lineStartPos(line);
 		const std::vector<pos_t>& breaks = m_vinfo[line].breaks;
 		int seg = 0;	//	offset 以前に現れる切れ目の数が、そのまま段番号になる
 		while( seg < (int)breaks.size() && breaks[seg] <= offset ) ++seg;
-		return lineToVline(line) + seg;
+		return lineToViewLine(line) + seg;
 	}
-	int vlineColumnAtPos(pos_t pos) const {	//	表示行内での pos の桁（半角単位）
-		pos_t start = vlineStartPos(vlineAtPos(pos));
+	int viewLineColumnAtPos(pos_t pos) const {	//	表示行内での pos の桁（半角単位）
+		pos_t start = viewLineStartPos(viewLineAtPos(pos));
 		int col = 0;
 		for( pos_t i = start; i < pos; ) {
 			QChar ch = (*this)[i];
@@ -234,6 +234,6 @@ private:
 	std::vector<SegInfo>	m_vinfo;		//	論理行ごとの折り返し情報
 	gap_buffer<pos_t>		m_vStart;		//	論理行ごとの表示行開始番号（ギャップ以降は保持値＋m_vOffset が真値）
 	pos_t					m_vOffset = 0;
-	int						m_vlineTotal = 1;	//	表示行の総数
+	int						m_viewLineTotal = 1;	//	表示行の総数
 	int						m_lineWidth = 70;	//	行幅（半角単位）
 };
