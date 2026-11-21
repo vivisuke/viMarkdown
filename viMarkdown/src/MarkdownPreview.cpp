@@ -1028,7 +1028,10 @@ void insertTable(QTextCursor& cursor, const QList<QStringList> &ll, const QList<
 					//charFormat.setForeground(Qt::red);
 					charFormat.setFontWeight(QFont::Normal);
 					if( tableAlign != nullptr) {
-						if( col < tableAlign->size() && ((*tableAlign)[col] & ALIGHN_RIGHT) != 0 )
+						char al = col < tableAlign->size() ? (*tableAlign)[col] : 0;
+						if( (al & ALIGHN_CENTER) == ALIGHN_CENTER )
+							blockFormat.setAlignment(Qt::AlignCenter); // 中央揃え
+						else if( (al & ALIGHN_RIGHT) != 0 )
 							blockFormat.setAlignment(Qt::AlignRight);  // 右揃え
 						else
 							blockFormat.setAlignment(Qt::AlignLeft);   // その他は左

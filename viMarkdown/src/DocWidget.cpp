@@ -138,7 +138,7 @@ bool parseCsvLine(QStringList &fields, QByteArray& ba, const QString &line, bool
 	if( !inQuotes ) {
 		fields.clear();
 		ba.clear();
-	} else {
+	} else if( !fields.isEmpty() ) {
 		currentField = fields.back() + "<br />";	//	for insertMarkdown()
 		//currentField = fields.back() + u'\n';		//	for insertText()
 		fields.pop_back();
@@ -147,16 +147,25 @@ bool parseCsvLine(QStringList &fields, QByteArray& ba, const QString &line, bool
 	//bool inQuotes = false;
 	int ix0 = i;
 	for (; i < line.length(); ++i) {
-		if( line.mid(i).startsWith("<!--") ) {
+		if( !inQuotes && line.mid(i).startsWith("<!--") ) {
 			int ix = line.indexOf("-->", i + 4);
 			if( ix > 0 ) {	//	コメント終了を発見
-				if( (i = ix + 3) >= line.length() ) {	//	"-->" までスキップ
-					commented = fields.isEmpty();
-					return inQuotes;
+				if( ix + 3 >= line.length() ) {	//	"-->" までスキップ
+					if( fields.isEmpty() && currentField.isEmpty() ) {
+						commented = true;
+						return inQuotes;
+					}
+					break;
 				}
+				i = ix + 2;	//	for ループの ++i で ix + 3 へ進める
+				continue;
 			} else {
 				inComment = true;
-				return inQuotes;
+				if( fields.isEmpty() && currentField.isEmpty() ) {
+					commented = true;
+					return inQuotes;
+				}
+				break;
 			}
 		}
 		QChar c = line.at(i);
