@@ -1,6 +1,7 @@
 #include "MainWindow.h"
 #include "TextEdit.h"
 #include <QTextCursor>
+#include <QTimer>
 #include "GapBufferTest.h"
 #include "LineMgrTest.h"
 #include "ViewLineMgrTest.h"
@@ -11,9 +12,11 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindowClass())
 {
     ui->setupUi(this);
+    ui->plainTextEdit->setFocusPolicy(Qt::ClickFocus);
     m_textEdit = new TextEdit(this);
     setCentralWidget(m_textEdit);
     m_textEdit->setFocus();
+    QTimer::singleShot(0, m_textEdit, qOverload<>(&QWidget::setFocus));
     connect(ui->action_gap_buffer, &QAction::triggered, this, [this]() {
         do_test_gapBuffer(this);
     });

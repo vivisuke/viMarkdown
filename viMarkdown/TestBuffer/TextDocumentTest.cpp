@@ -652,6 +652,30 @@ static void test_cursor_fixed()
 		c.movePosition(TextCursor::UpLine);
 		verify(c.position() == 8, "curline: goal recomputed after left");	//	カラム0 → 行1の先頭
 	}
+	{	//	NextWord / PreviousWord（英数・空白・記号・日本語・空行・選択）
+		TextDocument doc;
+		doc.setPlainText(QStringLiteral("foo bar(123)\n\n") + QStringLiteral("あいう漢字カタカナ"));
+		//	位置: 0:foo 3:' ' 4:bar 7:'(' 8:123 11:')' 12:'\n' 13:'\n' 14:あいう 17:漢字 19:カタカナ (len=23)
+		TextCursor c(&doc, 0);
+		verify(!c.movePosition(TextCursor::PreviousWord), "word: prev at 0 fails");
+		verify(c.movePosition(TextCursor::NextWord) && c.position() == 4, "word: foo -> bar");
+		verify(c.movePosition(TextCursor::NextWord) && c.position() == 7, "word: bar -> '('");
+		verify(c.movePosition(TextCursor::NextWord) && c.position() == 8, "word: '(' -> 123");
+		verify(c.movePosition(TextCursor::NextWord) && c.position() == 11, "word: 123 -> ')'");
+		verify(c.movePosition(TextCursor::NextWord) && c.position() == 12, "word: ')' -> NL");
+		verify(c.movePosition(TextCursor::NextWord) && c.position() == 13, "word: NL -> empty line");
+		verify(c.movePosition(TextCursor::NextWord) && c.position() == 14, "word: empty line -> あいう");
+		verify(c.movePosition(TextCursor::NextWord) && c.position() == 17, "word: あいう -> 漢字");
+		verify(c.movePosition(TextCursor::NextWord) && c.position() == 19, "word: 漢字 -> カタカナ");
+		verify(c.movePosition(TextCursor::NextWord) && c.position() == 23, "word: カタカナ -> end");
+		verify(!c.movePosition(TextCursor::NextWord), "word: next at end fails");
+		verify(c.movePosition(TextCursor::PreviousWord) && c.position() == 19, "word: prev -> カタカナ");
+		verify(c.movePosition(TextCursor::PreviousWord) && c.position() == 17, "word: prev -> 漢字");
+		verify(c.movePosition(TextCursor::PreviousWord) && c.position() == 14, "word: prev -> あいう");
+		verify(c.movePosition(TextCursor::PreviousWord) && c.position() == 13, "word: prev -> empty line");
+		verify(c.movePosition(TextCursor::PreviousWord) && c.position() == 11, "word: prev -> ')'");
+		verify(c.movePosition(TextCursor::PreviousWord, TextCursor::KeepAnchor) && c.selectedText() == QStringLiteral("123"), "word: prev KeepAnchor");
+	}
 }
 
 //	モデル（QString + 位置）と突き合わせるランダムテスト

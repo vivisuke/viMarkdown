@@ -236,8 +236,8 @@ void TextEdit::keyPressEvent(QKeyEvent *event)
 	const TextCursor::MoveMode mode = shift ? TextCursor::KeepAnchor : TextCursor::MoveAnchor;
 	bool handled = true;
 	switch( event->key() ) {
-	case Qt::Key_Left:	m_cursor.movePosition(TextCursor::Left, mode); break;
-	case Qt::Key_Right:	m_cursor.movePosition(TextCursor::Right, mode); break;
+	case Qt::Key_Left:	m_cursor.movePosition(ctrl ? TextCursor::PreviousWord : TextCursor::Left, mode); break;
+	case Qt::Key_Right:	m_cursor.movePosition(ctrl ? TextCursor::NextWord : TextCursor::Right, mode); break;
 	case Qt::Key_Up:	m_cursor.movePosition(TextCursor::Up, mode); break;
 	case Qt::Key_Down:	m_cursor.movePosition(TextCursor::Down, mode); break;
 	case Qt::Key_Home:
@@ -356,5 +356,17 @@ void TextEdit::resizeEvent(QResizeEvent *event)
 	updateLineNumberAreaGeometry();
 	updateWrapWidth();
 	updateScrollBars();
+	viewport()->update();
+}
+
+void TextEdit::focusInEvent(QFocusEvent *event)
+{
+	QAbstractScrollArea::focusInEvent(event);
+	viewport()->update();
+}
+
+void TextEdit::focusOutEvent(QFocusEvent *event)
+{
+	QAbstractScrollArea::focusOutEvent(event);
 	viewport()->update();
 }

@@ -17,7 +17,7 @@
 //	    削除：範囲内は範囲先頭へクランプ、範囲の後ろは前進する
 //	・selectedText() は '\n' をそのまま含む（QTextCursor の U+2029 置換はしない）
 //	・Up / Down の目標カラムは表示幅（半角単位）で保持する
-//	・単語単位の移動は未実装（「単語」の定義が未決のため）
+//	・単語単位の移動（NextWord / PreviousWord）は viMarkdown と同じ文字種境界に従う
 //----------------------------------------------------------------------
 
 class TextCursor
@@ -29,6 +29,7 @@ public:
 	enum MoveOperation {
 		Left, Right, Up, Down,
 		UpLine, DownLine,	//	論理行単位（目標カラムは文字単位で保持）
+		NextWord, PreviousWord,	//	単語単位（viMarkdown 互換の文字種境界）
 		StartOfLine, EndOfLine, Start, End,
 	};
 
@@ -205,6 +206,29 @@ private:
 		}
 		return s + i;
 	}
+	enum CharType {
+		Type_Other,
+		Type_Space,
+		Type_NewLine,
+		Type_Kanji,
+		Type_Hiragana,
+		Type_Katakana,
+		Type_HalfAlphaNum,
+		Type_FullSymbol,
+	};
+	static CharType charType(QChar ch) {
+		if( ch == QChar('\n') ) return Type_NewLine;
+		if( ch == QChar(' ') || ch == QChar('\t') || ch == QChar(0x3000) ) return Type_Space;
+		ushort u = ch.unicode();
+		if( (u >= 'A' && u <= 'Z') || (u >= 'a' && u <= 'z') || (u >= '0' && u <= '9') || u == '_' )
+			return Type_HalfAlphaNum;
+		if( u >= 0x3041 && u <= 0x309F ) return Type_Hiragana;
+		if( (u >= 0x30A0 && u <= 0x30FF) || (u >= 0xFF66 && u <= 0xFF9F) ) return Type_Katakana;
+		if( (u >= 0x4E00 && u <= 0x9FFF) || (u >= 0x3400 && u <= 0x4DBF) || (u >= 0xF900 && u <= 0xFAFF) || u == 0x3005 )
+			return Type_Kanji;
+		if( u >= 0x3000 ) return Type_FullSymbol;
+		return Type_Other;
+	}
 	bool moveOnce(MoveOperation op, MoveMode mode) {
 		const ViewLineMgr &mgr = m_doc->lineMgr();
 		switch( op ) {
@@ -216,6 +240,44 @@ private:
 			if( m_pos >= m_doc->characterCount() ) return false;
 			moveTo(m_pos + 1, mode);
 			break;
+		case NextWord: {
+			pos_t sz = m_doc->characterCount();
+			if( m_pos >= sz ) return false;
+			pos_t pos = m_pos;
+			CharType startType = charType(m_doc->characterAt(pos));
+			if( startType == Type_NewLine ) {
+				++pos;
+			} else {
+				while( pos < sz && charType(m_doc->characterAt(pos)) == startType )
+					++pos;
+			}
+			if( startType != Type_Space ) {
+				while( pos < sz && charType(m_doc->characterAt(pos)) == Type_Space )
+					++pos;
+			}
+			moveTo(pos, mode);
+			break;
+		}
+		case PreviousWord: {
+			if( m_pos <= 0 ) return false;
+			pos_t pos = m_pos;
+			bool blankLine = false;
+			CharType type;
+			while( (type = charType(m_doc->characterAt(pos - 1))) == Type_Space || type == Type_NewLine ) {
+				if( --pos == 0 ) break;
+				if( type == Type_NewLine && mgr.lineLength(mgr.lineAtPos(pos)) == 0 ) {
+					blankLine = true;
+					break;
+				}
+			}
+			if( pos > 0 && !blankLine ) {
+				type = charType(m_doc->characterAt(--pos));
+				while( pos > 0 && charType(m_doc->characterAt(pos - 1)) == type )
+					--pos;
+			}
+			moveTo(pos, mode);
+			break;
+		}
 		case StartOfLine:
 			if( m_pos == mgr.lineStartPos(mgr.lineAtPos(m_pos)) ) return false;
 			moveTo(mgr.lineStartPos(mgr.lineAtPos(m_pos)), mode);
