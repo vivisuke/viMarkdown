@@ -1423,11 +1423,11 @@ void MarkdownEditor::do_insertText(QTextCursor& cursor, const QString &txt) {
 		if( !block.isValid() ) return;
 		cursor.setPosition(block.position());
 	}
-	if( m_diffMode && txt.contains(u'\n') ) {
-		//	[#1255] 改行を含む挿入はブロック数を変える。ダミー行がある状態でそのまま挿入すると
-		//	diffBlockNumbers がずれ、次の do_diff 冒頭のダミー除去が実テキストを誤って削除する。
+	if( m_diffMode ) {
+		//	[#1255] ダミー行がある状態で挿入すると diffBlockNumbers や m_undoMgr に記録する
+		//	文字位置がダミー行の改行ぶんずれ、Undo 時に別文字を誤削除する。
 		//	do_deleteText と同様に、挿入前に両ペインのダミー行を除去しておく
-		//	（vicmd の o/O・p/P、paste() など keyPressEvent を経由しない入口への対策）
+		//	（vicmd・単語反映・paste() など keyPressEvent を経由しない入口への対策）
 		m_docWidget->m_editor->removeAllDummyLines();
 		m_docWidget->m_diffview->removeAllDummyLines();
 	}
