@@ -73,6 +73,14 @@ QTextBlock peerBlockForPhysicalLine(const QTextBlock &src, MarkdownEditor *self,
 		int bn = b.blockNumber();
 		return bn < (int)flgs2.size() && flgs2[bn] == PADDING_LINE;
 	};
+	auto isModified1 = [&](const QTextBlock &b) {
+		int bn = b.blockNumber();
+		return bn < (int)flgs1.size() && flgs1[bn] == MODIFIED_LINE;
+	};
+	auto isModified2 = [&](const QTextBlock &b) {
+		int bn = b.blockNumber();
+		return bn < (int)flgs2.size() && flgs2[bn] == MODIFIED_LINE;
+	};
 	//	src がパディング行の場合：直前の非パディング行を起点にする
 	QTextBlock anchor = src;
 	while( anchor.isValid() && isPadding1(anchor) ) {
@@ -86,6 +94,42 @@ QTextBlock peerBlockForPhysicalLine(const QTextBlock &src, MarkdownEditor *self,
 	while( b1.isValid() && b2.isValid() ) {
 		if( isPadding1(b1) ) { b1 = b1.next(); continue; }
 		if( isPadding2(b2) ) { b2 = b2.next(); continue; }
+		if( isModified1(b1) && isModified2(b2) ) {	//	変更ハンクは左右の物理行数が異なる場合があるためハンク単位で進める（#1446）
+			QTextBlock h1 = b1;
+			QTextBlock h2 = b2;
+			int n1 = 0, n2 = 0;
+			int hitIdx = -1;
+			while( h1.isValid() && isModified1(h1) ) {
+				if( h1 == anchor ) hitIdx = n1;
+				h1 = h1.next();
+				++n1;
+			}
+			while( h1.isValid() && isPadding1(h1) ) {
+				h1 = h1.next();
+			}
+			QTextBlock target2 = b2;
+			while( h2.isValid() && isModified2(h2) ) {
+				if( hitIdx >= 0 && n2 <= hitIdx ) target2 = h2;
+				h2 = h2.next();
+				++n2;
+			}
+			if( hitIdx >= 0 ) {
+				if( hitIdx >= n2 ) {
+					QTextBlock p2 = h2;
+					for( int k = n2; k < hitIdx && p2.isValid() && isPadding2(p2); ++k )
+						p2 = p2.next();
+					if( p2.isValid() && isPadding2(p2) )
+						return p2;
+				}
+				return target2;
+			}
+			while( h2.isValid() && isPadding2(h2) ) {
+				h2 = h2.next();
+			}
+			b1 = h1;
+			b2 = h2;
+			continue;
+		}
 		bool d1 = isDummy1(b1);
 		bool d2 = isDummy2(b2);
 		if( !d1 && !d2 ) {	//	実在行同士：1対1
