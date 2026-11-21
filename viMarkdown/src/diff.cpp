@@ -46,10 +46,10 @@ bool isDummyLine(MarkdownEditor* editor, const QTextBlock &block) {
 #if 1
 // 2. 行番号（1オリジン）取得（2ビット右シフトするだけ）
 int lineNumber(MarkdownEditor* editor, const QTextBlock &block) {
-    auto vbn = editor->diffBlockNumbers();
+    const auto &vbn = editor->diffBlockNumbers();
     auto ix = block.blockNumber();
-    if( ix < vbn.size() )
-	    return editor->diffBlockNumbers()[block.blockNumber()] + 1;
+    if( ix >= 0 && ix < (int)vbn.size() )
+	    return vbn[ix] + 1;
     else
     	return 0;
     //return (unsigned)block.userState() >> 2;
@@ -377,7 +377,7 @@ void MiniMap::updateMap(QTextDocument* doc1, MarkdownEditor* editor1, QTextDocum
 	if( m_totalLines <= ht ) {	//	圧縮時は全面描画済みのため余白塗りは不要
 		p.setBrush(COLOR_DIFF_MINIMAP_DELETED);
 		//p.drawRect(0, doc1->blockCount(), MINMAP_WIDTH, ht - doc1->blockCount());
-		p.drawRect(0, visualLineCount(doc1, editor1), MINMAP_WIDTH, ht - visualLineCount(doc1, editor1));
+		p.drawRect(0, m_totalLines, MINMAP_WIDTH, ht - m_totalLines);
 	}
 #else
 	updateMapSub(p, 0, doc1, editor1);
