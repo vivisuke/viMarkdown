@@ -3021,7 +3021,7 @@ void MarkdownEditor::do_keisen_right(bool erase, bool thickKeisen) {
 		int vc = getVisualColumn(cursor, this);
 		do {
 			cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor);
-		} while( getVisualColumn(cursor, this) < vc + 2);
+		} while( !cursor.atBlockEnd() && getVisualColumn(cursor, this) < vc + 2);
 		QString prev, next;
 		QTextBlock pb = cursor.block().previous();
 		if( pb.isValid() ) prev = pb.text();
@@ -3362,11 +3362,16 @@ void MarkdownEditor::convert_MarkdownTable_CSV() {
 		}
 		block = block.next();
 	}
-	endPosition = block.position();
 	cursor.setPosition(startPosition);
-	cursor.setPosition(endPosition, QTextCursor::KeepAnchor);
-	//cursor.insertText(mdtext + "```\n");
-	do_insertText(cursor, mdtext + "```\n");
+	if( block.isValid() ) {
+		endPosition = block.position();
+		cursor.setPosition(endPosition, QTextCursor::KeepAnchor);
+		//cursor.insertText(mdtext + "```\n");
+		do_insertText(cursor, mdtext + "```\n");
+	} else {
+		cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
+		do_insertText(cursor, mdtext + "```");
+	}
 	setTextCursor(cursor);
 }
 void MarkdownEditor::onContentsChanged(int position, int charsRemoved, int charsAdded) {
