@@ -2346,15 +2346,20 @@ void MainWindow::do_save(bool fDialog, int ix) {
 		ui->tabWidget->setTabText(ix, docWidget->m_title);
 		ui->tabWidget->setTabToolTip(ix, fullPath);
 		QTreeWidgetItem *top = findTopLevelItemByFullPath(oldTitle, oldFullPath);
-		top->setText(0, docWidget->m_title);
-		top->setData(0, Qt::UserRole, fullPath);	//	[#0299] アイテム側のパスも新しいパスに更新する（古いままだとクリック時のタブ検索が一致しない）
+		if( top != nullptr ) {
+			top->setText(0, docWidget->m_title);
+			top->setData(0, Qt::UserRole, fullPath);	//	[#0299] アイテム側のパスも新しいパスに更新する（古いままだとクリック時のタブ検索が一致しない）
+		}
 		if( !oldFullPath.isEmpty() && oldFullPath != fullPath )		//	ファイル名変更
 			m_watcher->removePath(oldFullPath);
 	}
-	do_save(fullPath);
+	do_save(fullPath, ix);
 }
-void MainWindow::do_save(const QString& fullPath) {
-	DocWidget *docWidget = getCurDocWidget();
+void MainWindow::do_save(const QString& fullPath, int ix) {
+	if( ix < 0 )
+		ix = ui->tabWidget->currentIndex();
+	if( ix < 0 ) return;
+	DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(ix);
 	if( docWidget == nullptr ) return;
 	addToRecentFiles(fullPath);
 	docWidget->m_saving = true;
@@ -2379,7 +2384,6 @@ void MainWindow::do_save(const QString& fullPath) {
 		file.close();
 		//QMessageBox::information(nullptr, "成功", "ファイルが保存されました:\n" + fullPath);
 		docWidget->setModified(false);		//	保存済み
-		int ix = ui->tabWidget->currentIndex();
 		ui->tabWidget->setTabText(ix, docWidget->m_title);
 		m_watcher->addPath(fullPath);
 		docWidget->m_hasSaved = true;		//	保存済み for 自動更新

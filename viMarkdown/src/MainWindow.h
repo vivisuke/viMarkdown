@@ -348,7 +348,7 @@ protected:
     void	do_load(const QString&);
     void	close_empty_doc();
     void	do_save(bool fDialog = false, int ix = -1);
-    void	do_save(const QString& fullPath);
+    void	do_save(const QString& fullPath, int ix = -1);
     int		treeItemToTabIndex(QTreeWidgetItem *current);
     void	addToRecentFiles(const QString& fullPath);
     void	insertSearchComboBox();

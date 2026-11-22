@@ -22,7 +22,7 @@ SPR# 状 P Open  Close ver     Type  概要
 0018 ◎ C 11/22 11/22 0001 │ToDo│行番号エリア：行番号の右に2文字分空白をあけておく
 0019 ◎ C 11/22 11/22 0001 │ToDo│File > Recent Files メニュー追加
 0020 ◎ C 11/22 11/22 0001 │問題│右端で折り返す位置が不正
-0021 ● C 11/22            │ToDo│
+0021 ● C 11/22            │ToDo│TabWidget 化＋TextEdit・QTextEdit
 0022 ● C 11/22            │ToDo│
 0023 ● C 11/22            │ToDo│
 0024 ● C 11/22            │ToDo│
