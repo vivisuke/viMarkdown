@@ -20,7 +20,10 @@ public:
     void do_output(const QString& txt);
 
 private:
+    void onOpen();
+
     Ui::MainWindowClass *ui;
     TextEdit *m_textEdit = nullptr;
+    QString m_lastDir;
 };
 

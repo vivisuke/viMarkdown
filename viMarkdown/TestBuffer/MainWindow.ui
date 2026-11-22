@@ -17,6 +17,12 @@
    <string>MainWindow</string>
   </property>
   <widget class="QMenuBar" name="menuBar">
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="action_Open"/>
+   </widget>
    <widget class="QMenu" name="menuTest">
     <property name="title">
      <string>Test</string>
@@ -28,6 +34,7 @@
     <addaction name="action_ViewLineMgr"/>
     <addaction name="action_TextDocument"/>
    </widget>
+   <addaction name="menuFile"/>
    <addaction name="menuTest"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar" />
@@ -60,6 +67,14 @@
     </layout>
    </widget>
   </widget>
+  <action name="action_Open">
+   <property name="text">
+    <string>Open...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
   <action name="action_gap_buffer">
    <property name="text">
     <string>gap_buffer</string>

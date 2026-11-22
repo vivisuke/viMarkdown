@@ -33,9 +33,12 @@ TextEdit::TextEdit(QWidget *parent)
 
 void TextEdit::setPlainText(const QString &text)
 {
+	m_preedit.clear();
+	m_preeditCursor = 0;
 	m_doc.setPlainText(text);
 	m_cursor.setPosition(0);
 	verticalScrollBar()->setValue(0);
+	updateWrapWidth();
 	updateScrollBars();
 	viewport()->update();
 	m_lineNumberArea->update();
