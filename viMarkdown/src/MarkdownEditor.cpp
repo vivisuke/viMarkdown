@@ -716,18 +716,77 @@ void MarkdownEditor::setLineSpacing(int percentage) {
 	editorCursor.setBlockFormat(format);
 }
 void MarkdownEditor::inputMethodEvent(QInputMethodEvent *event) {
+	const QString commit = event->commitString();
+	const QString preedit = event->preeditString();
+	const int repStart = event->replacementStart();
+	const int repLen = event->replacementLength();
+	m_isComposing = !preedit.isEmpty();
+
+	const bool willModifyDoc = !isReadOnly() && (
+		!commit.isEmpty() ||
+		repLen > 0 ||
+		(!preedit.isEmpty() && textCursor().hasSelection())
+	);
+	if( willModifyDoc ) {
+		if( m_diffMode && isDummyLine(this, textCursor().block()) ) return;
+		if( m_diffMode ) {
+			m_docWidget->m_editor->removeAllDummyLines();
+			m_docWidget->m_diffview->removeAllDummyLines();
+		}
+	}
+
 	//	[#1304] IME の確定文字列は do_insertText を経由せず基底クラスの処理で文書へ直接挿入されるため、
 	//	検索マッチ強調（ExtraSelection）の終端ちょうどへの確定では、通常入力と同様に強調範囲が広がってしまう。
 	//	確定前に終端が一致する選択範囲を記録しておき、基底クラスの処理の後に終端を元の位置へ戻す。
 	QList<int> trimEnds;
-	const int insPos = textCursor().position();
-	const QString commit = event->commitString();
-	if( !commit.isEmpty() && event->replacementLength() == 0 && !textCursor().hasSelection() ) {
+	QTextCursor cur = textCursor();
+	const int insPos = cur.position();
+	if( !commit.isEmpty() && repLen == 0 && !cur.hasSelection() ) {
 		const auto sels = extraSelections();
 		for(int i = 0; i < (int)sels.size(); ++i)
 			if( sels[i].cursor.anchor() < insPos && sels[i].cursor.position() == insPos )
 				trimEnds.append(i);
 	}
+
+	bool pushedUndo = false;
+	if( willModifyDoc ) {
+		if( repLen > 0 ) {
+			bool openedBlock = false;
+			if( cur.hasSelection() ) {
+				openUndoBlock();
+				openedBlock = true;
+				do_deleteText(cur);
+				cur = textCursor();
+			}
+			const int docMax = qMax(0, document()->characterCount() - 1);
+			const int rPos = qBound(0, cur.position() + repStart, docMax);
+			const int rLen = qMin(repLen, docMax - rPos);
+			if( rLen > 0 && !commit.isEmpty() ) {
+				m_undoMgr->push_back_repText(rPos, rLen, (int)commit.size());
+				pushedUndo = true;
+			} else if( rLen > 0 ) {
+				m_undoMgr->push_back_delText(rPos, rLen, false);
+				pushedUndo = true;
+			} else if( !commit.isEmpty() ) {
+				m_undoMgr->push_back_insText(rPos, (int)commit.size());
+				pushedUndo = true;
+			}
+			if( openedBlock )
+				closeUndoBlock();
+		} else if( cur.hasSelection() ) {
+			const int selStart = cur.selectionStart();
+			const int selLen = (int)cur.selectedText().size();
+			if( !commit.isEmpty() )
+				m_undoMgr->push_back_repText(selStart, selLen, (int)commit.size());
+			else
+				m_undoMgr->push_back_delText(selStart, selLen, false);
+			pushedUndo = true;
+		} else if( !commit.isEmpty() ) {
+			m_undoMgr->push_back_insText(cur.position(), (int)commit.size());
+			pushedUndo = true;
+		}
+	}
+
 	MarkdownBaseEdit::inputMethodEvent(event);
 	if( !trimEnds.isEmpty() ) {
 		auto sels = extraSelections();
@@ -741,6 +800,8 @@ void MarkdownEditor::inputMethodEvent(QInputMethodEvent *event) {
 		}
 		setExtraSelections(sels);
 	}
+	if( pushedUndo )
+		emit canUndoRedoChanged();
 }
 #if 0
 void MarkdownEditor::inputMethodEvent(QInputMethodEvent *event) {
@@ -1224,7 +1285,7 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 		return;
 	} else if (e->key() == Qt::Key_Escape ) {
 		if( g.m_viKeybindings ) {
-			if( gvi.m_currentMode == ViMode::Insert ) {
+			if( gvi.m_currentMode == ViMode::Insert || gvi.m_currentMode == ViMode::Replace ) {
 				((MainWindow*)m_mainWindow)->exitInsertMode(cursor);	//	暫定的
 				setOverwriteMode(false);
 				this->setTextCursor(cursor);
@@ -1287,6 +1348,8 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 				} else
 					cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor);
 				setTextCursor(cursor);
+				do_deleteText(cursor);
+			} else {
 				do_deleteText(cursor);
 			}
 		}
