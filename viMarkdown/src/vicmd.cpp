@@ -2180,11 +2180,39 @@ void MainWindow::do_subst(const QString &text, int ix, QTextDocument* doc) {
 	QString qtAfter = after;
 	qtAfter.replace(QRegularExpression(R"((?<!\\)&)"), R"(\0)");
 	qtAfter.replace(R"(\&)", "&"); // エスケープされた \& は単なる & に戻す
+	int rangeStart = gvi.m_rangeStart;
+	int rangeEnd = gvi.m_rangeEnd;
+	DocWidget *docWidget = getCurDocWidget();
+	bool removedDummy = false;
+	if (docWidget != nullptr && docWidget->m_diffMode && gvi.m_editor != nullptr
+		&& (docWidget->m_editor->dummyInserted() || docWidget->m_diffview->dummyInserted())) {
+		//	diff モード：ダミー行除去前に範囲内の実在行の物理行番号（1始まり）へ変換する（#1451）
+		const auto &vbn = gvi.m_editor->diffBlockNumbers();
+		int physStart = -1, physEnd = -1;
+		for (int line = rangeStart; line <= rangeEnd; ++line) {
+			int bn = line - 1;
+			if (bn >= 0 && bn < (int)vbn.size() && vbn[bn] >= 0) {
+				int phys = vbn[bn] + 1;
+				if (physStart < 0) physStart = phys;
+				physEnd = phys;
+			}
+		}
+		if (physStart < 0) {
+			statusBar()->showMessage(tr("No match found."), 5000);
+			return;
+		}
+		docWidget->m_editor->removeAllDummyLines();
+		docWidget->m_diffview->removeAllDummyLines();
+		removedDummy = true;
+		rangeStart = physStart;
+		rangeEnd = physEnd;
+	}
 	QTextCursor cursor(doc);
 	cursor.beginEditBlock();
+	bool undoOpened = false;
 	int replacedCount = 0;
 	int lastReplacedLine = -1;
-	for (int line = gvi.m_rangeStart; line <= gvi.m_rangeEnd; ++line) {
+	for (int line = rangeStart; line <= rangeEnd; ++line) {
 		QTextBlock block = doc->findBlockByNumber(line - 1);	// ex行番号は1始まり
 		if (!block.isValid())
 			continue;
@@ -2211,22 +2239,35 @@ void MainWindow::do_subst(const QString &text, int ix, QTextDocument* doc) {
 			}
 		}
 		if (newLineText != lineText) {
+			if (!undoOpened && gvi.m_editor != nullptr) {
+				gvi.m_editor->openUndoBlock();
+				undoOpened = true;
+			}
 			QTextCursor lineCursor(block);
 			lineCursor.movePosition(QTextCursor::StartOfBlock);
 			lineCursor.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
-			lineCursor.insertText(newLineText);
+			if (gvi.m_editor != nullptr)
+				gvi.m_editor->do_insertText(lineCursor, newLineText);
+			else
+				lineCursor.insertText(newLineText);
 			replacedCount++;
 			lastReplacedLine = line;
 		}
 	}
+	if (undoOpened)
+		gvi.m_editor->closeUndoBlock();
 	cursor.endEditBlock();
 	if (lastReplacedLine > 0) {
 	    QTextBlock block = doc->findBlockByNumber(lastReplacedLine - 1);
-	    QTextCursor c(doc);
-	    c.setPosition(block.position());
-	    hat(c);
-	    gvi.m_editor->setTextCursor(c);
+	    if (block.isValid()) {
+	        QTextCursor c(doc);
+	        c.setPosition(block.position());
+	        hat(c);
+	        gvi.m_editor->setTextCursor(c);
+	    }
 	}
+	if (removedDummy && replacedCount == 0)
+		do_diff();
 	if (replacedCount == 0) {
         statusBar()->showMessage(tr("No match found."), 5000);
     } else {
