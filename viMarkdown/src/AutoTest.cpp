@@ -5090,6 +5090,46 @@ QStringList g_diffTestCase[] = {
 		"!a\xF0\x9F\x98\x80《X┃b》\n",
 		"!a\xF0\x9F\x98\x80《b》\n",
 	},
+	{"Uneven modify hunk cursor sync and block reflect (#1446)",
+		"!《AAA》\n!《BBB》\n=CCC\n!《EEE》\n=GGG\n",
+		"!《XXX》《》\n-\n=CCC\n!《FFF》\n=GGG\n",
+		"L@3:1",
+		"!《AAA》\n!《BBB》\n=┃CCC\n!《EEE》\n=GGG\n",
+		"!《XXX》《》\n-\n=┃CCC\n!《FFF》\n=GGG\n",
+		"Lb4",
+		"!《AAA》\n!《BBB》\n=CCC\n=EEE\n=GGG\n",
+		"!《XXX》《》\n-\n=CCC\n=EEE\n=GGG\n",
+	},
+	{"Apply diff block on uneven modify hunk with padding (#1447)",
+		"!《AAA》\n!《BBB》\n",
+		"!《XXX》《》\n-\n",
+		"Lb1",
+		"=AAA\n=BBB\n",
+		"=AAA\n=BBB\n",
+		"Ru",
+		"!《AAA》\n!《BBB》\n",
+		"!《XXX》《》\n-\n",
+	},
+	{"Reflect word from extra modified line opposite padding (#1447)",
+		"!《AAA》\n!《BBB》\n",
+		"!《XXX》《》\n-\n",
+		"Lw2:1",
+		"+AAA\n=BBB\n",
+		"-\n=BBB\n",
+	},
+	{"Apply diff block add and delete at tail (#1447)",
+		"=AAA\n+BBB\n",
+		"=AAA\n-\n",
+		"Lb2",
+		"=AAA\n=BBB\n",
+		"=AAA\n=BBB\n",
+		"Ru",
+		"=AAA\n+BBB\n",
+		"=AAA\n-\n",
+		"Rb2",
+		"=AAA\n",
+		"=AAA\n",
+	},
 };
 void set_text(MarkdownEditor* editor, const QString& text) {
 	editor->removeAllDummyLines();	//	前のケースのダミー行と diff 状態（ブロック番号表・挿入フラグ）を持ち越さない
@@ -5145,7 +5185,7 @@ static bool parseNumber(const QString& text, int& pos, int& value) {
 	return ok;
 }
 //	diff テストのアクションを実行する。不正な書式の場合は false を返し、error に理由を格納する
-//	書式：[L|R]（省略時は L）の後に、@行:カラムx / @行:カラムi文字列 / d行 / J行 / u / U のいずれか
+//	書式：[L|R]（省略時は L）の後に、@行:カラム[x|i文字列] / b行 / w行:カラム / d行 / J行 / u / U のいずれか
 bool do_action(MarkdownEditor* editor, MarkdownEditor* diffview, const QString& text, QString& error) {
 	if( text.isEmpty() ) return true;
 	MarkdownEditor *ptr = editor;
@@ -5168,7 +5208,7 @@ bool do_action(MarkdownEditor* editor, MarkdownEditor* diffview, const QString& 
 		return false;
 	}
 	QTextDocument *doc = ptr->document();
-	if( text[i] == u'@' ) {	//	@行:カラム の後に x か i が必須
+	if( text[i] == u'@' ) {	//	@行:カラム（カーソル移動のみ、または x / i）
 		++i;
 		int line = 0, col = 0;
 		if( !parseNumber(text, i, line) || i >= text.size() || text[i] != u':' ) {
@@ -5176,12 +5216,16 @@ bool do_action(MarkdownEditor* editor, MarkdownEditor* diffview, const QString& 
 			return false;
 		}
 		++i;
-		if( !parseNumber(text, i, col) || i >= text.size() || (text[i] != u'x' && text[i] != u'i') ) {
+		if( !parseNumber(text, i, col) ) {
+			error = QStringLiteral("bad @line:col");
+			return false;
+		}
+		QChar cmd = (i < text.size()) ? text[i] : QChar();
+		if( !cmd.isNull() && cmd != u'x' && cmd != u'i' ) {
 			error = QStringLiteral("@ must be followed by x or i");
 			return false;
 		}
-		QChar cmd = text[i];
-		++i;
+		if( !cmd.isNull() ) ++i;
 		if( line < 1 || line > doc->blockCount() ) {
 			error = QStringLiteral("line out of range");
 			return false;
@@ -5199,6 +5243,10 @@ bool do_action(MarkdownEditor* editor, MarkdownEditor* diffview, const QString& 
 		}
 		QTextCursor cursor(doc);
 		cursor.setPosition(block.position() + indexOfCodePoint(blockText, col - 1));
+		if( cmd.isNull() ) {
+			ptr->setTextCursor(cursor);
+			return true;
+		}
 		if( cmd == u'x' ) {
 			if( i != text.size() ) {
 				error = QStringLiteral("trailing characters after x");
@@ -5285,6 +5333,58 @@ bool do_action(MarkdownEditor* editor, MarkdownEditor* diffview, const QString& 
 		}
 		ptr->setTextCursor(cursor);
 		return true;
+	}
+	if( text[i] == u'b' ) {	//	b行：差分ブロック反映（applyDiffBlock）
+		++i;
+		int line = 0;
+		if( !parseNumber(text, i, line) || i != text.size() ) {
+			error = QStringLiteral("bad line number");
+			return false;
+		}
+		if( line < 1 || line > doc->blockCount() ) {
+			error = QStringLiteral("line out of range");
+			return false;
+		}
+		QTextBlock block = doc->findBlockByNumber(line - 1);
+		ptr->applyDiffBlock(block);
+		return true;
+	}
+	if( text[i] == u'w' ) {	//	w行:カラム：単語差分反映（reflectWordToPeer）
+		++i;
+		int line = 0, col = 0;
+		if( !parseNumber(text, i, line) || i >= text.size() || text[i] != u':' ) {
+			error = QStringLiteral("bad w line:col");
+			return false;
+		}
+		++i;
+		if( !parseNumber(text, i, col) || i != text.size() ) {
+			error = QStringLiteral("bad w line:col");
+			return false;
+		}
+		if( line < 1 || line > doc->blockCount() ) {
+			error = QStringLiteral("line out of range");
+			return false;
+		}
+		QTextBlock block = doc->findBlockByNumber(line - 1);
+		if( isDummyLine(ptr, block) ) {
+			error = QStringLiteral("dummy line");
+			return false;
+		}
+		QString blockText = block.text();
+		int posInBlock = indexOfCodePoint(blockText, col - 1);
+		auto *userData = dynamic_cast<DiffBlockUserData*>(block.userData());
+		if( !userData ) {
+			error = QStringLiteral("no word diff data on block");
+			return false;
+		}
+		for(const auto &range : userData->ranges) {
+			if( posInBlock >= range.start && posInBlock < range.start + range.length ) {
+				ptr->reflectWordToPeer(block, range.start, range.length, blockText.mid(range.start, range.length));
+				return true;
+			}
+		}
+		error = QStringLiteral("no word diff range at column");
+		return false;
 	}
 	if( text[i] == u'u' || text[i] == u'U' ) {
 		if( i + 1 != text.size() ) {

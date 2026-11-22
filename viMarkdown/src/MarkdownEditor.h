@@ -272,6 +272,8 @@ public:
     void	copyVisibleText();
     void	cut();
     void	paste();
+    void	applyDiffBlock(QTextBlock block);
+    void	reflectWordToPeer(const QTextBlock &block, int start, int length, const QString &wordText);
 
 signals:
     void	tab_pressed();
@@ -302,7 +304,6 @@ protected:
     void	insertFromMimeData(const QMimeData *source) override;
     QVariant	inputMethodQuery(Qt::InputMethodQuery query) const ;
     void	contextMenuEvent(QContextMenuEvent *event);
-    void	reflectWordToPeer(const QTextBlock &block, int start, int length, const QString &wordText);
 #if 0
     void	dragEnterEvent(QDragEnterEvent *e) override {
         e->acceptProposedAction();
@@ -329,7 +330,6 @@ protected:
 	bool	isInLinkURL(int pos, int& openIX, int& closeIX) const;
 	void	svg_enter_pressed();
 	void	svg_esc_pressed();
-	void	applyDiffBlock(QTextBlock block);
 
 private:
 	bool	m_ignoreContentsChanged = false;
