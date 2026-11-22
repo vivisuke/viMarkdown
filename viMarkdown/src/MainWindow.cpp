@@ -688,29 +688,55 @@ void MainWindow::do_replace_next(const QString srcText, const QString dstText) {
 	do_search(srcText, false);
 }
 void MainWindow::do_replace_all(const QString srcText, const QString dstText) {
-	if( srcText == dstText ) return;
+	if( srcText.isEmpty() ) return;
+	if( !g.m_regexp && !g.m_ignoreCase && srcText == dstText ) return;
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
+	QTextDocument::FindFlags flags;
+	if( !g.m_ignoreCase )
+		flags |= QTextDocument::FindCaseSensitively;
+	QRegularExpression re;
+	if( g.m_regexp ) {
+		auto opt = g.m_ignoreCase ? QRegularExpression::CaseInsensitiveOption : QRegularExpression::NoPatternOption;
+		re = QRegularExpression(srcText, opt);
+		if( !re.isValid() ) {
+			statusBar()->showMessage(tr("Invalid regular expression: %1").arg(re.errorString()), 5000);
+			return;
+		}
+	}
 	MarkdownEditor *mdEditor = docWidget->m_editor;
 	QTextDocument *doc = mdEditor->document();
 	QTextCursor cursor(doc), cursor2;
-	mdEditor->openUndoBlock();
 	cursor.beginEditBlock();
-	bool replaced = false;
+	bool undoOpened = false;
+	int replacedCount = 0;
 	for (;;) {
-	    if( (cursor2 = doc->find(srcText, cursor)) .isNull() )
-	    	break;
-	    cursor = cursor2;
-	    mdEditor->do_insertText(cursor, dstText);
-	    //cursor.insertText(dstText);
-	    replaced = true;
+		cursor2 = g.m_regexp ? doc->find(re, cursor, flags) : doc->find(srcText, cursor, flags);
+		if( cursor2.isNull() )
+			break;
+		const bool emptyMatch = (cursor2.anchor() == cursor2.position());
+		cursor = cursor2;
+		if( !undoOpened ) {
+			mdEditor->openUndoBlock();
+			undoOpened = true;
+		}
+		mdEditor->do_insertText(cursor, dstText);
+		++replacedCount;
+		if( emptyMatch ) {
+			if( !cursor.movePosition(QTextCursor::NextCharacter) )
+				break;
+		}
 	}
+	if( undoOpened )
+		mdEditor->closeUndoBlock();
 	cursor.endEditBlock();
-	mdEditor->closeUndoBlock();
-	if( replaced ) {
+	if( replacedCount > 0 ) {
 		m_replaceHist.push_front(dstText);
 		m_replaceHist.removeDuplicates();	//	重複削除
 		mdEditor->setTextCursor(cursor);
+		statusBar()->showMessage(tr("%1 occurrence(s) replaced.").arg(replacedCount), 5000);
+	} else {
+		statusBar()->showMessage(tr("No match found."), 5000);
 	}
 }
 bool MainWindow::do_search(const QString srcText, bool backward) {
