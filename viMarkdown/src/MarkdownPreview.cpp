@@ -1436,6 +1436,7 @@ void MarkdownPreview::do_SVG(int bn0, int nBlocks, QTextBlock& srcBlock, QTextCu
 		buf += t + "\n";
 	}
 	double wd = 1.0, ht = 1.0;
+	bool hasWidth = false, hasHeight = false;
 	QXmlStreamReader reader(buf);
 	while (!reader.atEnd()) {
 		QXmlStreamReader::TokenType token = reader.readNext();
@@ -1447,6 +1448,7 @@ void MarkdownPreview::do_SVG(int bn0, int nBlocks, QTextBlock& srcBlock, QTextCu
 				else {
 					if( txt.endsWith(u"px", Qt::CaseInsensitive) ) txt.chop(2);
 					width = qRound(txt.toDouble());
+					hasWidth = (width > 0);
 				}
 			}
 			if (reader.attributes().hasAttribute("height")) {
@@ -1457,18 +1459,27 @@ void MarkdownPreview::do_SVG(int bn0, int nBlocks, QTextBlock& srcBlock, QTextCu
 				else {
 					if( txt.endsWith(u"px", Qt::CaseInsensitive) ) txt.chop(2);
 					height = qRound(txt.toDouble());
+					hasHeight = (height > 0);
 				}
 			}
 			if (reader.attributes().hasAttribute("viewBox")) {
 				auto viewBox = reader.attributes().value("viewBox");
 				auto list = viewBox.split(QRegularExpression("[\\s,]+"), Qt::SkipEmptyParts);
 				if( list.size() >= 4 ) {
-					width = qRound(list[2].toDouble());
-					height = qRound(list[3].toDouble());
+					double vbW = list[2].toDouble();
+					double vbH = list[3].toDouble();
+					if( !hasWidth && !hasHeight ) {
+						width = qRound(vbW);
+						height = qRound(vbH);
+					} else if( !hasWidth && vbH > 0.0 ) {
+						width = qRound(height * vbW / vbH);
+					} else if( !hasHeight && vbW > 0.0 ) {
+						height = qRound(width * vbH / vbW);
+					}
 				}
 			}
-			width *= wd;
-			height *= ht;
+			width = qRound(width * wd);
+			height = qRound(height * ht);
 			break;
 		}
 	}
