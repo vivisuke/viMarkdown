@@ -2291,7 +2291,9 @@ void MainWindow::do_open_sub(const QString& title, const QString& fullPath, cons
 	QFileInfo fileInfo(fullPath);
 	QDir::setCurrent(fileInfo.path());
 	//##qDebug() << "setCurrent(" << fileInfo.path() << ")";
-	m_watcher->addPath(fullPath);
+	bool exists = fileInfo.exists();
+	if( exists )
+		m_watcher->addPath(fullPath);
 
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget != nullptr ) {
@@ -2299,7 +2301,8 @@ void MainWindow::do_open_sub(const QString& title, const QString& fullPath, cons
 		docWidget->m_editor->rehighlight();
 		docWidget->m_editor->document()->setModified(false);
 	}
-	addToRecentFiles(fullPath);
+	if( exists )
+		addToRecentFiles(fullPath);
 	close_empty_doc();
 }
 void MainWindow::onAction_Save() {
@@ -2572,6 +2575,18 @@ void MainWindow::do_openDiary(QDate date) {
         }
     }
     QString filePath = QString("%1/%2.md").arg(dir, dateStr);
+    int ix = tabIndexOf("", filePath);
+    if( ix >= 0 ) {
+        ui->tabWidget->setCurrentIndex(ix);
+        return;
+    }
+    int pix = diffPeerTabIndexOf(filePath);
+    if( pix >= 0 ) {
+        ui->tabWidget->setCurrentIndex(pix);
+        QString mess = QString(tr("'%1'\nis in use as a diff peer.\nIt cannot be opened separately while diff is in progress.")).arg(filePath);
+        QMessageBox::information(this, "confirmation", mess);
+        return;
+    }
     QFile file(filePath);
     if (!file.exists()) {	//	日付.md が存在しない場合
     	QString templatePath = g.m_defaultDir + "/diary/template.md";
