@@ -4773,7 +4773,7 @@ PosContext MarkdownEditor::contextAt(int pos) {	//	pos 位置から PosContext �
 		}
 	}
 	pc.m_anchorChar = ch;
-	while( blockType(block) == BT_IN_COMMENT || !block.text().startsWith(u'#') ) {		//	直前の見出し行を探す
+	while( blockType(block) != BT_HEADING ) {		//	直前の見出し行を探す
 		if( !block.previous().isValid() )
 			break;
 		block = block.previous();
