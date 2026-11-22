@@ -753,32 +753,40 @@ bool MainWindow::do_search(const QString srcText, bool backward) {
 			flags |= QTextDocument::FindBackward;
 		if( !g.m_ignoreCase )
 			flags |= QTextDocument::FindCaseSensitively;
-		if( !g.m_regexp )
-			found = mdEditor->find(srcText, flags);
-		else {
-			found = mdEditor->find(QRegularExpression(srcText), flags);
+		QRegularExpression re;
+		if( g.m_regexp ) {
+			auto opt = g.m_ignoreCase ? QRegularExpression::CaseInsensitiveOption : QRegularExpression::NoPatternOption;
+			re = QRegularExpression(srcText, opt);
+			if( !re.isValid() ) {
+				statusBar()->showMessage(tr("Invalid regular expression: %1").arg(re.errorString()), 5000);
+				return false;
+			}
 		}
+		auto findOnce = [&]() {
+			return g.m_regexp ? mdEditor->find(re, flags) : mdEditor->find(srcText, flags);
+		};
+		found = findOnce();
 		if (!found) {	//	不一致の場合、文書先頭/末尾から検索
-	        if( !backward )
+			if( !backward )
 				mdEditor->moveCursor(QTextCursor::Start);
-	        else
+			else
 				mdEditor->moveCursor(QTextCursor::End);
-	        found = mdEditor->find(srcText, flags);
-	    }
+			found = findOnce();
+		}
 		if (!found) {
 			//##qDebug() << "not found";
 			mdEditor->setTextCursor(cursor);
 		} else {
 			cursor = mdEditor->textCursor();
 			g.m_matchedPosition = cursor.anchor();
-			QTextBlock b = cursor.block();
-			if( !b.isVisible() ) {
-				while( (b = b.previous()).isValid() ) {
-					if( b.isVisible() ) {
-						do_unfold(b);
-						break;
-					}
-				}
+			QTextBlock matchedBlock = cursor.block();
+			while( !matchedBlock.isVisible() ) {
+				QTextBlock b = matchedBlock;
+				while( (b = b.previous()).isValid() && !b.isVisible() )
+					;
+				if( !b.isValid() ) break;
+				do_unfold(b);
+				if( b.next().isValid() && !b.next().isVisible() ) break;
 			}
 		}
 	}
