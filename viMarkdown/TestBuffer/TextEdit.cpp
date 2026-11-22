@@ -61,6 +61,14 @@ void TextEdit::setLineSpacing(int extraPx)
 	m_lineNumberArea->update();
 }
 
+void TextEdit::setTabWidth(int width)
+{
+	m_doc.lineMgr().setTabWidth(width);
+	updateScrollBars();
+	viewport()->update();
+	m_lineNumberArea->update();
+}
+
 void TextEdit::undo()
 {
 	if( !m_doc.canUndo() ) return;
@@ -88,15 +96,55 @@ int TextEdit::pageLines() const
 	return n < 1 ? 1 : n;
 }
 
+int TextEdit::tabStopPixels(const QFontMetrics &fm) const
+{
+	int sp = fm.horizontalAdvance(QChar(' '));
+	if( sp <= 0 ) sp = 1;
+	int tw = m_doc.lineMgr().tabWidth();
+	if( tw < 1 ) tw = 1;
+	return sp * tw;
+}
+
+int TextEdit::drawLineText(QPainter &painter, int x, int yBaseline, const QString &text, const QFontMetrics &fm, int tabPx) const
+{
+	qsizetype pos = 0;
+	while( pos < text.size() ) {
+		qsizetype tab = text.indexOf(QChar('\t'), pos);
+		if( tab < 0 ) {
+			QString chunk = text.mid(pos);
+			painter.drawText(x, yBaseline, chunk);
+			x += fm.horizontalAdvance(chunk);
+			break;
+		}
+		if( tab > pos ) {
+			QString chunk = text.mid(pos, tab - pos);
+			painter.drawText(x, yBaseline, chunk);
+			x += fm.horizontalAdvance(chunk);
+		}
+		int rel = x - LEFT_MARGIN;
+		x += tabPx - (rel % tabPx);
+		pos = tab + 1;
+	}
+	return x;
+}
+
 int TextEdit::xOfPos(TextDocument::pos_t pos) const
 {
 	const ViewLineMgr &mgr = m_doc.lineMgr();
 	int viewLine = mgr.viewLineAtPos(pos);
 	TextDocument::pos_t s = mgr.viewLineStartPos(viewLine);
 	const QFontMetrics fm = fontMetrics();
+	const int tabPx = tabStopPixels(fm);
 	int x = LEFT_MARGIN;
-	for( TextDocument::pos_t i = s; i < pos; ++i )
-		x += fm.horizontalAdvance(m_doc.characterAt(i));
+	for( TextDocument::pos_t i = s; i < pos; ++i ) {
+		QChar ch = m_doc.characterAt(i);
+		if( ch == QChar('\t') ) {
+			int rel = x - LEFT_MARGIN;
+			x += tabPx - (rel % tabPx);
+		} else {
+			x += fm.horizontalAdvance(ch);
+		}
+	}
 	return x;
 }
 
@@ -110,9 +158,17 @@ TextDocument::pos_t TextEdit::posFromPoint(const QPoint &pt) const
 	TextDocument::pos_t s = mgr.viewLineStartPos(viewLine);
 	TextDocument::pos_t len = mgr.viewLineLength(viewLine);
 	const QFontMetrics fm = fontMetrics();
+	const int tabPx = tabStopPixels(fm);
 	int x = LEFT_MARGIN;
 	for( TextDocument::pos_t i = 0; i < len; ++i ) {
-		int w = fm.horizontalAdvance(m_doc.characterAt(s + i));
+		QChar ch = m_doc.characterAt(s + i);
+		int w;
+		if( ch == QChar('\t') ) {
+			int rel = x - LEFT_MARGIN;
+			w = tabPx - (rel % tabPx);
+		} else {
+			w = fm.horizontalAdvance(ch);
+		}
 		if( pt.x() < x + w / 2 ) return s + i;
 		x += w;
 	}
@@ -199,6 +255,7 @@ void TextEdit::paintEvent(QPaintEvent *event)
 	Q_UNUSED(event);
 	QPainter painter(viewport());
 	const QFontMetrics fm = fontMetrics();
+	const int tabPx = tabStopPixels(fm);
 	const int lh = lineHeight();
 	const int top = verticalScrollBar()->value();
 	const ViewLineMgr &mgr = m_doc.lineMgr();
@@ -230,15 +287,13 @@ void TextEdit::paintEvent(QPaintEvent *event)
 			if( curOff > text.size() ) curOff = (int)text.size();
 			QString before = text.left(curOff);
 			QString after = text.mid(curOff);
-			int xBefore = LEFT_MARGIN;
-			painter.drawText(xBefore, y + fm.ascent(), before);
-			int xPre = xBefore + fm.horizontalAdvance(before);
+			int xPre = drawLineText(painter, LEFT_MARGIN, y + fm.ascent(), before, fm, tabPx);
 			int wPre = fm.horizontalAdvance(m_preedit);
 			painter.drawText(xPre, y + fm.ascent(), m_preedit);
 			painter.drawLine(xPre, y + fm.ascent() + 1, xPre + wPre, y + fm.ascent() + 1);
-			painter.drawText(xPre + wPre, y + fm.ascent(), after);
+			drawLineText(painter, xPre + wPre, y + fm.ascent(), after, fm, tabPx);
 		} else {
-			painter.drawText(LEFT_MARGIN, y + fm.ascent(), text);
+			drawLineText(painter, LEFT_MARGIN, y + fm.ascent(), text, fm, tabPx);
 		}
 	}
 	//	カーソル（フォーカス時のみ）
@@ -281,13 +336,13 @@ void TextEdit::keyPressEvent(QKeyEvent *event)
 		TextDocument::pos_t s = mgr.viewLineStartPos(cv);
 		int col = 0;
 		for( TextDocument::pos_t i = s; i < m_cursor.position(); ++i )
-			col += ViewLineMgr::charWidth(m_doc.characterAt(i));
+			col += mgr.charWidth(m_doc.characterAt(i), col);
 		TextDocument::pos_t ts = mgr.viewLineStartPos(target);
 		TextDocument::pos_t tlen = mgr.viewLineLength(target);
 		int acc = 0;
 		TextDocument::pos_t ti = 0;
 		while( ti < tlen && acc < col ) {
-			acc += ViewLineMgr::charWidth(m_doc.characterAt(ts + ti));
+			acc += mgr.charWidth(m_doc.characterAt(ts + ti), acc);
 			++ti;
 		}
 		m_cursor.setPosition(ts + ti, mode);

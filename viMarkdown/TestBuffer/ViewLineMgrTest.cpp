@@ -30,8 +30,8 @@ static void verify(bool cond, const QString& what)
 		output(QString("FAILED: %1\n").arg(what));
 	}
 }
-//	参照モデル用の文字幅（仕様：タブ=2、全角=2、それ以外=1。BMP外は2）
-static int refCharWidth(const QString& s, qsizetype i, qsizetype& adv)
+//	参照モデル用の文字幅（仕様：タブ=次のタブストップまで、全角=2、それ以外=1。BMP外は2）
+static int refCharWidth(const QString& s, qsizetype i, qsizetype& adv, int col, int tabWidth)
 {
 	adv = 1;
 	QChar ch = s[i];
@@ -39,7 +39,7 @@ static int refCharWidth(const QString& s, qsizetype i, qsizetype& adv)
 		adv = 2;
 		return 2;
 	}
-	if( ch == QChar('\t') ) return 2;
+	if( ch == QChar('\t') ) return tabWidth - (col % tabWidth);
 	uint u = ch.unicode();
 	bool wide = (u >= 0x1100 && u <= 0x115F) || (u >= 0x2E80 && u <= 0x303E)
 		|| (u >= 0x3041 && u <= 0x33FF) || (u >= 0x3400 && u <= 0x4DBF)
@@ -67,6 +67,7 @@ static bool checkAll(const ViewLineMgr& vm, const QString& model, int width, con
 	if( ng.isEmpty() && vm.lineCount() != lstarts.size() )
 		ng = QString("lineCount: %1 expected %2").arg(vm.lineCount()).arg(lstarts.size());
 	//	仕様どおりに表示行を再計算する
+	const int tabWidth = vm.tabWidth();
 	QVector<pos_t> vstarts, vlens;
 	QVector<int> viewLineOfLine, lineOfViewLine;
 	for( int ln = 0; ng.isEmpty() && ln < lstarts.size(); ++ln ) {
@@ -82,13 +83,15 @@ static bool checkAll(const ViewLineMgr& vm, const QString& model, int width, con
 			int w = 0;
 			for( pos_t i = 0; i < llen; ) {
 				qsizetype adv;
-				int cw = refCharWidth(model, ls + i, adv);
+				int cw = refCharWidth(model, ls + i, adv, w, tabWidth);
 				if( w > 0 && w + cw > width ) {
 					vstarts.push_back(ls + segStart);
 					vlens.push_back(i - segStart);
 					lineOfViewLine.push_back(ln);
 					segStart = i;
 					w = 0;
+					if( model[ls + i] == QChar('\t') )
+						cw = refCharWidth(model, ls + i, adv, 0, tabWidth);
 					++expectInLine;
 				}
 				w += cw;
@@ -126,7 +129,7 @@ static bool checkAll(const ViewLineMgr& vm, const QString& model, int width, con
 		int col = 0;
 		for( pos_t i = vstarts[expect]; i < p; ) {
 			qsizetype adv;
-			col += refCharWidth(model, i, adv);
+			col += refCharWidth(model, i, adv, col, tabWidth);
 			i += adv;
 		}
 		if( vm.viewLineColumnAtPos(p) != col )
@@ -193,18 +196,28 @@ static void test_fixed()
 		verify(vm.viewLineColumnAtPos(3) == 2, "straddle column after wide char");
 		checkAll(vm, model, 3, "wide char straddle");
 	}
-	//	タブ幅（半角空白2文字分）
+	//	タブ幅（デフォルト4、タブストップ方式）
 	output("  test: tab width\n");
 	{
 		ViewLineMgr vm;
-		vm.setLineWidth(4);
-		QString model = "a\tb";	//	幅 1+2+1 = 4
+		verify(vm.tabWidth() == 4, "default tab width is 4");
+		vm.setLineWidth(5);
+		QString model = "a\tb";	//	'a'(col 0->1) + '\t'(col 1->4) + 'b'(col 4->5) = 幅 5
 		vm.insert(0, model.constData(), model.size());
-		verify(vm.viewLineCount() == 1, "tab fits in width 4");
-		checkAll(vm, model, 4, "tab width");
+		verify(vm.viewLineCount() == 1, "tab fits in width 5");
+		verify(vm.viewLineColumnAtPos(2) == 4, "tab advances to column 4");
+		checkAll(vm, model, 5, "tab width");
+		vm.setLineWidth(4);
+		verify(vm.viewLineCount() == 2, "tab+b wraps at width 4");
+		checkAll(vm, model, 4, "tab width narrowed to 4");
 		vm.setLineWidth(3);
-		verify(vm.viewLineCount() == 2, "tab wraps at width 3");
-		checkAll(vm, model, 3, "tab width narrowed");
+		verify(vm.viewLineCount() == 2, "tab wraps onto next line at width 3");
+		checkAll(vm, model, 3, "tab width narrowed to 3");
+		vm.setTabWidth(2);
+		vm.setLineWidth(4);
+		verify(vm.viewLineCount() == 1, "tabWidth 2 fits in width 4");	//	'a'(1)+'\t'(1)+'b'(1) = 3
+		verify(vm.viewLineColumnAtPos(2) == 2, "tabWidth 2 advances to column 2");
+		checkAll(vm, model, 4, "tabWidth changed to 2");
 	}
 	//	空行も表示行1行
 	output("  test: empty line\n");

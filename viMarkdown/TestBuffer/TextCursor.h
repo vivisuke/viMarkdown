@@ -191,7 +191,7 @@ private:
 		pos_t s = mgr.viewLineStartPos(viewLine);
 		int col = 0;
 		for( pos_t i = s; i < pos; ++i )
-			col += ViewLineMgr::charWidth(m_doc->characterAt(i));
+			col += mgr.charWidth(m_doc->characterAt(i), col);
 		return col;
 	}
 	pos_t posAtDisplayColumn(int viewLine, int goal) const {
@@ -201,7 +201,7 @@ private:
 		int col = 0;
 		pos_t i = 0;
 		while( i < len && col < goal ) {
-			col += ViewLineMgr::charWidth(m_doc->characterAt(s + i));
+			col += mgr.charWidth(m_doc->characterAt(s + i), col);
 			++i;
 		}
 		return s + i;

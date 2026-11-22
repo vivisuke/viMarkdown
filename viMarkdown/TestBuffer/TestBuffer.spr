@@ -17,8 +17,8 @@ SPR# 状 P Open  Close ver     Type  概要
 0013 ◎ C 11/22 11/22 0001 │ToDo│TextEdit：Ctrl + ← → で単語単位カーソル移動（cursor.movePosition も要修正）
 0014 ◎ C 11/22 11/22 0001 │問題│TextEdit：IME ON できない
 0015 ◎ C 11/22 11/22 0001 │ToDo│File > Open... メニュー追加、オープン処理
-0016 ● C 11/22            │ToDo│
-0017 ● C 11/22            │ToDo│
-0018 ● C 11/22            │ToDo│
-0019 ● C 11/22            │ToDo│
+0016 ◎ C 11/22 11/22 0001 │ToDo│タブ幅のデフォルルトは４に
+0017 ● C 11/22            │ToDo│md ファイルを読み込んだ場合、Tab → "  " 変換
+0018 ● C 11/22            │ToDo│行番号エリア：行番号の右に2文字分空白をあけておく
+0019 ● C 11/22            │ToDo│File > Recent Files メニュー追加
 0020 ● C 11/22            │ToDo│

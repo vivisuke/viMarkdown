@@ -16,6 +16,8 @@
 //----------------------------------------------------------------------
 
 class LineNumberArea;
+class QFontMetrics;
+class QPainter;
 
 class TextEdit : public QAbstractScrollArea
 {
@@ -35,6 +37,10 @@ public:
 	//	行間（フォントの行高に追加するピクセル数）
 	void setLineSpacing(int extraPx);
 	int lineSpacing() const { return m_lineSpacing; }
+
+	//	タブ幅（半角文字数、デフォルト4）
+	void setTabWidth(int width);
+	int tabWidth() const { return m_doc.lineMgr().tabWidth(); }
 
 	int lineNumberAreaWidth() const;	//	行番号エリアの幅（半角8文字分）
 	void lineNumberAreaPaintEvent(QPaintEvent *event);	//	LineNumberArea の描画（エリアから呼ばれる）
@@ -57,6 +63,8 @@ protected:
 private:
 	int lineHeight() const;
 	int pageLines() const;
+	int tabStopPixels(const QFontMetrics &fm) const;
+	int drawLineText(QPainter &painter, int x, int yBaseline, const QString &text, const QFontMetrics &fm, int tabPx) const;
 	int xOfPos(TextDocument::pos_t pos) const;	//	位置の x 座標（左マージン込み）
 	TextDocument::pos_t posFromPoint(const QPoint &pt) const;
 	void updateScrollBars();

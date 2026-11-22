@@ -8,7 +8,7 @@
 //	ViewLineMgr: LineMgr にソフト改行（折り返し）による表示行管理を加えたもの
 //
 //	・論理行を、行幅（半角単位、デフォルト70）で折り返した表示行に分割する
-//	・文字幅：半角=1、全角=2、タブ=2（半角空白2文字分として固定）
+//	・文字幅：半角=1、全角=2、タブ=タブストップ（デフォルト4、次の tabWidth の倍数桁まで）
 //	・全角文字が行幅を跨ぐ場合は、その文字の手前で切り、行末に空きが残る
 //	・行頭・行末の禁則処理は行わない
 //	・空行（長さ0の論理行）も表示行1行として数える
@@ -94,19 +94,18 @@ public:
 	void setLineWidth(int width) {
 		if( width == m_lineWidth ) return;
 		m_lineWidth = width;
-		//	全行を再ラップし、表示行開始番号を再構築する
-		m_vStart.clear();
-		m_vOffset = 0;
-		m_viewLineTotal = 0;
-		pos_t acc = 0;
-		for( int ln = 0; ln < lineCount(); ++ln ) {
-			m_vStart.push_back(acc);
-			rewrapLine(ln);
-			acc += segCount(ln);
-		}
-		m_viewLineTotal = (int)acc;
+		rewrapAll();
 	}
 	int lineWidth() const { return m_lineWidth; }
+
+	//	タブ幅（半角単位、デフォルト4、最小1）
+	void setTabWidth(int width) {
+		if( width < 1 ) width = 1;
+		if( width == m_tabWidth ) return;
+		m_tabWidth = width;
+		rewrapAll();
+	}
+	int tabWidth() const { return m_tabWidth; }
 
 	//	表示行情報
 	int viewLineCount() const { return m_viewLineTotal; }
@@ -153,16 +152,16 @@ public:
 				col += 2;
 				i += 2;
 			} else {
-				col += charWidth(ch);
+				col += charWidth(ch, col);
 				++i;
 			}
 		}
 		return col;
 	}
 
-	//	文字幅（半角単位）：タブ=2、全角=2、それ以外=1
-	static int charWidth(QChar ch) {
-		if( ch == QChar('\t') ) return 2;
+	//	文字幅（半角単位）：タブ=次のタブストップまで、全角=2、それ以外=1
+	int charWidth(QChar ch, int col = 0) const {
+		if( ch == QChar('\t') ) return m_tabWidth - (col % m_tabWidth);
 		return isFullWidth(ch.unicode()) ? 2 : 1;
 	}
 	static bool isFullWidth(uint u) {	//	East Asian Width の W / F（BMP内）
@@ -186,6 +185,19 @@ private:
 	};
 
 	int segCount(int line) const { return (int)m_vinfo[line].breaks.size() + 1; }
+	//	全行を再ラップし、表示行開始番号を再構築する
+	void rewrapAll() {
+		m_vStart.clear();
+		m_vOffset = 0;
+		m_viewLineTotal = 0;
+		pos_t acc = 0;
+		for( int ln = 0; ln < lineCount(); ++ln ) {
+			m_vStart.push_back(acc);
+			rewrapLine(ln);
+			acc += segCount(ln);
+		}
+		m_viewLineTotal = (int)acc;
+	}
 	//	論理行を現在の行幅で再ラップする
 	void rewrapLine(int line) {
 		std::vector<pos_t>& breaks = m_vinfo[line].breaks;
@@ -202,12 +214,13 @@ private:
 				cw = 2;		//	BMP外は全角扱い
 				adv = 2;
 			} else {
-				cw = charWidth(ch);
+				cw = charWidth(ch, width);
 				adv = 1;
 			}
 			if( width > 0 && width + cw > m_lineWidth ) {
 				breaks.push_back(i);	//	この文字の手前で切る
 				width = 0;
+				if( ch == QChar('\t') ) cw = charWidth(ch, 0);
 			}
 			width += cw;
 			i += adv;
@@ -236,4 +249,5 @@ private:
 	pos_t					m_vOffset = 0;
 	int						m_viewLineTotal = 1;	//	表示行の総数
 	int						m_lineWidth = 70;	//	行幅（半角単位）
+	int						m_tabWidth = 4;		//	タブ幅（半角単位）
 };
