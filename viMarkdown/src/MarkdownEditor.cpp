@@ -2142,7 +2142,7 @@ int indexOf(bool &inComment, const QString& buf, int ix, QChar ch, bool isNextBl
 			++ix;
 		}
 	}
-	if( !inComment && !isNextBlankLine && ch == u' ' ) return ix;
+	//	GFM 方式では行末改行を半角スペースに結合しないため、ix == buf.size() を返さない（範囲外アクセス・無限ループ防止）
 	return -1;
 }
 bool isPrevEmptyBlock(QTextBlock block) {
@@ -2371,7 +2371,7 @@ int MarkdownEditor::findPosition(const PosContext &context) {
 			bool isNextBlankLine = !block.next().isValid() || block.next().text().isEmpty();
 			const BlockData* data = getBlockData(block);
 			while( (ix = indexOf(inComment, buf, ix, ch, isNextBlankLine, data)) >= 0 ) {
-				if( charFlags[ix] == PCF_VISIBLE && --nth == 0 ) break;
+				if( ix < charFlags.size() && charFlags[ix] == PCF_VISIBLE && --nth == 0 ) break;
 				++ix;
 			}
 			if (nth == 0) break;
