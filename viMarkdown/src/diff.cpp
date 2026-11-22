@@ -618,6 +618,13 @@ void MainWindow::onAction_DiffMode(bool checked) {
 		//bool b = docWidget->m_editor->document()->isModified();
 		//qDebug() << "modified = " << b;
 	} else {
+		if( docWidget->m_diffMode && !confirmSaveDiffPeer(docWidget) ) {
+			QSignalBlocker blocker(ui->action_DiffMode);
+			ui->action_DiffMode->setChecked(true);
+			--m_doing_diff;
+			return;
+		}
+		docWidget->m_diffview->document()->setModified(false);
 		docWidget->m_diffMode = false;
 		docWidget->m_hasSavedDiffScroll = false;
 		docWidget->m_diffPeerFullPath.clear();

@@ -1043,13 +1043,17 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 void MainWindow::onCurrentTabChanged(int ix) {
 	updateUndoRedoEnabled();
 	DocWidget *docWidget = getCurDocWidget();
-	if( docWidget == nullptr ) return;
+	if( docWidget == nullptr ) {
+		QSignalBlocker blocker(ui->action_DiffMode);
+		ui->action_DiffMode->setChecked(false);
+		return;
+	}
 	if( m_processing != 0 ) return;		//	再入禁止
 	++m_processing;
 	//##qDebug() << "MainWindow::onCurrentTabChanged()";
-	ui->action_DiffMode->setChecked(docWidget->m_diffMode);
-	if( docWidget->m_diffMode && !docWidget->m_diffPeerFullPath.isEmpty() ) {
-		docWidget->m_diffviewLabel->setText(docWidget->m_diffPeerFullPath);
+	{
+		QSignalBlocker blocker(ui->action_DiffMode);
+		ui->action_DiffMode->setChecked(docWidget->m_diffMode);
 	}
 	m_altFullPath = m_curFullPath;
 	m_altTitle = m_curTitle;
