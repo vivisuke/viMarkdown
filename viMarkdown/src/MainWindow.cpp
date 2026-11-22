@@ -2366,9 +2366,12 @@ void MainWindow::do_save(const QString& fullPath, int ix) {
 	if( ix < 0 ) return;
 	DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(ix);
 	if( docWidget == nullptr ) return;
-	addToRecentFiles(fullPath);
+	QString absTarget = QDir::cleanPath(QFileInfo(fullPath).absoluteFilePath());
+	bool isSameFile = !docWidget->m_fullPath.isEmpty()
+		&& absTarget.compare(QDir::cleanPath(QFileInfo(docWidget->m_fullPath).absoluteFilePath()), Qt::CaseInsensitive) == 0;
 	docWidget->m_saving = true;
-	m_watcher->removePath(fullPath);		//	一旦ウォッチリストから外す
+	if( isSameFile )
+		m_watcher->removePath(fullPath);		//	一旦ウォッチリストから外す
 	QFile file(fullPath);
 	if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
 		QTextStream out(&file);
@@ -2387,16 +2390,20 @@ void MainWindow::do_save(const QString& fullPath, int ix) {
 		} else
 			out << mdEditor->toPlainText();
 		file.close();
-		//QMessageBox::information(nullptr, "成功", "ファイルが保存されました:\n" + fullPath);
-		docWidget->setModified(false);		//	保存済み
-		ui->tabWidget->setTabText(ix, docWidget->m_title);
-		m_watcher->addPath(fullPath);
-		docWidget->m_hasSaved = true;		//	保存済み for 自動更新
+		addToRecentFiles(absTarget);
+		if( isSameFile ) {
+			docWidget->setModified(false);		//	保存済み
+			ui->tabWidget->setTabText(ix, docWidget->m_title);
+			docWidget->m_hasSaved = true;		//	保存済み for 自動更新
+		}
+		statusBar()->showMessage(tr("Saved: %1").arg(fullPath), 5000);
 	} else {
-		//QMessageBox::warning(nullptr, "エラー", "ファイルを開けませんでした。");
+		QMessageBox::warning(this, tr("Error"), tr("Cannot write file:\n%1").arg(fullPath));
+		statusBar()->showMessage(tr("Cannot write file: %1").arg(fullPath), 5000);
 	}
 	docWidget->m_saving = false;
-	m_watcher->addPath(fullPath);
+	if( isSameFile )
+		m_watcher->addPath(fullPath);
 	//QDate today = QDate::currentDate();
 	onCalendarPageChanged(ui->calendarWidget->yearShown(), ui->calendarWidget->monthShown());		//	ちょっち手抜き
 }
