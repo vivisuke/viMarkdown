@@ -2082,6 +2082,33 @@ bool parse_subst(const QString &text, int &ix, QString &pat, QString &after, boo
 
 	return true;
 }
+//	diff モード時、1始まり行範囲 [rangeStart, rangeEnd] 内の実在行を物理行番号（1始まり）へ変換し、
+//	両ペインのダミー行を除去する。範囲内に実在行が無ければ false を返す（#1451, #1455）
+static bool stripDummyAndConvertRange(DocWidget *docWidget, MarkdownEditor *ed, int &rangeStart, int &rangeEnd, bool &removedDummy) {
+	removedDummy = false;
+	if (docWidget == nullptr || !docWidget->m_diffMode || ed == nullptr)
+		return true;
+	if (!docWidget->m_editor->dummyInserted() && !docWidget->m_diffview->dummyInserted())
+		return true;
+	const auto &vbn = ed->diffBlockNumbers();
+	int physStart = -1, physEnd = -1;
+	for (int line = rangeStart; line <= rangeEnd; ++line) {
+		int bn = line - 1;
+		if (bn >= 0 && bn < (int)vbn.size() && vbn[bn] >= 0) {
+			int phys = vbn[bn] + 1;
+			if (physStart < 0) physStart = phys;
+			physEnd = phys;
+		}
+	}
+	if (physStart < 0)
+		return false;
+	docWidget->m_editor->removeAllDummyLines();
+	docWidget->m_diffview->removeAllDummyLines();
+	removedDummy = true;
+	rangeStart = physStart;
+	rangeEnd = physEnd;
+	return true;
+}
 void MainWindow::do_global(const QString &text, int ix, QTextCursor& cursor, QTextDocument* doc, DocWidget* docWidget) {
 	while (ix < text.length() && text.at(ix).isSpace()) ++ix;
 	if (ix >= text.length())	// エラー：セパレータが存在しない
@@ -2127,12 +2154,13 @@ void MainWindow::do_global(const QString &text, int ix, QTextCursor& cursor, QTe
         //##qDebug() << "Invalid regexp:" << re.errorString();
         return; // パターンが不正な場合は中断
     }
-    int startIdx = qMax(0, gvi.m_rangeStart - 1);
-    int endIdx = qMin(doc->blockCount() - 1, gvi.m_rangeEnd - 1);
-    if( gvi.m_nRange == 0 ) {		//	{range}が無かった場合
-    	startIdx = 0;
-    	endIdx = doc->blockCount() - 1;
-    }
+    int rangeStart = gvi.m_nRange == 0 ? 1 : qMax(1, gvi.m_rangeStart);
+    int rangeEnd = gvi.m_nRange == 0 ? doc->blockCount() : qMin(doc->blockCount(), gvi.m_rangeEnd);
+    bool removedDummy = false;
+    if (!stripDummyAndConvertRange(docWidget, gvi.m_editor, rangeStart, rangeEnd, removedDummy))
+        return;
+    int startIdx = qMax(0, rangeStart - 1);
+    int endIdx = qMin(doc->blockCount() - 1, rangeEnd - 1);
     //	マッチ行番号（1始まり）を事前収集する。
     //	削除時の再ハイライトによる userState() == -1 化や無効ブロック参照を防ぐため（#1454）
     QList<int> matchedLines;
@@ -2143,7 +2171,10 @@ void MainWindow::do_global(const QString &text, int ix, QTextCursor& cursor, QTe
         }
         block = block.next();
     }
-    if (matchedLines.isEmpty()) return;
+    if (matchedLines.isEmpty()) {
+        if (removedDummy) do_diff();
+        return;
+    }
     //	コマンド実行
     gvi.m_editor->openUndoBlock();
     if( is_match(cmd, "d(elete") ) {
@@ -2160,6 +2191,8 @@ void MainWindow::do_global(const QString &text, int ix, QTextCursor& cursor, QTe
 	    }
     }
     gvi.m_editor->closeUndoBlock();
+    if (removedDummy && !docWidget->m_editor->dummyInserted() && !docWidget->m_diffview->dummyInserted())
+        do_diff();
 }
 void MainWindow::do_subst(const QString &text, int ix, QTextDocument* doc) {
 	QString pat;
@@ -2187,28 +2220,9 @@ void MainWindow::do_subst(const QString &text, int ix, QTextDocument* doc) {
 	int rangeEnd = gvi.m_rangeEnd;
 	DocWidget *docWidget = getCurDocWidget();
 	bool removedDummy = false;
-	if (docWidget != nullptr && docWidget->m_diffMode && gvi.m_editor != nullptr
-		&& (docWidget->m_editor->dummyInserted() || docWidget->m_diffview->dummyInserted())) {
-		//	diff モード：ダミー行除去前に範囲内の実在行の物理行番号（1始まり）へ変換する（#1451）
-		const auto &vbn = gvi.m_editor->diffBlockNumbers();
-		int physStart = -1, physEnd = -1;
-		for (int line = rangeStart; line <= rangeEnd; ++line) {
-			int bn = line - 1;
-			if (bn >= 0 && bn < (int)vbn.size() && vbn[bn] >= 0) {
-				int phys = vbn[bn] + 1;
-				if (physStart < 0) physStart = phys;
-				physEnd = phys;
-			}
-		}
-		if (physStart < 0) {
-			statusBar()->showMessage(tr("No match found."), 5000);
-			return;
-		}
-		docWidget->m_editor->removeAllDummyLines();
-		docWidget->m_diffview->removeAllDummyLines();
-		removedDummy = true;
-		rangeStart = physStart;
-		rangeEnd = physEnd;
+	if (!stripDummyAndConvertRange(docWidget, gvi.m_editor, rangeStart, rangeEnd, removedDummy)) {
+		statusBar()->showMessage(tr("No match found."), 5000);
+		return;
 	}
 	QTextCursor cursor(doc);
 	cursor.beginEditBlock();
@@ -2560,39 +2574,46 @@ void MainWindow::do_exCmd(const QString &text, int ix, /*QString cmd, QChar nch,
 			do_save(arg);
 		}
 	} else if( is_match(cmd, "d(elete") ) {
-		QTextBlock startBlock = doc->findBlockByNumber(gvi.m_rangeStart - 1);
-		QTextBlock endBlock = doc->findBlockByNumber(gvi.m_rangeEnd - 1);
-		if( startBlock.isValid() && endBlock.isValid() ) {
-			QTextCursor cursor(doc);
-			cursor.beginEditBlock(); // Undo/Redo を1回にまとめる
-			
-			int startPos = startBlock.position();
-			int endPos;
-			
-			if( endBlock.next().isValid() ) {
-				// 次の行が存在する場合は、次の行の開始位置まで選択（対象行の末尾改行も削除に含める）
-				endPos = endBlock.next().position();
-			} else {
-				// 最終行を削除する場合
-				endPos = doc->characterCount() - 1;
-				// 前の行が存在する場合は、前の行の末尾改行から削除対象に含める（不要な空行残りを防止）
-				if( startBlock.previous().isValid() ) {
-					startPos = startBlock.previous().position() + startBlock.previous().length() - 1;
+		int rangeStart = gvi.m_rangeStart;
+		int rangeEnd = gvi.m_rangeEnd;
+		bool removedDummy = false;
+		if( stripDummyAndConvertRange(docWidget, gvi.m_editor, rangeStart, rangeEnd, removedDummy) ) {
+			QTextBlock startBlock = doc->findBlockByNumber(rangeStart - 1);
+			QTextBlock endBlock = doc->findBlockByNumber(rangeEnd - 1);
+			if( startBlock.isValid() && endBlock.isValid() ) {
+				QTextCursor cursor(doc);
+				cursor.beginEditBlock(); // Undo/Redo を1回にまとめる
+				
+				int startPos = startBlock.position();
+				int endPos;
+				
+				if( endBlock.next().isValid() ) {
+					// 次の行が存在する場合は、次の行の開始位置まで選択（対象行の末尾改行も削除に含める）
+					endPos = endBlock.next().position();
+				} else {
+					// 最終行を削除する場合
+					endPos = doc->characterCount() - 1;
+					// 前の行が存在する場合は、前の行の末尾改行から削除対象に含める（不要な空行残りを防止）
+					if( startBlock.previous().isValid() ) {
+						startPos = startBlock.previous().position() + startBlock.previous().length() - 1;
+					}
 				}
+				if( endPos > startPos ) {
+					cursor.setPosition(startPos);
+					cursor.setPosition(endPos, QTextCursor::KeepAnchor);
+					//cursor.removeSelectedText();
+					gvi.m_editor->do_deleteText(cursor);
+				}
+				cursor.endEditBlock();
+				hat(cursor);
+				QTextBlock block = cursor.block();
+				if( block.text().isEmpty() && block.blockNumber() == doc->blockCount() - 1 && block.previous().isValid() ) {
+				    // 末尾まで削除した場合：カーソルを前の行の非空白先頭へ
+				    cursor.setPosition(block.previous().position());
+				    hat(cursor);
+				}
+				gvi.m_editor->setTextCursor(cursor);
 			}
-			cursor.setPosition(startPos);
-			cursor.setPosition(endPos, QTextCursor::KeepAnchor);
-			//cursor.removeSelectedText();
-			gvi.m_editor->do_deleteText(cursor);
-			cursor.endEditBlock();
-			hat(cursor);
-			QTextBlock block = cursor.block();
-			if( block.text().isEmpty() && block.blockNumber() == doc->blockCount() - 1 && block.previous().isValid() ) {
-			    // 末尾まで削除した場合：カーソルを前の行の非空白先頭へ
-			    cursor.setPosition(block.previous().position());
-			    hat(cursor);
-			}
-			gvi.m_editor->setTextCursor(cursor);
 		}
 	} else if( is_match(cmd, "p(rint") ) {
 		for(int ln = gvi.m_rangeStart; ln <= gvi.m_rangeEnd; ++ln) {
