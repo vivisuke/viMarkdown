@@ -1927,6 +1927,7 @@ int parseLineSpec(const QString &text, int &i, int currentLine, int totalLines, 
         i++;
     } else if( c == '/' || c == '?' ) {
     	line = do_search_line(text, i, currentLine, doc);
+    	if( line < 0 ) return -1;	//	未発見・不正構文はクランプせずエラーとして返す（#1450）
     } else if( c == '+' || c == '-' ) {
         line = currentLine;
     } else {
@@ -2434,7 +2435,10 @@ void MainWindow::do_exCmd(const QString &text, QTextCursor& cursor) {
 				break;	//	行番号無し
 			}
 			++gvi.m_nRange;
-			if( gvi.m_rangeEnd < 0 ) return;
+			if( gvi.m_rangeEnd < 0 ) {
+				statusBar()->showMessage(tr("Pattern not found / invalid range."), 5000);
+				return;
+			}
 			if( ix >= text.size() || text[ix] != ',' && text[ix] != ';' ) break;
 			if( text[ix] == ';' ) currentLine = gvi.m_rangeEnd;
 			++ix;
