@@ -4,6 +4,7 @@
 #include <QClipboard>
 #include <QFontDatabase>
 #include <QFontMetrics>
+#include <QFontMetricsF>
 #include <QInputMethod>
 #include <QInputMethodEvent>
 #include <QKeyEvent>
@@ -15,12 +16,28 @@
 
 namespace {
 const int LEFT_MARGIN = 2;
+
+QFont defaultEditorFont()
+{
+	const QStringList candidates = {
+		QStringLiteral("BIZ UDGothic"),
+		QStringLiteral("MS Gothic"),
+	};
+	for( const QString &name : candidates ) {
+		if( QFontDatabase::hasFamily(name) ) {
+			QFont f(name, 10);
+			f.setStyleHint(QFont::Monospace);
+			return f;
+		}
+	}
+	return QFontDatabase::systemFont(QFontDatabase::FixedFont);
+}
 }
 
 TextEdit::TextEdit(QWidget *parent)
 	: QAbstractScrollArea(parent), m_cursor(&m_doc)
 {
-	setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
+	setFont(defaultEditorFont());
 	setFocusPolicy(Qt::StrongFocus);
 	setAttribute(Qt::WA_InputMethodEnabled, true);
 	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -189,9 +206,11 @@ void TextEdit::updateScrollBars()
 
 void TextEdit::updateWrapWidth()
 {
-	int unit = fontMetrics().horizontalAdvance(QChar(' '));
-	if( unit <= 0 ) unit = 1;
-	int units = viewport()->width() / unit;
+	const QFontMetricsF fmF(font());
+	qreal unit = fmF.horizontalAdvance(QChar(' '));
+	if( unit <= 0.0 ) unit = 1.0;
+	int avail = viewport()->width() - LEFT_MARGIN * 2;
+	int units = (int)(avail / unit);
 	if( units < 1 ) units = 1;
 	if( m_doc.lineMgr().lineWidth() != units ) {
 		m_doc.lineMgr().setLineWidth(units);

@@ -21,6 +21,9 @@ public:
 
 private:
     void onOpen();
+    bool openFile(const QString &filePath);
+    void addToRecentFiles(const QString &fullPath);
+    void onAboutToShow_RecentFiles();
 
     Ui::MainWindowClass *ui;
     TextEdit *m_textEdit = nullptr;
