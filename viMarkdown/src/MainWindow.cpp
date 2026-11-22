@@ -678,16 +678,34 @@ void MainWindow::onAction_Find() {
 	m_searchCB->setFocus();
 }
 void MainWindow::do_replace_next(const QString srcText, const QString dstText) {
+	if( srcText.isEmpty() ) return;
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
 	MarkdownEditor *mdEditor = docWidget->m_editor;
 	QTextCursor cursor = mdEditor->textCursor();
 	if( cursor.hasSelection() ) {
-		//cursor.insertText(dstText);
-		mdEditor->do_insertText(cursor, dstText);
-		mdEditor->setTextCursor(cursor);
-		m_replaceHist.push_front(dstText);
-		m_replaceHist.removeDuplicates();	//	重複削除
+		QString selected = cursor.selectedText();
+		selected.replace(QChar::ParagraphSeparator, u'\n');
+		bool matched = false;
+		if( g.m_regexp ) {
+			QRegularExpression::PatternOptions opts = QRegularExpression::NoPatternOption;
+			if( g.m_ignoreCase )
+				opts |= QRegularExpression::CaseInsensitiveOption;
+			QRegularExpression re(srcText, opts);
+			if( re.isValid() ) {
+				QRegularExpressionMatch m = re.match(selected);
+				matched = m.hasMatch() && m.capturedStart() == 0 && m.capturedLength() == selected.size();
+			}
+		} else {
+			matched = (selected.compare(srcText, g.m_ignoreCase ? Qt::CaseInsensitive : Qt::CaseSensitive) == 0);
+		}
+		if( matched ) {
+			//cursor.insertText(dstText);
+			mdEditor->do_insertText(cursor, dstText);
+			mdEditor->setTextCursor(cursor);
+			m_replaceHist.push_front(dstText);
+			m_replaceHist.removeDuplicates();	//	重複削除
+		}
 	}
 	do_search(srcText, false);
 }

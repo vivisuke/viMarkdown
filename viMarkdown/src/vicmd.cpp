@@ -1521,6 +1521,7 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 	} else if( cmd == u'R' ) {
 		gvi.m_currentMode = ViMode::Replace;
 		gvi.m_editor->setOverwriteMode(true);
+		gvi.m_editor->openUndoBlock();
 	} else if( cmd == 'x' || cmd == 'X' || cmd == 'D' ) {
 		do_vi_delete(cmd, cursor,rcnt);
 	}

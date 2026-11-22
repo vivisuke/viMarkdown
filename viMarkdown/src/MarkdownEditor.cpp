@@ -750,6 +750,15 @@ void MarkdownEditor::inputMethodEvent(QInputMethodEvent *event) {
 
 	bool pushedUndo = false;
 	if( willModifyDoc ) {
+		if( overwriteMode() && repLen == 0 && !cur.hasSelection() && !commit.isEmpty() && !cur.atBlockEnd() ) {
+			const QTextBlock block = cur.block();
+			const int remain = (block.position() + block.text().size()) - cur.position();
+			const int ovLen = qMin((int)commit.size(), remain);
+			if( ovLen > 0 ) {
+				cur.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, ovLen);
+				setTextCursor(cur);
+			}
+		}
 		if( repLen > 0 ) {
 			bool openedBlock = false;
 			if( cur.hasSelection() ) {
@@ -1509,6 +1518,13 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 		m_docWidget->m_diffview->removeAllDummyLines();
 	}
 	if( !txt.isEmpty() && (e->modifiers() & Qt::ControlModifier) == 0 ) {
+		if( overwriteMode() && !cursor.hasSelection() && !cursor.atBlockEnd() ) {
+			const QTextBlock block = cursor.block();
+			const int remain = (block.position() + block.text().size()) - cursor.position();
+			const int ovLen = qMin((int)txt.size(), remain);
+			if( ovLen > 0 )
+				cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, ovLen);
+		}
 		qDebug() << "doc->isUndoRedoEnabled() = " << document()->isUndoRedoEnabled();
 		QElapsedTimer timer;
 	    timer.start();
