@@ -33,19 +33,19 @@ void resetBlockGFlag(QTextDocument* doc) {
 	QTextBlock block = doc->firstBlock();
 	while( block.isValid() ) {
 		int us = block.userState();
-		if( us == -1 ) 
-			block.setUserState(0);
-		else
+		if( us != -1 )
 			block.setUserState(us & ~BLOCK_GFLAG);
 		block = block.next();
 	}
 }
 void setBlockGFlag(QTextBlock &block) {
 	int us = block.userState();
+	if( us == -1 ) us = BT_DEFAULT;
 	block.setUserState(us | BLOCK_GFLAG);
 }
 bool blockGFlag(const QTextBlock &block) {
-	return (block.userState() & BLOCK_GFLAG) != 0;
+	int us = block.userState();
+	return us != -1 && (us & BLOCK_GFLAG) != 0;
 }
 int getRepeatCount() {
 	if( gvi.m_repeatCount == 0 ) return 1;
@@ -2118,7 +2118,6 @@ void MainWindow::do_global(const QString &text, int ix, QTextCursor& cursor, QTe
 	QString cmd = text.mid(i + 1).trimmed();
 	//##qDebug() << "pat = " << pat;
 	//##qDebug() << "cmd = " << cmd;
-	resetBlockGFlag(doc);
 	QRegularExpression::PatternOptions options = QRegularExpression::NoPatternOption;
     if (g.m_ignoreCase) { // 大文字小文字同一視オプションの反映
         options |= QRegularExpression::CaseInsensitiveOption;
@@ -2134,36 +2133,30 @@ void MainWindow::do_global(const QString &text, int ix, QTextCursor& cursor, QTe
     	startIdx = 0;
     	endIdx = doc->blockCount() - 1;
     }
-    // 範囲の開始位置から直接 QTextBlock を取得（先頭からの無駄なループを回避）
+    //	マッチ行番号（1始まり）を事前収集する。
+    //	削除時の再ハイライトによる userState() == -1 化や無効ブロック参照を防ぐため（#1454）
+    QList<int> matchedLines;
     QTextBlock block = doc->findBlockByNumber(startIdx);
     while (block.isValid() && block.blockNumber() <= endIdx) {
-        // 行のテキストが正規表現にマッチするか確認
         if (block.text().contains(re)) {
-            setBlockGFlag(block); // GFlag設定関数
+            matchedLines.append(block.blockNumber() + 1);
         }
         block = block.next();
     }
+    if (matchedLines.isEmpty()) return;
     //	コマンド実行
     gvi.m_editor->openUndoBlock();
     if( is_match(cmd, "d(elete") ) {
-	    block = doc->findBlockByNumber(endIdx);
-	    while (block.isValid() && block.blockNumber() >= startIdx) {
-	        if( blockGFlag(block) ) {
-	        	gvi.m_rangeStart = gvi.m_rangeEnd = block.blockNumber() + 1;
-	        	int ix = 0;
-	        	do_exCmd(cmd, ix, cursor, doc, docWidget);
-	        }
-	        block = block.previous();
+	    for(int k = (int)matchedLines.size() - 1; k >= 0; --k) {
+	        gvi.m_rangeStart = gvi.m_rangeEnd = matchedLines[k];
+	        int ix = 0;
+	        do_exCmd(cmd, ix, cursor, doc, docWidget);
 	    }
     } else {
-	    block = doc->findBlockByNumber(startIdx);
-	    while (block.isValid() && block.blockNumber() <= endIdx) {
-	        if( blockGFlag(block) ) {
-	        	gvi.m_rangeStart = gvi.m_rangeEnd = block.blockNumber() + 1;
-	        	int ix = 0;
-	        	do_exCmd(cmd, ix, cursor, doc, docWidget);
-	        }
-	        block = block.next();
+	    for(int ln : matchedLines) {
+	        gvi.m_rangeStart = gvi.m_rangeEnd = ln;
+	        int ix = 0;
+	        do_exCmd(cmd, ix, cursor, doc, docWidget);
 	    }
     }
     gvi.m_editor->closeUndoBlock();
