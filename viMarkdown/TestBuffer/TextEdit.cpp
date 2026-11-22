@@ -2,6 +2,7 @@
 
 #include <QApplication>
 #include <QClipboard>
+#include <QFontDatabase>
 #include <QFontMetrics>
 #include <QInputMethod>
 #include <QInputMethodEvent>
@@ -19,6 +20,7 @@ const int LEFT_MARGIN = 2;
 TextEdit::TextEdit(QWidget *parent)
 	: QAbstractScrollArea(parent), m_cursor(&m_doc)
 {
+	setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
 	setFocusPolicy(Qt::StrongFocus);
 	setAttribute(Qt::WA_InputMethodEnabled, true);
 	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -238,7 +240,7 @@ void TextEdit::lineNumberAreaPaintEvent(QPaintEvent *event)
 	const int top = verticalScrollBar()->value();
 	const ViewLineMgr &mgr = m_doc.lineMgr();
 	const int rows = m_lineNumberArea->height() / lh + 1;
-	const int right = m_lineNumberArea->width() - 2;	//	右端に 2px 空ける
+	const int right = m_lineNumberArea->width() - fm.horizontalAdvance(QChar(' ')) * 2;	//	右端に半角2文字分の余白を空ける
 	painter.setPen(palette().color(QPalette::Text));
 	for( int i = 0; i < rows; ++i ) {
 		int viewLine = top + i;

@@ -65,6 +65,9 @@ void MainWindow::onOpen()
     file.close();
 
     QFileInfo fi(filePath);
+    if (fi.suffix().compare(QStringLiteral("md"), Qt::CaseInsensitive) == 0) {
+        text.replace(QChar('\t'), QStringLiteral("  "));
+    }
     m_lastDir = fi.absolutePath();
     m_textEdit->setPlainText(text);
     m_textEdit->document()->setModified(false);
