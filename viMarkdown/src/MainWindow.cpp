@@ -570,18 +570,21 @@ void MainWindow::onAction_Replace() {
 	}
 }
 void MainWindow::do_grep(const QString &searchText, const QString &dirPath, bool grepSubDir) {
-	QDir directory(dirPath);
 	QStringList filters;
     filters << "*.md";
-    QFileInfoList fileList = directory.entryInfoList(filters, QDir::Files | QDir::NoDotAndDotDot);
-    do_output(QString(tr("Grepping '%1' in *.md under '%2' ...\n")).arg(searchText).arg(dirPath));
-    //int cnt = 0, nfiles = 0;
     auto ic = g.m_ignoreCase ? Qt::CaseInsensitive : Qt::CaseSensitive;
     QRegularExpression re;
     if( g.m_regexp ) {
     	auto opt = g.m_ignoreCase ? QRegularExpression::CaseInsensitiveOption : QRegularExpression::NoPatternOption;
 		re = QRegularExpression(searchText, opt);
+		if( !re.isValid() ) {
+			QString msg = tr("Invalid regular expression: %1").arg(re.errorString());
+			do_output(msg + "\n");
+			statusBar()->showMessage(msg, 5000);
+			return;
+		}
     }
+    do_output(QString(tr("Grepping '%1' in *.md under '%2' ...\n")).arg(searchText).arg(dirPath));
 #if 1
     QDirIterator::IteratorFlags flags = QDirIterator::NoIteratorFlags;
     if (grepSubDir) {
@@ -600,6 +603,7 @@ void MainWindow::do_grep(const QString &searchText, const QString &dirPath, bool
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) continue;
         bool fn_printed = false;
         QTextStream in(&file);
+        in.setAutoDetectUnicode(true);
         int lineNum = 0;
         while (!in.atEnd()) {
             lineNum++;
