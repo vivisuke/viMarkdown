@@ -1642,7 +1642,7 @@ void MarkdownEditor::tagJump_sub(QTextCursor cursor) {
 	if( ix >= 0 ) {
 		int openIX = ix;
 		int closeIX = indexOfNotEsc(text, u']', openIX);
-		if( closeIX > 0 && closeIX < text.size() && text[closeIX+1] == u'(' ) {
+		if( closeIX > 0 && closeIX + 1 < text.size() && text[closeIX+1] == u'(' ) {
 			int start = closeIX + 1;
 			int end = indexOfNotEsc(text, u')', start);
 			if( end >= ix0 ) {
