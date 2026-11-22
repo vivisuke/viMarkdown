@@ -539,6 +539,7 @@ MarkdownEditor::MarkdownEditor(const MainWindow* mainWindow, DocWidget* docWidge
 	this->setFont(font);
 	setCursorWidth(2);
 	setLineSpacing(150);
+	document()->setModified(false);
 	setCursorWidth(0);		//	デフォルトテキストカーソルを非表示に
 	//QPalette pal = palette();
 	//pal.setColor(QPalette::TextCursor, Qt::red);

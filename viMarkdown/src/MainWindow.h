@@ -410,6 +410,7 @@ protected:
     void	toggleCursor();
     void	do_settings(int page=0);
     void	do_close(bool forced = false);
+    bool	confirmSaveDiffPeer(DocWidget *docWidget);
     void	diffview_open();
     void	updateUndoRedoEnabled();
     void	onCalendarClicked(QDate date);

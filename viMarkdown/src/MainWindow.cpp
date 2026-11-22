@@ -1225,6 +1225,7 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 		editor->setHighlightMarkdown(false);
 
 	docWidget->setModified(false);
+	diffview->document()->setModified(false);
 	editor->document()->setUndoRedoEnabled(false);
 	diffview->document()->setUndoRedoEnabled(false);
 	preview->document()->setUndoRedoEnabled(false);

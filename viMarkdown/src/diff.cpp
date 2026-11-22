@@ -405,9 +405,67 @@ std::vector<QString> extractLinesFromDocument(const QTextDocument *doc) {
     lines.back() += QString("\n")+ QChar(0xffff);		//	改行＋EOF
     return lines;
 }
+bool MainWindow::confirmSaveDiffPeer(DocWidget *docWidget) {
+	if( docWidget == nullptr || docWidget->m_diffview == nullptr )
+		return true;
+	if( !docWidget->m_diffview->document()->isModified() )
+		return true;
+	QString path = docWidget->m_diffPeerFullPath;
+	QString name = path.isEmpty() ? docWidget->m_diffPeerTitle : path;
+	QString mess = QString(tr("The document '%1' has been modified.\nDo you want to save your changes ?")).arg(name);
+	QMessageBox::StandardButton reply = QMessageBox::warning(
+		this,
+		tr("Confirm save"),
+		mess,
+		QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel,
+		QMessageBox::Save
+	);
+	if( reply == QMessageBox::Save ) {
+		if( path.isEmpty() ) {
+			path = QFileDialog::getSaveFileName(
+				this,
+				"Save File",
+				QString(),
+				"markdown (*.md);;all (*.*)",
+				nullptr,
+				QFileDialog::DontUseNativeDialog
+			);
+			if( path.isEmpty() ) return false;
+			if( QFileInfo(path).suffix().isEmpty() ) path += ".md";
+		}
+		QFile file(path);
+		if( !file.open(QIODevice::WriteOnly | QIODevice::Text) ) {
+			QMessageBox::warning(this, tr("Error"), tr("Cannot write file:\n%1").arg(path));
+			return false;
+		}
+		QTextStream out(&file);
+		out.setEncoding(docWidget->m_encoding);
+		out.setGenerateByteOrderMark(docWidget->m_withBOM);
+		MarkdownEditor *diffView = docWidget->m_diffview;
+		if( diffView->dummyInserted() ) {
+			QStringList lines;
+			for( QTextBlock block = diffView->document()->firstBlock(); block.isValid(); block = block.next() ) {
+				if( isDummyLine(diffView, block) && block.text().isEmpty() ) continue;
+				lines << block.text();
+			}
+			out << lines.join(u'\n');
+		} else {
+			out << diffView->toPlainText();
+		}
+		file.close();
+		docWidget->m_diffPeerFullPath = path;
+		diffView->document()->setModified(false);
+		return true;
+	} else if( reply == QMessageBox::Discard ) {
+		return true;
+	}
+	return false;
+}
 void MainWindow::diffview_open() {		//	文書を選択して比較
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr || !docWidget->m_diffMode )
+		return;
+	if( !confirmSaveDiffPeer(docWidget) )
 		return;
 	QString fullPath = QFileDialog::getOpenFileName(
 		this,
@@ -434,6 +492,9 @@ void MainWindow::diffview_open() {		//	文書を選択して比較
     docWidget->m_diffview->diffFlags().clear();
     docWidget->m_diffview->clearNDummyLines();
 	docWidget->m_diffview->setPlainText(content);
+	docWidget->m_diffview->document()->setModified(false);
+	docWidget->m_diffview->initUndoMgr();
+	updateUndoRedoEnabled();
 }
 void MainWindow::onAction_DiffWithFile() {
 	//DocWidget *docWidget = getCurDocWidget();
@@ -474,6 +535,8 @@ void MainWindow::onAction_DiffWithFile() {
 void MainWindow::do_diff(const QString &diffPeerFullPath) {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
+	if( docWidget->m_diffMode && !confirmSaveDiffPeer(docWidget) )
+		return;
 	QFile file(diffPeerFullPath);
 	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
 		QMessageBox::warning(this, tr("Error"), tr("Cannot open file:\n%1").arg(diffPeerFullPath));
@@ -491,6 +554,9 @@ void MainWindow::do_diff(const QString &diffPeerFullPath) {
     docWidget->m_diffview->diffFlags().clear();
     docWidget->m_diffview->clearNDummyLines();
 	docWidget->m_diffview->setPlainText(content);
+	docWidget->m_diffview->document()->setModified(false);
+	docWidget->m_diffview->initUndoMgr();
+	updateUndoRedoEnabled();
 	//
 	docWidget->m_diffMode = true;
 	docWidget->m_diffPeerFullPath = diffPeerFullPath;
