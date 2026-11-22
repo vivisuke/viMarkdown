@@ -4550,6 +4550,29 @@ const QList<ViTestCase> viTestCases = {
 	        ":g/zzz/d", "┃abc\ndef\n" // マッチなし：不変
 	    }
 	},
+	{ "Ex Range - Trailing backslash does not crash (#1449)",
+	    "line 1\nli┃ne 2\nline 3\n",
+	    {
+	        ":/\\", "line 1\nli┃ne 2\nline 3\n",
+	        ":?a\\", "line 1\nli┃ne 2\nline 3\n"
+	    }
+	},
+	{ "Ex Range - Pattern not found aborts command (#1450)",
+	    "line 1\nli┃ne 2\nline 3\nline 4\nline 5\n",
+	    {
+	        ":/NO_SUCH_PAT/d", "line 1\nli┃ne 2\nline 3\nline 4\nline 5\n",
+	        ":/NO_SUCH_PAT/+2d", "line 1\nli┃ne 2\nline 3\nline 4\nline 5\n"
+	    }
+	},
+	{ "Ex Substitute - Undo via UndoMgr (#1451)",
+	    "┃hello world\nhello again\n",
+	    {
+	        "iX", "┃Xhello world\nhello again\n",
+	        ":%s/hello/goodbye_cruel/", "Xgoodbye_cruel world\n┃goodbye_cruel again\n",
+	        "u", "┃Xhello world\nhello again\n",
+	        "u", "┃hello world\nhello again\n"
+	    }
+	},
 };
 QString removeCursor(const QString &src, int &pos, int &anchor) {
 	QString dst;
@@ -5129,6 +5152,47 @@ QStringList g_diffTestCase[] = {
 		"Rb2",
 		"=AAA\n",
 		"=AAA\n",
+	},
+	{"Ex substitute in diff mode skips dummy lines and supports undo (#1451)",
+		"-\n=keep\n=aaa\n",
+		"+xxx\n=keep\n=aaa\n",
+		"L:1,1s/^/X/",
+		"-\n=keep\n=aaa\n",
+		"+xxx\n=keep\n=aaa\n",
+		"L:3,3s/^/X/",
+		"-\n=keep\n!《Xaaa》\n",
+		"+xxx\n=keep\n!《aaa》\n",
+		"Lu",
+		"-\n=keep\n=aaa\n",
+		"+xxx\n=keep\n=aaa\n",
+	},
+	{"Diff right pane ex, search, and word motions target diffview (#1452)",
+		"=one two three\n=alpha beta\n=last line\n",
+		"=one two three\n=alpha beta\n=last line\n",
+		"Rvw",
+		"=one ┃two three\n=alpha beta\n=last line\n",
+		"=one ┃two three\n=alpha beta\n=last line\n",
+		"Rve",
+		"=one tw┃o three\n=alpha beta\n=last line\n",
+		"=one tw┃o three\n=alpha beta\n=last line\n",
+		"Rvb",
+		"=one ┃two three\n=alpha beta\n=last line\n",
+		"=one ┃two three\n=alpha beta\n=last line\n",
+		"R/beta",
+		"=one two three\n=alpha ┃beta\n=last line\n",
+		"=one two three\n=alpha ┃beta\n=last line\n",
+		"R?one",
+		"=┃one two three\n=alpha beta\n=last line\n",
+		"=┃one two three\n=alpha beta\n=last line\n",
+		"R:3",
+		"=one two three\n=alpha beta\n=┃last line\n",
+		"=one two three\n=alpha beta\n=┃last line\n",
+		"R:s/last/final/",
+		"=one two three\n=alpha beta\n!┃《last》 line\n",
+		"=one two three\n=alpha beta\n!┃《final》 line\n",
+		"R:d",
+		"=one two three\n=alpha beta\n+last line\n",
+		"=one two three\n=┃alpha beta\n-\n",
 	},
 };
 void set_text(MarkdownEditor* editor, const QString& text) {
@@ -5737,6 +5801,34 @@ void MainWindow::onAction_TestDiff() {
 	int total_failed = 0;
 	MarkdownEditor *editor = docWidget->m_editor;
 	MarkdownEditor *diffview = docWidget->m_diffview;
+	auto runDiffAction = [&](const QString &act, QString &error) -> bool {
+		if( !act.isEmpty() ) {
+			MarkdownEditor *ptr = editor;
+			int idx = 0;
+			if( act[0] == u'L' ) ++idx;
+			else if( act[0] == u'R' ) { ptr = diffview; ++idx; }
+			if( idx < act.size() ) {
+				QChar ch = act[idx];
+				if( ch == u':' || ch == u'/' || ch == u'?' ) {
+					gvi.m_prevFocusWidget = ptr;
+					gvi.m_editor = ptr;
+					m_prefixLabel->setText(QString(ch));
+					m_cmdLine->setText(act.mid(idx + 1));
+					on_cmdLine_enter();
+					return true;
+				}
+				if( ch == u'v' && idx + 1 < act.size() ) {
+					ptr->setFocus();
+					QTextCursor cur = ptr->textCursor();
+					for(int k = idx + 1; k < act.size(); ++k)
+						do_viCmd(act[k], cur);
+					ptr->setTextCursor(cur);
+					return true;
+				}
+			}
+		}
+		return do_action(editor, diffview, act, error);
+	};
 	for(const auto &tc: g_diffTestCase) {
 		//	期待値の自己整合性チェック（lint）。不正なケースは実行しない
 		QString lintError;
@@ -5769,7 +5861,7 @@ void MainWindow::onAction_TestDiff() {
 				++i;
 			} else {
 				QString error;
-				if( !do_action(editor, diffview, tc[i], error) ) {
+				if( !runDiffAction(tc[i], error) ) {
 					do_output(QString("\n[FAILED #%1] invalid action \"%2\": %3\n").arg(++total_failed).arg(tc[i]).arg(error));
 					break;
 				}

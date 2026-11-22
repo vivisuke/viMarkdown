@@ -1021,6 +1021,8 @@ void do_vi_H(QTextCursor& cursor, int rcnt, DocWidget* docWidget) {
 	QPoint topLeft(0, 0);	//	左上点
 	if( cursor.document() == docWidget->m_editor->document() )
 		cursor = docWidget->m_editor->cursorForPosition(topLeft);
+	else if( docWidget->m_diffview != nullptr && cursor.document() == docWidget->m_diffview->document() )
+		cursor = docWidget->m_diffview->cursorForPosition(topLeft);
 	else
 		cursor = docWidget->m_preview->cursorForPosition(topLeft);
 	if( rcnt > 1 )
@@ -1028,11 +1030,12 @@ void do_vi_H(QTextCursor& cursor, int rcnt, DocWidget* docWidget) {
 	hat(cursor);
 }
 void do_vi_L(QTextCursor& cursor, int rcnt, DocWidget* docWidget) {
-	QPoint bottomLeft(0, docWidget->m_editor->viewport()->height() - 1);	//	左下点
 	if( cursor.document() == docWidget->m_editor->document() )
-		cursor = docWidget->m_editor->cursorForPosition(bottomLeft);
+		cursor = docWidget->m_editor->cursorForPosition(QPoint(0, docWidget->m_editor->viewport()->height() - 1));
+	else if( docWidget->m_diffview != nullptr && cursor.document() == docWidget->m_diffview->document() )
+		cursor = docWidget->m_diffview->cursorForPosition(QPoint(0, docWidget->m_diffview->viewport()->height() - 1));
 	else
-		cursor = docWidget->m_preview->cursorForPosition(bottomLeft);
+		cursor = docWidget->m_preview->cursorForPosition(QPoint(0, docWidget->m_preview->viewport()->height() - 1));
 	if( rcnt > 1 )
 		cursor.movePosition(QTextCursor::PreviousBlock, QTextCursor::MoveAnchor, rcnt - 1);
 	hat(cursor);
@@ -1040,13 +1043,18 @@ void do_vi_L(QTextCursor& cursor, int rcnt, DocWidget* docWidget) {
 void do_vi_M(QTextCursor& cursor, DocWidget* docWidget) {
 	int h, l;	//	H, L block number
 	QPoint topLeft(0, 0);	//	左上点
-	QPoint bottomLeft(0, docWidget->m_editor->viewport()->height() - 1);	//	左下点
 	if( cursor.document() == docWidget->m_editor->document() ) {
-		h = docWidget->m_editor->cursorForPosition(topLeft).block().blockNumber();;
-		l = docWidget->m_editor->cursorForPosition(bottomLeft).block().blockNumber();;
+		QPoint bottomLeft(0, docWidget->m_editor->viewport()->height() - 1);
+		h = docWidget->m_editor->cursorForPosition(topLeft).block().blockNumber();
+		l = docWidget->m_editor->cursorForPosition(bottomLeft).block().blockNumber();
+	} else if( docWidget->m_diffview != nullptr && cursor.document() == docWidget->m_diffview->document() ) {
+		QPoint bottomLeft(0, docWidget->m_diffview->viewport()->height() - 1);
+		h = docWidget->m_diffview->cursorForPosition(topLeft).block().blockNumber();
+		l = docWidget->m_diffview->cursorForPosition(bottomLeft).block().blockNumber();
 	} else {
-		h = docWidget->m_preview->cursorForPosition(topLeft).block().blockNumber();;
-		l = docWidget->m_preview->cursorForPosition(bottomLeft).block().blockNumber();;
+		QPoint bottomLeft(0, docWidget->m_preview->viewport()->height() - 1);
+		h = docWidget->m_preview->cursorForPosition(topLeft).block().blockNumber();
+		l = docWidget->m_preview->cursorForPosition(bottomLeft).block().blockNumber();
 	}
 	QTextBlock block = cursor.document()->findBlockByNumber((h+l)/2);
 	cursor.setPosition(block.position());
@@ -1097,7 +1105,9 @@ void MainWindow::do_vi_motion(QChar cmd, QTextCursor& cursor, int rcnt, DocWidge
 	assert( gvi.m_editor != nullptr );
 	auto p = cursor.position();		//	for Debug
 	gvi.m_linewiseMoved = false;
-	bool isEditor = cursor.document() == docWidget->m_editor->document();
+	MarkdownEditor *targetEd = cursor.document() == docWidget->m_editor->document() ? docWidget->m_editor
+		: (docWidget->m_diffview != nullptr && cursor.document() == docWidget->m_diffview->document() ? docWidget->m_diffview : nullptr);
+	bool isEditor = targetEd != nullptr;
 	auto moveMode = gvi.m_vMode != u' ' || (gvi.m_operator == ' ' && gvi.m_vMode == ' ') ?
 						QTextCursor::MoveAnchor : QTextCursor::KeepAnchor;
 	QTextDocument *doc = cursor.document();
@@ -1188,7 +1198,7 @@ void MainWindow::do_vi_motion(QChar cmd, QTextCursor& cursor, int rcnt, DocWidge
 		for(int i = 0; i < rcnt; ++i) {
 			auto pos = cursor.position();
 			if( isEditor ) {
-				docWidget->m_editor->moveToNextWord(cursor, /*select = */gvi.m_operator != ' ');
+				targetEd->moveToNextWord(cursor, /*select = */gvi.m_operator != ' ');
 				if( i+1 < rcnt && cursor.position() == block.position() + block.text().size() )		//	行末にいる場合
 					cursor.movePosition(QTextCursor::Right, moveMode);
 			} else
@@ -1236,7 +1246,7 @@ doneW:
 			if( isCw && rcnt == 1 && clampCwToCurWordEnd(cursor) ) {
 				//	cw の場合は自単語の末尾までに制限（#1272）
 			} else if( isEditor )
-				docWidget->m_editor->moveToNextWordEnd(cursor, /*select = */gvi.m_operator != ' ');
+				targetEd->moveToNextWordEnd(cursor, /*select = */gvi.m_operator != ' ');
 			else
 				docWidget->m_preview->moveToNextWordEnd(cursor, /*select = */gvi.m_operator != ' ');
 			if( cursor.position() == pos ) break;
@@ -1270,7 +1280,7 @@ doneW:
     case 'b':
 		for(int i = 0; i < rcnt; ++i) {
 			if( isEditor )
-				docWidget->m_editor->moveToPrevWord(cursor, /*select = */gvi.m_operator != ' ');
+				targetEd->moveToPrevWord(cursor, /*select = */gvi.m_operator != ' ');
 			else
 				docWidget->m_preview->moveToPrevWord(cursor, /*select = */gvi.m_operator != ' ');
 			if( cursor.position() == 0 ) break;
@@ -1356,8 +1366,8 @@ doneW:
 		if( g.m_searchForward && cmd == 'n' || !g.m_searchForward && cmd == 'N' ) {
 			int pos0 = cursor.position();
 			cursor.movePosition(QTextCursor::Right);
-			if( isEditor)
-				docWidget->m_editor->setTextCursor(cursor);
+			if( isEditor )
+				targetEd->setTextCursor(cursor);
 			do_find();
 			if( g.m_matchedPosition >= 0 )
 				cursor.setPosition(g.m_matchedPosition);
@@ -2376,13 +2386,18 @@ void MainWindow::on_cmdLine_enter() {
 		return;
 	}
 	QTextCursor cursor = gvi.m_prevFocusWidget == (QWidget*)docWidget->m_editor ?
-							docWidget->m_editor->textCursor() : docWidget->m_preview->textCursor();
+							docWidget->m_editor->textCursor() :
+							docWidget->m_diffview != nullptr && gvi.m_prevFocusWidget == (QWidget*)docWidget->m_diffview ?
+							docWidget->m_diffview->textCursor() : docWidget->m_preview->textCursor();
+	MarkdownEditor *curEd = (docWidget->m_diffview != nullptr && gvi.m_prevFocusWidget == (QWidget*)docWidget->m_diffview)
+								? docWidget->m_diffview : docWidget->m_editor;
+	gvi.m_editor = curEd;
 	auto t = m_prefixLabel->text();
 	if( t == "/" || t == "?" ) {
 		text = t + text;
 		do_vi_search(text, cursor, gvi.m_repeatCount, docWidget);
 		//	検索処理終了時にも vicmd 完結時処理をコールする（#0365）
-		QTextCursor cur2 = docWidget->m_editor->textCursor();
+		QTextCursor cur2 = curEd->textCursor();
 		do_viCmd_completed(cur2, t[0]);
 	} else
 		do_exCmd(text, cursor);
@@ -2494,6 +2509,8 @@ void MainWindow::do_exCmd(const QString &text, QTextCursor& cursor) {
 		hat(cursor);
 		if( gvi.m_prevFocusWidget == (QWidget*)docWidget->m_editor )
 			docWidget->m_editor->setTextCursor(cursor);
+		else if( docWidget->m_diffview != nullptr && gvi.m_prevFocusWidget == (QWidget*)docWidget->m_diffview )
+			docWidget->m_diffview->setTextCursor(cursor);
 		else
 			docWidget->m_preview->setTextCursor(cursor);
 		gvi.m_exhist.push_front(text);
@@ -2582,7 +2599,7 @@ void MainWindow::do_exCmd(const QString &text, int ix, /*QString cmd, QChar nch,
 			    cursor.setPosition(block.previous().position());
 			    hat(cursor);
 			}
-			docWidget->m_editor->setTextCursor(cursor);
+			gvi.m_editor->setTextCursor(cursor);
 		}
 	} else if( is_match(cmd, "p(rint") ) {
 		for(int ln = gvi.m_rangeStart; ln <= gvi.m_rangeEnd; ++ln) {
