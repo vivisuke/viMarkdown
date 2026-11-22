@@ -389,6 +389,21 @@ void MainWindow::do_vi_insert(QChar cmd, QTextCursor& cursor, int rcnt) {
 	gvi.m_currentMode = ViMode::Insert;
 	//gvi.m_viCmdMode = false;
 }
+static void selectVisualLineRange(QTextCursor &cursor, int anchorBlockNum) {
+	QTextDocument *doc = cursor.document();
+	int curBn = cursor.block().blockNumber();
+	int startBn = qMin(anchorBlockNum, curBn);
+	int endBn = qMax(anchorBlockNum, curBn);
+	QTextBlock startBlock = doc->findBlockByNumber(startBn);
+	QTextBlock endBlock = doc->findBlockByNumber(endBn);
+	if( !startBlock.isValid() || !endBlock.isValid() ) return;
+	cursor.setPosition(startBlock.position());
+	if( endBlock.next().isValid() ) {
+		cursor.setPosition(endBlock.next().position(), QTextCursor::KeepAnchor);
+	} else {
+		cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
+	}
+}
 void MainWindow::do_vi_delete(QChar cmd, QTextCursor& cursor, int rcnt) {		//	x X D
 	assert( gvi.m_editor != nullptr );
 	if( gvi.m_vMode == u'v' ) {
@@ -415,18 +430,10 @@ void MainWindow::do_vi_delete(QChar cmd, QTextCursor& cursor, int rcnt) {		//	x 
 		return;
 	}
 	if( gvi.m_vMode == u'V' ) {
-		QTextDocument *doc = cursor.document();
-		QTextBlock anchorBlock = doc->findBlockByNumber(gvi.m_vAnchorBlock);
 		switch( cmd.unicode() ) {
 		case 'x':
 		case 'X':
-			if( gvi.m_vAnchorBlock <= cursor.block().blockNumber() ) {
-				cursor.movePosition(QTextCursor::NextBlock);
-				cursor.setPosition(anchorBlock.position(), QTextCursor::KeepAnchor);
-			} else {
-				cursor.setPosition(anchorBlock.position(), QTextCursor::KeepAnchor);
-				cursor.movePosition(QTextCursor::NextBlock, QTextCursor::KeepAnchor);
-			}
+			selectVisualLineRange(cursor, gvi.m_vAnchorBlock);
 			gvi.m_yankBuffer = cursor.selectedText();
 			gvi.m_linewiseYanked = true;
 			if( gvi.m_editor != nullptr )
@@ -434,6 +441,8 @@ void MainWindow::do_vi_delete(QChar cmd, QTextCursor& cursor, int rcnt) {		//	x 
 			else
 				cursor.deleteChar();
 			gvi.m_vMode = u' ';
+			if( gvi.m_editor != nullptr )
+				gvi.m_editor->highlightVText(cursor);
 			break;
 		}
 		return;
@@ -765,15 +774,7 @@ bool MainWindow::do_cdy(QChar cmd, QTextCursor& cursor) {
 			}
 			gvi.m_linewiseYanked = false;
 		} else {
-			QTextDocument *doc = cursor.document();
-			QTextBlock anchorBlock = doc->findBlockByNumber(gvi.m_vAnchorBlock);
-			if( gvi.m_vAnchorBlock <= cursor.block().blockNumber() ) {
-				cursor.movePosition(QTextCursor::NextBlock);
-				cursor.setPosition(anchorBlock.position(), QTextCursor::KeepAnchor);
-			} else {
-				cursor.setPosition(anchorBlock.position(), QTextCursor::KeepAnchor);
-				cursor.movePosition(QTextCursor::NextBlock, QTextCursor::KeepAnchor);
-			}
+			selectVisualLineRange(cursor, gvi.m_vAnchorBlock);
 			gvi.m_linewiseYanked = true;
 		}
 		gvi.m_vMode = u' ';
