@@ -1884,14 +1884,19 @@ int do_search_line(const QString &text, int &i, int currentLine, const QTextDocu
 	QChar c = text[i++];
 	QString pat;
 	while( i < text.size() && text[i] != c ) {
-		if( text[i] == '\\' ) pat += text[i++];
+		if( text[i] == '\\' ) {
+			pat += text[i++];
+			if( i >= text.size() ) break;
+		}
 		pat += text[i++];
 	}
-	if( i == text.size() || pat.isEmpty() )		//	undone: // ?? の場合は再検索対応
+	if( i >= text.size() || pat.isEmpty() )		//	undone: // ?? の場合は再検索対応
 		return -1;
 	++i;
 	QTextBlock block = doc->findBlockByNumber(currentLine - 1);
+	if( !block.isValid() ) return -1;
 	QRegularExpression re(pat);
+	if( !re.isValid() ) return -1;
 	if( c == '/' ) {	//	順方向検索
 		if( !(block = block.next()).isValid() ) return -1;
 		QTextCursor cur = doc->find(re, block.position());
