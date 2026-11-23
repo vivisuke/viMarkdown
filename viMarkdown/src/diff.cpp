@@ -802,8 +802,7 @@ void calculateAndSetWordDiff(QTextBlock block1, QTextBlock block2, const QString
 
     auto locatePos = [](const std::vector<BlockSpan> &spans, int pos, int &outBn, int &outCol) {
         outBn = -1;
-        outCol = 0;
-        if (spans.empty()) return;
+        outCol = -1;
         for (const auto &sp : spans) {
             if (pos <= sp.textStart + sp.textLen) {
                 outBn = sp.block.blockNumber();
@@ -811,9 +810,8 @@ void calculateAndSetWordDiff(QTextBlock block1, QTextBlock block2, const QString
                 return;
             }
         }
-        const auto &last = spans.back();
-        outBn = last.block.blockNumber();
-        outCol = last.textLen;
+        // pos が相手側最終行の改行より後ろ（パディング対向の余剰行など）にある場合は未設定（-1）のまま返し、
+        // reflectWordToPeer 側の既存フォールバック（#1447）に委ねる
     };
     auto appendRange = [](std::vector<BlockSpan> &spans, int pos, int len, int peerBn, int peerCol, int peerLen) {
         for (auto &sp : spans) {
@@ -845,22 +843,22 @@ void calculateAndSetWordDiff(QTextBlock block1, QTextBlock block2, const QString
             const int endPos2 = addToks.empty() ? hunkStart2 : (addToks.back().start + (int)addToks.back().text.size());
 
             for (int i = 0; i < runDel; ++i) {
-                int pBn = -1, pCol = 0, pLen = 0;
+                int pBn = -1, pCol = -1, pLen = 0;
                 if (i < runAdd) {
                     locatePos(spans2, addToks[i].start, pBn, pCol);
                     pLen = (int)addToks[i].text.size();
-                } else {
+                } else if (runAdd == 0 || runDelNL == runAddNL) {
                     locatePos(spans2, endPos2, pBn, pCol);
                     pLen = 0;
                 }
                 appendRange(spans1, delToks[i].start, (int)delToks[i].text.size(), pBn, pCol, pLen);
             }
             for (int i = 0; i < runAdd; ++i) {
-                int pBn = -1, pCol = 0, pLen = 0;
+                int pBn = -1, pCol = -1, pLen = 0;
                 if (i < runDel) {
                     locatePos(spans1, delToks[i].start, pBn, pCol);
                     pLen = (int)delToks[i].text.size();
-                } else {
+                } else if (runDel == 0 || runDelNL == runAddNL) {
                     locatePos(spans1, endPos1, pBn, pCol);
                     pLen = 0;
                 }
