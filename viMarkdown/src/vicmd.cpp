@@ -690,8 +690,8 @@ void MainWindow::do_prefix_cmd(QChar cmd, QTextCursor& cursor, int rcnt, DocWidg
 	case 'Z':
 		switch( cmd.unicode() ) {
 		case 'Z':		//	ZZ
-			do_save();
-			do_close();
+			if( do_save() )
+				do_close();
 			break;
 		}
 		break;
@@ -2549,16 +2549,28 @@ void MainWindow::do_exCmd(const QString &text, int ix, /*QString cmd, QChar nch,
 	//	cmd = cmd.left(cmd.size() - 1);
 	//}
 	if( is_match(cmd, "x") ) {
-		do_save();
-		do_close();
+		if( do_save() )
+			do_close();
 	} else if( is_match(cmd, "q(uit") ) {
 		do_close(nch == u'!');
 	} else if( is_match(cmd, "pwd") ) {
 		do_output(QString("\ncurrent directory: %1\n").arg(QDir::currentPath()));
 	} else if( is_match(cmd, "cd") ) {
-		if( !g.m_defaultDir.isEmpty() ) {
-			QDir::setCurrent(g.m_defaultDir);
-			do_output(QString("\ncurrent directory: %1\n").arg(QDir::currentPath()));
+		QString targetDir = arg;
+		if( targetDir.isEmpty() ) {
+			targetDir = g.m_defaultDir;
+		} else if( targetDir == u"~" ) {
+			targetDir = QDir::homePath();
+		} else if( targetDir.startsWith(u"~/") || targetDir.startsWith(u"~\\") ) {
+			targetDir = QDir::homePath() + targetDir.mid(1);
+		}
+		if( !targetDir.isEmpty() ) {
+			if( QDir::setCurrent(targetDir) ) {
+				do_output(QString("\ncurrent directory: %1\n").arg(QDir::currentPath()));
+			} else {
+				statusBar()->showMessage(tr("Cannot change directory: %1").arg(targetDir), 5000);
+				do_output(QString("\ncannot change directory: %1\n").arg(targetDir));
+			}
 		}
 	} else if( is_match(cmd, "e(dit") ) {
 		//if( nch == u'\0')

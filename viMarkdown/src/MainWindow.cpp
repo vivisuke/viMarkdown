@@ -2418,12 +2418,12 @@ void MainWindow::onAction_SaveAll() {
 		do_save(false, ix);
 	}
 }
-void MainWindow::do_save(bool fDialog, int ix) {
+bool MainWindow::do_save(bool fDialog, int ix) {
 	if( ix < 0 )
 		ix = ui->tabWidget->currentIndex();
-	if( ix < 0 ) return;
+	if( ix < 0 ) return false;
 	DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(ix);
-	if( docWidget == nullptr ) return;
+	if( docWidget == nullptr ) return false;
 	QString fullPath = docWidget->m_fullPath;
 	if( fDialog || fullPath.isEmpty() ) {		//	強制ダイアログ || フルパスを持っていない場合
 		QString oldFullPath = fullPath;
@@ -2440,7 +2440,7 @@ void MainWindow::do_save(bool fDialog, int ix) {
 						,nullptr // 選択されたフィルタを保存する変数（不要なら nullptr）
 		                ,QFileDialog::DontUseNativeDialog
 					);
-		if( fullPath.isEmpty() ) return;
+		if( fullPath.isEmpty() ) return false;
 		QFileInfo fi(fullPath);
 	    if (fi.suffix().isEmpty()) fullPath += ".md";
 		docWidget->m_fullPath = fullPath;
@@ -2458,20 +2458,21 @@ void MainWindow::do_save(bool fDialog, int ix) {
 		if( !oldFullPath.isEmpty() && oldFullPath != fullPath )		//	ファイル名変更
 			m_watcher->removePath(oldFullPath);
 	}
-	do_save(fullPath, ix);
+	return do_save(fullPath, ix);
 }
-void MainWindow::do_save(const QString& fullPath, int ix) {
+bool MainWindow::do_save(const QString& fullPath, int ix) {
 	if( ix < 0 )
 		ix = ui->tabWidget->currentIndex();
-	if( ix < 0 ) return;
+	if( ix < 0 ) return false;
 	DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(ix);
-	if( docWidget == nullptr ) return;
+	if( docWidget == nullptr ) return false;
 	QString absTarget = QDir::cleanPath(QFileInfo(fullPath).absoluteFilePath());
 	bool isSameFile = !docWidget->m_fullPath.isEmpty()
 		&& absTarget.compare(QDir::cleanPath(QFileInfo(docWidget->m_fullPath).absoluteFilePath()), Qt::CaseInsensitive) == 0;
 	docWidget->m_saving = true;
 	if( isSameFile )
 		m_watcher->removePath(fullPath);		//	一旦ウォッチリストから外す
+	bool saved = false;
 	QFile file(fullPath);
 	if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
 		QTextStream out(&file);
@@ -2490,6 +2491,7 @@ void MainWindow::do_save(const QString& fullPath, int ix) {
 		} else
 			out << mdEditor->toPlainText();
 		file.close();
+		saved = true;
 		addToRecentFiles(absTarget);
 		if( isSameFile ) {
 			docWidget->setModified(false);		//	保存済み
@@ -2506,6 +2508,7 @@ void MainWindow::do_save(const QString& fullPath, int ix) {
 		m_watcher->addPath(fullPath);
 	//QDate today = QDate::currentDate();
 	onCalendarPageChanged(ui->calendarWidget->yearShown(), ui->calendarWidget->monthShown());		//	ちょっち手抜き
+	return saved;
 }
 void MainWindow::onAction_ExportAsPDF() {
 	DocWidget *docWidget = getCurDocWidget();
