@@ -24,7 +24,10 @@ public:
 		LT_BODY = 0,
 		LT_HEADING,
 		LT_LIST,
+		LT_CHECKBOX,
 		LT_QUOTE,
+		LT_CODE_FENCE,
+		LT_CODE_BLOCK,
 	};
 
 	enum LineState : uint8_t {

@@ -208,6 +208,9 @@ TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath
         }
         statusBar()->showMessage(tr("Preview Font Size: %1 pt").arg(m_previewFontSize), 5000);
     });
+    preview->setCheckboxToggledCallback([edit](int line, bool checked) {
+        edit->toggleCheckboxAtLine(line, checked);
+    });
     edit->setTextChangedCallback([this, splitter, edit, preview]() {
         preview->setMarkdown(edit->document());
         updateOutlineForTab(splitter);

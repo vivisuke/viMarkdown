@@ -59,13 +59,27 @@ QVector<HighlightSpan> highlightMarkdownLine(const QString &lineText, LineMgr::L
 	if( lineText.isEmpty() )
 		return spans;
 
+	if( lineType == LineMgr::LT_CODE_BLOCK )
+		return spans;	//	コードブロック内は Markdown 強調しない
+
+	if( lineType == LineMgr::LT_CODE_FENCE ) {
+		spans.push_back({0, lineText.size(), QColor(0x66, 0x66, 0x66)});
+		return spans;
+	}
+
 	if( lineType == LineMgr::LT_HEADING ) {
 		spans.push_back({0, lineText.size(), headingColor});
 		return spans;
 	}
 
 	qsizetype inlineStart = 0;
-	if( lineType == LineMgr::LT_LIST ) {
+	if( lineType == LineMgr::LT_CHECKBOX ) {
+		while( inlineStart < lineText.size()
+			&& (lineText[inlineStart] == QChar(' ') || lineText[inlineStart] == QChar('\t')) )
+			++inlineStart;
+		if( inlineStart + 6 <= lineText.size() )
+			inlineStart += 6;	//	チェックボックスマーカー（"- [ ] " 等）をスキップ
+	} else if( lineType == LineMgr::LT_LIST ) {
 		while( inlineStart < lineText.size()
 			&& (lineText[inlineStart] == QChar(' ') || lineText[inlineStart] == QChar('\t')) )
 			++inlineStart;
@@ -247,6 +261,29 @@ void TextEdit::selectAll()
 	m_cursor.setPosition(0);
 	m_cursor.setPosition(m_doc.characterCount(), TextCursor::KeepAnchor);
 	afterChange(false);
+}
+
+void TextEdit::toggleCheckboxAtLine(int line, bool checked)
+{
+	const ViewLineMgr &mgr = m_doc.lineMgr();
+	if( line < 0 || line >= mgr.lineCount() || mgr.lineType(line) != LineMgr::LT_CHECKBOX )
+		return;
+	const TextDocument::pos_t lineStart = mgr.lineStartPos(line);
+	const TextDocument::pos_t lineLen = mgr.lineLength(line);
+	TextDocument::pos_t i = 0;
+	while( i < lineLen && (m_doc.characterAt(lineStart + i) == QChar(' ') || m_doc.characterAt(lineStart + i) == QChar('\t')) )
+		++i;
+	if( i + 4 >= lineLen )
+		return;
+	const TextDocument::pos_t chkPos = lineStart + i + 3;	//	"- [ ]" の中括弧内の文字位置
+	const QChar target = checked ? QChar('x') : QChar(' ');
+	if( m_doc.characterAt(chkPos) == target )
+		return;
+	m_doc.undoMgr().openBlock();
+	m_doc.erase(chkPos, chkPos + 1);
+	m_doc.insert(chkPos, QString(target));
+	m_doc.undoMgr().closeBlock();
+	afterChange(true);
 }
 
 void TextEdit::onSaved()
@@ -437,6 +474,75 @@ void TextEdit::lineNumberAreaPaintEvent(QPaintEvent *event)
 		QString num = QString::number(ln + 1);
 		painter.drawText(right - fm.horizontalAdvance(num), i * lh + fm.ascent() + 2, num);
 	}
+}
+
+int TextEdit::logicalLineFromY(int y) const
+{
+	const ViewLineMgr &mgr = m_doc.lineMgr();
+	if( mgr.viewLineCount() == 0 ) return 0;
+	const int lh = lineHeight();
+	int viewLine = verticalScrollBar()->value() + (y >= 0 ? y / lh : (y - lh + 1) / lh);
+	viewLine = qBound(0, viewLine, mgr.viewLineCount() - 1);
+	return mgr.viewLineToLine(viewLine);
+}
+
+void TextEdit::selectLogicalLineRange(int anchorLine, int curLine)
+{
+	const ViewLineMgr &mgr = m_doc.lineMgr();
+	if( mgr.lineCount() == 0 ) return;
+	const int lo = qBound(0, qMin(anchorLine, curLine), mgr.lineCount() - 1);
+	const int hi = qBound(0, qMax(anchorLine, curLine), mgr.lineCount() - 1);
+	const TextDocument::pos_t startPos = mgr.lineStartPos(lo);
+	const TextDocument::pos_t endPos = (hi + 1 < mgr.lineCount()) ? mgr.lineStartPos(hi + 1) : mgr.lineEndPos(hi);
+	if( curLine < anchorLine ) {
+		m_cursor.setPosition(endPos);
+		m_cursor.setPosition(startPos, TextCursor::KeepAnchor);
+	} else {
+		m_cursor.setPosition(startPos);
+		m_cursor.setPosition(endPos, TextCursor::KeepAnchor);
+	}
+}
+
+void TextEdit::lineNumberAreaMousePressEvent(QMouseEvent *event)
+{
+	if( event->button() == Qt::LeftButton ) {
+		setFocus();
+		const int ln = logicalLineFromY(event->pos().y());
+		if( (event->modifiers() & Qt::ShiftModifier) != 0 && m_lineAnchor >= 0 ) {
+			selectLogicalLineRange(m_lineAnchor, ln);
+		} else {
+			m_lineAnchor = ln;
+			selectLogicalLineRange(ln, ln);
+		}
+		m_lineDragging = true;
+		viewport()->update();
+	}
+}
+
+void TextEdit::lineNumberAreaMouseMoveEvent(QMouseEvent *event)
+{
+	if( !m_lineDragging || m_lineAnchor < 0 ) return;
+	int y = event->pos().y();
+	const int vh = viewport()->height();
+	QScrollBar *vbar = verticalScrollBar();
+	if( y < 0 ) {
+		vbar->setValue(vbar->value() + qMin(-1, y / lineHeight()));
+		y = 0;
+	} else if( y > vh ) {
+		vbar->setValue(vbar->value() + qMax(1, (y - vh) / lineHeight()));
+		y = vh;
+	}
+	const int ln = logicalLineFromY(y);
+	selectLogicalLineRange(m_lineAnchor, ln);
+	ensureCursorVisible();
+	viewport()->update();
+	m_lineNumberArea->update();
+}
+
+void TextEdit::lineNumberAreaMouseReleaseEvent(QMouseEvent *event)
+{
+	if( event->button() == Qt::LeftButton )
+		m_lineDragging = false;
 }
 
 void TextEdit::paintEvent(QPaintEvent *event)
@@ -825,20 +931,24 @@ void TextEdit::handleReturnKey()
 		const int ln = mgr.lineAtPos(m_cursor.position());
 		const TextDocument::pos_t lineStart = mgr.lineStartPos(ln);
 		const TextDocument::pos_t lineEnd = mgr.lineEndPos(ln);
-		if( mgr.lineType(ln) == LineMgr::LT_LIST && m_cursor.position() == lineEnd ) {
+		const LineMgr::LineType lt = mgr.lineType(ln);
+		if( (lt == LineMgr::LT_LIST || lt == LineMgr::LT_CHECKBOX) && m_cursor.position() == lineEnd ) {
 			QString lineText = m_doc.findBlockByNumber(ln).text();
 			if( lineText.endsWith(QChar('\n')) ) lineText.chop(1);
 			if( lineText.endsWith(QChar('\r')) ) lineText.chop(1);
 			qsizetype i = 0;
 			while( i < lineText.size() && (lineText[i] == QChar(' ') || lineText[i] == QChar('\t')) )
 				++i;
-			if( i + 2 <= lineText.size() ) {
-				if( i + 2 == lineText.size() ) {
-					//	"- " だけの空リスト行で Enter → リストマーカーごと消してリスト終了
+			const qsizetype markerLen = (lt == LineMgr::LT_CHECKBOX) ? 6 : 2;
+			if( i + markerLen <= lineText.size() ) {
+				if( i + markerLen == lineText.size() ) {
+					//	マーカーだけの空行で Enter → リスト終了
 					m_doc.erase(lineStart, lineEnd);
 					return;
 				}
-				const QString prefix = lineText.left(i + 2);	//	インデント + リストマーカー（"- " 等）
+				const QString prefix = (lt == LineMgr::LT_CHECKBOX)
+					? (lineText.left(i + 2) + QStringLiteral("[ ] "))
+					: lineText.left(i + 2);
 				m_cursor.insertText(QStringLiteral("\n") + prefix);
 				return;
 			}

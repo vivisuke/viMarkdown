@@ -60,6 +60,9 @@ public:
 
 	int lineNumberAreaWidth() const;	//	行番号エリアの幅（半角8文字分）
 	void lineNumberAreaPaintEvent(QPaintEvent *event);	//	LineNumberArea の描画（エリアから呼ばれる）
+	void lineNumberAreaMousePressEvent(QMouseEvent *event);
+	void lineNumberAreaMouseMoveEvent(QMouseEvent *event);
+	void lineNumberAreaMouseReleaseEvent(QMouseEvent *event);
 
 	void undo();
 	void redo();
@@ -67,6 +70,7 @@ public:
 	void copy();
 	void paste();
 	void selectAll();
+	void toggleCheckboxAtLine(int line, bool checked);
 	void onSaved();
 	void setTextChangedCallback(std::function<void()> cb) { m_onTextChanged = std::move(cb); }
 	void setFontSizeChangeCallback(std::function<void(int)> cb) { m_onFontSizeChange = std::move(cb); }
@@ -96,6 +100,8 @@ private:
 	int xOfPosInViewLine(int viewLine, TextDocument::pos_t pos) const;
 	int xOfPos(TextDocument::pos_t pos) const;	//	位置の x 座標（左マージン込み）
 	TextDocument::pos_t posFromPoint(const QPoint &pt) const;
+	int logicalLineFromY(int y) const;
+	void selectLogicalLineRange(int anchorLine, int curLine);
 	void wordBoundsAt(TextDocument::pos_t pos, TextDocument::pos_t &outStart, TextDocument::pos_t &outEnd) const;
 	void updateScrollBars();
 	void updateWrapWidth();
@@ -114,6 +120,8 @@ private:
 	bool m_wordDragging = false;
 	TextDocument::pos_t m_wordAnchorStart = 0;
 	TextDocument::pos_t m_wordAnchorEnd = 0;
+	bool m_lineDragging = false;
+	int m_lineAnchor = -1;
 	QString m_preedit;
 	int m_preeditCursor = 0;
 	LineNumberArea *m_lineNumberArea = nullptr;
@@ -132,6 +140,9 @@ public:
 	QSize sizeHint() const override { return QSize(m_editor->lineNumberAreaWidth(), 0); }
 protected:
 	void paintEvent(QPaintEvent *event) override { m_editor->lineNumberAreaPaintEvent(event); }
+	void mousePressEvent(QMouseEvent *event) override { m_editor->lineNumberAreaMousePressEvent(event); }
+	void mouseMoveEvent(QMouseEvent *event) override { m_editor->lineNumberAreaMouseMoveEvent(event); }
+	void mouseReleaseEvent(QMouseEvent *event) override { m_editor->lineNumberAreaMouseReleaseEvent(event); }
 private:
 	TextEdit *m_editor;
 };
