@@ -55,7 +55,7 @@ bool parseList(const QString &line, int &outIndent, QString &outText)
 	return true;
 }
 
-LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &line)
+LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &line, int &activeListIndent)
 {
 	static const qreal kHeadingPtSize[7] = { 10.0, 22.0, 18.0, 15.0, 13.0, 11.0, 10.0 };
 	static const QTextListFormat::Style kListStyles[3] = {
@@ -68,6 +68,7 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &line)
 
 	QString parsedText;
 	if( const int level = parseHeading(line, parsedText); level > 0 ) {
+		activeListIndent = 0;
 		if( QTextList *curList = cursor.currentList() )
 			curList->remove(cursor.block());
 		QTextBlockFormat bf;
@@ -88,6 +89,7 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &line)
 	if( parseList(line, indent, parsedText) ) {
 		const QTextListFormat::Style style = kListStyles[indent % 3];
 		const int listIndent = indent + 1;
+		activeListIndent = listIndent;
 		cursor.setBlockCharFormat(bodyCharFmt);
 		QTextList *curList = cursor.currentList();
 		if( !curList || curList->format().indent() != listIndent || curList->format().style() != style ) {
@@ -103,8 +105,28 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &line)
 
 	if( QTextList *curList = cursor.currentList() )
 		curList->remove(cursor.block());
-	cursor.setBlockFormat(bodyBlockFmt);
 	cursor.setBlockCharFormat(bodyCharFmt);
+
+	if( line.trimmed().isEmpty() ) {
+		activeListIndent = 0;
+		cursor.setBlockFormat(bodyBlockFmt);
+		cursor.insertText(line, bodyCharFmt);
+		return LineMgr::LT_BODY;
+	}
+
+	if( activeListIndent > 0 ) {
+		//	リスト直後の非空行は継続行としてリストと同じインデントにする
+		qsizetype textStart = 0;
+		while( textStart < line.size() && (line[textStart] == QChar(' ') || line[textStart] == QChar('\t')) )
+			++textStart;
+		QTextBlockFormat bf;
+		bf.setIndent(activeListIndent);
+		cursor.setBlockFormat(bf);
+		cursor.insertText(line.mid(textStart), bodyCharFmt);
+		return LineMgr::LT_BODY;
+	}
+
+	cursor.setBlockFormat(bodyBlockFmt);
 	cursor.insertText(line, bodyCharFmt);
 	return LineMgr::LT_BODY;
 }
@@ -123,6 +145,7 @@ void MarkdownPreview::setMarkdown(const QString &markdown)
 	QTextCursor cursor(doc);
 	cursor.beginEditBlock();
 
+	int activeListIndent = 0;
 	const QStringList lines = markdown.split(QChar('\n'));
 	for( qsizetype idx = 0; idx < lines.size(); ++idx ) {
 		if( idx > 0 )
@@ -132,7 +155,7 @@ void MarkdownPreview::setMarkdown(const QString &markdown)
 		if( line.endsWith(QChar('\r')) )
 			line.chop(1);
 
-		parseAndAppendLine(cursor, line);
+		parseAndAppendLine(cursor, line, activeListIndent);
 	}
 
 	cursor.endEditBlock();
@@ -155,6 +178,7 @@ void MarkdownPreview::setMarkdown(TextDocument *srcDoc)
 	QTextCursor cursor(doc);
 	cursor.beginEditBlock();
 
+	int activeListIndent = 0;
 	ViewLineMgr &mgr = srcDoc->lineMgr();
 	const int nLines = mgr.lineCount();
 	for( int ln = 0; ln < nLines; ++ln ) {
@@ -165,7 +189,7 @@ void MarkdownPreview::setMarkdown(TextDocument *srcDoc)
 		if( line.endsWith(QChar('\n')) ) line.chop(1);
 		if( line.endsWith(QChar('\r')) ) line.chop(1);
 
-		const LineMgr::LineType type = parseAndAppendLine(cursor, line);
+		const LineMgr::LineType type = parseAndAppendLine(cursor, line, activeListIndent);
 		mgr.setLineType(ln, type);
 	}
 

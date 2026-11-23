@@ -51,6 +51,9 @@ public:
 	void setEmphasisColor(const QColor &color);
 	QColor emphasisColor() const { return m_emphasisColor; }
 
+	void setSelectionColor(const QColor &color);
+	QColor selectionColor() const { return m_selectionColor; }
+
 	//	タブ幅（半角文字数、デフォルト4）
 	void setTabWidth(int width);
 	int tabWidth() const { return m_doc.lineMgr().tabWidth(); }
@@ -77,10 +80,12 @@ protected:
 
 private:
 	bool indentSelection(bool unindent);
+	void handleReturnKey();
 	int lineHeight() const;
 	int pageLines() const;
 	int tabStopPixels(const QFontMetrics &fm) const;
 	int drawLineText(QPainter &painter, int x, int yBaseline, const QString &text, const QFontMetrics &fm, int tabPx) const;
+	int xOfPosInViewLine(int viewLine, TextDocument::pos_t pos) const;
 	int xOfPos(TextDocument::pos_t pos) const;	//	位置の x 座標（左マージン込み）
 	TextDocument::pos_t posFromPoint(const QPoint &pt) const;
 	void updateScrollBars();
@@ -95,6 +100,7 @@ private:
 	bool m_markdownHighlight = true;
 	QColor m_headingColor = QColor(0x80, 0x00, 0x00);
 	QColor m_emphasisColor = QColor(0x00, 0x33, 0xAA);
+	QColor m_selectionColor = QColor(0xC8, 0xF0, 0xC8);
 	bool m_dragging = false;
 	QString m_preedit;
 	int m_preeditCursor = 0;

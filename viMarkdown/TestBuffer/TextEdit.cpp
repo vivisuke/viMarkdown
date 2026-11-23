@@ -162,6 +162,13 @@ void TextEdit::setEmphasisColor(const QColor &color)
 	viewport()->update();
 }
 
+void TextEdit::setSelectionColor(const QColor &color)
+{
+	if( !color.isValid() || m_selectionColor == color ) return;
+	m_selectionColor = color;
+	viewport()->update();
+}
+
 void TextEdit::setTabWidth(int width)
 {
 	m_doc.lineMgr().setTabWidth(width);
@@ -229,10 +236,9 @@ int TextEdit::drawLineText(QPainter &painter, int x, int yBaseline, const QStrin
 	return x;
 }
 
-int TextEdit::xOfPos(TextDocument::pos_t pos) const
+int TextEdit::xOfPosInViewLine(int viewLine, TextDocument::pos_t pos) const
 {
 	const ViewLineMgr &mgr = m_doc.lineMgr();
-	int viewLine = mgr.viewLineAtPos(pos);
 	TextDocument::pos_t s = mgr.viewLineStartPos(viewLine);
 	const QFontMetrics fm = fontMetrics();
 	const int tabPx = tabStopPixels(fm);
@@ -247,6 +253,12 @@ int TextEdit::xOfPos(TextDocument::pos_t pos) const
 		}
 	}
 	return x;
+}
+
+int TextEdit::xOfPos(TextDocument::pos_t pos) const
+{
+	const ViewLineMgr &mgr = m_doc.lineMgr();
+	return xOfPosInViewLine(mgr.viewLineAtPos(pos), pos);
 }
 
 TextDocument::pos_t TextEdit::posFromPoint(const QPoint &pt) const
@@ -409,11 +421,15 @@ void TextEdit::paintEvent(QPaintEvent *event)
 		TextDocument::pos_t linePos = vb.position();
 		const int y = i * lh;
 		if( hasSel && linePos + vb.length() > selS && linePos < selE ) {
-			TextDocument::pos_t s = selS > linePos ? selS : linePos;
-			TextDocument::pos_t e = selE < linePos + vb.length() ? selE : linePos + vb.length();
-			int xs = xOfPos(s);
-			int xe = xOfPos(e);
-			painter.fillRect(xs, y, xe - xs, lh, palette().highlight());
+			const TextDocument::pos_t visEnd = linePos + mgr.viewLineLength(viewLine);
+			const TextDocument::pos_t s = selS > linePos ? selS : linePos;
+			const TextDocument::pos_t e = selE < visEnd ? selE : visEnd;
+			int xs = xOfPosInViewLine(viewLine, s);
+			int xe = xOfPosInViewLine(viewLine, e);
+			if( selE > visEnd )
+				xe += fm.horizontalAdvance(QChar(' '));
+			if( xe > xs )
+				painter.fillRect(xs, y, xe - xs, lh, m_selectionColor);
 		}
 		QString text = vb.text();
 		if( text.endsWith(QChar('\n')) ) text.chop(1);
@@ -503,7 +519,7 @@ void TextEdit::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_Backspace:	m_cursor.deletePreviousChar(); textChanged = true; break;
 	case Qt::Key_Delete:	m_cursor.deleteChar(); textChanged = true; break;
 	case Qt::Key_Return:
-	case Qt::Key_Enter:	m_cursor.insertText(QStringLiteral("\n")); textChanged = true; break;
+	case Qt::Key_Enter:	handleReturnKey(); textChanged = true; break;
 	case Qt::Key_Tab:		textChanged = indentSelection(shift); break;
 	case Qt::Key_Backtab:	textChanged = indentSelection(true); break;
 	case Qt::Key_Z:	if( ctrl ) { if( shift ) redo(); else undo(); } else handled = false; break;
@@ -658,6 +674,35 @@ bool TextEdit::indentSelection(bool unindent)
 		m_cursor.setPosition(newEnd, TextCursor::KeepAnchor);
 	}
 	return changed;
+}
+
+void TextEdit::handleReturnKey()
+{
+	if( !m_cursor.hasSelection() ) {
+		const ViewLineMgr &mgr = m_doc.lineMgr();
+		const int ln = mgr.lineAtPos(m_cursor.position());
+		const TextDocument::pos_t lineStart = mgr.lineStartPos(ln);
+		const TextDocument::pos_t lineEnd = mgr.lineEndPos(ln);
+		if( mgr.lineType(ln) == LineMgr::LT_LIST && m_cursor.position() == lineEnd ) {
+			QString lineText = m_doc.findBlockByNumber(ln).text();
+			if( lineText.endsWith(QChar('\n')) ) lineText.chop(1);
+			if( lineText.endsWith(QChar('\r')) ) lineText.chop(1);
+			qsizetype i = 0;
+			while( i < lineText.size() && (lineText[i] == QChar(' ') || lineText[i] == QChar('\t')) )
+				++i;
+			if( i + 2 <= lineText.size() ) {
+				if( i + 2 == lineText.size() ) {
+					//	"- " だけの空リスト行で Enter → リストマーカーごと消してリスト終了
+					m_doc.erase(lineStart, lineEnd);
+					return;
+				}
+				const QString prefix = lineText.left(i + 2);	//	インデント + リストマーカー（"- " 等）
+				m_cursor.insertText(QStringLiteral("\n") + prefix);
+				return;
+			}
+		}
+	}
+	m_cursor.insertText(QStringLiteral("\n"));
 }
 
 void TextEdit::inputMethodEvent(QInputMethodEvent *event)
