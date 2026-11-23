@@ -1,6 +1,7 @@
 #include "MainWindow.h"
 #include "MarkdownPreview.h"
 #include "TextEdit.h"
+#include <QCloseEvent>
 #include <QColorDialog>
 #include <QDialog>
 #include <QDialogButtonBox>
@@ -35,6 +36,8 @@ const QStringView KEY_LINE_SPACING_PERCENT(u"editor/lineSpacingPercent");
 const QStringView KEY_HEADING_COLOR(u"editor/headingColor");
 const QStringView KEY_EMPHASIS_COLOR(u"editor/emphasisColor");
 const QStringView KEY_EDITOR_FONT_FAMILY(u"editor/fontFamily");
+const QStringView KEY_WINDOW_GEOMETRY(u"window/geometry");
+const QStringView KEY_WINDOW_STATE(u"window/state");
 const char PROP_FILE_PATH[] = "filePath";
 
 void setColorButtonStyle(QPushButton *button, const QColor &color)
@@ -73,6 +76,15 @@ MainWindow::MainWindow(QWidget *parent)
     TextEdit *initialEdit = addEditorTab(QStringLiteral("Untitled-%1").arg(++m_tabNumber));
     initialEdit->setFocus();
     QTimer::singleShot(0, initialEdit, qOverload<>(&QWidget::setFocus));
+    {
+        QSettings settings;
+        const QByteArray geom = settings.value(KEY_WINDOW_GEOMETRY).toByteArray();
+        if (!geom.isEmpty())
+            restoreGeometry(geom);
+        const QByteArray state = settings.value(KEY_WINDOW_STATE).toByteArray();
+        if (!state.isEmpty())
+            restoreState(state);
+    }
     connect(ui->action_Open, &QAction::triggered, this, &MainWindow::onOpen);
     connect(ui->action_Close, &QAction::triggered, this, &MainWindow::onClose);
     connect(ui->action_Settings, &QAction::triggered, this, &MainWindow::onSettings);
@@ -443,6 +455,14 @@ void MainWindow::do_output(const QString& txt)
     cursor.movePosition(QTextCursor::End);
     cursor.insertText(txt);
     ui->plainTextEdit->setTextCursor(cursor);
+}
+
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    QSettings settings;
+    settings.setValue(KEY_WINDOW_GEOMETRY, saveGeometry());
+    settings.setValue(KEY_WINDOW_STATE, saveState());
+    QMainWindow::closeEvent(event);
 }
 
 MainWindow::~MainWindow()

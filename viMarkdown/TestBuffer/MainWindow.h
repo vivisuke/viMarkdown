@@ -22,6 +22,9 @@ public:
 
     void do_output(const QString& txt);
 
+protected:
+    void closeEvent(QCloseEvent *event) override;
+
 private:
     TextEdit *addEditorTab(const QString &title, const QString &filePath = QString());
     TextEdit *currentTextEdit() const;

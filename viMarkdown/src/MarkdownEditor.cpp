@@ -1549,17 +1549,32 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 	qApp->inputMethod()->update(Qt::ImCursorRectangle);
 	//##qDebug() << "cursorRect = " << cursorRect();
 }
-void MarkdownEditor::do_insertText(QTextCursor& cursor, const QString &txt) {
-	if( m_diffMode && isDummyLine(this, cursor.block()) ) {
-		//	[#1266] ダミー行への挿入・ペーストは、直後の非ダミー行の先頭へリダイレクトする。
-		//	直後に非ダミー行が無い場合と、選択範囲がある場合は、従来通り無視する。
-		if( cursor.hasSelection() ) return;
-		QTextBlock block = cursor.block().next();
-		while( block.isValid() && isDummyLine(this, block) ) block = block.next();
-		if( !block.isValid() ) return;
-		cursor.setPosition(block.position());
+static bool isSelectionOnlyDummy(MarkdownEditor *ed, const QTextCursor &cursor) {
+	QTextDocument *doc = cursor.document();
+	const int startPos = cursor.selectionStart();
+	const int endPos = cursor.selectionEnd();
+	QTextBlock b = doc->findBlock(startPos);
+	QTextBlock endBlock = doc->findBlock(endPos);
+	if( endPos > startPos && endPos == endBlock.position() )
+		endBlock = endBlock.previous();
+	while( b.isValid() && b.blockNumber() <= endBlock.blockNumber() ) {
+		if( !isDummyLine(ed, b) ) return false;
+		b = b.next();
 	}
+	return true;
+}
+void MarkdownEditor::do_insertText(QTextCursor& cursor, const QString &txt) {
 	if( m_diffMode ) {
+		if( cursor.hasSelection() ) {
+			if( isSelectionOnlyDummy(this, cursor) ) return;
+		} else if( isDummyLine(this, cursor.block()) ) {
+			//	[#1266] ダミー行への挿入・ペーストは、直後の非ダミー行の先頭へリダイレクトする。
+			//	直後に非ダミー行が無い場合は、従来通り無視する。
+			QTextBlock block = cursor.block().next();
+			while( block.isValid() && isDummyLine(this, block) ) block = block.next();
+			if( !block.isValid() ) return;
+			cursor.setPosition(block.position());
+		}
 		//	[#1255] ダミー行がある状態で挿入すると diffBlockNumbers や m_undoMgr に記録する
 		//	文字位置がダミー行の改行ぶんずれ、Undo 時に別文字を誤削除する。
 		//	do_deleteText と同様に、挿入前に両ペインのダミー行を除去しておく
@@ -1634,8 +1649,12 @@ void MarkdownEditor::do_insertText(QTextCursor& cursor, const QString &txt) {
 	emit canUndoRedoChanged();
 }
 void MarkdownEditor::do_deleteText(QTextCursor &cursor) {
-	if( m_diffMode && isDummyLine(this, cursor.block()) ) return;
 	if( m_diffMode ) {
+		if( cursor.hasSelection() ) {
+			if( isSelectionOnlyDummy(this, cursor) ) return;
+		} else {
+			if( isDummyLine(this, cursor.block()) ) return;
+		}
 		m_docWidget->m_editor->removeAllDummyLines();
 		m_docWidget->m_diffview->removeAllDummyLines();
 	}
