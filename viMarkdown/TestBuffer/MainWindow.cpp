@@ -6,14 +6,18 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QFormLayout>
+#include <QLineEdit>
 #include <QMessageBox>
 #include <QSettings>
+#include <QSpinBox>
 #include <QSplitter>
 #include <QTabWidget>
 #include <QTextCursor>
 #include <QTextEdit>
 #include <QTextStream>
 #include <QTimer>
+#include <QUrl>
 #include <QVBoxLayout>
 #include "GapBufferTest.h"
 #include "LineMgrTest.h"
@@ -23,6 +27,7 @@
 namespace {
 const int N_RECENT_FILES = 10 + 26;
 const QStringView KEY_RECENT_FILES(u"recentFilePaths");
+const QStringView KEY_LINE_SPACING_PERCENT(u"editor/lineSpacingPercent");
 const char PROP_FILE_PATH[] = "filePath";
 }
 
@@ -32,6 +37,12 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     ui->plainTextEdit->setFocusPolicy(Qt::ClickFocus);
+    {
+        QSettings settings;
+        int pct = settings.value(KEY_LINE_SPACING_PERCENT, 0).toInt();
+        pct = qBound(0, (pct / 10) * 10, 100);
+        m_lineSpacingPercent = pct;
+    }
     m_tabWidget = new QTabWidget(this);
     m_tabWidget->setTabsClosable(true);
     m_tabWidget->setMovable(true);
@@ -71,6 +82,7 @@ TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath
 {
     auto *splitter = new QSplitter(Qt::Horizontal, m_tabWidget);
     auto *edit = new TextEdit(splitter);
+    edit->setLineSpacing(qRound(edit->fontMetrics().height() * m_lineSpacingPercent / 100.0));
     auto *preview = new QTextEdit(splitter);
     splitter->addWidget(edit);
     splitter->addWidget(preview);
@@ -141,17 +153,57 @@ void MainWindow::onClose()
         onTabCloseRequested(m_tabWidget->currentIndex());
 }
 
+void MainWindow::applyLineSpacing(int percent)
+{
+    m_lineSpacingPercent = qBound(0, (percent / 10) * 10, 100);
+    if (!m_tabWidget)
+        return;
+    for (int i = 0; i < m_tabWidget->count(); ++i) {
+        auto *splitter = qobject_cast<QSplitter *>(m_tabWidget->widget(i));
+        auto *edit = splitter ? dynamic_cast<TextEdit *>(splitter->widget(0)) : nullptr;
+        if (edit)
+            edit->setLineSpacing(qRound(edit->fontMetrics().height() * m_lineSpacingPercent / 100.0));
+    }
+}
+
 void MainWindow::onSettings()
 {
+    const int origPercent = m_lineSpacingPercent;
+
     QDialog dlg(this);
     dlg.setWindowTitle(tr("Settings"));
     dlg.resize(320, 160);
     auto *layout = new QVBoxLayout(&dlg);
+
+    auto *form = new QFormLayout();
+    auto *lineSpacingSpin = new QSpinBox(&dlg);
+    lineSpacingSpin->setRange(0, 100);
+    lineSpacingSpin->setSingleStep(10);
+    lineSpacingSpin->setSuffix(QStringLiteral("%"));
+    lineSpacingSpin->setValue(m_lineSpacingPercent);
+    if (QLineEdit *le = lineSpacingSpin->findChild<QLineEdit *>()) {
+        le->setReadOnly(true);
+        le->setFocusPolicy(Qt::NoFocus);
+    }
+    connect(lineSpacingSpin, &QSpinBox::valueChanged, this, [this](int val) {
+        applyLineSpacing(val);
+    });
+    form->addRow(tr("Line Spacing:"), lineSpacingSpin);
+    layout->addLayout(form);
     layout->addStretch();
-    auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok, &dlg);
+
+    auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dlg);
     connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    connect(buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
     layout->addWidget(buttons);
-    dlg.exec();
+
+    if (dlg.exec() == QDialog::Accepted) {
+        applyLineSpacing(lineSpacingSpin->value());
+        QSettings settings;
+        settings.setValue(KEY_LINE_SPACING_PERCENT, m_lineSpacingPercent);
+    } else {
+        applyLineSpacing(origPercent);
+    }
 }
 
 void MainWindow::onOpen()
@@ -191,7 +243,9 @@ bool MainWindow::openFile(const QString &filePath)
     QString text = in.readAll();
     file.close();
 
-    if (fi.suffix().compare(QStringLiteral("md"), Qt::CaseInsensitive) == 0) {
+    const bool isMarkdown = (fi.suffix().compare(QStringLiteral("md"), Qt::CaseInsensitive) == 0
+        || fi.suffix().compare(QStringLiteral("markdown"), Qt::CaseInsensitive) == 0);
+    if (isMarkdown) {
         text.replace(QChar('\t'), QStringLiteral("  "));
     }
     m_lastDir = fi.absolutePath();
@@ -214,6 +268,14 @@ bool MainWindow::openFile(const QString &filePath)
 
     edit->setPlainText(text);
     edit->document()->setModified(false);
+    if (QTextEdit *preview = currentPreviewEdit()) {
+        if (isMarkdown) {
+            preview->document()->setBaseUrl(QUrl::fromLocalFile(fi.absolutePath() + QLatin1Char('/')));
+            preview->setMarkdown(text);
+        } else {
+            preview->clear();
+        }
+    }
     setWindowTitle(fi.fileName() + QStringLiteral(" - TestBuffer"));
     statusBar()->showMessage(
         tr("Opened: %1 (%2 chars, %3 lines)")

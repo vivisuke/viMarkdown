@@ -31,6 +31,7 @@ private:
     void onOpen();
     void onClose();
     void onSettings();
+    void applyLineSpacing(int percent);
     bool openFile(const QString &filePath);
     void addToRecentFiles(const QString &fullPath);
     void onAboutToShow_RecentFiles();
@@ -38,6 +39,7 @@ private:
     Ui::MainWindowClass *ui;
     QTabWidget *m_tabWidget = nullptr;
     int m_tabNumber = 0;
+    int m_lineSpacingPercent = 0;
     QString m_lastDir;
 };
 
