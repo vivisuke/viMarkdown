@@ -1,4 +1,5 @@
-﻿#include <QApplication>
+﻿#include <algorithm>
+#include <QApplication>
 #include <QPlainTextEdit>
 #include <QTextEdit>
 #include <QTextCursor>
@@ -3467,42 +3468,65 @@ void MarkdownEditor::syncDiffViewCursorFromEditor() {
 		const auto *userData1 = dynamic_cast<const DiffBlockUserData*>(block1.userData());
 		const auto *userData2 = dynamic_cast<const DiffBlockUserData*>(block2.userData());
 		//	undone: offset を修正
-		if (userData1 && userData2) {
-			const auto &ranges1 = userData1->ranges;
-			const auto &ranges2 = userData2->ranges;
-			int numRanges = qMin(ranges1.size(), ranges2.size());
-			if (numRanges > 0) {
+		if (userData1 || userData2) {
+			struct MapSeg {
+				int srcStart, srcEnd;
+				int dstStart, dstEnd;
+			};
+			std::vector<MapSeg> segs;
+			const int peerBn = block2.blockNumber();
+			const int myBn = block1.blockNumber();
+			if (userData1) {
+				for (const auto &r1 : userData1->ranges) {
+					if (r1.peerStart >= 0 && (r1.peerBlockNum < 0 || r1.peerBlockNum == peerBn))
+						segs.push_back({r1.start, r1.start + r1.length, r1.peerStart, r1.peerStart + r1.peerLength});
+				}
+			}
+			if (userData2) {
+				for (const auto &r2 : userData2->ranges) {
+					if (r2.peerStart >= 0 && r2.peerLength == 0 && (r2.peerBlockNum < 0 || r2.peerBlockNum == myBn))
+						segs.push_back({r2.peerStart, r2.peerStart, r2.start, r2.start + r2.length});
+				}
+			}
+			if (!segs.empty()) {
+				std::sort(segs.begin(), segs.end(), [](const MapSeg &a, const MapSeg &b) {
+					if (a.srcStart != b.srcStart) return a.srcStart < b.srcStart;
+					if (a.srcEnd != b.srcEnd) return a.srcEnd < b.srcEnd;
+					return a.dstStart < b.dstStart;
+				});
+				std::vector<MapSeg> merged;
+				merged.reserve(segs.size());
+				for (const auto &s : segs) {
+					if (!merged.empty() && s.srcStart <= merged.back().srcEnd && s.dstStart <= merged.back().dstEnd) {
+						merged.back().srcEnd = qMax(merged.back().srcEnd, s.srcEnd);
+						merged.back().dstEnd = qMax(merged.back().dstEnd, s.dstEnd);
+					} else {
+						merged.push_back(s);
+					}
+				}
 				int srcTarget = offset;
 				bool mapped = false;
-				int lastR1End = 0;
-				int lastR2End = 0;
-				for (int i = 0; i < numRanges; ++i) {
-					const auto &r1 = ranges1[i];
-					const auto &r2 = ranges2[i];
-					if (srcTarget < r1.start) {
-						// 1:1で一致する領域（前回の範囲の末尾から、今回の範囲の手前まで）
-						offset = lastR2End + (srcTarget - lastR1End);
+				int lastSrcEnd = 0;
+				int lastDstEnd = 0;
+				for (const auto &seg : merged) {
+					if (srcTarget < seg.srcStart) {
+						offset = lastDstEnd + (srcTarget - lastSrcEnd);
 						mapped = true;
 						break;
 					}
-					else if (srcTarget <= r1.start + r1.length) {
-						// 変更領域（ranges1[i] の内部）
-						if (r1.length > 0) {
-							// 比率で位置をマッピング（文字数の異なる置換に対応）
-							double ratio = static_cast<double>(srcTarget - r1.start) / r1.length;
-							offset = r2.start + qRound(ratio * r2.length);
-						} else {
-							// 0文字の挿入・削除箇所の場合
-							offset = r2.start;
-						}
+					const int srcLen = seg.srcEnd - seg.srcStart;
+					if (srcLen > 0 && srcTarget <= seg.srcEnd) {
+						const int dstLen = seg.dstEnd - seg.dstStart;
+						double ratio = static_cast<double>(srcTarget - seg.srcStart) / srcLen;
+						offset = seg.dstStart + qRound(ratio * dstLen);
 						mapped = true;
 						break;
 					}
-					lastR1End = r1.start + r1.length;
-					lastR2End = r2.start + r2.length;
+					lastSrcEnd = seg.srcEnd;
+					lastDstEnd = seg.dstEnd;
 				}
-				if (!mapped) {	// 最後の変更範囲よりも後ろにある、1:1で一致する領域
-					offset = lastR2End + (srcTarget - lastR1End);
+				if (!mapped) {
+					offset = lastDstEnd + (srcTarget - lastSrcEnd);
 				}
 			}
 		}
