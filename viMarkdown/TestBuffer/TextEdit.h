@@ -5,6 +5,7 @@
 
 #include <QAbstractScrollArea>
 #include <QColor>
+#include <functional>
 
 //----------------------------------------------------------------------
 //	TextEdit: QPlainTextEdit に対応する最小限のプレーンテキスト編集ウィジェット
@@ -59,6 +60,7 @@ public:
 
 	void undo();
 	void redo();
+	void setTextChangedCallback(std::function<void()> cb) { m_onTextChanged = std::move(cb); }
 	QVariant inputMethodQuery(Qt::InputMethodQuery query) const override;
 
 protected:
@@ -71,8 +73,10 @@ protected:
 	void resizeEvent(QResizeEvent *event) override;
 	void focusInEvent(QFocusEvent *event) override;
 	void focusOutEvent(QFocusEvent *event) override;
+	bool focusNextPrevChild(bool next) override;
 
 private:
+	bool indentSelection(bool unindent);
 	int lineHeight() const;
 	int pageLines() const;
 	int tabStopPixels(const QFontMetrics &fm) const;
@@ -83,7 +87,7 @@ private:
 	void updateWrapWidth();
 	void ensureCursorVisible();
 	void updateLineNumberAreaGeometry();
-	void afterChange();	//	編集・移動後のスクロール追随と再描画
+	void afterChange(bool textChanged = false);	//	編集・移動後のスクロール追随と再描画
 
 	TextDocument m_doc;
 	TextCursor m_cursor;
@@ -95,6 +99,7 @@ private:
 	QString m_preedit;
 	int m_preeditCursor = 0;
 	LineNumberArea *m_lineNumberArea = nullptr;
+	std::function<void()> m_onTextChanged;
 };
 
 //----------------------------------------------------------------------

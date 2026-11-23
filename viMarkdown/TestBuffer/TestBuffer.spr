@@ -32,8 +32,8 @@ SPR# 状 P Open  Close ver     Type  概要
 0028 ◎ C 11/23 11/23 0001 │ToDo│TextEdit フォント選択可能に
 0029 ◎ C 11/23 11/23 0001 │ToDo│MarkdownPreview : public QTextEdit 定義
 0030 ◎ C 11/23 11/23 0001 │ToDo│見出し行パースを自前認識に
-0031 ● C 11/23            │ToDo│
-0032 ● C 11/23            │ToDo│
+0031 ◎ C 11/23 11/23 0001 │ToDo│リスト行にも対応
+0032 ◎ C 11/23 11/23 0001 │ToDo│Tab でインデント、Shift + Tab 逆インデント
 0033 ● C 11/23            │ToDo│
 0034 ● C 11/23            │ToDo│
 0035 ● C 11/23            │ToDo│

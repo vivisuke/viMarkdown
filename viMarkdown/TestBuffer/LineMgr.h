@@ -23,6 +23,7 @@ public:
 	enum LineType : uint8_t {
 		LT_BODY = 0,
 		LT_HEADING,
+		LT_LIST,
 	};
 
 	struct LineInfo {

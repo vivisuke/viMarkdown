@@ -112,6 +112,9 @@ TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath
     edit->setHeadingColor(m_headingColor);
     edit->setEmphasisColor(m_emphasisColor);
     auto *preview = new MarkdownPreview(splitter);
+    edit->setTextChangedCallback([edit, preview]() {
+        preview->setMarkdown(edit->document());
+    });
     splitter->addWidget(edit);
     splitter->addWidget(preview);
     splitter->setStretchFactor(0, 1);

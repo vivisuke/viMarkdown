@@ -37,13 +37,22 @@ QVector<HighlightSpan> highlightMarkdownLine(const QString &lineText, LineMgr::L
 		return spans;
 	}
 
+	qsizetype inlineStart = 0;
+	if( lineType == LineMgr::LT_LIST ) {
+		while( inlineStart < lineText.size()
+			&& (lineText[inlineStart] == QChar(' ') || lineText[inlineStart] == QChar('\t')) )
+			++inlineStart;
+		if( inlineStart + 2 <= lineText.size() )
+			inlineStart += 2;	//	リストマーカー（"- " / "* " / "+ "）をスキップ
+	}
+
 	static const QRegularExpression reBoldItalic(QStringLiteral(R"(\*\*\*([^\*]+)\*\*\*)"));
 	static const QRegularExpression reBold(QStringLiteral(R"((?<![\*\\])\*\*([^\\\*]+)\*\*)"));
 	static const QRegularExpression reItalic(QStringLiteral(R"((?<![\*\\])\*([^\\\*]+)\*)"));
 	static const QRegularExpression reStrike(QStringLiteral(R"((?<![\*\\])~~([^\\~]+)~~)"));
 
 	auto collect = [&](const QRegularExpression &re) {
-		auto it = re.globalMatch(lineText);
+		auto it = re.globalMatch(lineText, inlineStart);
 		while( it.hasNext() ) {
 			auto m = it.next();
 			spans.push_back({m.capturedStart(), m.capturedLength(), emphColor});
@@ -166,7 +175,7 @@ void TextEdit::undo()
 	if( !m_doc.canUndo() ) return;
 	int pos = m_doc.undo();
 	m_cursor.setPosition(pos);
-	afterChange();
+	afterChange(true);
 }
 
 void TextEdit::redo()
@@ -174,7 +183,7 @@ void TextEdit::redo()
 	if( !m_doc.canRedo() ) return;
 	int pos = m_doc.redo();
 	m_cursor.setPosition(pos);
-	afterChange();
+	afterChange(true);
 }
 
 int TextEdit::lineHeight() const
@@ -303,8 +312,10 @@ void TextEdit::ensureCursorVisible()
 		bar->setValue(cv - pageLines() + 1);
 }
 
-void TextEdit::afterChange()
+void TextEdit::afterChange(bool textChanged)
 {
+	if( textChanged && m_onTextChanged )
+		m_onTextChanged();
 	updateScrollBars();
 	ensureCursorVisible();
 	viewport()->update();
@@ -454,6 +465,7 @@ void TextEdit::keyPressEvent(QKeyEvent *event)
 	const bool ctrl = (event->modifiers() & Qt::ControlModifier) != 0;
 	const TextCursor::MoveMode mode = shift ? TextCursor::KeepAnchor : TextCursor::MoveAnchor;
 	bool handled = true;
+	bool textChanged = false;
 	switch( event->key() ) {
 	case Qt::Key_Left:	m_cursor.movePosition(ctrl ? TextCursor::PreviousWord : TextCursor::Left, mode); break;
 	case Qt::Key_Right:	m_cursor.movePosition(ctrl ? TextCursor::NextWord : TextCursor::Right, mode); break;
@@ -488,11 +500,12 @@ void TextEdit::keyPressEvent(QKeyEvent *event)
 		m_cursor.setPosition(ts + ti, mode);
 		break;
 	}
-	case Qt::Key_Backspace:	m_cursor.deletePreviousChar(); break;
-	case Qt::Key_Delete:	m_cursor.deleteChar(); break;
+	case Qt::Key_Backspace:	m_cursor.deletePreviousChar(); textChanged = true; break;
+	case Qt::Key_Delete:	m_cursor.deleteChar(); textChanged = true; break;
 	case Qt::Key_Return:
-	case Qt::Key_Enter:	m_cursor.insertText(QStringLiteral("\n")); break;
-	case Qt::Key_Tab:	m_cursor.insertText(QStringLiteral("\t")); break;
+	case Qt::Key_Enter:	m_cursor.insertText(QStringLiteral("\n")); textChanged = true; break;
+	case Qt::Key_Tab:		textChanged = indentSelection(shift); break;
+	case Qt::Key_Backtab:	textChanged = indentSelection(true); break;
 	case Qt::Key_Z:	if( ctrl ) { if( shift ) redo(); else undo(); } else handled = false; break;
 	case Qt::Key_Y:	if( ctrl ) redo(); else handled = false; break;
 	case Qt::Key_A:
@@ -510,30 +523,35 @@ void TextEdit::keyPressEvent(QKeyEvent *event)
 		if( ctrl && m_cursor.hasSelection() ) {
 			QApplication::clipboard()->setText(m_cursor.selectedText());
 			m_cursor.removeSelectedText();
+			textChanged = true;
 		} else handled = false;
 		break;
 	case Qt::Key_V:
 		if( ctrl ) {
 			QString t = QApplication::clipboard()->text();
-			if( !t.isEmpty() ) m_cursor.insertText(t);
+			if( !t.isEmpty() ) {
+				m_cursor.insertText(t);
+				textChanged = true;
+			}
 		} else handled = false;
 		break;
 	case Qt::Key_Escape:
 		m_cursor.clearSelection();
 		break;
 	default:
-		if( !ctrl && !event->text().isEmpty() && event->text()[0] >= QChar(0x20) && event->text()[0] != QChar(0x7f) )
+		if( !ctrl && !event->text().isEmpty() && event->text()[0] >= QChar(0x20) && event->text()[0] != QChar(0x7f) ) {
 			m_cursor.insertText(event->text());
-		else
+			textChanged = true;
+		} else
 			handled = false;
 		break;
 	}
 	if( handled )
-		afterChange();
+		afterChange(textChanged);
 	else if( !ctrl && !event->text().isEmpty() && event->text()[0] >= QChar(0x20) && event->text()[0] != QChar(0x7f) ) {
 		//	専用 case が Ctrl なしで拾った文字キー（A/C/V/X/Y/Z 等）はテキストとして挿入する
 		m_cursor.insertText(event->text());
-		afterChange();
+		afterChange(true);
 	} else
 		QAbstractScrollArea::keyPressEvent(event);
 }
@@ -591,16 +609,70 @@ void TextEdit::focusOutEvent(QFocusEvent *event)
 	viewport()->update();
 }
 
+bool TextEdit::focusNextPrevChild(bool next)
+{
+	Q_UNUSED(next);
+	return false;	//	Tab / Shift+Tab でフォーカス移動させずインデント操作に使う
+}
+
+bool TextEdit::indentSelection(bool unindent)
+{
+	const ViewLineMgr &mgr = m_doc.lineMgr();
+	const bool hadSelection = m_cursor.hasSelection();
+	const TextDocument::pos_t selStart = m_cursor.selectionStart();
+	const TextDocument::pos_t selEnd = m_cursor.selectionEnd();
+	int startLine = mgr.lineAtPos(selStart);
+	int endLine = mgr.lineAtPos(selEnd);
+	if( hadSelection && selEnd > selStart && selEnd == mgr.lineStartPos(endLine) )
+		--endLine;
+
+	bool changed = false;
+	m_doc.undoMgr().openBlock();
+	for( int ln = startLine; ln <= endLine; ++ln ) {
+		const TextDocument::pos_t lineStart = mgr.lineStartPos(ln);
+		if( !unindent ) {
+			m_doc.insert(lineStart, QStringLiteral("  "));
+			changed = true;
+		} else {
+			const TextDocument::pos_t len = mgr.lineLength(ln);
+			if( len >= 1 && m_doc.characterAt(lineStart) == QChar('\t') ) {
+				m_doc.erase(lineStart, lineStart + 1);
+				changed = true;
+			} else if( len >= 2 && m_doc.characterAt(lineStart) == QChar(' ') && m_doc.characterAt(lineStart + 1) == QChar(' ') ) {
+				m_doc.erase(lineStart, lineStart + 2);
+				changed = true;
+			} else if( len >= 1 && m_doc.characterAt(lineStart) == QChar(' ') ) {
+				m_doc.erase(lineStart, lineStart + 1);
+				changed = true;
+			}
+		}
+	}
+	m_doc.undoMgr().closeBlock();
+
+	if( changed && hadSelection && startLine < endLine ) {
+		const TextDocument::pos_t newStart = mgr.lineStartPos(startLine);
+		const TextDocument::pos_t newEnd = (endLine + 1 < mgr.lineCount())
+			? mgr.lineStartPos(endLine + 1)
+			: mgr.lineEndPos(endLine);
+		m_cursor.setPosition(newStart);
+		m_cursor.setPosition(newEnd, TextCursor::KeepAnchor);
+	}
+	return changed;
+}
+
 void TextEdit::inputMethodEvent(QInputMethodEvent *event)
 {
+	bool textChanged = false;
 	if( event->replacementLength() > 0 ) {
 		TextDocument::pos_t pos = m_cursor.position() + event->replacementStart();
 		m_cursor.setPosition(pos);
 		m_cursor.setPosition(pos + event->replacementLength(), TextCursor::KeepAnchor);
 		m_cursor.removeSelectedText();
+		textChanged = true;
 	}
 	if( !event->commitString().isEmpty() ) {
 		m_cursor.insertText(event->commitString());
+		textChanged = true;
 	}
 	m_preedit = event->preeditString();
 	m_preeditCursor = (int)m_preedit.size();
@@ -610,7 +682,7 @@ void TextEdit::inputMethodEvent(QInputMethodEvent *event)
 			break;
 		}
 	}
-	afterChange();
+	afterChange(textChanged);
 	event->accept();
 }
 
