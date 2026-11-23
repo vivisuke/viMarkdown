@@ -1785,7 +1785,7 @@ void MarkdownPreview::do_numlist(int bn0, int nBlocks, QTextBlock srcBlock, QTex
 	QTextListFormat listFormat;
 	listFormat.setStyle(QTextListFormat::ListDecimal); // 1. 2. 3. の連番リスト
 	auto *list = cursor.createList(listFormat);
-	QString text = buf;
+	QString text = srcBlock.text();
 	auto match = re_numlist.match(text);
 	//int seq = 1;
 	while( match.hasMatch() ) {
@@ -1799,11 +1799,12 @@ void MarkdownPreview::do_numlist(int bn0, int nBlocks, QTextBlock srcBlock, QTex
 		//cursor.insertText(m_lst[m_ln].remove(re_numlist) /*+ "\n"*/);
 		setBlockType(cursor.block(), BT_NUMLIST);
 		//##text.replace(re_tailspc, ZWSP);
-		if( text.size() > 3 && text.back() == u' ' ) {	//	"1. " 部分は無視
+		if( text.size() > match.capturedLength() && text.back() == u' ' ) {	//	"1. " 部分は無視
 			text.back() = ZWSP;
 		}
 		//cursor.insertMarkdown(text + "\n");
-		listFormat.setIndent(1);
+		int indt = nLeadingSpaces(text) / 2;
+		listFormat.setIndent(indt + 1);
 		int n = match.captured(2).toInt();
 		if( n > 1 ) m_listNum = n - 1;
 		else if( n == 0 ) m_listNum = 0;
@@ -1890,6 +1891,7 @@ void MarkdownPreview::do_checkbox(int bn0, int nBlocks, QTextBlock srcBlock, QTe
 #if 1
 		QTextListFormat listFormat;
 		listFormat.setStyle(QTextListFormat::ListDisc);
+		listFormat.setIndent(nSpaces / 2 + 1);
 		cursor.createList(listFormat);
 		QTextBlockFormat blockFormat = cursor.blockFormat();
 		blockFormat.setMarker( buf[3]==u' '?QTextBlockFormat::MarkerType::Unchecked:QTextBlockFormat::MarkerType::Checked );

@@ -1666,6 +1666,9 @@ void MarkdownEditor::do_deleteText(QTextCursor &cursor) {
 		//auto t = cursor.selectedText();
 		sz = cursor.selectedText().size();
 		pos = cursor.selectionStart();
+		if( sz <= 0 ) return;
+	} else if( cursor.atEnd() ) {
+		return;		//	文書末尾では削除対象が無いので Undo 記録しない
 	}
 	//auto t1 = cursor.block().text();
 	m_undoMgr->push_back_delText(pos, sz, false);

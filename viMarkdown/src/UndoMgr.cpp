@@ -86,6 +86,7 @@ void UndoMgr::init()
 	m_savePointCur = 0;
 	m_lastDelTextSize = 0;
 	m_lastInsTextSize = 0;
+	m_blockLevel = 0;
 	//m_blockOpened = false;
 	m_actionPushed = false;
 	m_stack.clear();

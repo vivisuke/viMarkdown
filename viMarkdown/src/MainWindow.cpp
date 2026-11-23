@@ -2799,6 +2799,7 @@ int isNumListBlock(const QTextBlock& block) {		//	空白+ "数字. " で始ま�
 }
 void MainWindow::onAction_Indent() {
 	DocWidget *docWidget = getCurDocWidget();
+	if( docWidget == nullptr ) return;
 	MarkdownEditor *mdEditor = docWidget->m_editor;
 	//	[v0.3 #1392] diff 表示中は、フォーカスのあるビューに対して処理する（v0.3 #1267 と同様）
 	if( docWidget->m_diffMode && QApplication::focusWidget() == docWidget->m_diffview )
@@ -2839,6 +2840,7 @@ void MainWindow::onAction_Indent() {
 }
 void MainWindow::onAction_UnIndent() {
 	DocWidget *docWidget = getCurDocWidget();
+	if( docWidget == nullptr ) return;
 	MarkdownEditor *mdEditor = docWidget->m_editor;
 	//	[v0.3 #1392] diff 表示中は、フォーカスのあるビューに対して処理する（v0.3 #1267 と同様）
 	if( docWidget->m_diffMode && QApplication::focusWidget() == docWidget->m_diffview )
@@ -2891,7 +2893,9 @@ static int leadingSpacesCount(const QTextBlock& block) {
 	return i;
 }
 void MainWindow::onAction_Checkbox() {
-	MarkdownEditor *mdEditor = getCurDocWidget()->m_editor;
+	DocWidget *docWidget = getCurDocWidget();
+	if( docWidget == nullptr ) return;
+	MarkdownEditor *mdEditor = docWidget->m_editor;
 	QTextCursor cursor = mdEditor->textCursor();
 	QTextDocument *doc = mdEditor->document();
 	mdEditor->openUndoBlock();
@@ -2949,7 +2953,9 @@ void MainWindow::onAction_Checkbox() {
 }
 void MainWindow::onAction_List() {
 	//##qDebug() << "MainWindow::onAction_List()";
-	MarkdownEditor *mdEditor = getCurDocWidget()->m_editor;
+	DocWidget *docWidget = getCurDocWidget();
+	if( docWidget == nullptr ) return;
+	MarkdownEditor *mdEditor = docWidget->m_editor;
 	QTextCursor cursor = mdEditor->textCursor();
 	QTextDocument *doc = mdEditor->document();
 	mdEditor->openUndoBlock();
@@ -3006,7 +3012,9 @@ void MainWindow::onAction_List() {
 }
 void MainWindow::onAction_NumList() {
 	//##qDebug() << "MainWindow::onAction_NumList()";
-	MarkdownEditor *mdEditor = getCurDocWidget()->m_editor;
+	DocWidget *docWidget = getCurDocWidget();
+	if( docWidget == nullptr ) return;
+	MarkdownEditor *mdEditor = docWidget->m_editor;
 	QTextCursor cursor = mdEditor->textCursor();
 	QTextDocument *doc = mdEditor->document();
 	mdEditor->openUndoBlock();
@@ -3093,7 +3101,9 @@ bool isWrappedWith(const QTextCursor &cursor, const QString &delimiter) {
 //	選択前後に delimiter（** 等）を挿入
 //	ただし、選択前後に delimiter がある場合は削除
 void MainWindow::insertInline(const QString& delimiter) {
-	MarkdownEditor *mdEditor = getCurDocWidget()->m_editor;
+	DocWidget *docWidget = getCurDocWidget();
+	if( docWidget == nullptr ) return;
+	MarkdownEditor *mdEditor = docWidget->m_editor;
 	QTextCursor cursor = mdEditor->textCursor();
 	if (cursor.hasSelection()) {
 		// 2. 複数行にまたがっているかチェック
