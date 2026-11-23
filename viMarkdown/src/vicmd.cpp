@@ -2513,7 +2513,9 @@ void MainWindow::do_exCmd(const QString &text, QTextCursor& cursor) {
 			gvi.m_rangeStart = gvi.m_rangeEnd;
 	}
 	if( ix >= text.size() || text[ix] == u'\n' ) {	//	:{range} Enter の場合
-		QTextBlock block = doc->findBlockByNumber(gvi.m_rangeEnd - 1);
+		int targetBn = qBound(0, gvi.m_rangeEnd - 1, qMax(0, doc->blockCount() - 1));
+		QTextBlock block = doc->findBlockByNumber(targetBn);
+		if( !block.isValid() ) return;
 		cursor.setPosition(block.position());
 		hat(cursor);
 		if( gvi.m_prevFocusWidget == (QWidget*)docWidget->m_editor )
