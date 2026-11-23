@@ -101,6 +101,10 @@ MainWindow::MainWindow(QWidget *parent)
     viewMenu->addAction(outlineAct);
     viewMenu->addAction(outputAct);
     menuBar()->insertMenu(ui->menuTest->menuAction(), viewMenu);
+#if defined(Q_OS_WIN) || defined(Q_OS_LINUX)
+    //	メニューバーをメインツールバーに統合（viMarkdown と同じ方式）
+    ui->mainToolBar->insertWidget(ui->action_Undo, ui->menuBar);
+#endif
 
     TextEdit *initialEdit = addEditorTab(QStringLiteral("Untitled-%1").arg(++m_tabNumber));
     initialEdit->setFocus();
@@ -114,9 +118,37 @@ MainWindow::MainWindow(QWidget *parent)
         if (!state.isEmpty())
             restoreState(state);
     }
+    connect(ui->action_NewTab, &QAction::triggered, this, &MainWindow::onNewTab);
     connect(ui->action_Open, &QAction::triggered, this, &MainWindow::onOpen);
     connect(ui->action_Save, &QAction::triggered, this, &MainWindow::onSave);
     connect(ui->action_Close, &QAction::triggered, this, &MainWindow::onClose);
+    connect(ui->action_Undo, &QAction::triggered, this, &MainWindow::onUndo);
+    connect(ui->action_Redo, &QAction::triggered, this, &MainWindow::onRedo);
+    connect(ui->action_Cut, &QAction::triggered, this, [this]() {
+        if (TextEdit *edit = currentTextEdit())
+            edit->cut();
+    });
+    connect(ui->action_Copy, &QAction::triggered, this, [this]() {
+        if (QWidget *fw = QApplication::focusWidget()) {
+            if (auto *te = qobject_cast<QTextEdit *>(fw)) { te->copy(); return; }
+            if (auto *pte = qobject_cast<QPlainTextEdit *>(fw)) { pte->copy(); return; }
+        }
+        if (TextEdit *edit = currentTextEdit())
+            edit->copy();
+    });
+    connect(ui->action_Paste, &QAction::triggered, this, [this]() {
+        if (TextEdit *edit = currentTextEdit())
+            edit->paste();
+    });
+    connect(ui->action_SelectAll, &QAction::triggered, this, [this]() {
+        if (QWidget *fw = QApplication::focusWidget()) {
+            if (auto *te = qobject_cast<QTextEdit *>(fw)) { te->selectAll(); return; }
+            if (auto *pte = qobject_cast<QPlainTextEdit *>(fw)) { pte->selectAll(); return; }
+        }
+        if (TextEdit *edit = currentTextEdit())
+            edit->selectAll();
+    });
+    updateUndoRedoEnabled();
     connect(ui->action_Settings, &QAction::triggered, this, &MainWindow::onSettings);
     connect(ui->menu_RecentFiles, &QMenu::aboutToShow, this, &MainWindow::onAboutToShow_RecentFiles);
     connect(ui->action_gap_buffer, &QAction::triggered, this, [this]() {
@@ -178,6 +210,7 @@ TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath
     edit->setTextChangedCallback([this, splitter, edit, preview]() {
         preview->setMarkdown(edit->document());
         updateOutlineForTab(splitter);
+        updateUndoRedoEnabled();
     });
     edit->setFontSizeChangeCallback([this](int delta) {
         const int newSize = qBound(3, m_editorFontSize + delta, 64);
@@ -235,9 +268,11 @@ void MainWindow::onCurrentTabChanged(int index)
 {
     if (index < 0) {
         setWindowTitle(QStringLiteral("TestBuffer"));
+        updateUndoRedoEnabled();
         return;
     }
     setWindowTitle(m_tabWidget->tabText(index) + QStringLiteral(" - TestBuffer"));
+    updateUndoRedoEnabled();
     if (TextEdit *edit = currentTextEdit())
         edit->setFocus();
 }
@@ -257,6 +292,27 @@ void MainWindow::onClose()
 {
     if (m_tabWidget)
         onTabCloseRequested(m_tabWidget->currentIndex());
+}
+
+void MainWindow::onUndo()
+{
+    if (TextEdit *edit = currentTextEdit())
+        edit->undo();
+    updateUndoRedoEnabled();
+}
+
+void MainWindow::onRedo()
+{
+    if (TextEdit *edit = currentTextEdit())
+        edit->redo();
+    updateUndoRedoEnabled();
+}
+
+void MainWindow::updateUndoRedoEnabled()
+{
+    TextEdit *edit = currentTextEdit();
+    ui->action_Undo->setEnabled(edit && edit->document()->canUndo());
+    ui->action_Redo->setEnabled(edit && edit->document()->canRedo());
 }
 
 void MainWindow::applyLineSpacing(int percent)
@@ -456,6 +512,12 @@ void MainWindow::onSettings()
     }
 }
 
+void MainWindow::onNewTab()
+{
+    TextEdit *edit = addEditorTab(QStringLiteral("Untitled-%1").arg(++m_tabNumber));
+    edit->setFocus();
+}
+
 void MainWindow::onOpen()
 {
     QString filePath = QFileDialog::getOpenFileName(
@@ -574,6 +636,7 @@ bool MainWindow::openFile(const QString &filePath)
     }
     setWindowTitle(fi.fileName() + QStringLiteral(" - TestBuffer"));
     updateOutlineForTab(m_tabWidget->currentWidget());
+    updateUndoRedoEnabled();
     statusBar()->showMessage(
         tr("Opened: %1 (%2 chars, %3 lines)")
             .arg(cleanPath)

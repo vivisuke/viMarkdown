@@ -26,10 +26,23 @@
       <string>Recent File (&amp;1)</string>
      </property>
     </widget>
+    <addaction name="action_NewTab"/>
     <addaction name="action_Open"/>
     <addaction name="action_Save"/>
     <addaction name="action_Close"/>
     <addaction name="menu_RecentFiles"/>
+   </widget>
+   <widget class="QMenu" name="menuEdit">
+    <property name="title">
+     <string>&amp;Edit</string>
+    </property>
+    <addaction name="action_Undo"/>
+    <addaction name="action_Redo"/>
+    <addaction name="separator"/>
+    <addaction name="action_Cut"/>
+    <addaction name="action_Copy"/>
+    <addaction name="action_Paste"/>
+    <addaction name="action_SelectAll"/>
    </widget>
    <widget class="QMenu" name="menuTest">
     <property name="title">
@@ -49,10 +62,32 @@
     <addaction name="action_Settings"/>
    </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuEdit"/>
    <addaction name="menuTest"/>
    <addaction name="menuOther"/>
   </widget>
-  <widget class="QToolBar" name="mainToolBar" />
+  <widget class="QToolBar" name="mainToolBar">
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="action_Undo"/>
+   <addaction name="action_Redo"/>
+  </widget>
+  <widget class="QToolBar" name="fileToolBar">
+   <property name="windowTitle">
+    <string>FileToolBar</string>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>LeftToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="action_NewTab"/>
+  </widget>
   <widget class="QWidget" name="centralWidget" />
   <widget class="QStatusBar" name="statusBar" />
   <widget class="QDockWidget" name="outputBar" >
@@ -82,6 +117,18 @@
     </layout>
    </widget>
   </widget>
+  <action name="action_NewTab">
+   <property name="icon">
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/new_tab_48.png</normaloff>:/MainWindow/images/new_tab_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>New&amp;Tab</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+T</string>
+   </property>
+  </action>
   <action name="action_Open">
    <property name="text">
     <string>&amp;Open...</string>
@@ -104,6 +151,74 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+W</string>
+   </property>
+  </action>
+  <action name="action_Undo">
+   <property name="icon">
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/undo_48.png</normaloff>:/MainWindow/images/undo_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Undo</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Z</string>
+   </property>
+  </action>
+  <action name="action_Redo">
+   <property name="icon">
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/redo_48.png</normaloff>:/MainWindow/images/redo_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Redo</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Y</string>
+   </property>
+  </action>
+  <action name="action_Cut">
+   <property name="icon">
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/content_cut_48.png</normaloff>:/MainWindow/images/content_cut_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>Cu&amp;t</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+X</string>
+   </property>
+  </action>
+  <action name="action_Copy">
+   <property name="icon">
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/content_copy_48.png</normaloff>:/MainWindow/images/content_copy_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Copy</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+C</string>
+   </property>
+  </action>
+  <action name="action_Paste">
+   <property name="icon">
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/content_paste_48.png</normaloff>:/MainWindow/images/content_paste_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Paste</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+V</string>
+   </property>
+  </action>
+  <action name="action_SelectAll">
+   <property name="text">
+    <string>Select&amp;All</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+A</string>
    </property>
   </action>
   <action name="action_gap_buffer">

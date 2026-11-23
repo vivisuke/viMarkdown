@@ -35,9 +35,13 @@ private:
     int findTabByFilePath(const QString &cleanPath) const;
     void onCurrentTabChanged(int index);
     void onTabCloseRequested(int index);
+    void onNewTab();
     void onOpen();
     void onSave();
     void onClose();
+    void onUndo();
+    void onRedo();
+    void updateUndoRedoEnabled();
     void onSettings();
     void applyLineSpacing(int percent);
     void applyColors(const QColor &heading, const QColor &emphasis);

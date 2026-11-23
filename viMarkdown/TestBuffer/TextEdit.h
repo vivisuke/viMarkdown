@@ -63,6 +63,10 @@ public:
 
 	void undo();
 	void redo();
+	void cut();
+	void copy();
+	void paste();
+	void selectAll();
 	void onSaved();
 	void setTextChangedCallback(std::function<void()> cb) { m_onTextChanged = std::move(cb); }
 	void setFontSizeChangeCallback(std::function<void(int)> cb) { m_onFontSizeChange = std::move(cb); }

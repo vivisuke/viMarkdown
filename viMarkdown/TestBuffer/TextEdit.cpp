@@ -194,6 +194,35 @@ void TextEdit::redo()
 	afterChange(true);
 }
 
+void TextEdit::cut()
+{
+	if( !m_cursor.hasSelection() ) return;
+	QApplication::clipboard()->setText(m_cursor.selectedText());
+	m_cursor.removeSelectedText();
+	afterChange(true);
+}
+
+void TextEdit::copy()
+{
+	if( !m_cursor.hasSelection() ) return;
+	QApplication::clipboard()->setText(m_cursor.selectedText());
+}
+
+void TextEdit::paste()
+{
+	QString t = QApplication::clipboard()->text();
+	if( t.isEmpty() ) return;
+	m_cursor.insertText(t);
+	afterChange(true);
+}
+
+void TextEdit::selectAll()
+{
+	m_cursor.setPosition(0);
+	m_cursor.setPosition(m_doc.characterCount(), TextCursor::KeepAnchor);
+	afterChange(false);
+}
+
 void TextEdit::onSaved()
 {
 	m_doc.onSaved();
