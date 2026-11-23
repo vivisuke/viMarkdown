@@ -41,8 +41,15 @@
     <addaction name="action_ViewLineMgr"/>
     <addaction name="action_TextDocument"/>
    </widget>
+   <widget class="QMenu" name="menuOther">
+    <property name="title">
+     <string>&amp;Other</string>
+    </property>
+    <addaction name="action_Settings"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuTest"/>
+   <addaction name="menuOther"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar" />
   <widget class="QWidget" name="centralWidget" />
@@ -118,6 +125,14 @@
   <action name="action_TextDocument">
    <property name="text">
     <string>TextDocument</string>
+   </property>
+  </action>
+  <action name="action_Settings">
+   <property name="text">
+    <string>&amp;Settings...</string>
+   </property>
+   <property name="shortcut">
+    <string>F8</string>
    </property>
   </action>
  </widget>

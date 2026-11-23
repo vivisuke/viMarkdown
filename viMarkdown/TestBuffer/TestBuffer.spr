@@ -25,7 +25,7 @@ SPR# 状 P Open  Close ver     Type  概要
 0021 ◎ C 11/22 11/23 0001 │ToDo│TabWidget 化
 0022 ◎ C 11/23 11/23 0001 │ToDo│TextEdit＋QTextEdit化
 0023 ◎ C 11/23 11/23 0001 │ToDo│File > Close (Ctrl + W) 追加
-0024 ● C 11/23            │ToDo│
+0024 ◎ C 11/23 11/23 0001 │ToDo│とりあえず設定ダイアログ追加
 0025 ● C 11/23            │ToDo│
 0026 ● C 11/23            │ToDo│
 0027 ● C 11/23            │ToDo│

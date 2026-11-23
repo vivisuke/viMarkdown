@@ -30,6 +30,7 @@ private:
     void onTabCloseRequested(int index);
     void onOpen();
     void onClose();
+    void onSettings();
     bool openFile(const QString &filePath);
     void addToRecentFiles(const QString &fullPath);
     void onAboutToShow_RecentFiles();

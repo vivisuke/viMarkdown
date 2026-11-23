@@ -1,5 +1,7 @@
 #include "MainWindow.h"
 #include "TextEdit.h"
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QDir>
 #include <QFile>
 #include <QFileDialog>
@@ -12,6 +14,7 @@
 #include <QTextEdit>
 #include <QTextStream>
 #include <QTimer>
+#include <QVBoxLayout>
 #include "GapBufferTest.h"
 #include "LineMgrTest.h"
 #include "ViewLineMgrTest.h"
@@ -42,6 +45,7 @@ MainWindow::MainWindow(QWidget *parent)
     QTimer::singleShot(0, initialEdit, qOverload<>(&QWidget::setFocus));
     connect(ui->action_Open, &QAction::triggered, this, &MainWindow::onOpen);
     connect(ui->action_Close, &QAction::triggered, this, &MainWindow::onClose);
+    connect(ui->action_Settings, &QAction::triggered, this, &MainWindow::onSettings);
     connect(ui->menu_RecentFiles, &QMenu::aboutToShow, this, &MainWindow::onAboutToShow_RecentFiles);
     connect(ui->action_gap_buffer, &QAction::triggered, this, [this]() {
         do_test_gapBuffer(this);
@@ -135,6 +139,19 @@ void MainWindow::onClose()
 {
     if (m_tabWidget)
         onTabCloseRequested(m_tabWidget->currentIndex());
+}
+
+void MainWindow::onSettings()
+{
+    QDialog dlg(this);
+    dlg.setWindowTitle(tr("Settings"));
+    dlg.resize(320, 160);
+    auto *layout = new QVBoxLayout(&dlg);
+    layout->addStretch();
+    auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok, &dlg);
+    connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    layout->addWidget(buttons);
+    dlg.exec();
 }
 
 void MainWindow::onOpen()

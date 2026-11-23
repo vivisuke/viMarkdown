@@ -301,7 +301,7 @@ public:
 	}
 	bool reserve(size_type sz)
 	{
-		size_t cp = capacity();
+		size_type cp = capacity();
 		if( sz <= cp ) return true;
 		const ssize_t cp0 = cp;		//	以前のキャパシティ
 		if( !cp ) cp = DEFAULT_BUFFER_SIZE;
@@ -420,27 +420,27 @@ public:
 		++m_gapSize;
 		--m_size;
 	}
-	void erase(size_t first, size_t sz)
+	void erase(size_type first, size_type sz)
 	{
 		eraseFL(first, first + sz);
 	}
-	void eraseFL(size_t first, size_t last)
+	void eraseFL(size_type first, size_type last)
 	{
 		if( first < 0 ) first = 0;
 		if( last > size() ) last = size();
 		if( first >= last ) return;
 		move_gap(first);
-		const size_t sz = last - first;
+		const size_type sz = last - first;
 		m_gapSize += sz;
 		m_size -= sz;
 	}
 	template<typename T>
-	void addToData(size_t first, size_t sz, T delta)
+	void addToData(size_type first, size_type sz, T delta)
 	{
 		addToDataFL<T>(first, first + sz, delta);
 	}
 	template<typename T>
-	void addToDataFL(size_t first, size_t last, T delta)
+	void addToDataFL(size_type first, size_type last, T delta)
 	{
 		if( first < 0 ) first = 0;
 		if( last > size() ) last = size();
