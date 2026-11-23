@@ -9,7 +9,7 @@ namespace Ui { class MainWindowClass; };
 QT_END_NAMESPACE
 
 class QTabWidget;
-class QTextEdit;
+class MarkdownPreview;
 class TextEdit;
 
 class MainWindow : public QMainWindow
@@ -25,7 +25,7 @@ public:
 private:
     TextEdit *addEditorTab(const QString &title, const QString &filePath = QString());
     TextEdit *currentTextEdit() const;
-    QTextEdit *currentPreviewEdit() const;
+    MarkdownPreview *currentPreviewEdit() const;
     int findTabByFilePath(const QString &cleanPath) const;
     void onCurrentTabChanged(int index);
     void onTabCloseRequested(int index);

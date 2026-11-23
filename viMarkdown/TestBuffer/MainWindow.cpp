@@ -1,4 +1,5 @@
 #include "MainWindow.h"
+#include "MarkdownPreview.h"
 #include "TextEdit.h"
 #include <QColorDialog>
 #include <QDialog>
@@ -110,7 +111,7 @@ TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath
     edit->setLineSpacing(qRound(edit->fontMetrics().height() * m_lineSpacingPercent / 100.0));
     edit->setHeadingColor(m_headingColor);
     edit->setEmphasisColor(m_emphasisColor);
-    auto *preview = new QTextEdit(splitter);
+    auto *preview = new MarkdownPreview(splitter);
     splitter->addWidget(edit);
     splitter->addWidget(preview);
     splitter->setStretchFactor(0, 1);
@@ -133,12 +134,12 @@ TextEdit *MainWindow::currentTextEdit() const
     return splitter ? dynamic_cast<TextEdit *>(splitter->widget(0)) : nullptr;
 }
 
-QTextEdit *MainWindow::currentPreviewEdit() const
+MarkdownPreview *MainWindow::currentPreviewEdit() const
 {
     if (!m_tabWidget)
         return nullptr;
     auto *splitter = qobject_cast<QSplitter *>(m_tabWidget->currentWidget());
-    return splitter ? qobject_cast<QTextEdit *>(splitter->widget(1)) : nullptr;
+    return splitter ? dynamic_cast<MarkdownPreview *>(splitter->widget(1)) : nullptr;
 }
 
 int MainWindow::findTabByFilePath(const QString &cleanPath) const
@@ -372,7 +373,7 @@ bool MainWindow::openFile(const QString &filePath)
     edit->setMarkdownHighlight(isMarkdown);
     edit->setPlainText(text);
     edit->document()->setModified(false);
-    if (QTextEdit *preview = currentPreviewEdit()) {
+    if (MarkdownPreview *preview = currentPreviewEdit()) {
         if (isMarkdown) {
             preview->document()->setBaseUrl(QUrl::fromLocalFile(fi.absolutePath() + QLatin1Char('/')));
             preview->setMarkdown(text);

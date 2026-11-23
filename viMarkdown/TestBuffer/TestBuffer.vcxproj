@@ -103,6 +103,7 @@
     <ClCompile Include="GapBufferTest.cpp" />
     <ClCompile Include="LineMgrTest.cpp" />
     <ClCompile Include="MainWindow.cpp" />
+    <ClCompile Include="MarkdownPreview.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -111,6 +112,7 @@
     <ClInclude Include="LineBlock.h" />
     <ClInclude Include="LineMgr.h" />
     <ClInclude Include="LineMgrTest.h" />
+    <ClInclude Include="MarkdownPreview.h" />
     <ClInclude Include="TextDocument.h" />
     <ClInclude Include="TextDocumentTest.h" />
     <ClInclude Include="TextEdit.h" />

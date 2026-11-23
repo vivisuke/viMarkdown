@@ -30,5 +30,5 @@ SPR# 状 P Open  Close ver     Type  概要
 0026 ◎ C 11/23 11/23 0001 │ToDo│設定ダイアログ：行間指定可能に
 0027 ◎ C 11/23 11/23 0001 │ToDo│見出し行・強調文字強調、設定可能に
 0028 ◎ C 11/23 11/23 0001 │ToDo│TextEdit フォント選択可能に
-0029 ● C 11/23            │ToDo│
+0029 ◎ C 11/23 11/23 0001 │ToDo│MarkdownPreview : public QTextEdit 定義
 0030 ● C 11/23            │ToDo│
