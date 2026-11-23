@@ -34,6 +34,7 @@ private:
     void onSettings();
     void applyLineSpacing(int percent);
     void applyColors(const QColor &heading, const QColor &emphasis);
+    void applyEditorFont(const QString &family);
     bool openFile(const QString &filePath);
     void addToRecentFiles(const QString &fullPath);
     void onAboutToShow_RecentFiles();
@@ -44,6 +45,7 @@ private:
     int m_lineSpacingPercent = 0;
     QColor m_headingColor = QColor(0x80, 0x00, 0x00);
     QColor m_emphasisColor = QColor(0x00, 0x33, 0xAA);
+    QString m_editorFontFamily;
     QString m_lastDir;
 };
 

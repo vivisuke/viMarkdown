@@ -118,6 +118,19 @@ void TextEdit::setLineSpacing(int extraPx)
 	m_lineNumberArea->update();
 }
 
+void TextEdit::setEditorFont(const QFont &f)
+{
+	QFont font = f;
+	font.setStyleHint(QFont::Monospace);
+	setFont(font);
+	setViewportMargins(lineNumberAreaWidth(), 0, 0, 0);
+	updateLineNumberAreaGeometry();
+	updateWrapWidth();
+	updateScrollBars();
+	viewport()->update();
+	m_lineNumberArea->update();
+}
+
 void TextEdit::setMarkdownHighlight(bool enabled)
 {
 	if( m_markdownHighlight == enabled ) return;

@@ -39,6 +39,8 @@ public:
 	void setLineSpacing(int extraPx);
 	int lineSpacing() const { return m_lineSpacing; }
 
+	void setEditorFont(const QFont &font);
+
 	void setMarkdownHighlight(bool enabled);
 	bool markdownHighlight() const { return m_markdownHighlight; }
 

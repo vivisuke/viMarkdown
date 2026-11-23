@@ -7,6 +7,7 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QFontComboBox>
 #include <QFormLayout>
 #include <QLineEdit>
 #include <QMessageBox>
@@ -32,6 +33,7 @@ const QStringView KEY_RECENT_FILES(u"recentFilePaths");
 const QStringView KEY_LINE_SPACING_PERCENT(u"editor/lineSpacingPercent");
 const QStringView KEY_HEADING_COLOR(u"editor/headingColor");
 const QStringView KEY_EMPHASIS_COLOR(u"editor/emphasisColor");
+const QStringView KEY_EDITOR_FONT_FAMILY(u"editor/fontFamily");
 const char PROP_FILE_PATH[] = "filePath";
 
 void setColorButtonStyle(QPushButton *button, const QColor &color)
@@ -57,6 +59,7 @@ MainWindow::MainWindow(QWidget *parent)
         if (hc.isValid()) m_headingColor = hc;
         QColor ec = settings.value(KEY_EMPHASIS_COLOR, m_emphasisColor).value<QColor>();
         if (ec.isValid()) m_emphasisColor = ec;
+        m_editorFontFamily = settings.value(KEY_EDITOR_FONT_FAMILY).toString();
     }
     m_tabWidget = new QTabWidget(this);
     m_tabWidget->setTabsClosable(true);
@@ -97,6 +100,13 @@ TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath
 {
     auto *splitter = new QSplitter(Qt::Horizontal, m_tabWidget);
     auto *edit = new TextEdit(splitter);
+    if (!m_editorFontFamily.isEmpty()) {
+        QFont f = edit->font();
+        f.setFamily(m_editorFontFamily);
+        edit->setEditorFont(f);
+    } else {
+        m_editorFontFamily = edit->font().family();
+    }
     edit->setLineSpacing(qRound(edit->fontMetrics().height() * m_lineSpacingPercent / 100.0));
     edit->setHeadingColor(m_headingColor);
     edit->setEmphasisColor(m_emphasisColor);
@@ -199,18 +209,47 @@ void MainWindow::applyColors(const QColor &heading, const QColor &emphasis)
     }
 }
 
+void MainWindow::applyEditorFont(const QString &family)
+{
+    if (family.isEmpty())
+        return;
+    m_editorFontFamily = family;
+    if (!m_tabWidget)
+        return;
+    for (int i = 0; i < m_tabWidget->count(); ++i) {
+        auto *splitter = qobject_cast<QSplitter *>(m_tabWidget->widget(i));
+        auto *edit = splitter ? dynamic_cast<TextEdit *>(splitter->widget(0)) : nullptr;
+        if (edit) {
+            QFont f = edit->font();
+            f.setFamily(m_editorFontFamily);
+            edit->setEditorFont(f);
+            edit->setLineSpacing(qRound(edit->fontMetrics().height() * m_lineSpacingPercent / 100.0));
+        }
+    }
+}
+
 void MainWindow::onSettings()
 {
     const int origPercent = m_lineSpacingPercent;
     const QColor origHeading = m_headingColor;
     const QColor origEmphasis = m_emphasisColor;
+    const QString origFontFamily = m_editorFontFamily;
 
     QDialog dlg(this);
     dlg.setWindowTitle(tr("Settings"));
-    dlg.resize(320, 200);
+    dlg.resize(360, 230);
     auto *layout = new QVBoxLayout(&dlg);
 
     auto *form = new QFormLayout();
+    auto *fontCombo = new QFontComboBox(&dlg);
+    fontCombo->setFontFilters(QFontComboBox::MonospacedFonts);
+    if (!m_editorFontFamily.isEmpty())
+        fontCombo->setCurrentFont(QFont(m_editorFontFamily));
+    connect(fontCombo, &QFontComboBox::currentFontChanged, this, [this](const QFont &f) {
+        applyEditorFont(f.family());
+    });
+    form->addRow(tr("Editor Font:"), fontCombo);
+
     auto *lineSpacingSpin = new QSpinBox(&dlg);
     lineSpacingSpin->setRange(0, 100);
     lineSpacingSpin->setSingleStep(10);
@@ -256,12 +295,15 @@ void MainWindow::onSettings()
     layout->addWidget(buttons);
 
     if (dlg.exec() == QDialog::Accepted) {
+        applyEditorFont(fontCombo->currentFont().family());
         applyLineSpacing(lineSpacingSpin->value());
         QSettings settings;
+        settings.setValue(KEY_EDITOR_FONT_FAMILY, m_editorFontFamily);
         settings.setValue(KEY_LINE_SPACING_PERCENT, m_lineSpacingPercent);
         settings.setValue(KEY_HEADING_COLOR, m_headingColor);
         settings.setValue(KEY_EMPHASIS_COLOR, m_emphasisColor);
     } else {
+        applyEditorFont(origFontFamily);
         applyLineSpacing(origPercent);
         applyColors(origHeading, origEmphasis);
     }
