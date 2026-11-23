@@ -1,6 +1,7 @@
 #include "MainWindow.h"
 #include "MarkdownPreview.h"
 #include "TextEdit.h"
+#include <QApplication>
 #include <QCloseEvent>
 #include <QColorDialog>
 #include <QDialog>
