@@ -123,7 +123,7 @@ void UndoMgr::closeAllBlock()
 	m_blockLevel = 0;
 	if( !m_actionPushed || m_stack.empty() )
 		return;
-	int last = m_stack.size() - 1;
+	const size_t last = m_stack.size() - 1;
 	m_stack[last]->m_flags ^= UndoAction::FLAG_BLOCK;
 }
 
@@ -133,7 +133,7 @@ void UndoMgr::closeBlock()
 		return;
 	if( !m_actionPushed || m_stack.empty() )
 		return;
-	int last = m_stack.size() - 1;
+	const size_t last = m_stack.size() - 1;
 	m_stack[last]->m_flags ^= UndoAction::FLAG_BLOCK;
 }
 // 現状態を非モディファイ状態とする（保存時にコールされる）
@@ -146,7 +146,7 @@ void UndoMgr::truncateRedo()
 {
 	if( m_stack.size() <= (size_t)m_cur ) return;
 	int ix = m_insText.size();
-	for(int i = m_stack.size(); --i >= m_cur; ) {
+	for(size_t i = m_stack.size(); i-- > (size_t)m_cur; ) {
 		switch( m_stack[i]->m_type ) {
 		case UndoAction::ACT_INSERT: {
 			auto p = (UndoActionInsert *)m_stack[i];
@@ -172,7 +172,7 @@ bool UndoMgr::push_back(UndoAction *ptr)
 		return false;
 	}
 	if( isBlockOpened() && !m_actionPushed ) {
-		int last = m_stack.size() - 1;
+		const size_t last = m_stack.size() - 1;
 		m_stack[last]->m_flags |= UndoAction::FLAG_BLOCK;
 		m_actionPushed = true;
 	}

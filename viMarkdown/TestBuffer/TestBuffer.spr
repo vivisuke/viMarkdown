@@ -26,7 +26,7 @@ SPR# 状 P Open  Close ver     Type  概要
 0022 ◎ C 11/23 11/23 0001 │ToDo│TextEdit＋QTextEdit化
 0023 ◎ C 11/23 11/23 0001 │ToDo│File > Close (Ctrl + W) 追加
 0024 ◎ C 11/23 11/23 0001 │ToDo│とりあえず設定ダイアログ追加
-0025 ● C 11/23            │ToDo│
+0025 ◎ C 11/23 11/23 0001 │問題│ビルド時警告が大量に出る
 0026 ● C 11/23            │ToDo│
 0027 ● C 11/23            │ToDo│
 0028 ● C 11/23            │ToDo│

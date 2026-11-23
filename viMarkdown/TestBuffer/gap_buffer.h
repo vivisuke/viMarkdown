@@ -208,7 +208,7 @@ public:
 		}
 		return false;
 	}
-	pos_t indexOf(const value_type *pat, size_t sz, pos_t ix = 0, bool ic = false) const
+	pos_t indexOf(const value_type *pat, size_type sz, pos_t ix = 0, bool ic = false) const
 	{
 		if( !ic ) {
 			while( ix + sz <= size() ) {
@@ -216,7 +216,7 @@ public:
 				++ix;
 			}
 		} else {
-			std::vector<value_type> lcpat(sz, value_type());
+			std::vector<value_type> lcpat(static_cast<size_t>(sz), value_type());
 			for(pos_t i = 0; i < sz; ++i) lcpat[i] = toLowerCase(pat[i]);
 			while( ix + sz <= size() ) {
 				if( isMatchLC(ix, &lcpat[0], sz) ) return ix;
