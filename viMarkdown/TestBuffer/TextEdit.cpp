@@ -11,11 +11,49 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPaintEvent>
+#include <QRegularExpression>
 #include <QResizeEvent>
 #include <QScrollBar>
 
 namespace {
 const int LEFT_MARGIN = 2;
+
+struct HighlightSpan {
+	qsizetype start;
+	qsizetype length;
+	QColor color;
+};
+
+//	論理行 1 行を解析して Markdown の強調スパンを返す（オンデマンド解析）
+QVector<HighlightSpan> highlightMarkdownLine(const QString &lineText, const QColor &headingColor, const QColor &emphColor)
+{
+	QVector<HighlightSpan> spans;
+	if( lineText.isEmpty() )
+		return spans;
+
+	if( lineText.startsWith(QChar('#')) ) {
+		spans.push_back({0, lineText.size(), headingColor});
+		return spans;
+	}
+
+	static const QRegularExpression reBoldItalic(QStringLiteral(R"(\*\*\*([^\*]+)\*\*\*)"));
+	static const QRegularExpression reBold(QStringLiteral(R"((?<![\*\\])\*\*([^\\\*]+)\*\*)"));
+	static const QRegularExpression reItalic(QStringLiteral(R"((?<![\*\\])\*([^\\\*]+)\*)"));
+	static const QRegularExpression reStrike(QStringLiteral(R"((?<![\*\\])~~([^\\~]+)~~)"));
+
+	auto collect = [&](const QRegularExpression &re) {
+		auto it = re.globalMatch(lineText);
+		while( it.hasNext() ) {
+			auto m = it.next();
+			spans.push_back({m.capturedStart(), m.capturedLength(), emphColor});
+		}
+	};
+	collect(reBoldItalic);
+	collect(reBold);
+	collect(reItalic);
+	collect(reStrike);
+	return spans;
+}
 
 QFont defaultEditorFont()
 {
@@ -78,6 +116,27 @@ void TextEdit::setLineSpacing(int extraPx)
 	updateScrollBars();
 	viewport()->update();
 	m_lineNumberArea->update();
+}
+
+void TextEdit::setMarkdownHighlight(bool enabled)
+{
+	if( m_markdownHighlight == enabled ) return;
+	m_markdownHighlight = enabled;
+	viewport()->update();
+}
+
+void TextEdit::setHeadingColor(const QColor &color)
+{
+	if( !color.isValid() || m_headingColor == color ) return;
+	m_headingColor = color;
+	viewport()->update();
+}
+
+void TextEdit::setEmphasisColor(const QColor &color)
+{
+	if( !color.isValid() || m_emphasisColor == color ) return;
+	m_emphasisColor = color;
+	viewport()->update();
 }
 
 void TextEdit::setTabWidth(int width)
@@ -285,6 +344,38 @@ void TextEdit::paintEvent(QPaintEvent *event)
 	const TextDocument::pos_t selE = m_cursor.selectionEnd();
 	const bool hasSel = m_cursor.hasSelection();
 
+	const QColor defaultTextColor = palette().color(QPalette::Text);
+	int cachedLine = -1;
+	QVector<HighlightSpan> cachedSpans;
+
+	//	表示行の一部 [subOff, subOff + subText.size()) をスパン色で塗り分けながら描画する
+	auto drawColoredSegment = [&](int x, int yBaseline, const QString &subText, qsizetype segOffInLine) -> int {
+		if( subText.isEmpty() ) return x;
+		if( cachedSpans.isEmpty() ) {
+			painter.setPen(defaultTextColor);
+			return drawLineText(painter, x, yBaseline, subText, fm, tabPx);
+		}
+		auto colorAt = [&](qsizetype logicalPos) -> QColor {
+			for( const HighlightSpan &sp : cachedSpans ) {
+				if( logicalPos >= sp.start && logicalPos < sp.start + sp.length )
+					return sp.color;
+			}
+			return defaultTextColor;
+		};
+		qsizetype pos = 0;
+		const qsizetype n = subText.size();
+		while( pos < n ) {
+			QColor col = colorAt(segOffInLine + pos);
+			qsizetype end = pos + 1;
+			while( end < n && colorAt(segOffInLine + end) == col )
+				++end;
+			painter.setPen(col);
+			x = drawLineText(painter, x, yBaseline, subText.mid(pos, end - pos), fm, tabPx);
+			pos = end;
+		}
+		return x;
+	};
+
 	painter.fillRect(viewport()->rect(), palette().base());
 	for( int i = 0; i < rows; ++i ) {
 		int viewLine = top + i;
@@ -301,20 +392,34 @@ void TextEdit::paintEvent(QPaintEvent *event)
 		}
 		QString text = vb.text();
 		if( text.endsWith(QChar('\n')) ) text.chop(1);
-		painter.setPen(palette().color(QPalette::Text));
+
+		const int ln = mgr.viewLineToLine(viewLine);
+		const qsizetype segOff = static_cast<qsizetype>(linePos - mgr.lineStartPos(ln));
+		if( m_markdownHighlight ) {
+			if( ln != cachedLine ) {
+				cachedLine = ln;
+				QString logicalText = m_doc.findBlockByNumber(ln).text();
+				if( logicalText.endsWith(QChar('\n')) ) logicalText.chop(1);
+				cachedSpans = highlightMarkdownLine(logicalText, m_headingColor, m_emphasisColor);
+			}
+		} else {
+			cachedSpans.clear();
+		}
+
 		if( !m_preedit.isEmpty() && viewLine == mgr.viewLineAtPos(m_cursor.position()) ) {
 			int curOff = (int)(m_cursor.position() - linePos);
 			if( curOff < 0 ) curOff = 0;
 			if( curOff > text.size() ) curOff = (int)text.size();
 			QString before = text.left(curOff);
 			QString after = text.mid(curOff);
-			int xPre = drawLineText(painter, LEFT_MARGIN, y + fm.ascent(), before, fm, tabPx);
+			int xPre = drawColoredSegment(LEFT_MARGIN, y + fm.ascent(), before, segOff);
 			int wPre = fm.horizontalAdvance(m_preedit);
+			painter.setPen(defaultTextColor);
 			painter.drawText(xPre, y + fm.ascent(), m_preedit);
 			painter.drawLine(xPre, y + fm.ascent() + 1, xPre + wPre, y + fm.ascent() + 1);
-			drawLineText(painter, xPre + wPre, y + fm.ascent(), after, fm, tabPx);
+			drawColoredSegment(xPre + wPre, y + fm.ascent(), after, segOff + curOff);
 		} else {
-			drawLineText(painter, LEFT_MARGIN, y + fm.ascent(), text, fm, tabPx);
+			drawColoredSegment(LEFT_MARGIN, y + fm.ascent(), text, segOff);
 		}
 	}
 	//	カーソル（フォーカス時のみ）

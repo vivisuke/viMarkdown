@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QtWidgets/QMainWindow>
+#include <QColor>
 #include "ui_MainWindow.h"
 
 QT_BEGIN_NAMESPACE
@@ -32,6 +33,7 @@ private:
     void onClose();
     void onSettings();
     void applyLineSpacing(int percent);
+    void applyColors(const QColor &heading, const QColor &emphasis);
     bool openFile(const QString &filePath);
     void addToRecentFiles(const QString &fullPath);
     void onAboutToShow_RecentFiles();
@@ -40,6 +42,8 @@ private:
     QTabWidget *m_tabWidget = nullptr;
     int m_tabNumber = 0;
     int m_lineSpacingPercent = 0;
+    QColor m_headingColor = QColor(0x80, 0x00, 0x00);
+    QColor m_emphasisColor = QColor(0x00, 0x33, 0xAA);
     QString m_lastDir;
 };
 

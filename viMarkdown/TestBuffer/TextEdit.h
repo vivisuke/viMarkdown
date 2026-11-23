@@ -4,6 +4,7 @@
 #include "TextCursor.h"
 
 #include <QAbstractScrollArea>
+#include <QColor>
 
 //----------------------------------------------------------------------
 //	TextEdit: QPlainTextEdit に対応する最小限のプレーンテキスト編集ウィジェット
@@ -37,6 +38,15 @@ public:
 	//	行間（フォントの行高に追加するピクセル数）
 	void setLineSpacing(int extraPx);
 	int lineSpacing() const { return m_lineSpacing; }
+
+	void setMarkdownHighlight(bool enabled);
+	bool markdownHighlight() const { return m_markdownHighlight; }
+
+	void setHeadingColor(const QColor &color);
+	QColor headingColor() const { return m_headingColor; }
+
+	void setEmphasisColor(const QColor &color);
+	QColor emphasisColor() const { return m_emphasisColor; }
 
 	//	タブ幅（半角文字数、デフォルト4）
 	void setTabWidth(int width);
@@ -76,6 +86,9 @@ private:
 	TextDocument m_doc;
 	TextCursor m_cursor;
 	int m_lineSpacing = 0;
+	bool m_markdownHighlight = true;
+	QColor m_headingColor = QColor(0x80, 0x00, 0x00);
+	QColor m_emphasisColor = QColor(0x00, 0x33, 0xAA);
 	bool m_dragging = false;
 	QString m_preedit;
 	int m_preeditCursor = 0;

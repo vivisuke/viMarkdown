@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 #include "TextEdit.h"
+#include <QColorDialog>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QDir>
@@ -9,6 +10,7 @@
 #include <QFormLayout>
 #include <QLineEdit>
 #include <QMessageBox>
+#include <QPushButton>
 #include <QSettings>
 #include <QSpinBox>
 #include <QSplitter>
@@ -28,7 +30,16 @@ namespace {
 const int N_RECENT_FILES = 10 + 26;
 const QStringView KEY_RECENT_FILES(u"recentFilePaths");
 const QStringView KEY_LINE_SPACING_PERCENT(u"editor/lineSpacingPercent");
+const QStringView KEY_HEADING_COLOR(u"editor/headingColor");
+const QStringView KEY_EMPHASIS_COLOR(u"editor/emphasisColor");
 const char PROP_FILE_PATH[] = "filePath";
+
+void setColorButtonStyle(QPushButton *button, const QColor &color)
+{
+    button->setStyleSheet(QStringLiteral(
+        "background-color: %1; border: 1px solid gray; min-width: 60px; height: 22px;"
+    ).arg(color.name()));
+}
 }
 
 MainWindow::MainWindow(QWidget *parent)
@@ -42,6 +53,10 @@ MainWindow::MainWindow(QWidget *parent)
         int pct = settings.value(KEY_LINE_SPACING_PERCENT, 0).toInt();
         pct = qBound(0, (pct / 10) * 10, 100);
         m_lineSpacingPercent = pct;
+        QColor hc = settings.value(KEY_HEADING_COLOR, m_headingColor).value<QColor>();
+        if (hc.isValid()) m_headingColor = hc;
+        QColor ec = settings.value(KEY_EMPHASIS_COLOR, m_emphasisColor).value<QColor>();
+        if (ec.isValid()) m_emphasisColor = ec;
     }
     m_tabWidget = new QTabWidget(this);
     m_tabWidget->setTabsClosable(true);
@@ -83,6 +98,8 @@ TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath
     auto *splitter = new QSplitter(Qt::Horizontal, m_tabWidget);
     auto *edit = new TextEdit(splitter);
     edit->setLineSpacing(qRound(edit->fontMetrics().height() * m_lineSpacingPercent / 100.0));
+    edit->setHeadingColor(m_headingColor);
+    edit->setEmphasisColor(m_emphasisColor);
     auto *preview = new QTextEdit(splitter);
     splitter->addWidget(edit);
     splitter->addWidget(preview);
@@ -166,13 +183,31 @@ void MainWindow::applyLineSpacing(int percent)
     }
 }
 
+void MainWindow::applyColors(const QColor &heading, const QColor &emphasis)
+{
+    if (heading.isValid()) m_headingColor = heading;
+    if (emphasis.isValid()) m_emphasisColor = emphasis;
+    if (!m_tabWidget)
+        return;
+    for (int i = 0; i < m_tabWidget->count(); ++i) {
+        auto *splitter = qobject_cast<QSplitter *>(m_tabWidget->widget(i));
+        auto *edit = splitter ? dynamic_cast<TextEdit *>(splitter->widget(0)) : nullptr;
+        if (edit) {
+            edit->setHeadingColor(m_headingColor);
+            edit->setEmphasisColor(m_emphasisColor);
+        }
+    }
+}
+
 void MainWindow::onSettings()
 {
     const int origPercent = m_lineSpacingPercent;
+    const QColor origHeading = m_headingColor;
+    const QColor origEmphasis = m_emphasisColor;
 
     QDialog dlg(this);
     dlg.setWindowTitle(tr("Settings"));
-    dlg.resize(320, 160);
+    dlg.resize(320, 200);
     auto *layout = new QVBoxLayout(&dlg);
 
     auto *form = new QFormLayout();
@@ -189,6 +224,29 @@ void MainWindow::onSettings()
         applyLineSpacing(val);
     });
     form->addRow(tr("Line Spacing:"), lineSpacingSpin);
+
+    auto *headingColorBtn = new QPushButton(&dlg);
+    setColorButtonStyle(headingColorBtn, m_headingColor);
+    connect(headingColorBtn, &QPushButton::clicked, &dlg, [this, &dlg, headingColorBtn]() {
+        QColor c = QColorDialog::getColor(m_headingColor, &dlg, tr("Select Heading Color"));
+        if (c.isValid()) {
+            setColorButtonStyle(headingColorBtn, c);
+            applyColors(c, m_emphasisColor);
+        }
+    });
+    form->addRow(tr("Heading Color:"), headingColorBtn);
+
+    auto *emphasisColorBtn = new QPushButton(&dlg);
+    setColorButtonStyle(emphasisColorBtn, m_emphasisColor);
+    connect(emphasisColorBtn, &QPushButton::clicked, &dlg, [this, &dlg, emphasisColorBtn]() {
+        QColor c = QColorDialog::getColor(m_emphasisColor, &dlg, tr("Select Emphasis Color"));
+        if (c.isValid()) {
+            setColorButtonStyle(emphasisColorBtn, c);
+            applyColors(m_headingColor, c);
+        }
+    });
+    form->addRow(tr("Emphasis Color:"), emphasisColorBtn);
+
     layout->addLayout(form);
     layout->addStretch();
 
@@ -201,8 +259,11 @@ void MainWindow::onSettings()
         applyLineSpacing(lineSpacingSpin->value());
         QSettings settings;
         settings.setValue(KEY_LINE_SPACING_PERCENT, m_lineSpacingPercent);
+        settings.setValue(KEY_HEADING_COLOR, m_headingColor);
+        settings.setValue(KEY_EMPHASIS_COLOR, m_emphasisColor);
     } else {
         applyLineSpacing(origPercent);
+        applyColors(origHeading, origEmphasis);
     }
 }
 
@@ -266,6 +327,7 @@ bool MainWindow::openFile(const QString &filePath)
         edit = addEditorTab(fi.fileName(), cleanPath);
     }
 
+    edit->setMarkdownHighlight(isMarkdown);
     edit->setPlainText(text);
     edit->document()->setModified(false);
     if (QTextEdit *preview = currentPreviewEdit()) {
