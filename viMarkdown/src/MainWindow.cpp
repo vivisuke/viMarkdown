@@ -26,6 +26,7 @@
 #include <QTextTable>
 #include <QShortcut>
 #include <QFile>
+#include <QStringDecoder>
 #include <QTextStream>
 #include <QGuiApplication>
 #include <QInputMethod>
@@ -2198,6 +2199,54 @@ void MainWindow::addToRecentFiles(const QString& fullPath) {
 	while( recentFilePaths.size() > N_RECENT_FILES ) recentFilePaths.pop_back();
 	settings.setValue(KEY_RECENT_FILES, recentFilePaths);
 }
+static bool readTextFile(const QString &fullPath, QString &content, bool &withBOM, QStringConverter::Encoding &encoding) {
+	QFile file(fullPath);
+	if( !file.open(QIODevice::ReadOnly) )
+		return false;
+	const QByteArray raw = file.readAll();
+	file.close();
+
+	withBOM = false;
+	encoding = QStringConverter::Utf8;
+	qsizetype dataStart = 0;
+
+	if( raw.size() >= 3 && raw.startsWith("\xEF\xBB\xBF") ) {
+		withBOM = true;
+		encoding = QStringConverter::Utf8;
+		dataStart = 3;
+	} else if( raw.size() >= 2 && raw.startsWith("\xFF\xFE") ) {
+		withBOM = true;
+		encoding = QStringConverter::Utf16LE;
+		dataStart = 2;
+	} else if( raw.size() >= 2 && raw.startsWith("\xFE\xFF") ) {
+		withBOM = true;
+		encoding = QStringConverter::Utf16BE;
+		dataStart = 2;
+	} else if( raw.size() >= 2 && (raw.size() % 2) == 0 ) {
+		//	BOM なし UTF-16LE / UTF-16BE の自動判定：
+		//	NUL バイトが奇数番目に偏っていれば UTF-16LE、偶数番目に偏っていれば UTF-16BE
+		const qsizetype sampleLen = qMin<qsizetype>(raw.size(), 4096);
+		int evenNul = 0, oddNul = 0;
+		for( qsizetype i = 0; i + 1 < sampleLen; i += 2 ) {
+			if( raw[i] == '\0' ) ++evenNul;
+			if( raw[i + 1] == '\0' ) ++oddNul;
+		}
+		if( oddNul > 0 && evenNul == 0 )
+			encoding = QStringConverter::Utf16LE;
+		else if( evenNul > 0 && oddNul == 0 )
+			encoding = QStringConverter::Utf16BE;
+		else if( oddNul >= 4 && oddNul > evenNul * 4 )
+			encoding = QStringConverter::Utf16LE;
+		else if( evenNul >= 4 && evenNul > oddNul * 4 )
+			encoding = QStringConverter::Utf16BE;
+	}
+
+	QStringDecoder decoder(encoding);
+	content = decoder.decode(QByteArrayView(raw).sliced(dataStart));
+	content.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+	content.replace(QChar('\r'), QChar('\n'));
+	return true;
+}
 void MainWindow::do_load(const QString& fullPath) {
 	int tix = tabIndexOf("", fullPath);
 	if( tix < 0 ) return;
@@ -2207,20 +2256,24 @@ void MainWindow::do_load(const QString& fullPath) {
 		docWidget->m_hasSaved = false;		//	保存直後もリロードしない
 		return;
 	}
-	QFile file(fullPath);
-	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+	QString content;
+	bool withBOM = false;
+	QStringConverter::Encoding encoding = QStringConverter::Utf8;
+	if( !readTextFile(fullPath, content, withBOM, encoding) ) {
 		QMessageBox::warning(this, tr("Error"), tr("Cannot open file:\n%1").arg(fullPath));
-		//QMessageBox::warning(this, tr("エラー"), tr("ファイルが開けません:\n%1").arg(fullPath));
 		return;
 	}
-	QString content = file.readAll();
+	docWidget->m_withBOM = withBOM;
+	docWidget->m_encoding = encoding;
 	docWidget->m_editor->setDummyInserted(false);
 	docWidget->m_editor->diffBlockNumbers().clear();
 	docWidget->m_editor->diffFlags().clear();
 	docWidget->m_editor->clearNDummyLines();
 	docWidget->m_editor->setPlainText(content);
+	docWidget->m_editor->initUndoMgr();
 	docWidget->setModified(false);
 	ui->tabWidget->setTabText(tix, docWidget->m_title);
+	updateUndoRedoEnabled();
 	close_empty_doc();
 }
 void MainWindow::removeTopLevelItem(DocWidget* docWidget) {
@@ -2242,11 +2295,6 @@ void MainWindow::close_empty_doc() {
 			}
 		}
 	}
-}
-bool hasBOM(QFile &file) {
-	QByteArray header = file.peek(3);
-	return header.startsWith("\xEF\xBB\xBF") ||		//	UTF-8
-			header.startsWith("\xFF\xFE") || header.startsWith("\xFE\xFF");		//	UTF-16 BE, LE
 }
 void MainWindow::do_open_pl(const QString fullPath, int ln) {		//	ln: 0 orgin
 	if( !do_open("", fullPath) ) return;
@@ -2317,21 +2365,14 @@ bool MainWindow::do_open(const QString& title0, const QString& fullPath, const Q
 		return true;
 	}
 	m_opening_file = true;
-	//docWidget->m_opening = true;
-	QFile file(fullPath);
-	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+	QString content;
+	bool withBOM = false;
+	QStringConverter::Encoding encoding = QStringConverter::Utf8;
+	if( !readTextFile(fullPath, content, withBOM, encoding) ) {
+		m_opening_file = false;
 		QMessageBox::warning(this, tr("Error"), tr("Cannot open file:\n%1").arg(fullPath));
-		//QMessageBox::warning(this, tr("エラー"), tr("ファイルが開けません:\n%1").arg(fullPath));
 		return false;
 	}
-    bool withBOM = hasBOM(file);
-	//QString content = file.readAll();
-	QTextStream in(&file);
-	in.setAutoDetectUnicode(true); 
-    QString content = in.readAll();
-    //bool bBOM = in.generateByteOrderMark();
-    auto encoding = in.encoding();
-    file.close();
 	QFileInfo fileInfo(fullPath);
 	QString title = fileInfo.fileName();
 	title.remove(QRegularExpression("\\.md$"));
