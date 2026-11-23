@@ -341,40 +341,40 @@ static const unsigned short keisenTable[KEISEN_CODE_END - KEISEN_CODE_BEGIN] = {
 	ThickUp|Down|ThickLeft,		  // 2529: ┩ (Up Heavy, Down Light, Left Heavy)
 	Up|ThickDown|ThickLeft,		  // 252A: ┪ (Up Light, Down Heavy, Left Heavy)
 	ThickUp|ThickDown|ThickLeft,  // 252B: ┫ (Vertical Heavy, Left Heavy)
-	Left|Right|Down,			  // 252C: ┬ (Horizontal Light, Down Light)
-	Left|ThickRight|Down,		  // 252D: ┭ (Left Light, Right Heavy, Down Light)
-	ThickLeft|Right|Down,		  // 252E: ┮ (Left Heavy, Right Light, Down Light)
-	ThickLeft|ThickRight|Down,	  // 252F: ┯ (Horizontal Heavy, Down Light)
+	Down|Left|Right,				// 252C: ┬ (Down Light, Horizontal Light)
+	Down|ThickLeft|Right,			// 252D: ┭ (Left Heavy, Right Down Light)
+	Down|Left|ThickRight,			// 252E: ┮ (Right Heavy, Left Down Light)
+	Down|ThickLeft|ThickRight,		// 252F: ┯ (Down Light, Horizontal Heavy)
 
 	/* 2530-2537 ┰ ┱ ┲ ┳ ┴ ┵ ┶ ┷ */
-	Left|Right|ThickDown,		  // 2530: ┰ (Horizontal Light, Down Heavy)
-	Left|ThickRight|ThickDown,	  // 2531: ┱ (Left Light, Right Heavy, Down Heavy)
-	ThickLeft|Right|ThickDown,	  // 2532: ┲ (Left Heavy, Right Light, Down Heavy)
-	ThickLeft|ThickRight|ThickDown, // 2533: ┳ (Horizontal Heavy, Down Heavy)
-	Left|Right|Up,				  // 2534: ┴ (Horizontal Light, Up Light)
-	Left|ThickRight|Up,			  // 2535: ┵ (Left Light, Right Heavy, Up Light)
-	ThickLeft|Right|Up,			  // 2536: ┶ (Left Heavy, Right Light, Up Light)
-	ThickLeft|ThickRight|Up,	  // 2537: ┷ (Horizontal Heavy, Up Light)
+	ThickDown|Left|Right,			// 2530: ┰ (Down Heavy, Horizontal Light)
+	ThickDown|ThickLeft|Right,		// 2531: ┱ (Right Light, Left Down Heavy)
+	ThickDown|Left|ThickRight,		// 2532: ┲ (Left Light, Right Down Heavy)
+	ThickDown|ThickLeft|ThickRight,	// 2533: ┳ (Down Heavy, Horizontal Heavy)
+	Up|Left|Right,					// 2534: ┴ (Up Light, Horizontal Light)
+	Up|ThickLeft|Right,				// 2535: ┵ (Left Heavy, Right Up Light)
+	Up|Left|ThickRight,				// 2536: ┶ (Right Heavy, Left Up Light)
+	Up|ThickLeft|ThickRight,		// 2537: ┷ (Up Light, Horizontal Heavy)
 
 	/* 2538-253F ┸ ┹ ┺ ┻ ┼ ┽ ┾ ┿ */
-	Left|Right|ThickUp,			  // 2538: ┸ (Horizontal Light, Up Heavy)
-	Left|ThickRight|ThickUp,	  // 2539: ┹ (Left Light, Right Heavy, Up Heavy)
-	ThickLeft|Right|ThickUp,	  // 253A: ┺ (Left Heavy, Right Light, Up Heavy)
-	ThickLeft|ThickRight|ThickUp, // 253B: ┻ (Horizontal Heavy, Up Heavy)
-	Up|Down|Left|Right,			  // 253C: ┼ (Vertical Light, Horizontal Light)
-	Up|Down|ThickLeft|Right,	  // 253D: ┽ (Vertical Light, Left Heavy, Right Light)
-	Up|Down|Left|ThickRight,	  // 253E: ┾ (Vertical Light, Left Light, Right Heavy)
-	Up|Down|ThickLeft|ThickRight, // 253F: ┿ (Vertical Light, Horizontal Heavy)
+	ThickUp|Left|Right,				// 2538: ┸ (Up Heavy, Horizontal Light)
+	ThickUp|ThickLeft|Right,		// 2539: ┹ (Right Light, Left Up Heavy)
+	ThickUp|Left|ThickRight,		// 253A: ┺ (Left Light, Right Up Heavy)
+	ThickUp|ThickLeft|ThickRight,	// 253B: ┻ (Up Heavy, Horizontal Heavy)
+	Up|Down|Left|Right,				// 253C: ┼ (Vertical Light, Horizontal Light)
+	Up|Down|ThickLeft|Right,		// 253D: ┽ (Left Heavy, Right Vertical Light)
+	Up|Down|Left|ThickRight,		// 253E: ┾ (Right Heavy, Left Vertical Light)
+	Up|Down|ThickLeft|ThickRight,	// 253F: ┿ (Vertical Light, Horizontal Heavy)
 
 	/* 2540-2547 ╀ ╁ ╂ ╃ ╄ ╅ ╆ ╇ */
-	ThickUp|Down|Left|Right,	  // 2540: ╀ (Up Heavy, Down Light, Horizontal Light)
-	Up|ThickDown|Left|Right,	  // 2541: ╁ (Up Light, Down Heavy, Horizontal Light)
-	ThickUp|ThickDown|Left|Right, // 2542: ╂ (Vertical Heavy, Horizontal Light)
-	ThickUp|Down|ThickLeft|Right, // 2543: ╃ (Up Heavy, Down Light, Left Heavy, Right Light)
-	Up|ThickDown|ThickLeft|Right, // 2544: ╄ (Up Light, Down Heavy, Left Heavy, Right Light)
-	ThickUp|Down|Left|ThickRight, // 2545: ╅ (Up Heavy, Down Light, Left Light, Right Heavy)
-	Up|ThickDown|Left|ThickRight, // 2546: ╆ (Up Light, Down Heavy, Left Light, Right Heavy)
-	ThickUp|Down|ThickLeft|ThickRight, // 2547: ╇ (Up Heavy, Down Light, Horizontal Heavy)
+	ThickUp|Down|Left|Right,		// 2540: ╀ (Up Heavy, Down Horizontal Light)
+	Up|ThickDown|Left|Right,		// 2541: ╁ (Down Heavy, Up Horizontal Light)
+	ThickUp|ThickDown|Left|Right,	// 2542: ╂ (Vertical Heavy, Horizontal Light)
+	ThickUp|Down|ThickLeft|Right,	// 2543: ╃ (Left Up Heavy, Right Down Light)
+	ThickUp|Down|Left|ThickRight,	// 2544: ╄ (Right Up Heavy, Left Down Light)
+	Up|ThickDown|ThickLeft|Right,	// 2545: ╅ (Left Down Heavy, Right Up Light)
+	Up|ThickDown|Left|ThickRight,	// 2546: ╆ (Right Down Heavy, Left Up Light)
+	ThickUp|Down|ThickLeft|ThickRight,	// 2547: ╇ (Down Light, Up Horizontal Heavy)
 	
 	/* 2548-254F ╈ ╉ ╊ ╋ ╌ ╍ ╎ ╏ */
 	Up|ThickDown|ThickLeft|ThickRight, // 2548: ╈ (Up Light, Down Heavy, Horizontal Heavy)
@@ -422,24 +422,29 @@ static const unsigned short keisenTable[KEISEN_CODE_END - KEISEN_CODE_BEGIN] = {
 	/* 4C-4F (破線太) -> None */
 	None, None, None, None,
 #endif
-	/* 50-53 ═ ║ ╒ ╓ (ここから二重線) */
-	DblLeft|DblRight, DblUp|DblDown, DblDown|DblRight, DblDown|DblRight,
-	/* 54-57 ╔ ╕ ╖ ╗ */
-	DblDown|DblRight, DblDown|DblLeft, DblDown|DblLeft, DblDown|DblLeft,
-	/* 58-5B ╘ ╙ ╚ ╛ */
-	DblUp|DblRight, DblUp|DblRight, DblUp|DblRight, DblUp|DblLeft,
-	/* 5C-5F ╜ ╝ ╞ ╟ */
-	DblUp|DblLeft, DblUp|DblLeft, DblUp|DblDown|DblRight, DblUp|DblDown|DblRight,
-	/* 60-63 ╠ ╡ ╢ ╣ */
-	DblUp|DblDown|DblRight, DblUp|DblDown|DblLeft, DblUp|DblDown|DblLeft, DblUp|DblDown|DblLeft,
-	/* 64-67 ╤ ╥ ╦ ╧ */
-	DblDown|DblLeft|DblRight, DblDown|DblLeft|DblRight, DblDown|DblLeft|DblRight, DblUp|DblLeft|DblRight,
-	/* 68-6B ╨ ╩ ╪ ╫ */
-	DblUp|DblLeft|DblRight, DblUp|DblLeft|DblRight, DblUp|DblDown|DblLeft|DblRight, DblUp|DblDown|DblLeft|DblRight,
-	/* 6C ╬ */
-	DblUp|DblDown|DblLeft|DblRight,
-	/* 6D-7F (丸角・斜め・終端・混合細太直線) -> None */
-	None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None
+	/* 2550-2557 ═ ║ ╒ ╓ ╔ ╕ ╖ ╗ */
+	DblLeft|DblRight, DblUp|DblDown, Down|DblRight, DblDown|Right,
+	DblDown|DblRight, Down|DblLeft, DblDown|Left, DblDown|DblLeft,
+
+	/* 2558-255F ╘ ╙ ╚ ╛ ╜ ╝ ╞ ╟ */
+	Up|DblRight, DblUp|Right, DblUp|DblRight, Up|DblLeft,
+	DblUp|Left, DblUp|DblLeft, Up|Down|DblRight, DblUp|DblDown|Right,
+
+	/* 2560-2567 ╠ ╡ ╢ ╣ ╤ ╥ ╦ ╧ */
+	DblUp|DblDown|DblRight, Up|Down|DblLeft, DblUp|DblDown|Left, DblUp|DblDown|DblLeft,
+	Down|DblLeft|DblRight, DblDown|Left|Right, DblDown|DblLeft|DblRight, Up|DblLeft|DblRight,
+
+	/* 2568-256F ╨ ╩ ╪ ╫ ╬ ╭ ╮ ╯ */
+	DblUp|Left|Right, DblUp|DblLeft|DblRight, Up|Down|DblLeft|DblRight, DblUp|DblDown|Left|Right,
+	DblUp|DblDown|DblLeft|DblRight, Down|Right, Down|Left, Up|Left,
+
+	/* 2570-2577 ╰ ╱ ╲ ╳ ╴ ╵ ╶ ╷ */
+	Up|Right, None, None, None,
+	Left, Up, Right, Down,
+
+	/* 2578-257F ╸ ╹ ╺ ╻ ╼ ╽ ╾ ╿ */
+	ThickLeft, ThickUp, ThickRight, ThickDown,
+	Left|ThickRight, Up|ThickDown, ThickLeft|Right, ThickUp|Down
 };
 const ushort revKeisenTable[256] = {
 	// 0x00 - 0x0F: 全て細線 (Up=1, Down=2, Left=4, Right=8)
@@ -447,12 +452,12 @@ const ushort revKeisenTable[256] = {
 	u'╶',  u'└',  u'┌',  u'├',	u'─',  u'┴',  u'┬',  u'┼',
 
 	// 0x10 - 0x1F: 太線 上 (ThickUp=0x10)
-	u'╹',  u'╹',  u'╿',  u'╿',	u'┚',  u'┚',  u'┒',  u'┦',
-	u'┖',  u'┖',  u'┎',  u'┞',	u'┸',  u'┸',  u'┰',  u'╀',
+	u'╹',  u'╹',  u'╿',  u'╿',	u'┚',  u'┚',  u'┦',  u'┦',
+	u'┖',  u'┖',  u'┞',  u'┞',	u'┸',  u'┸',  u'╀',  u'╀',
 
 	// 0x20 - 0x2F: 太線 下 (ThickDown=0x20)
-	u'╻',  u'╽',  u'╻',  u'╽',	u'┙',  u'┚',  u'┑',  u'┧',
-	u'┕',  u'┖',  u'┍',  u'┟',	u'┷',  u'╁',  u'┷',  u'╁',
+	u'╻',  u'╽',  u'╻',  u'╽',	u'┒',  u'┧',  u'┒',  u'┧',
+	u'┎',  u'┟',  u'┎',  u'┟',	u'┰',  u'╁',  u'┰',  u'╁',
 
 	// 0x30 - 0x3F: 太線 上下 (ThickUp + ThickDown)
 	u'┃',  u'┃',  u'┃',  u'┃',	u'┨',  u'┨',  u'┨',  u'┨',
@@ -460,47 +465,47 @@ const ushort revKeisenTable[256] = {
 
 	// 0x40 - 0x4F: 太線 左 (ThickLeft=0x40)
 	u'╸',  u'┙',  u'┑',  u'┥',	u'╸',  u'┙',  u'┑',  u'┥',
-	u'╼',  u'┕',  u'┍',  u'┽',	u'━',  u'┿',  u'┮',  u'┿',
+	u'╾',  u'┵',  u'┭',  u'┽',	u'╾',  u'┵',  u'┭',  u'┽',
 
 	// 0x50 - 0x5F: 太線 上左 (ThickUp + ThickLeft)
 	u'┛',  u'┛',  u'┩',  u'┩',	u'┛',  u'┛',  u'┩',  u'┩',
-	u'┕',  u'┛',  u'┍',  u'┽',	u'━',  u'┿',  u'┮',  u'┿',
+	u'┹',  u'┹',  u'╃',  u'╃',	u'┹',  u'┹',  u'╃',  u'╃',
 
 	// 0x60 - 0x6F: 太線 下左 (ThickDown + ThickLeft)
 	u'┓',  u'┪',  u'┓',  u'┪',	u'┓',  u'┪',  u'┓',  u'┪',
-	u'┍',  u'┪',  u'┓',  u'┽',	u'━',  u'┿',  u'┮',  u'┿',
+	u'┱',  u'╅',  u'┱',  u'╅',	u'┱',  u'╅',  u'┱',  u'╅',
 
 	// 0x70 - 0x7F: 太線 上下左 (ThickUp + ThickDown + ThickLeft)
 	u'┫',  u'┫',  u'┫',  u'┫',	u'┫',  u'┫',  u'┫',  u'┫',
-	u'┍',  u'┫',  u'┓',  u'┽',	u'━',  u'┿',  u'┮',  u'┿',
+	u'╉',  u'╉',  u'╉',  u'╉',	u'╉',  u'╉',  u'╉',  u'╉',
 
 	// 0x80 - 0x8F: 太線 右 (ThickRight=0x80)
-	u'╺',  u'┖',  u'┎',  u'┝',	u'╾',  u'┕',  u'┍',  u'┾',
-	u'╺',  u'┖',  u'┎',  u'┝',	u'━',  u'┵',  u'┭',  u'┿',
+	u'╺',  u'┕',  u'┍',  u'┝',	u'╼',  u'┶',  u'┮',  u'┾',
+	u'╺',  u'┕',  u'┍',  u'┝',	u'╼',  u'┶',  u'┮',  u'┾',
 
 	// 0x90 - 0x9F: 太線 上右 (ThickUp + ThickRight)
-	u'┗',  u'┗',  u'┡',  u'┡',	u'╾',  u'┕',  u'┍',  u'╅',
-	u'┗',  u'┗',  u'┡',  u'┡',	u'━',  u'┿',  u'┯',  u'╇',
+	u'┗',  u'┗',  u'┡',  u'┡',	u'┺',  u'┺',  u'╄',  u'╄',
+	u'┗',  u'┗',  u'┡',  u'┡',	u'┺',  u'┺',  u'╄',  u'╄',
 
 	// 0xA0 - 0xAF: 太線 下右 (ThickDown + ThickRight)
-	u'┏',  u'┢',  u'┏',  u'┢',	u'╾',  u'┕',  u'┍',  u'╆',
-	u'┏',  u'┢',  u'┏',  u'┢',	u'━',  u'┿',  u'┯',  u'╇',
+	u'┏',  u'┢',  u'┏',  u'┢',	u'┲',  u'╆',  u'┲',  u'╆',
+	u'┏',  u'┢',  u'┏',  u'┢',	u'┲',  u'╆',  u'┲',  u'╆',
 
 	// 0xB0 - 0xBF: 太線 上下右 (ThickUp + ThickDown + ThickRight)
-	u'┣',  u'┣',  u'┣',  u'┣',	u'╾',  u'┕',  u'┍',  u'╊',
-	u'┣',  u'┣',  u'┣',  u'┣',	u'━',  u'┿',  u'┯',  u'╇',
+	u'┣',  u'┣',  u'┣',  u'┣',	u'╊',  u'╊',  u'╊',  u'╊',
+	u'┣',  u'┣',  u'┣',  u'┣',	u'╊',  u'╊',  u'╊',  u'╊',
 
 	// 0xC0 - 0xCF: 太線 左右 (ThickLeft + ThickRight)
-	u'━',  u'┸',  u'┰',  u'┿',	u'━',  u'┸',  u'┰',  u'┿',
-	u'━',  u'┸',  u'┰',  u'┿',	u'━',  u'┸',  u'┰',  u'┿',
+	u'━',  u'┷',  u'┯',  u'┿',	u'━',  u'┷',  u'┯',  u'┿',
+	u'━',  u'┷',  u'┯',  u'┿',	u'━',  u'┷',  u'┯',  u'┿',
 
 	// 0xD0 - 0xDF: 太線 上左右 (ThickUp + ThickLeft + ThickRight)
-	u'┻',  u'┻',  u'╈',  u'╈',	u'┻',  u'┻',  u'╈',  u'╈',
-	u'┻',  u'┻',  u'╈',  u'╈',	u'┻',  u'┻',  u'╈',  u'╈',
+	u'┻',  u'┻',  u'╇',  u'╇',	u'┻',  u'┻',  u'╇',  u'╇',
+	u'┻',  u'┻',  u'╇',  u'╇',	u'┻',  u'┻',  u'╇',  u'╇',
 
 	// 0xE0 - 0xEF: 太線 下左右 (ThickDown + ThickLeft + ThickRight)
-	u'┳',  u'╇',  u'┳',  u'╇',	u'┳',  u'╇',  u'┳',  u'╇',
-	u'┳',  u'╇',  u'┳',  u'╇',	u'┳',  u'╇',  u'┳',  u'╇',
+	u'┳',  u'╈',  u'┳',  u'╈',	u'┳',  u'╈',  u'┳',  u'╈',
+	u'┳',  u'╈',  u'┳',  u'╈',	u'┳',  u'╈',  u'┳',  u'╈',
 
 	// 0xF0 - 0xFF: 太線 全方向 (ThickUp + ThickDown + ThickLeft + ThickRight)
 	u'╋',  u'╋',  u'╋',  u'╋',	u'╋',  u'╋',  u'╋',  u'╋',
@@ -2594,111 +2599,143 @@ int getVisualColumn(QTextCursor cursor, MarkdownBaseEdit *editor) {
 	// 5. 割り算で「半角何文字分か」を出す
 	return fullWidth / halfWidth;
 }
-QString getUpSrcString(bool erase, bool thickKeisen, const QString txt, int ix) {
-	if( !erase ) {
-		if( ix < txt.size() ) {
-			if( txt[ix] == u'←' || txt[ix] == u'└' || txt[ix] == u'┗' ) return thickKeisen ? "┗" : "└";
-			if( txt[ix] == u'→' || txt[ix] == u'┘' || txt[ix] == u'┛' ) return thickKeisen ? "┛" : "┘";
-			if( txt[ix] == u'┴' ) return "┴";
-			if( txt[ix] == u'┐' /*|| txt[ix] == u'┤'*/ ) return thickKeisen ? "┨" : "┤";
-			if( txt[ix] == u'┌' /*|| txt[ix] == u'├'*/ ) return "├";
-			if( txt[ix] == u'├' || txt[ix] == u'┠' ) return thickKeisen ? "┠" : "├";	//	右が細線
-			if( txt[ix] == u'┝' || txt[ix] == u'┣' ) return thickKeisen ? "┣" : "├";	//	右が太線
-			if( txt[ix] == u'┤' || txt[ix] == u'┨' ) return thickKeisen ? "┨" : "┨";	//	左が細線
-			if( txt[ix] == u'┥' || txt[ix] == u'┫' ) return thickKeisen ? "┫" : "┥";	//	左が太線
-			if( txt[ix] == u'┬' || txt[ix] == u'┰' || txt[ix] == u'┼' || txt[ix] == u'╂' )	//	左右が細線の場合
-				return thickKeisen ? "┿"  : "┼";
-			if( txt[ix] == u'┰' || txt[ix] == u'┳' || txt[ix] == u'╂' || txt[ix] == u'╋' )	//	左右が太細線の場合
-				return thickKeisen ? "╋" : "┼";
-			if( txt[ix] == u'─' ) {
-				if( ix < 2 )		//	undone: 左に文字がある場合
-					return "└";
-				else
-					return "┴";
-			}
-			if( txt[ix] == u'━' ) {
-				if( ix < 2 )		//	undone: 左に文字がある場合
-					return "└";
-				else
-					return thickKeisen ? "┻" : "┷";
-			}
-		}
-		return thickKeisen ? "┃" : "│";
-	} else {
-		if( ix < txt.size() ) {
-			// 変化無し（すでに上に線がない）
-			if( txt[ix] == u'─' || txt[ix] == u'┌' || txt[ix] == u'┐' || txt[ix] == u'┬' || txt[ix] == u'┯' ) return txt[ix];
-			if( txt[ix] == u'━' || txt[ix] == u'┏' || txt[ix] == u'┓' || txt[ix] == u'┯' || txt[ix] == u'┳' ) return txt[ix];
-			// 縦要素が消えて横棒だけ残る
-			if( txt[ix] == u'└' || txt[ix] == u'┘' || txt[ix] == u'┴' || txt[ix] == u'┸' ) return "─";
-			if( txt[ix] == u'┗' || txt[ix] == u'┛' || txt[ix] == u'┷' || txt[ix] == u'┻' ) return "━";
-			// Ｔ字・角に格下げ
-			if( txt[ix] == u'┼' ) return "┬";
-			if( txt[ix] == u'╂' ) return "┰";		//	縦のみ太罫線
-			if( txt[ix] == u'┿' ) return "┯";		//	横のみ太罫線
-			if( txt[ix] == u'╋' ) return "┳";
-			if( txt[ix] == u'├' ) return "┌";
-			if( txt[ix] == u'┣' ) return "┏";
-			if( txt[ix] == u'┤' ) return "┐";
-			if( txt[ix] == u'┫' ) return "┓";
-		}
-		return "  ";
+static QChar charAtVisualColumn(const QString &line, int targetVc, const QFont &font) {
+	if( line.isEmpty() || targetVc < 0 ) return QChar(u' ');
+	QFontMetrics fm(font);
+	const int halfWidth = qMax(1, fm.horizontalAdvance("A"));
+	for(int i = 0; i < line.size(); ++i) {
+		const int vc = fm.horizontalAdvance(line.left(i)) / halfWidth;
+		if( vc == targetVc ) return line[i];
+		if( vc > targetVc ) break;
 	}
+	return QChar(u' ');
 }
-//┌┰┐┌┰┐┏┯━┓┏┳━┓┌┬─┐┌┬┐
-//│┃││┃│┃│	┃┃┃  ┃││  ││││
-//┝╋┥├╂┤┠┼─┨┣╋━┫┝┿━┥├┼┤
-//│┃││┃│┃│	┃┃┃  ┃││  ││││
-//└┸┘└┸┘┗┷━┛┗┻━┛└┴─┘└┴┘
-QString getUpDstString(bool erase, bool thickKeisen, const QString txt, int ix) {
-	if( !erase ) {
-		if( ix < txt.size() ) {
-			if( txt[ix] == u'│' || txt[ix] == u'┃' || txt[ix] == u'┐' || txt[ix] == u'┌' )
-				return txt[ix];
-			if( txt[ix] == u'┘' ) return "┤";
-			if( txt[ix] == u'└' ) return "├";
-			//if( txt[ix] == u'┴' ) return "┼";		//	左右が細線
-			if( txt[ix] == u'├' || txt[ix] == u'┠' ) return thickKeisen ? "┠" : "├";	//	右が細線
-			if( txt[ix] == u'┝' || txt[ix] == u'┣' ) return thickKeisen ? "┣" : "├";	//	右が太線
-			if( txt[ix] == u'┤' || txt[ix] == u'┨' ) return thickKeisen ? "┨" : "┨";	//	左が細線
-			if( txt[ix] == u'┥' || txt[ix] == u'┫' ) return thickKeisen ? "┫" : "┥";	//	左が太線
-			if( txt[ix] == u'┴' || txt[ix] == u'┸' || txt[ix] == u'┼' || txt[ix] == u'╂' )	//	左右が細線の場合
-				return thickKeisen ? "┿"  : "┼";
-			if( txt[ix] == u'┷' || txt[ix] == u'┻' || txt[ix] == u'╂' || txt[ix] == u'╋' )	//	左右が太細線の場合
-				return thickKeisen ? "╋" : "┼";
-			if( txt[ix] == u'─' ) {
-				//if( ix > 0 && (txt[ix-1] == u'─' || txt[ix-1] == u'└' || txt[ix-1] == u'┌' || txt[ix-1] == u'←') )
-				if( ix > 0 && ((getConnectionBits(txt[ix-1])&Right) != 0 || txt[ix-1] == u'←') )
-					return thickKeisen ? "┰" : "┬";
-				else
-					return thickKeisen ? "┏" : "┌";
-			}
-			if( txt[ix] == u'━' ) {
-				//if( ix > 0 && (txt[ix-1] == u'━' || txt[ix-1] == u'←') )
-				if( ix > 0 && ((getConnectionBits(txt[ix-1])&ThickRight) != 0 || txt[ix-1] == u'←') )
-					return thickKeisen ? "┳" : "┯";
-				else
-					return thickKeisen ? "┏" : "┌";
-			}
+static ushort normalizeToJisKeisenBits(ushort bits) {
+	const bool u = (bits & (Up | ThickUp)) != 0;
+	const bool d = (bits & (Down | ThickDown)) != 0;
+	const bool l = (bits & (Left | ThickLeft)) != 0;
+	const bool r = (bits & (Right | ThickRight)) != 0;
+	const int cnt = (u ? 1 : 0) + (d ? 1 : 0) + (l ? 1 : 0) + (r ? 1 : 0);
+	if( cnt < 2 ) return bits;
+	bool vThick = (bits & (ThickUp | ThickDown)) != 0;
+	bool hThick = (bits & (ThickLeft | ThickRight)) != 0;
+	//	角（縦1方向＋横1方向）は JIS X 0208 に細太混在が無いため、片方が太線なら両方太線へ揃える
+	if( cnt == 2 && (u || d) && (l || r) ) {
+		if( vThick || hThick )
+			vThick = hThick = true;
+	}
+	ushort res = 0;
+	if( u ) res |= vThick ? ThickUp : Up;
+	if( d ) res |= vThick ? ThickDown : Down;
+	if( l ) res |= hThick ? ThickLeft : Left;
+	if( r ) res |= hThick ? ThickRight : Right;
+	return res;
+}
+//	罫線描画・消去時の連結文字決定（keisenTable / revKeisenTable ベース共通関数）
+//	dir: 追加または削除する接続方向（Src なら進行方向、Dst ならその逆方向）
+static QString calcKeisenChar(bool erase, bool thickKeisen, KeisenDir dir, bool isDst,
+                              const QString &txt, int ix, const QFont &font,
+                              const QString &prev = QString(), const QString &next = QString())
+{
+	auto oppDir = [](KeisenDir d) -> KeisenDir {
+		switch( d ) {
+		case Up:    return Down;
+		case Down:  return Up;
+		case Left:  return Right;
+		default:    return Left;
 		}
-		return "↑";
-	} else {
-		if( ix < txt.size() ) {
-			if( txt[ix] == u'─' || txt[ix] == u'┘' || txt[ix] == u'└' || txt[ix] == u'┴' || txt[ix] == u'┷' ) return txt[ix];		//	変化無し
-			if( txt[ix] == u'━' || txt[ix] == u'┛' || txt[ix] == u'┗' || txt[ix] == u'┷' || txt[ix] == u'┻' ) return txt[ix];		//	変化無し
-			if( txt[ix] == u'┌' || txt[ix] == u'┐' || txt[ix] == u'┬' || txt[ix] == u'┰' ) return "─";
-			if( txt[ix] == u'┏' || txt[ix] == u'┓' || txt[ix] == u'┳' || txt[ix] == u'┯' ) return "━";
+	};
+	auto dirMask = [](KeisenDir d) -> ushort {
+		return (ushort)(d | (d << Thick));
+	};
+	auto dirBit = [&](KeisenDir d) -> ushort {
+		return (ushort)(thickKeisen ? (d << Thick) : d);
+	};
+	auto lineStr = [](ushort bits, bool vertical) -> QString {
+		if( vertical )
+			return (bits & (ThickUp | ThickDown)) ? "┃" : "│";
+		else
+			return (bits & (ThickLeft | ThickRight)) ? "━" : "─";
+	};
+	auto arrowStr = [](KeisenDir d) -> QString {
+		//	Dst 側の接続方向 d は進行方向の逆なので、矢印は反対向き
+		switch( d ) {
+		case Down:  return "↑";
+		case Up:    return "↓";
+		case Right: return "←";
+		default:    return "→";
+		}
+	};
 
-			if( txt[ix] == u'┼' ) return "┴";
-			if( txt[ix] == u'╂' ) return "┸";		//	縦のみ太罫線
-			if( txt[ix] == u'┿' ) return "┷";		//	横のみ太罫線
-			if( txt[ix] == u'╋' ) return "┻";
-			if( txt[ix] == u'├' ) return "└";
-			if( txt[ix] == u'┣' ) return "┗";
-			if( txt[ix] == u'┤' ) return "┘";
-			if( txt[ix] == u'┫' ) return "┛";
+	const QChar ch = (ix >= 0 && ix < txt.size()) ? txt[ix] : QChar(u' ');
+	const int vc = (ix >= 0) ? getVisualColumn(txt.left(qMin(ix, (int)txt.size())), font) : 0;
+	ushort bits = (ushort)(getConnectionBits(ch) & 0xFF);
+	bool fromArrow = false;
+
+	//	矢印文字は「直前に来た方向の端点」として連結ビットへ変換
+	if( bits == 0 ) {
+		if( ch == u'→' ) {
+			bool th = (ix > 0 && (getConnectionBits(txt[ix - 1]) & ThickRight) != 0);
+			bits = th ? ThickLeft : Left;
+			fromArrow = true;
+		} else if( ch == u'←' ) {
+			bool th = (ix + 1 < txt.size() && (getConnectionBits(txt[ix + 1]) & ThickLeft) != 0);
+			bits = th ? ThickRight : Right;
+			fromArrow = true;
+		} else if( ch == u'↓' ) {
+			QChar pCh = charAtVisualColumn(prev, vc, font);
+			bool th = !prev.isEmpty() ? ((getConnectionBits(pCh) & ThickDown) != 0) : thickKeisen;
+			bits = th ? ThickUp : Up;
+			fromArrow = true;
+		} else if( ch == u'↑' ) {
+			QChar nCh = charAtVisualColumn(next, vc, font);
+			bool th = !next.isEmpty() ? ((getConnectionBits(nCh) & ThickUp) != 0) : thickKeisen;
+			bits = th ? ThickDown : Down;
+			fromArrow = true;
 		}
-		return "  ";
+	}
+
+	const bool isVertDir = (dir == Up || dir == Down);
+	if( !erase ) {
+		if( bits == 0 ) {
+			if( isDst ) return arrowStr(dir);
+			return lineStr(dirBit(dir), isVertDir);
+		}
+		//	直線端点から直交方向へ曲がる場合、隣接側に接続が無ければ不要な端ビットを落として角にする
+		if( !fromArrow ) {
+			if( isVertDir && (bits & (Up | Down | ThickUp | ThickDown)) == 0 ) {
+				bool hasL = (ix > 0 && ((getConnectionBits(txt[ix - 1]) & (Right | ThickRight)) != 0 || txt[ix - 1] == u'←'));
+				bool hasR = (ix + 1 < txt.size() && ((getConnectionBits(txt[ix + 1]) & (Left | ThickLeft)) != 0 || txt[ix + 1] == u'→'));
+				if( !hasL && hasR )      bits &= ~dirMask(Left);
+				else if( hasL && !hasR ) bits &= ~dirMask(Right);
+			} else if( !isVertDir && (!prev.isEmpty() || !next.isEmpty()) && (bits & (Left | Right | ThickLeft | ThickRight)) == 0 ) {
+				QChar pCh = charAtVisualColumn(prev, vc, font);
+				QChar nCh = charAtVisualColumn(next, vc, font);
+				bool hasU = ((getConnectionBits(pCh) & (Down | ThickDown)) != 0);
+				bool hasD = ((getConnectionBits(nCh) & (Up | ThickUp)) != 0);
+				if( !hasU ) bits &= ~dirMask(Up);
+				if( !hasD ) bits &= ~dirMask(Down);
+			}
+		}
+		bits = (ushort)((bits & ~dirMask(dir)) | dirBit(dir));
+		const int cnt = ((bits & dirMask(Up)) ? 1 : 0) + ((bits & dirMask(Down)) ? 1 : 0)
+		              + ((bits & dirMask(Left)) ? 1 : 0) + ((bits & dirMask(Right)) ? 1 : 0);
+		if( cnt <= 1 )
+			return lineStr(bits, (bits & (dirMask(Up) | dirMask(Down))) != 0);
+		return QString(QChar(revKeisenTable[normalizeToJisKeisenBits(bits)]));
+	} else {
+		if( bits == 0 ) return "  ";
+		if( (bits & dirMask(dir)) == 0 ) return QString(ch);	//	対象方向に線が無いので変化無し
+		bits &= ~dirMask(dir);
+		const int cnt = ((bits & dirMask(Up)) ? 1 : 0) + ((bits & dirMask(Down)) ? 1 : 0)
+		              + ((bits & dirMask(Left)) ? 1 : 0) + ((bits & dirMask(Right)) ? 1 : 0);
+		if( cnt == 0 ) return "  ";
+		if( cnt == 1 ) {
+			if( (bits & dirMask(oppDir(dir))) != 0 )
+				return "  ";	//	直線の続きを消したので空白にする
+			return lineStr(bits, (bits & (dirMask(Up) | dirMask(Down))) != 0);	//	直交軸のみ残る
+		}
+		return QString(QChar(revKeisenTable[normalizeToJisKeisenBits(bits)]));
 	}
 }
 void MarkdownEditor::do_keisen_up(bool erase, bool thickKeisen) {
@@ -2711,7 +2748,7 @@ void MarkdownEditor::do_keisen_up(bool erase, bool thickKeisen) {
 // 1. 移動元（現在地）の置換
 	while( !cursor.atBlockEnd() && getVisualColumn(cursor, this) < vc0 + 2 )
 		cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor);
-	cursor.insertText(getUpSrcString(erase, thickKeisen, cursor.block().text(), ix));
+	cursor.insertText(calcKeisenChar(erase, thickKeisen, Up, false, cursor.block().text(), ix, font()));
 	while( getVisualColumn(cursor, this) > vc0 )
 		cursor.movePosition(QTextCursor::Left);
 
@@ -2733,121 +2770,15 @@ void MarkdownEditor::do_keisen_up(bool erase, bool thickKeisen) {
 	}
 	ix = cursor.positionInBlock();
 	while( !cursor.atBlockEnd() && getVisualColumn(cursor, this) < vc0 + 2) {
-		cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor); // 1文字だけ選択
-		if( vc > vc0 ) pdRight = u' ';
+		cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor);
 	}
-	cursor.insertText(pdLeft + getUpDstString(erase, thickKeisen, cursor.block().text(), ix) + pdRight);	
+	if( getVisualColumn(cursor, this) > vc0 + 2 )
+		pdRight = u' ';
+	cursor.insertText(pdLeft + calcKeisenChar(erase, thickKeisen, Down, true, cursor.block().text(), ix, font()) + pdRight);	
 	while( getVisualColumn(cursor, this) > vc0 )
 		cursor.movePosition(QTextCursor::Left);
 	cursor.endEditBlock();
 	setTextCursor(cursor);
-}
-QString getDownSrcString(bool erase, bool thickKeisen, const QString txt, int ix) {
-	if( !erase ) {
-		if( ix < txt.size() ) {
-			if( txt[ix] == u'→' || txt[ix] == u'┐' || txt[ix] == u'┓' ) return thickKeisen ? "┓" : "┐";
-			if( txt[ix] == u'←' || txt[ix] == u'┌' || txt[ix] == u'┏' ) return thickKeisen ? "┏" : "┌";
-			if( txt[ix] == u'┬' ) return thickKeisen ? "┰" : "┬";
-			if( txt[ix] == u'┘' /*|| txt[ix] == u'┤'*/ ) return "┤";
-			if( txt[ix] == u'└' /*|| txt[ix] == u'├'*/ ) return "├";
-			if( txt[ix] == u'├' || txt[ix] == u'┠' ) return thickKeisen ? "┠" : "├";	//	右が細線
-			if( txt[ix] == u'┝' || txt[ix] == u'┣' ) return thickKeisen ? "┣" : "├";	//	右が太線
-			if( txt[ix] == u'┤' || txt[ix] == u'┨' ) return thickKeisen ? "┨" : "┨";	//	左が細線
-			if( txt[ix] == u'┥' || txt[ix] == u'┫' ) return thickKeisen ? "┫" : "┥";	//	左が太線
-			if( txt[ix] == u'┴' || txt[ix] == u'┸' || txt[ix] == u'┼' || txt[ix] == u'╂' )	//	左右が細線の場合
-				return thickKeisen ? "╂" : "┼";
-			if( txt[ix] == u'┷' || txt[ix] == u'┻' || txt[ix] == u'┿' || txt[ix] == u'╋' )	//	左右が太細線の場合
-				return thickKeisen ? "╋" : "┿";
-			if( txt[ix] == u'─' ) {
-				if( ix < 2 )		//	undone: 左に文字がある場合
-					return thickKeisen ? "┏" : "┌";
-				else
-					return thickKeisen ? "┰" : "┬";
-			}
-			if( txt[ix] == u'━' ) {
-				if( ix < 2 )		//	undone: 左に文字がある場合
-					return thickKeisen ? "┏" : "┌";
-				else
-					return thickKeisen ? "┳" : "┯";
-			}
-		}
-		return thickKeisen ? "┃" : "│";
-	} else {
-		if( ix < txt.size() ) {
-			// 変化無し（すでに下に線がない）
-			if( txt[ix] == u'─' || txt[ix] == u'└' || txt[ix] == u'┘' || txt[ix] == u'┴' || txt[ix] == u'←' || txt[ix] == u'→' ) return txt[ix];
-			if( txt[ix] == u'━' || txt[ix] == u'┗' || txt[ix] == u'┛' || txt[ix] == u'┻' ) return txt[ix];
-			// 縦要素が消えて横棒だけ残る
-			if( txt[ix] == u'┌' || txt[ix] == u'┐' || txt[ix] == u'┬' || txt[ix] == u'┰' ) return "─";
-			if( txt[ix] == u'┏' || txt[ix] == u'┓' || txt[ix] == u'┯' || txt[ix] == u'┳' ) return "━";
-			// Ｔ字・角に格下げ
-			if( txt[ix] == u'┼' ) return "┴";
-			if( txt[ix] == u'╂' ) return "┸";		//	縦のみ太罫線
-			if( txt[ix] == u'┿' ) return "┷";		//	横のみ太罫線
-			if( txt[ix] == u'╋' ) return "┻";
-			if( txt[ix] == u'├' ) return "└";
-			if( txt[ix] == u'┣' ) return "┗";
-			if( txt[ix] == u'┤' ) return "┘";
-			if( txt[ix] == u'┫' ) return "┛";
-			//if( txt[ix] == u'│' || txt[ix] == u'┃' ) return "  ";
-		}
-		return "  ";
-	}
-}
-//┌┰┐┌┰┐┏┯━┓┏┳━┓┌┬─┐┌┬─┐
-//│┃││┃│┃│	┃┃┃  ┃││  │││  │
-//┝╋┥├╂┤┠┼─┨┣╋━┫┝┿━┥├┼─┤
-//│┃││┃│┃│	┃┃┃  ┃││  │││  │
-//└┸┘└┸┘┗┷━┛┗┻━┛└┴─┘└┴─┘
-QString getDownDstString(bool erase, bool thickKeisen, const QString txt, int ix) {
-	if( !erase ) {
-		if( ix < txt.size() ) {
-			if( txt[ix] == u'│' || txt[ix] == u'┃' || txt[ix] == u'┘' || txt[ix] == u'└' )
-				return txt[ix];
-			if( txt[ix] == u'├' || txt[ix] == u'┠' ) return thickKeisen ? "┠" : "├";	//	右が細線
-			if( txt[ix] == u'┝' || txt[ix] == u'┣' ) return thickKeisen ? "┣" : "├";	//	右が太線
-			if( txt[ix] == u'┤' || txt[ix] == u'┨' ) return thickKeisen ? "┨" : "┨";	//	左が細線
-			if( txt[ix] == u'┥' || txt[ix] == u'┫' ) return thickKeisen ? "┫" : "┥";	//	左が太線
-			//if( txt[ix] == u'─' ) return thickKeisen ? "┸" : "┴";
-			if( txt[ix] == u'─' ) {
-				if( ix == 0 || (getConnectionBits(txt[ix-1]) & (Right|ThickRight)) == 0 )		//	左に文字があるが右に結合しない場合
-					return thickKeisen ? "┗" : "└";
-				else
-					return thickKeisen ? "┸" : "┴";
-			}
-			//if( txt[ix] == u'━' ) return thickKeisen ? "┻" : "┷";
-			if( txt[ix] == u'━' ) {
-				if( ix == 0 || (getConnectionBits(txt[ix-1]) & (Right|ThickRight)) == 0 )		//	左に文字があるが、右に結合しない場合
-					return thickKeisen ? "┗" : "└";
-				else
-					return thickKeisen ? "┻" : "┷";
-			}
-			if( txt[ix] == u'┐' ) return "┤";
-			if( txt[ix] == u'┌' ) return "├";
-			if( txt[ix] == u'┴' || txt[ix] == u'┬' || txt[ix] == u'┼' || txt[ix] == u'╂' ) return thickKeisen ? "╂" : "┼";	//	左右が細線
-			if( txt[ix] == u'┷' || txt[ix] == u'┯' || txt[ix] == u'┿' || txt[ix] == u'╋' ) return thickKeisen ? "╋" : "┿";	//	左右が太線
-		}
-		return "↓";
-	} else {
-		if( ix < txt.size() ) {
-			// 変化無し（すでに上に線がない）
-			if( txt[ix] == u'─' || txt[ix] == u'┌' || txt[ix] == u'┐' || txt[ix] == u'┬' || txt[ix] == u'←' || txt[ix] == u'→' ) return txt[ix];
-			if( txt[ix] == u'━' || txt[ix] == u'┏' || txt[ix] == u'┓' || txt[ix] == u'┳' ) return txt[ix];
-			// 縦要素が消えて横棒だけ残る
-			if( txt[ix] == u'└' || txt[ix] == u'┘' || txt[ix] == u'┴' || txt[ix] == u'┸' ) return "─";
-			if( txt[ix] == u'┗' || txt[ix] == u'┛' || txt[ix] == u'┷' || txt[ix] == u'┻' ) return "━";
-			// Ｔ字・角に格下げ
-			if( txt[ix] == u'┼' ) return "┬";
-			if( txt[ix] == u'╂' ) return "┰";		//	縦のみ太罫線
-			if( txt[ix] == u'┿' ) return "┯";		//	横のみ太罫線
-			if( txt[ix] == u'╋' ) return "┳";		//	縦横太罫線
-			if( txt[ix] == u'├' ) return "┌";
-			if( txt[ix] == u'┣' ) return "┏";
-			if( txt[ix] == u'┤' ) return "┐";
-			if( txt[ix] == u'┣' ) return "┓";
-		}
-		return "  ";
-	}
 }
 void MarkdownEditor::do_keisen_down(bool erase, bool thickKeisen) {
 	QTextCursor cursor = this->textCursor();
@@ -2865,7 +2796,7 @@ void MarkdownEditor::do_keisen_down(bool erase, bool thickKeisen) {
 	// 1. 移動元（現在地）の置換
 	while( !cursor.atBlockEnd() && getVisualColumn(cursor, this) < vc0 + 2 ) 
 		cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor);
-	QString src = getDownSrcString(erase, thickKeisen, cursor.block().text(), ix);
+	QString src = calcKeisenChar(erase, thickKeisen, Down, false, cursor.block().text(), ix, font());
 	cursor.insertText(src);
 	cursor.movePosition(QTextCursor::Left);
 
@@ -2892,208 +2823,51 @@ void MarkdownEditor::do_keisen_down(bool erase, bool thickKeisen) {
 		cursor.movePosition(QTextCursor::Left);
 	}
 	ix = cursor.positionInBlock(); // 位置が確定してからインデックス取得
-	while( !cursor.atBlockEnd() && (vc = getVisualColumn(cursor, this)) < vc0 + 2 ) {
+	while( !cursor.atBlockEnd() && getVisualColumn(cursor, this) < vc0 + 2 ) {
 		cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor);
-		if (vc > vc0) pdRight = u' ';
 	}
-	cursor.insertText(pdLeft + getDownDstString(erase, thickKeisen, cursor.block().text(), ix) + pdRight);
+	if( getVisualColumn(cursor, this) > vc0 + 2 )
+		pdRight = u' ';
+	cursor.insertText(pdLeft + calcKeisenChar(erase, thickKeisen, Up, true, cursor.block().text(), ix, font()) + pdRight);
 	while( getVisualColumn(cursor, this) > vc0 )
 		cursor.movePosition(QTextCursor::Left);
 	cursor.endEditBlock();
 	setTextCursor(cursor);
 }
-QString getLeftSrcString(bool erase, bool thickKeisen, const QString txt, int ix) {
-	if( !erase ) {
-		if( ix < txt.size() ) {
-			if( txt[ix] == u'↓' || txt[ix] == u'┘' || txt[ix] == u'┛' ) return thickKeisen ? "┛" : "┘";
-			if( txt[ix] == u'↑' || txt[ix] == u'┐' || txt[ix] == u'┓' ) return thickKeisen ? "┓" : "┐";
-			if( txt[ix] == u'│' || txt[ix] == u'┤' || txt[ix] == u'┥' ) return thickKeisen ? "┥" : "┤";
-			if( txt[ix] == u'┃' || txt[ix] == u'┨' || txt[ix] == u'┫' ) return thickKeisen ? "┫" : "┨";
-			if( txt[ix] == u'└' || txt[ix] == u'┴' || txt[ix] == u'┷' ) return thickKeisen ? "┷" : "┴";
-			if( txt[ix] == u'┌' || txt[ix] == u'┬' || txt[ix] == u'┯' ) return thickKeisen ? "┯" : "┬";
-			if( txt[ix] == u'┘' || txt[ix] == u'┴' ) return thickKeisen ? "┷" : "┴";	//	上方向が細線
-			if( txt[ix] == u'┛' || txt[ix] == u'┸' ) return thickKeisen ? "┻" : "┸";	//	上方向が太線
-			if( txt[ix] == u'┐' || txt[ix] == u'┬' ) return thickKeisen ? "┯" : "┬";	//	下方向が細線
-			if( txt[ix] == u'┓' || txt[ix] == u'┰' ) return thickKeisen ? "┳" : "┰";	//	下方向が太線
-			if( txt[ix] == u'├' || txt[ix] == u'┝' || txt[ix] == u'┼' || txt[ix] == u'┿' )	//	上下が細線の場合
-				return thickKeisen ? "┿" : "┼";
-			if( txt[ix] == u'┠' || txt[ix] == u'┣' || txt[ix] == u'╂' || txt[ix] == u'╋' )	//	上下が太線の場合
-				return thickKeisen ? "╋" : "╂";
-		}
-		return thickKeisen ? "━" : "─";
-	} else {
-		if( ix < txt.size() ) {
-			if( txt[ix] == u'│' || txt[ix] == u'└' || txt[ix] == u'┌' || txt[ix] == u'├' ) return txt[ix];		//	変化無し
-			if( txt[ix] == u'┃' || txt[ix] == u'┗' || txt[ix] == u'┏' || txt[ix] == u'┣' ) return txt[ix];		//	変化無し
-			if( txt[ix] == u'┘' || txt[ix] == u'┐' || txt[ix] == u'┤' )
-				return "│";
-			if( txt[ix] == u'┼' ) return "├";
-			if( txt[ix] == u'╋' ) return "┣";
-		}
-		return "  ";
-	}
-}
-//┌┰┐┌┰┐┏┯━┓┏┳━┓┌┬─┐
-//│┃││┃│┃│	┃┃┃  ┃││  │
-//┝╋┥├╂┤┠┼─┨┣╋━┫┝┿━┥
-//│┃││┃│┃│	┃┃┃  ┃││  │
-//└┸┘└┸┘┗┷━┛┗┻━┛└┴─┘
-QString getLeftDstString(bool erase, bool thickKeisen, const QString txt, int ix, const QString prev, const QString next) {
-	if( !erase ) {
-		if( ix < txt.size() ) {
-			if( txt[ix] == u'─' || txt[ix] == u'━' || txt[ix] == u'┌' || txt[ix] == u'┼')
-				return txt[ix];
-#if 0
-			if( txt[ix] == u'│' || txt[ix] == u'┃' ) {
-				auto bits = getConnectionBits(txt[ix]);
-				if( ix >= prev.size() || (getConnectionBits(prev[ix])&(Down|ThickDown)) == 0 )
-					bits &= ~(Up|ThickUp);
-				if( ix >= next.size() || (getConnectionBits(next[ix])&(Up|ThickUp)) == 0 )
-					bits &= ~(Down|ThickDown);
-				bits |= thickKeisen ? ThickRight : Right;
-				if( bits != 0 && bits < 0x100 )
-					return QString(revKeisenTable[bits]);
-				else
-					return "←";
-			}
-#endif
-			if( txt[ix] == u'│' || txt[ix] == u'├' || txt[ix] == u'┝' ) return thickKeisen ? "┝" : "├";	//	縦：細罫線の場合
-			if( txt[ix] == u'┃' || txt[ix] == u'┠' || txt[ix] == u'┣' ) return thickKeisen ? "┣" : "┠";	//	縦：太罫線の場合
-			if( txt[ix] == u'↓' || txt[ix] == u'└' ) return "└";
-			if( txt[ix] == u'↑' || txt[ix] == u'┌' ) return "┌";
-			if( txt[ix] == u'┘' || txt[ix] == u'┴' ) return "┴";
-			if( txt[ix] == u'┐' || txt[ix] == u'┬' ) return "┬";
-			if( txt[ix] == u'┤' ) return "┼";
-		}
-		return "←";
-	} else {
-		if( ix < txt.size() ) {
-			if (txt[ix] == u'│' || txt[ix] == u'┃' ) return txt[ix];		//	変化無し
-			if( txt[ix] == u'┐' || txt[ix] == u'┘' || txt[ix] == u'┤' ) return txt[ix];		//	変化無し
-			if( txt[ix] == u'┓' || txt[ix] == u'┛' || txt[ix] == u'┫' ) return txt[ix];		//	変化無し
-			if( txt[ix] == u'└' || txt[ix] == u'┌' || txt[ix] == u'├' ) return "│";
-			if( txt[ix] == u'┼' ) return "┤";
-			if( txt[ix] == u'╋' ) return "┫";
-		}
-		return "  ";
-	}
-}
 void MarkdownEditor::do_keisen_left(bool erase, bool thickKeisen) {
 	QTextCursor cursor = this->textCursor();
 	if( cursor.atBlockStart() ) return;				//	行頭にいる場合は無視
 	int vc0 = getVisualColumn(cursor, this);
+	QString prev, next;
+	QTextBlock pb = cursor.block().previous();
+	if( pb.isValid() ) prev = pb.text();
+	QTextBlock nb = cursor.block().next();
+	if( nb.isValid() ) next = nb.text();
 	QString src = erase ? "  " : thickKeisen ? "━" : "─";
 	if( !cursor.atBlockEnd() ) {
 		int ix = cursor.positionInBlock();
 		do {
 			cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor);
 		} while (!cursor.atBlockEnd() && getVisualColumn(cursor, this) < vc0 + 2);
-		src = getLeftSrcString(erase, thickKeisen, cursor.block().text(), ix);
+		src = calcKeisenChar(erase, thickKeisen, Left, false, cursor.block().text(), ix, font(), prev, next);
 		cursor.clearSelection();	//	選択解除、カーソル位置は movePosition() 後の位置、つまり選択末尾
 	}
 	while( !cursor.atBlockStart() && getVisualColumn(cursor, this) > vc0 - 2 )
 		cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor);
-	QString prev, next;
-	QTextBlock pb = cursor.block().previous();
-	if( pb.isValid() ) prev = pb.text();
-	QTextBlock nb = cursor.block().next();
-	if( nb.isValid() ) next = nb.text();
-	QString dst = getLeftDstString(erase, thickKeisen, cursor.block().text(), cursor.positionInBlock(), prev, next);
+	QString dst = calcKeisenChar(erase, thickKeisen, Right, true, cursor.block().text(), cursor.positionInBlock(), font(), prev, next);
 	cursor.insertText(dst+src);
 	while( getVisualColumn(cursor, this) > vc0 - 2 )
 		cursor.movePosition(QTextCursor::Left, QTextCursor::MoveAnchor);
 	setTextCursor(cursor);
 }
-QString getRightSrcString(bool erase, bool thickKeisen, const QString txt, int ix, const QString prev, const QString next) {
-	if( !erase ) {
-		if( ix < txt.size() ) {
-			if( txt[ix] == u'↑' || txt[ix] == u'┌' || txt[ix] == u'┏' ) return thickKeisen ? "┏" : "┌";
-			if( txt[ix] == u'↓' || txt[ix] == u'└' || txt[ix] == u'┗' ) return thickKeisen ? "┗" : "└";
-			ushort pbits = ix < prev.size() ? getConnectionBits(prev[ix]) : 0;
-			ushort nbits = ix < next.size() ? getConnectionBits(next[ix]) : 0;
-			if( txt[ix] == u'│' || txt[ix] == u'├' || txt[ix] == u'┝' ) {
-				if( (pbits&(Down|ThickDown)) != 0 ) {		//	上部から下に接続している
-					if( (nbits&(Up|ThickUp)) != 0 )			//	下部から上に接続している
-						return thickKeisen ? "┝" : "├";
-					else
-						return thickKeisen ? "┗" : "└";
-				} else {
-					if( (nbits&(Up|ThickUp)) != 0 )			//	下部から上に接続している
-						return thickKeisen ? "┏" : "┌";
-					else
-						return thickKeisen ? "━" : "─";
-				}
-			}
-			if( txt[ix] == u'┃' || txt[ix] == u'┣' || txt[ix] == u'┠' ) {
-				if( (pbits&(Down|ThickDown)) != 0 ) {		//	上部から下に接続している
-					if( (nbits&(Up|ThickUp)) != 0 )			//	下部から上に接続している
-						return thickKeisen ? "┣" : "┠";
-					else
-						return thickKeisen ? "┗" : "└";
-				} else {
-					if( (nbits&(Up|ThickUp)) != 0 )			//	下部から上に接続している
-						return thickKeisen ? "┏" : "┌";
-					else
-						return thickKeisen ? "━" : "─";
-				}
-			}
-			if( txt[ix] == u'┘' || txt[ix] == u'┴' ) return thickKeisen ? "┷" : "┴";	//	上方向が細線
-			if( txt[ix] == u'┛' || txt[ix] == u'┸' ) return thickKeisen ? "┻" : "┸";	//	上方向が太線
-			if( txt[ix] == u'┐' || txt[ix] == u'┬' ) return thickKeisen ? "┯" : "┬";	//	下方向が細線
-			if( txt[ix] == u'┓' || txt[ix] == u'┰' ) return thickKeisen ? "┳" : "┰";	//	下方向が太線
-			if( txt[ix] == u'┤' || txt[ix] == u'┥' || txt[ix] == u'┼' || txt[ix] == u'┿' )	//	上下が細線の場合
-				return thickKeisen ? "┿" : "┼";
-			if( txt[ix] == u'┨' || txt[ix] == u'┫' || txt[ix] == u'╂' || txt[ix] == u'╋' )	//	上下が太線の場合
-				return thickKeisen ? "╋" : "╂";
-		}
-		return thickKeisen ? "━" : "─";
-	} else {
-		if( ix < txt.size() ) {
-			if( txt[ix] == u'│' || txt[ix] == u'┘' || txt[ix] == u'┐' || txt[ix] == u'┤' ) return txt[ix];		//	変化無し
-			if( txt[ix] == u'┃' || txt[ix] == u'┛' || txt[ix] == u'┓' || txt[ix] == u'┫' ) return txt[ix];		//	変化無し
-			if( txt[ix] == u'└' || txt[ix] == u'┌' || txt[ix] == u'├' || txt[ix] == u'┝' ) return "│";		//	上下が細線の場合
-			if( txt[ix] == u'┗' || txt[ix] == u'┏' || txt[ix] == u'┠' || txt[ix] == u'┣' ) return "┃";		//	上下が太線の場合
-			if( txt[ix] == u'┼' ) return "┤";
-			if( txt[ix] == u'╋' ) return "┫";
-		}
-		return "  ";
-	}
-}
-//┌┰┐┌┰┐┏┯━┓┏┳━┓┌┬─┐
-//│┃││┃│┃│	┃┃┃  ┃││  │
-//┝╋┥├╂┤┠┼─┨┣╋━┫┝┿━┥
-//│┃││┃│┃│	┃┃┃  ┃││  │
-//└┸┘└┸┘┗┷━┛┗┻━┛└┴─┘
-QString getRightDstString(bool erase, bool thickKeisen, const QString txt, int ix) {
-	if( !erase ) {
-		if( ix < txt.size() ) {
-			if( txt[ix] == u'─' || txt[ix] == u'━' || txt[ix] == u'┐' || txt[ix] == u'┼')
-				return txt[ix];
-			if( txt[ix] == u'│' || txt[ix] == u'┤' )		//	上下が細線の場合
-				return thickKeisen ? "┥" : "┤";
-			if( txt[ix] == u'┃' || txt[ix] == u'┨' )		//	上下が太線の場合
-				return thickKeisen ? "┫" : "┨";
-			if( txt[ix] == u'↑' || txt[ix] == u'┐' ) return "┐";
-			if( txt[ix] == u'↓' || txt[ix] == u'┘' ) return "┘";
-			if( txt[ix] == u'└' || txt[ix] == u'┴' ) return "┴";
-			if( txt[ix] == u'┌' || txt[ix] == u'┬' ) return "┬";
-			if( txt[ix] == u'├' ) return "┼";
-		}
-		return "→";
-	} else {
-		if( ix < txt.size() ) {
-			if (txt[ix] == u'│' || txt[ix] == u'┃' ) return txt[ix];		//	変化無し
-			if( txt[ix] == u'└' || txt[ix] == u'┌' || txt[ix] == u'├' ) return txt[ix];		//	変化無し
-			if( txt[ix] == u'┐' || txt[ix] == u'┘' || txt[ix] == u'┤' ) return "│";
-			if( txt[ix] == u'┼' ) return "├";
-			if( txt[ix] == u'╋' ) return "┣";
-		}
-		return "  ";
-	}
-}
 void MarkdownEditor::do_keisen_right(bool erase, bool thickKeisen) {
 	QTextCursor cursor = this->textCursor();
 	int vc0 = getVisualColumn(cursor, this);
+	QString prev, next;
+	QTextBlock pb = cursor.block().previous();
+	if( pb.isValid() ) prev = pb.text();
+	QTextBlock nb = cursor.block().next();
+	if( nb.isValid() ) next = nb.text();
 	QString str = erase ? "  " : thickKeisen ? "━": "─";
 	int ix = cursor.positionInBlock();
 	if( !cursor.atBlockEnd() ) {
@@ -3101,21 +2875,16 @@ void MarkdownEditor::do_keisen_right(bool erase, bool thickKeisen) {
 		do {
 			cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor);
 		} while( !cursor.atBlockEnd() && getVisualColumn(cursor, this) < vc + 2);
-		QString prev, next;
-		QTextBlock pb = cursor.block().previous();
-		if( pb.isValid() ) prev = pb.text();
-		QTextBlock nb = cursor.block().next();
-		if( nb.isValid() ) next = nb.text();
-		str = getRightSrcString(erase, thickKeisen, cursor.block().text(), ix, prev, next);
+		str = calcKeisenChar(erase, thickKeisen, Right, false, cursor.block().text(), ix, font(), prev, next);
 	}
 	QString str2 = erase ? "  " : "→";
 	if (!cursor.atBlockEnd()) {
-		int ix = cursor.positionInBlock();;
+		int ix = cursor.positionInBlock();
 		int vc = getVisualColumn(cursor, this);
 		do {
 			cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor);
 		} while( !cursor.atBlockEnd() && getVisualColumn(cursor, this) < vc + 2);
-		str2 = getRightDstString(erase, thickKeisen, cursor.block().text(), ix);
+		str2 = calcKeisenChar(erase, thickKeisen, Left, true, cursor.block().text(), ix, font(), prev, next);
 	}
 	cursor.insertText(str + str2);
 	while( getVisualColumn(cursor, this) > vc0 + 2 )
@@ -3336,12 +3105,16 @@ void MarkdownEditor::convert_CSV_MarkdownTable() {
 	bool inComment = false;
 	bool commented = false;
 	int endPosition = -1;
+	bool hasNextLine = false;
 	QList<QStringList> ll;
 	QByteArray ba;
 	QStringList fields;
 	while( block.isValid() ) {
 		if( block.text().startsWith("```")) {
-			endPosition = block.position() + block.length();
+			if( block.next().isValid() ) {
+				endPosition = block.next().position();
+				hasNextLine = true;
+			}
 			break;
 		}
 		inQuotes = parseCsvLine(fields, ba, block.text(), inQuotes, inComment, commented);
@@ -3350,7 +3123,6 @@ void MarkdownEditor::convert_CSV_MarkdownTable() {
 		}
 		block = block.next();
 	}
-	//if( endPosition < 0 )
 	QString mdtext;
 	bool header = true;
 	for(int row = 0; row < ll.size(); ++row) {
@@ -3367,7 +3139,13 @@ void MarkdownEditor::convert_CSV_MarkdownTable() {
 		}
 	}
 	cursor.setPosition(startPosition);
-	cursor.setPosition(endPosition, QTextCursor::KeepAnchor);
+	if( hasNextLine ) {
+		cursor.setPosition(endPosition, QTextCursor::KeepAnchor);
+	} else {
+		cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
+		if( mdtext.endsWith(u'\n') )
+			mdtext.chop(1);
+	}
 	//cursor.insertText(mdtext);
 	do_insertText(cursor, mdtext);
 	setTextCursor(cursor);

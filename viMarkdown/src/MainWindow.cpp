@@ -2734,8 +2734,8 @@ int isCheckboxBlock(const QTextBlock& block) {		//	空白+ "- [{ xX}] " で始�
 	const QString txt = block.text();
 	int i = 0;
 	while( i < txt.size() && txt[i] == ' ' ) ++i;
-	if( !txt.mid(i).startsWith("- ") || txt.size() < 6) return 0;
-	if( !isCheckbox(txt, 2) ) return 0;
+	if( txt.size() < i + 6 || !txt.mid(i).startsWith("- ") ) return 0;
+	if( !isCheckbox(txt, i + 2) ) return 0;
 	return i + 6;
 }
 int isListBlock(const QTextBlock& block) {		//	空白+ "- " で始まるか？ return 0 for not List, 1以上 for 文字数
@@ -2838,6 +2838,12 @@ void MainWindow::onAction_UnIndent() {
 	mdEditor->setTextCursor(cursor);
 	cursor.endEditBlock();
 }
+static int leadingSpacesCount(const QTextBlock& block) {
+	const QString txt = block.text();
+	int i = 0;
+	while( i < txt.size() && txt[i] == ' ' ) ++i;
+	return i;
+}
 void MainWindow::onAction_Checkbox() {
 	MarkdownEditor *mdEditor = getCurDocWidget()->m_editor;
 	QTextCursor cursor = mdEditor->textCursor();
@@ -2858,17 +2864,21 @@ void MainWindow::onAction_Checkbox() {
 		if( remove_checkbox ) {
 			int n = isCheckboxBlock(currentBlock);
 			if( n != 0 ) {
-				cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, n);
+				cursor.setPosition(currentBlock.position() + n - 6);		//	行頭インデント空白を保持
+				cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, 6);
 				mdEditor->do_deleteText(cursor);
 				//cursor.removeSelectedText();
 			}
 		} else {
 			if( !isCheckboxBlock(currentBlock) ) {
-				if( currentBlock.text().startsWith("- ") ) {
-					cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, 2);
+				int listLen = isListBlock(currentBlock);	//	空白+ "- "
+				if( listLen > 0 ) {
+					cursor.movePosition(QTextCursor::Right, QTextCursor::MoveAnchor, listLen);
 					mdEditor->do_insertText(cursor, "[ ] ");
 					//cursor.insertText("[ ] ");
 				} else {
+					int sp = leadingSpacesCount(currentBlock);
+					cursor.setPosition(currentBlock.position() + sp);		//	行頭インデント空白の後ろへ挿入
 					mdEditor->do_insertText(cursor, "- [ ] ");
 					//cursor.insertText("- [ ] ");
 				}
@@ -2912,7 +2922,8 @@ void MainWindow::onAction_List() {
 		if( remove_list ) {
 			int n = isListBlock(currentBlock);
 			if( n != 0 ) {
-				cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, n);
+				cursor.setPosition(currentBlock.position() + n - 2);		//	行頭インデント空白を保持
+				cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, 2);
 				mdEditor->do_deleteText(cursor);
 				//cursor.removeSelectedText();
 			}
@@ -2922,6 +2933,9 @@ void MainWindow::onAction_List() {
 				if( n > 0 ) {
 					cursor.setPosition(currentBlock.position() + n - 3);		//	3 for "数字. ".length()
 					cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, 3);
+				} else {
+					int sp = leadingSpacesCount(currentBlock);
+					cursor.setPosition(currentBlock.position() + sp);		//	行頭インデント空白の後ろへ挿入
 				}
 				mdEditor->do_insertText(cursor, "- ");
 				//cursor.insertText("- ");
@@ -2966,7 +2980,8 @@ void MainWindow::onAction_NumList() {
 		if( remove_list ) {
 			int n = isNumListBlock(currentBlock);
 			if( n != 0 ) {
-				cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, n);
+				cursor.setPosition(currentBlock.position() + n - 3);		//	行頭インデント空白を保持
+				cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, 3);
 				mdEditor->do_deleteText(cursor);
 				//cursor.removeSelectedText();
 			}
@@ -2976,6 +2991,9 @@ void MainWindow::onAction_NumList() {
 				if( n > 0 ) {
 					cursor.setPosition(currentBlock.position() + n - 2);		//	2 for "- ".length()
 					cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, 2);
+				} else {
+					int sp = leadingSpacesCount(currentBlock);
+					cursor.setPosition(currentBlock.position() + sp);		//	行頭インデント空白の後ろへ挿入
 				}
 				mdEditor->do_insertText(cursor, "1. ");
 				//cursor.insertText("1. ");

@@ -8,6 +8,7 @@
 #include <QScrollBar>
 #include <QDir>
 #include <QImage>
+#include <QHash>
 #include <QSvgRenderer>
 #include <QXmlStreamReader>
 #include <qpainter.h>
@@ -1333,6 +1334,9 @@ void MarkdownPreview::do_CSV(int bn0, int nBlocks, QTextBlock& srcBlock, QTextCu
 	cursor.endEditBlock();
 	//++m_ln;
 }
+extern bool isKeisenChar(QChar ch);
+extern ushort getConnectionBits(QChar ch);
+
 void MarkdownPreview::do_keisen_block(int bn0, int nBlocks, QTextBlock& srcBlock, QTextCursor& cursor) {
 	QTextBlock block0 = srcBlock;
 	setBlockType(srcBlock, BT_KEISEN_BEGIN);
@@ -1368,30 +1372,117 @@ void MarkdownPreview::do_keisen_block(int bn0, int nBlocks, QTextBlock& srcBlock
 	QFontMetrics fm(font);
 	int width = 100;
 	int ix0 = m_ix + 1;
+	QStringList lines;
 	while( ++m_ix < nBlocks && (srcBlock = srcBlock.next()).isValid() && !srcBlock.text().startsWith("```") ) {
 		setBlockType(srcBlock, BT_KEISEN_BLOCK);
-		width = qMax(width, fm.horizontalAdvance(srcBlock.text())+10);
+		const QString lineText = srcBlock.text();
+		lines.append(lineText);
+		width = qMax(width, fm.horizontalAdvance(lineText) + 10);
 	}
 	if( srcBlock.isValid() && srcBlock.blockNumber() == m_ix && srcBlock.text().startsWith("```") ) {
-
 		setBlockType(srcBlock, BT_KEISEN_BLOCK);
 		data = getBlockData(srcBlock);
 		data->m_charFlags.fill(PCF_KEISEN);
 		srcBlock.setUserData(data);
 	}
-	int lineHeight = fm.lineSpacing(); // 行の間隔（高さ＋行間）
-	
-	int height = lineHeight * (m_ix - ix0);
+	const int nLines = (int)lines.size();
+	if( nLines <= 0 ) return;
+	const int lineHeight = fm.lineSpacing();
+	const int height = lineHeight * nLines;
+	const int halfW = qMax(1, fm.horizontalAdvance(u'A'));
+
+	//	各行の「表示列(vc) → 連結ビット」マップを構築（隣接セルとの太さ合わせ用）
+	QVector<QHash<int, ushort>> rowBits(nLines);
+	for(int i = 0; i < nLines; ++i) {
+		const QString &line = lines[i];
+		for(int j = 0; j < line.size(); ++j) {
+			if( isKeisenChar(line[j]) ) {
+				const int vc = fm.horizontalAdvance(line.left(j)) / halfW;
+				rowBits[i].insert(vc, getConnectionBits(line[j]));
+			}
+		}
+	}
+
+	//	KeisenDir ビット定数（MarkdownEditor.cpp の enum KeisenDir と同一）
+	constexpr ushort K_UP = 0x01, K_DN = 0x02, K_LT = 0x04, K_RT = 0x08;
+	constexpr int K_THICK = 4, K_DBL = 8;
+	auto armStyle = [](ushort b, ushort dir) -> int {
+		if( b & (dir << K_DBL) )   return 3;
+		if( b & (dir << K_THICK) ) return 2;
+		if( b & dir )              return 1;
+		return 0;
+	};
+
 	QImage img(width, height, QImage::Format_RGB32);
 	img.fill(bgcolor);
 	QPainter painter(&img);
-	painter.setRenderHint(QPainter::Antialiasing);
 	painter.setFont(font);
-	painter.setPen(color);
-	QTextBlock b = block0.next();
-	for(int i = 0; i < m_ix - ix0; ++i) {
-		painter.drawText(5, lineHeight*i+fm.height(), b.text());
-		b = b.next();
+	const QPen textPen(color);
+	const QPen thinPen(color, 1, Qt::SolidLine, Qt::FlatCap);
+	const QPen thickPen(color, 3, Qt::SolidLine, Qt::FlatCap);
+
+	for(int i = 0; i < nLines; ++i) {
+		const QString &line = lines[i];
+		const int yTop = lineHeight * i;
+		const int yBot = yTop + lineHeight;
+		const int cy = yTop + lineHeight / 2;
+		const int yBaseline = yTop + (lineHeight + fm.ascent() - fm.descent()) / 2;
+
+		for(int j = 0; j < line.size(); ++j) {
+			const QChar ch = line[j];
+			if( ch == u' ' ) continue;
+			const int adv0 = fm.horizontalAdvance(line.left(j));
+			const int adv1 = fm.horizontalAdvance(line.left(j + 1));
+			const int xL = 5 + adv0;
+			const int xR = 5 + adv1;
+			const int cx = (xL + xR) / 2;
+			const ushort bits = isKeisenChar(ch) ? getConnectionBits(ch) : 0;
+
+			if( bits == 0 ) {
+				painter.setRenderHint(QPainter::Antialiasing, true);
+				painter.setPen(textPen);
+				painter.drawText(xL, yBaseline, QString(ch));
+				continue;
+			}
+
+			int u = armStyle(bits, K_UP);
+			int d = armStyle(bits, K_DN);
+			int l = armStyle(bits, K_LT);
+			int r = armStyle(bits, K_RT);
+			const int vc = adv0 / halfW;
+
+			//	隣接セルが細線で接続している場合、太線側の接続半辺を細線に合わせて段差を解消
+			if( u == 2 && i > 0 && armStyle(rowBits[i - 1].value(vc, 0), K_DN) == 1 ) u = 1;
+			if( d == 2 && i + 1 < nLines && armStyle(rowBits[i + 1].value(vc, 0), K_UP) == 1 ) d = 1;
+			if( l == 2 && armStyle(rowBits[i].value(vc - 2, 0), K_RT) == 1 ) l = 1;
+			if( r == 2 && armStyle(rowBits[i].value(vc + 2, 0), K_LT) == 1 ) r = 1;
+
+			painter.setRenderHint(QPainter::Antialiasing, false);
+			auto drawArm = [&](int style, int x1, int y1, int x2, int y2, bool vert) {
+				if( style == 0 ) return;
+				if( style == 3 ) {
+					painter.setPen(thinPen);
+					if( vert ) {
+						painter.drawLine(x1 - 1, y1, x2 - 1, y2);
+						painter.drawLine(x1 + 1, y1, x2 + 1, y2);
+					} else {
+						painter.drawLine(x1, y1 - 1, x2, y2 - 1);
+						painter.drawLine(x1, y1 + 1, x2, y2 + 1);
+					}
+					return;
+				}
+				painter.setPen(style == 2 ? thickPen : thinPen);
+				painter.drawLine(x1, y1, x2, y2);
+			};
+			const int extU = (u == 2) ? 1 : 0;
+			const int extD = (d == 2) ? 1 : 0;
+			const int extL = (l == 2) ? 1 : 0;
+			const int extR = (r == 2) ? 1 : 0;
+			drawArm(u, cx, yTop, cx, cy + extU, true);
+			drawArm(d, cx, cy - extD, cx, yBot, true);
+			drawArm(l, xL, cy, cx + extL, cy, false);
+			drawArm(r, cx - extR, cy, xR, cy, false);
+		}
 	}
 	painter.end();
 	//
