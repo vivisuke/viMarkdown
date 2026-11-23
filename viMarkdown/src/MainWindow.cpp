@@ -2801,6 +2801,7 @@ void MainWindow::onAction_UnIndent() {
 		mdEditor = docWidget->m_diffview;
 	QTextCursor cursor = mdEditor->textCursor();
 	QTextDocument *doc = mdEditor->document();
+	mdEditor->openUndoBlock();
 	cursor.beginEditBlock();
 	int startPos = cursor.selectionStart();
 	int endPos = cursor.selectionEnd();
@@ -2837,6 +2838,7 @@ void MainWindow::onAction_UnIndent() {
 	}
 	mdEditor->setTextCursor(cursor);
 	cursor.endEditBlock();
+	mdEditor->closeUndoBlock();
 }
 static int leadingSpacesCount(const QTextBlock& block) {
 	const QString txt = block.text();

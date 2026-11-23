@@ -7,6 +7,8 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindowClass; };
 QT_END_NAMESPACE
 
+class QTabWidget;
+class QTextEdit;
 class TextEdit;
 
 class MainWindow : public QMainWindow
@@ -20,13 +22,21 @@ public:
     void do_output(const QString& txt);
 
 private:
+    TextEdit *addEditorTab(const QString &title, const QString &filePath = QString());
+    TextEdit *currentTextEdit() const;
+    QTextEdit *currentPreviewEdit() const;
+    int findTabByFilePath(const QString &cleanPath) const;
+    void onCurrentTabChanged(int index);
+    void onTabCloseRequested(int index);
     void onOpen();
+    void onClose();
     bool openFile(const QString &filePath);
     void addToRecentFiles(const QString &fullPath);
     void onAboutToShow_RecentFiles();
 
     Ui::MainWindowClass *ui;
-    TextEdit *m_textEdit = nullptr;
+    QTabWidget *m_tabWidget = nullptr;
+    int m_tabNumber = 0;
     QString m_lastDir;
 };
 

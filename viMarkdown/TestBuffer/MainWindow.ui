@@ -27,6 +27,7 @@
      </property>
     </widget>
     <addaction name="action_Open"/>
+    <addaction name="action_Close"/>
     <addaction name="menu_RecentFiles"/>
    </widget>
    <widget class="QMenu" name="menuTest">
@@ -79,6 +80,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="action_Close">
+   <property name="text">
+    <string>Close</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+W</string>
    </property>
   </action>
   <action name="action_gap_buffer">

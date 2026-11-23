@@ -851,8 +851,14 @@ void MarkdownEditor::insertFromMimeData(const QMimeData *source) {
 		QFileInfo fi(m_docWidget->m_fullPath);
         QString savePath = fi.absoluteDir().absolutePath() + "/" + fileName;
         if (image.save(savePath, "PNG")) {
-            this->textCursor().insertText(QString("![画像](%1)").arg(fileName));
+            QTextCursor cursor = this->textCursor();
+            do_insertText(cursor, QString("![画像](%1)").arg(fileName));
         }
+		return;
+	}
+	if (source->hasText()) {
+		QTextCursor cursor = this->textCursor();
+		do_insertText(cursor, source->text());
 		return;
 	}
 	QPlainTextEdit::insertFromMimeData(source);
@@ -1165,14 +1171,14 @@ void MarkdownEditor::svg_enter_pressed() {
 	QString txt = m_svgCompleter->completerText();
 	txt.replace("\\n", "\n");
 	int cix = txt.indexOf('|');
+	if( cix >= 0 )
+		txt.remove(cix, 1);
 	svg_esc_pressed();		//	close SvgCompleter
 	QTextCursor cursor = this->textCursor();
-	int pos = cursor.position();
-	cursor.insertText(txt);
-	if( cix >= 0 ) {
+	int pos = cursor.hasSelection() ? cursor.selectionStart() : cursor.position();
+	do_insertText(cursor, txt);
+	if( cix >= 0 )
 		cursor.setPosition(pos + cix);
-		cursor.deleteChar();
-	}
 	setTextCursor(cursor);
 }
 void MarkdownEditor::svg_esc_pressed() {
@@ -1682,13 +1688,16 @@ void MarkdownEditor::closeAllUndoBlock() {
 void MarkdownEditor::prohibitMergeUndo() {
 	m_undoMgr->prohibitMergeUndo();
 }
+static bool s_inUndoRedo = false;
 int MarkdownEditor::do_undo() {
 	if( !canUndo() ) return textCursor().position();
 	if( m_diffMode ) {
 		m_docWidget->m_editor->removeAllDummyLines();
 		m_docWidget->m_diffview->removeAllDummyLines();
 	}
+	s_inUndoRedo = true;
 	int pos = m_undoMgr->undo();
+	s_inUndoRedo = false;
 	emit canUndoRedoChanged();
 	//if( m_diffMode )
 	//	((MainWindow*)m_mainWindow)->do_diff();
@@ -1702,7 +1711,9 @@ int MarkdownEditor::do_redo() {
 	}
 	uchar f = m_undoMgr->redoActionFlags();
 	qDebug() << "m_undoMgr->redoActionFlags() = " << (int)f;
+	s_inUndoRedo = true;
 	int pos = m_undoMgr->redo();
+	s_inUndoRedo = false;
 	emit canUndoRedoChanged();
 	//if( m_diffMode )
 	//	((MainWindow*)m_mainWindow)->do_diff();
@@ -1751,7 +1762,7 @@ void MarkdownEditor::make_link() {
 	}
 	QString text = cursor.selectedText();
 	text = u'[' + text + u"](url)";
-	cursor.insertText(text);
+	do_insertText(cursor, text);
 	cursor.movePosition(QTextCursor::Left, QTextCursor::MoveAnchor, 4);		//	url 先頭まで移動
 	cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, 3);	//	url 選択
 	setTextCursor(cursor);
@@ -2741,6 +2752,7 @@ static QString calcKeisenChar(bool erase, bool thickKeisen, KeisenDir dir, bool 
 void MarkdownEditor::do_keisen_up(bool erase, bool thickKeisen) {
 	QTextCursor cursor = this->textCursor();
 	if( cursor.blockNumber() == 0 ) return;		//	１行目では実行不可
+	openUndoBlock();
 	cursor.beginEditBlock();
 	int vc0 = getVisualColumn(cursor, this); // 開始位置の表示列(VC)を保存
 	int ix = cursor.positionInBlock();
@@ -2748,7 +2760,7 @@ void MarkdownEditor::do_keisen_up(bool erase, bool thickKeisen) {
 // 1. 移動元（現在地）の置換
 	while( !cursor.atBlockEnd() && getVisualColumn(cursor, this) < vc0 + 2 )
 		cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor);
-	cursor.insertText(calcKeisenChar(erase, thickKeisen, Up, false, cursor.block().text(), ix, font()));
+	do_insertText(cursor, calcKeisenChar(erase, thickKeisen, Up, false, cursor.block().text(), ix, font()));
 	while( getVisualColumn(cursor, this) > vc0 )
 		cursor.movePosition(QTextCursor::Left);
 
@@ -2760,7 +2772,7 @@ void MarkdownEditor::do_keisen_up(bool erase, bool thickKeisen) {
 	
 	// 足りなければスペース補完（これで確実に vc0 に到達する）
 	int vc = getVisualColumn(cursor, this);
-	if( vc < vc0 ) cursor.insertText(QString(vc0 - vc, u' '));
+	if( vc < vc0 ) do_insertText(cursor, QString(vc0 - vc, u' '));
 
 	// 3. 移動先の置換
 	QString pdLeft, pdRight;
@@ -2774,21 +2786,24 @@ void MarkdownEditor::do_keisen_up(bool erase, bool thickKeisen) {
 	}
 	if( getVisualColumn(cursor, this) > vc0 + 2 )
 		pdRight = u' ';
-	cursor.insertText(pdLeft + calcKeisenChar(erase, thickKeisen, Down, true, cursor.block().text(), ix, font()) + pdRight);	
+	do_insertText(cursor, pdLeft + calcKeisenChar(erase, thickKeisen, Down, true, cursor.block().text(), ix, font()) + pdRight);
 	while( getVisualColumn(cursor, this) > vc0 )
 		cursor.movePosition(QTextCursor::Left);
 	cursor.endEditBlock();
+	closeUndoBlock();
+	prohibitMergeUndo();
 	setTextCursor(cursor);
 }
 void MarkdownEditor::do_keisen_down(bool erase, bool thickKeisen) {
 	QTextCursor cursor = this->textCursor();
+	openUndoBlock();
 	cursor.beginEditBlock();
 	int vc0 = getVisualColumn(cursor, this);
 	int ix = cursor.positionInBlock();
 
 	if (cursor.block() == cursor.document()->lastBlock()) {		//	カーソルが最終行にいる場合
 		cursor.movePosition(QTextCursor::End);
-		cursor.insertBlock();							//	新規行作成
+		do_insertText(cursor, "\n");					//	新規行作成
 		cursor.movePosition(QTextCursor::Left);			//	新規行作成で下に移動したカーソルを元の行に戻す
 		while( getVisualColumn(cursor, this) > vc0 )
 			cursor.movePosition(QTextCursor::Left);
@@ -2797,14 +2812,14 @@ void MarkdownEditor::do_keisen_down(bool erase, bool thickKeisen) {
 	while( !cursor.atBlockEnd() && getVisualColumn(cursor, this) < vc0 + 2 ) 
 		cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor);
 	QString src = calcKeisenChar(erase, thickKeisen, Down, false, cursor.block().text(), ix, font());
-	cursor.insertText(src);
+	do_insertText(cursor, src);
 	cursor.movePosition(QTextCursor::Left);
 
 
 	// 2. 下の行の準備（なければ作成）
 	if (cursor.block() == cursor.document()->lastBlock()) {
 		cursor.movePosition(QTextCursor::EndOfBlock);
-		cursor.insertBlock(); // これでカーソル自体が新行へ移動する
+		do_insertText(cursor, "\n"); // これでカーソル自体が新行へ移動する
 	} else {
 		cursor.movePosition(QTextCursor::Down);
 	}
@@ -2814,7 +2829,7 @@ void MarkdownEditor::do_keisen_down(bool erase, bool thickKeisen) {
 	while( !cursor.atBlockEnd() && getVisualColumn(cursor, this) < vc0 )
 		cursor.movePosition(QTextCursor::Right);
 	int vc = getVisualColumn(cursor, this);
-	if( vc < vc0 ) cursor.insertText(QString(vc0 - vc, u' ')); // 足りない分を補完
+	if( vc < vc0 ) do_insertText(cursor, QString(vc0 - vc, u' ')); // 足りない分を補完
 
 	// 4. 移動先（下）の置換
 	QString pdLeft, pdRight;
@@ -2828,15 +2843,19 @@ void MarkdownEditor::do_keisen_down(bool erase, bool thickKeisen) {
 	}
 	if( getVisualColumn(cursor, this) > vc0 + 2 )
 		pdRight = u' ';
-	cursor.insertText(pdLeft + calcKeisenChar(erase, thickKeisen, Up, true, cursor.block().text(), ix, font()) + pdRight);
+	do_insertText(cursor, pdLeft + calcKeisenChar(erase, thickKeisen, Up, true, cursor.block().text(), ix, font()) + pdRight);
 	while( getVisualColumn(cursor, this) > vc0 )
 		cursor.movePosition(QTextCursor::Left);
 	cursor.endEditBlock();
+	closeUndoBlock();
+	prohibitMergeUndo();
 	setTextCursor(cursor);
 }
 void MarkdownEditor::do_keisen_left(bool erase, bool thickKeisen) {
 	QTextCursor cursor = this->textCursor();
 	if( cursor.atBlockStart() ) return;				//	行頭にいる場合は無視
+	openUndoBlock();
+	cursor.beginEditBlock();
 	int vc0 = getVisualColumn(cursor, this);
 	QString prev, next;
 	QTextBlock pb = cursor.block().previous();
@@ -2855,13 +2874,18 @@ void MarkdownEditor::do_keisen_left(bool erase, bool thickKeisen) {
 	while( !cursor.atBlockStart() && getVisualColumn(cursor, this) > vc0 - 2 )
 		cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor);
 	QString dst = calcKeisenChar(erase, thickKeisen, Right, true, cursor.block().text(), cursor.positionInBlock(), font(), prev, next);
-	cursor.insertText(dst+src);
+	do_insertText(cursor, dst + src);
 	while( getVisualColumn(cursor, this) > vc0 - 2 )
 		cursor.movePosition(QTextCursor::Left, QTextCursor::MoveAnchor);
+	cursor.endEditBlock();
+	closeUndoBlock();
+	prohibitMergeUndo();
 	setTextCursor(cursor);
 }
 void MarkdownEditor::do_keisen_right(bool erase, bool thickKeisen) {
 	QTextCursor cursor = this->textCursor();
+	openUndoBlock();
+	cursor.beginEditBlock();
 	int vc0 = getVisualColumn(cursor, this);
 	QString prev, next;
 	QTextBlock pb = cursor.block().previous();
@@ -2886,9 +2910,12 @@ void MarkdownEditor::do_keisen_right(bool erase, bool thickKeisen) {
 		} while( !cursor.atBlockEnd() && getVisualColumn(cursor, this) < vc + 2);
 		str2 = calcKeisenChar(erase, thickKeisen, Left, true, cursor.block().text(), ix, font(), prev, next);
 	}
-	cursor.insertText(str + str2);
+	do_insertText(cursor, str + str2);
 	while( getVisualColumn(cursor, this) > vc0 + 2 )
 		cursor.movePosition(QTextCursor::Left);
+	cursor.endEditBlock();
+	closeUndoBlock();
+	prohibitMergeUndo();
 	setTextCursor(cursor);
 }
 //void MarkdownEditor::scrollToTop(int ln) {		//	ln: 0 org.
@@ -2966,13 +2993,14 @@ void MarkdownEditor::applyAlignment(Align align) {
 	
 	// 変更がある場合のみ実行（ちらつき防止）
 	if (cursor.selectedText() != newText) {
-		cursor.insertText(newText);
+		do_insertText(cursor, newText);
 		cursor.setPosition(blockPos + ix2 - rightSpaces);
 		setTextCursor(cursor);
 	}
 }
 void MarkdownEditor::openPrev() {
 	QTextCursor cursor = this->textCursor();
+	openUndoBlock();
 	cursor.beginEditBlock();
 	QString ctext = cursor.block().text();	//	カーソル行テキスト
 	QString text;
@@ -2991,13 +3019,16 @@ void MarkdownEditor::openPrev() {
 		}
 	}
 	cursor.movePosition(QTextCursor::StartOfBlock);
-	cursor.insertBlock();		//	新規行作成
-	cursor.movePosition(QTextCursor::Up);	//	新行先頭に移動
-	cursor.insertText(text);
+	do_insertText(cursor, text + "\n");
+	cursor.movePosition(QTextCursor::Up);
+	cursor.movePosition(QTextCursor::EndOfBlock);
 	cursor.endEditBlock();
+	closeUndoBlock();
+	setTextCursor(cursor);
 }
 void MarkdownEditor::openNext() {		//	罫線補完次行オープン
 	QTextCursor cursor = this->textCursor();
+	openUndoBlock();
 	cursor.beginEditBlock();
 	QString ctext = cursor.block().text();	//	カーソル行テキスト
 	QString text;
@@ -3016,14 +3047,15 @@ void MarkdownEditor::openNext() {		//	罫線補完次行オープン
 		}
 	}
 	cursor.movePosition(QTextCursor::EndOfBlock);
-	cursor.insertBlock();		//	新規行作成
-	cursor.insertText(text);
+	do_insertText(cursor, "\n" + text);
 	cursor.endEditBlock();
+	closeUndoBlock();
+	setTextCursor(cursor);
 }
 void MarkdownEditor::insertTodayString(const QString &fmt) {
 	QTextCursor cursor = this->textCursor();
 	QString today = QDate::currentDate().toString(fmt);
-	cursor.insertText(today);
+	do_insertText(cursor, today);
 	setTextCursor(cursor);
 }
 bool findCSVBlock(QTextCursor &cursor) {
@@ -3240,7 +3272,7 @@ void MarkdownEditor::onContentsChanged(int position, int charsRemoved, int chars
 	//##qDebug() << "MarkdownEditor::onContentsChanged()";
 	//##qDebug() << "pos = " << position << ", removed = " << charsRemoved << ", added = " << charsAdded;
 	QTextCursor cursor = this->textCursor();
-	int k = findKeisen(cursor);
+	int k = !s_inUndoRedo ? findKeisen(cursor) : -1;
 	if( k >= 0 ) {		//	現カーソルの右側に罫線文字がある場合
 		const QString &text = cursor.block().text();		//	編集後ブロックテキスト
 		int cpos = cursor.position();
@@ -3267,14 +3299,14 @@ void MarkdownEditor::onContentsChanged(int position, int charsRemoved, int chars
 				//qDebug() << "k = " << k << ", cursor.positionInBlock() = " << cursor.positionInBlock();
 				if( k > cpos - cursor.block().position() ) {		//	罫線直前まで文字挿入した場合は罫線保護を行わない
 					cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor, d);
-					cursor.deleteChar();
+					do_deleteText(cursor);
 					cursor.setPosition(cpos);
 					setTextCursor(cursor);
 				}
 			}
 		} else if( d < 0 ) {	//	文字列幅が減った場合
 			if( k > bpos ) {	//	罫線直前を削除された場合は罫線保護を行わない
-				cursor.insertText(QString(-d, u' '));
+				do_insertText(cursor, QString(-d, u' '));
 				cursor.setPosition(cpos);
 				setTextCursor(cursor);
 			}

@@ -6,7 +6,10 @@
 #include <QFileInfo>
 #include <QMessageBox>
 #include <QSettings>
+#include <QSplitter>
+#include <QTabWidget>
 #include <QTextCursor>
+#include <QTextEdit>
 #include <QTextStream>
 #include <QTimer>
 #include "GapBufferTest.h"
@@ -17,6 +20,7 @@
 namespace {
 const int N_RECENT_FILES = 10 + 26;
 const QStringView KEY_RECENT_FILES(u"recentFilePaths");
+const char PROP_FILE_PATH[] = "filePath";
 }
 
 MainWindow::MainWindow(QWidget *parent)
@@ -25,11 +29,19 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     ui->plainTextEdit->setFocusPolicy(Qt::ClickFocus);
-    m_textEdit = new TextEdit(this);
-    setCentralWidget(m_textEdit);
-    m_textEdit->setFocus();
-    QTimer::singleShot(0, m_textEdit, qOverload<>(&QWidget::setFocus));
+    m_tabWidget = new QTabWidget(this);
+    m_tabWidget->setTabsClosable(true);
+    m_tabWidget->setMovable(true);
+    m_tabWidget->setDocumentMode(true);
+    setCentralWidget(m_tabWidget);
+    connect(m_tabWidget, &QTabWidget::currentChanged, this, &MainWindow::onCurrentTabChanged);
+    connect(m_tabWidget, &QTabWidget::tabCloseRequested, this, &MainWindow::onTabCloseRequested);
+
+    TextEdit *initialEdit = addEditorTab(QStringLiteral("Untitled-%1").arg(++m_tabNumber));
+    initialEdit->setFocus();
+    QTimer::singleShot(0, initialEdit, qOverload<>(&QWidget::setFocus));
     connect(ui->action_Open, &QAction::triggered, this, &MainWindow::onOpen);
+    connect(ui->action_Close, &QAction::triggered, this, &MainWindow::onClose);
     connect(ui->menu_RecentFiles, &QMenu::aboutToShow, this, &MainWindow::onAboutToShow_RecentFiles);
     connect(ui->action_gap_buffer, &QAction::triggered, this, [this]() {
         do_test_gapBuffer(this);
@@ -51,6 +63,80 @@ MainWindow::MainWindow(QWidget *parent)
     });
 }
 
+TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath)
+{
+    auto *splitter = new QSplitter(Qt::Horizontal, m_tabWidget);
+    auto *edit = new TextEdit(splitter);
+    auto *preview = new QTextEdit(splitter);
+    splitter->addWidget(edit);
+    splitter->addWidget(preview);
+    splitter->setStretchFactor(0, 1);
+    splitter->setStretchFactor(1, 1);
+    splitter->setSizes({1000, 1000});
+    splitter->setProperty(PROP_FILE_PATH, filePath);
+
+    int index = m_tabWidget->addTab(splitter, title);
+    if (!filePath.isEmpty())
+        m_tabWidget->setTabToolTip(index, filePath);
+    m_tabWidget->setCurrentIndex(index);
+    return edit;
+}
+
+TextEdit *MainWindow::currentTextEdit() const
+{
+    if (!m_tabWidget)
+        return nullptr;
+    auto *splitter = qobject_cast<QSplitter *>(m_tabWidget->currentWidget());
+    return splitter ? dynamic_cast<TextEdit *>(splitter->widget(0)) : nullptr;
+}
+
+QTextEdit *MainWindow::currentPreviewEdit() const
+{
+    if (!m_tabWidget)
+        return nullptr;
+    auto *splitter = qobject_cast<QSplitter *>(m_tabWidget->currentWidget());
+    return splitter ? qobject_cast<QTextEdit *>(splitter->widget(1)) : nullptr;
+}
+
+int MainWindow::findTabByFilePath(const QString &cleanPath) const
+{
+    if (!m_tabWidget || cleanPath.isEmpty())
+        return -1;
+    for (int i = 0; i < m_tabWidget->count(); ++i) {
+        QWidget *w = m_tabWidget->widget(i);
+        if (w && w->property(PROP_FILE_PATH).toString().compare(cleanPath, Qt::CaseInsensitive) == 0)
+            return i;
+    }
+    return -1;
+}
+
+void MainWindow::onCurrentTabChanged(int index)
+{
+    if (index < 0) {
+        setWindowTitle(QStringLiteral("TestBuffer"));
+        return;
+    }
+    setWindowTitle(m_tabWidget->tabText(index) + QStringLiteral(" - TestBuffer"));
+    if (TextEdit *edit = currentTextEdit())
+        edit->setFocus();
+}
+
+void MainWindow::onTabCloseRequested(int index)
+{
+    if (!m_tabWidget || index < 0 || index >= m_tabWidget->count())
+        return;
+    QWidget *w = m_tabWidget->widget(index);
+    m_tabWidget->removeTab(index);
+    if (w)
+        w->deleteLater();
+}
+
+void MainWindow::onClose()
+{
+    if (m_tabWidget)
+        onTabCloseRequested(m_tabWidget->currentIndex());
+}
+
 void MainWindow::onOpen()
 {
     QString filePath = QFileDialog::getOpenFileName(
@@ -66,6 +152,17 @@ void MainWindow::onOpen()
 
 bool MainWindow::openFile(const QString &filePath)
 {
+    QFileInfo fi(filePath);
+    QString cleanPath = QDir::cleanPath(fi.absoluteFilePath());
+
+    int existing = findTabByFilePath(cleanPath);
+    if (existing >= 0) {
+        m_tabWidget->setCurrentIndex(existing);
+        if (TextEdit *edit = currentTextEdit())
+            edit->setFocus();
+        return true;
+    }
+
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QMessageBox::warning(this, tr("Open Error"),
@@ -77,23 +174,38 @@ bool MainWindow::openFile(const QString &filePath)
     QString text = in.readAll();
     file.close();
 
-    QFileInfo fi(filePath);
     if (fi.suffix().compare(QStringLiteral("md"), Qt::CaseInsensitive) == 0) {
         text.replace(QChar('\t'), QStringLiteral("  "));
     }
-    QString cleanPath = QDir::cleanPath(fi.absoluteFilePath());
     m_lastDir = fi.absolutePath();
-    m_textEdit->setPlainText(text);
-    m_textEdit->document()->setModified(false);
+
+    // カレントタブが未保存変更なしの空の無題タブなら再利用し、そうでなければ新規タブを追加
+    QWidget *curTab = m_tabWidget->currentWidget();
+    TextEdit *edit = currentTextEdit();
+    bool reuseTab = (curTab != nullptr && edit != nullptr
+        && curTab->property(PROP_FILE_PATH).toString().isEmpty()
+        && !edit->document()->isModified()
+        && edit->document()->characterCount() == 0);
+    if (reuseTab) {
+        int ix = m_tabWidget->currentIndex();
+        curTab->setProperty(PROP_FILE_PATH, cleanPath);
+        m_tabWidget->setTabText(ix, fi.fileName());
+        m_tabWidget->setTabToolTip(ix, cleanPath);
+    } else {
+        edit = addEditorTab(fi.fileName(), cleanPath);
+    }
+
+    edit->setPlainText(text);
+    edit->document()->setModified(false);
     setWindowTitle(fi.fileName() + QStringLiteral(" - TestBuffer"));
     statusBar()->showMessage(
         tr("Opened: %1 (%2 chars, %3 lines)")
             .arg(cleanPath)
-            .arg(m_textEdit->document()->characterCount())
-            .arg(m_textEdit->document()->lineMgr().lineCount()),
+            .arg(edit->document()->characterCount())
+            .arg(edit->document()->lineMgr().lineCount()),
         5000);
     addToRecentFiles(cleanPath);
-    m_textEdit->setFocus();
+    edit->setFocus();
     return true;
 }
 
