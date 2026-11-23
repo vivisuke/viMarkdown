@@ -14,6 +14,7 @@
 #include <QRegularExpression>
 #include <QResizeEvent>
 #include <QScrollBar>
+#include <QWheelEvent>
 
 namespace {
 const int LEFT_MARGIN = 2;
@@ -487,7 +488,7 @@ void TextEdit::paintEvent(QPaintEvent *event)
 			if( !m_preedit.isEmpty() )
 				x += fm.horizontalAdvance(m_preedit.left(m_preeditCursor));
 			const int caretH = fm.ascent() + 2;
-			painter.fillRect(x, (cv - top) * lh, 1, caretH, palette().color(QPalette::Text));
+			painter.fillRect(x, (cv - top) * lh, 2, caretH, Qt::red);
 		}
 	}
 }
@@ -618,6 +619,18 @@ void TextEdit::mouseReleaseEvent(QMouseEvent *event)
 	if( event->button() == Qt::LeftButton )
 		m_dragging = false;
 	QAbstractScrollArea::mouseReleaseEvent(event);
+}
+
+void TextEdit::wheelEvent(QWheelEvent *event)
+{
+	if( (event->modifiers() & Qt::ControlModifier) != 0 ) {
+		const int delta = event->angleDelta().y();
+		if( delta != 0 && m_onFontSizeChange )
+			m_onFontSizeChange(delta > 0 ? 1 : -1);
+		event->accept();
+		return;
+	}
+	QAbstractScrollArea::wheelEvent(event);
 }
 
 void TextEdit::resizeEvent(QResizeEvent *event)

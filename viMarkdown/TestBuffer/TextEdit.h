@@ -65,6 +65,7 @@ public:
 	void redo();
 	void onSaved();
 	void setTextChangedCallback(std::function<void()> cb) { m_onTextChanged = std::move(cb); }
+	void setFontSizeChangeCallback(std::function<void(int)> cb) { m_onFontSizeChange = std::move(cb); }
 	QVariant inputMethodQuery(Qt::InputMethodQuery query) const override;
 
 protected:
@@ -74,6 +75,7 @@ protected:
 	void mousePressEvent(QMouseEvent *event) override;
 	void mouseMoveEvent(QMouseEvent *event) override;
 	void mouseReleaseEvent(QMouseEvent *event) override;
+	void wheelEvent(QWheelEvent *event) override;
 	void resizeEvent(QResizeEvent *event) override;
 	void focusInEvent(QFocusEvent *event) override;
 	void focusOutEvent(QFocusEvent *event) override;
@@ -107,6 +109,7 @@ private:
 	int m_preeditCursor = 0;
 	LineNumberArea *m_lineNumberArea = nullptr;
 	std::function<void()> m_onTextChanged;
+	std::function<void(int)> m_onFontSizeChange;
 };
 
 //----------------------------------------------------------------------

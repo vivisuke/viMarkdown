@@ -11,6 +11,7 @@
 #include <QTextCursor>
 #include <QTextList>
 #include <QTextListFormat>
+#include <QWheelEvent>
 
 namespace {
 constexpr int kBlockNormal = 0;
@@ -75,9 +76,9 @@ bool parseQuote(const QString &line, QString &outText)
 }
 
 LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &line,
-                                     int &activeListIndent, bool &inQuote)
+                                     int &activeListIndent, bool &inQuote, qreal basePt)
 {
-	static const qreal kHeadingPtSize[7] = { 10.0, 22.0, 18.0, 15.0, 13.0, 11.0, 10.0 };
+	static const qreal kHeadingScale[7] = { 1.0, 2.2, 1.8, 1.5, 1.3, 1.1, 1.0 };
 	static const QTextListFormat::Style kListStyles[3] = {
 		QTextListFormat::ListDisc,
 		QTextListFormat::ListCircle,
@@ -112,7 +113,7 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &line,
 		bf.setBottomMargin(level == 1 ? 10.0 : 6.0);
 		QTextCharFormat cf;
 		cf.setFontWeight(QFont::Bold);
-		cf.setFontPointSize(kHeadingPtSize[level]);
+		cf.setFontPointSize(basePt * kHeadingScale[level]);
 		cursor.setBlockFormat(bf);
 		cursor.block().setUserState(kBlockNormal);
 		cursor.insertText(parsedText, cf);
@@ -192,6 +193,18 @@ MarkdownPreview::MarkdownPreview(QWidget *parent)
 {
 }
 
+void MarkdownPreview::wheelEvent(QWheelEvent *event)
+{
+	if( (event->modifiers() & Qt::ControlModifier) != 0 ) {
+		const int delta = event->angleDelta().y();
+		if( delta != 0 && m_onFontSizeChange )
+			m_onFontSizeChange(delta > 0 ? 1 : -1);
+		event->accept();
+		return;
+	}
+	QTextEdit::wheelEvent(event);
+}
+
 void MarkdownPreview::paintEvent(QPaintEvent *event)
 {
 	//	引用ブロックの背景矩形と左縦線をパディング付きで先描きする
@@ -247,6 +260,7 @@ void MarkdownPreview::setMarkdown(const QString &markdown)
 	QTextCursor cursor(doc);
 	cursor.beginEditBlock();
 
+	const qreal basePt = doc->defaultFont().pointSizeF() > 0.0 ? doc->defaultFont().pointSizeF() : 10.0;
 	int activeListIndent = 0;
 	bool inQuote = false;
 	const QStringList lines = markdown.split(QChar('\n'));
@@ -258,7 +272,7 @@ void MarkdownPreview::setMarkdown(const QString &markdown)
 		if( line.endsWith(QChar('\r')) )
 			line.chop(1);
 
-		parseAndAppendLine(cursor, line, activeListIndent, inQuote);
+		parseAndAppendLine(cursor, line, activeListIndent, inQuote, basePt);
 	}
 	if( inQuote ) {
 		QTextBlockFormat bf = cursor.blockFormat();
@@ -286,6 +300,7 @@ void MarkdownPreview::setMarkdown(TextDocument *srcDoc)
 	QTextCursor cursor(doc);
 	cursor.beginEditBlock();
 
+	const qreal basePt = doc->defaultFont().pointSizeF() > 0.0 ? doc->defaultFont().pointSizeF() : 10.0;
 	int activeListIndent = 0;
 	bool inQuote = false;
 	ViewLineMgr &mgr = srcDoc->lineMgr();
@@ -298,7 +313,7 @@ void MarkdownPreview::setMarkdown(TextDocument *srcDoc)
 		if( line.endsWith(QChar('\n')) ) line.chop(1);
 		if( line.endsWith(QChar('\r')) ) line.chop(1);
 
-		const LineMgr::LineType type = parseAndAppendLine(cursor, line, activeListIndent, inQuote);
+		const LineMgr::LineType type = parseAndAppendLine(cursor, line, activeListIndent, inQuote, basePt);
 		mgr.setLineType(ln, type);
 	}
 	if( inQuote ) {
