@@ -2093,7 +2093,8 @@ void MainWindow::do_settings(int page) {
 	    ui->calendarWidget->setFirstDayOfWeek((Qt::DayOfWeek)g.m_firstDayOfWeek);
 	} else {
 		g = g0;
-	    updateEditorFontSize(g.m_editorFontSize);
+		ui->calendarWidget->setFirstDayOfWeek((Qt::DayOfWeek)g.m_firstDayOfWeek);
+		onSettingsChanged();
 	}
 }
 void MainWindow::onSettingsChanged() {

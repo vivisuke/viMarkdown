@@ -86,6 +86,7 @@ MainWindow::MainWindow(QWidget *parent)
             restoreState(state);
     }
     connect(ui->action_Open, &QAction::triggered, this, &MainWindow::onOpen);
+    connect(ui->action_Save, &QAction::triggered, this, &MainWindow::onSave);
     connect(ui->action_Close, &QAction::triggered, this, &MainWindow::onClose);
     connect(ui->action_Settings, &QAction::triggered, this, &MainWindow::onSettings);
     connect(ui->menu_RecentFiles, &QMenu::aboutToShow, this, &MainWindow::onAboutToShow_RecentFiles);
@@ -336,6 +337,49 @@ void MainWindow::onOpen()
         return;
 
     openFile(filePath);
+}
+
+void MainWindow::onSave()
+{
+    TextEdit *edit = currentTextEdit();
+    if (!edit || !m_tabWidget)
+        return;
+    const int ix = m_tabWidget->currentIndex();
+    QWidget *curTab = m_tabWidget->widget(ix);
+    if (!curTab)
+        return;
+
+    QString filePath = curTab->property(PROP_FILE_PATH).toString();
+    if (filePath.isEmpty()) {
+        filePath = QFileDialog::getSaveFileName(
+            this,
+            tr("Save File"),
+            m_lastDir,
+            tr("Markdown Files (*.md);;Text Files (*.txt);;All Files (*)"));
+        if (filePath.isEmpty())
+            return;
+        QFileInfo fi(filePath);
+        filePath = QDir::cleanPath(fi.absoluteFilePath());
+        curTab->setProperty(PROP_FILE_PATH, filePath);
+        m_tabWidget->setTabText(ix, fi.fileName());
+        m_tabWidget->setTabToolTip(ix, filePath);
+        setWindowTitle(fi.fileName() + QStringLiteral(" - TestBuffer"));
+        m_lastDir = fi.absolutePath();
+        addToRecentFiles(filePath);
+    }
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::warning(this, tr("Save Error"),
+            tr("Could not save file:\n%1\n\n%2").arg(filePath, file.errorString()));
+        return;
+    }
+    QTextStream out(&file);
+    out << edit->toPlainText();
+    file.close();
+
+    edit->onSaved();
+    statusBar()->showMessage(tr("Saved: %1").arg(filePath), 5000);
 }
 
 bool MainWindow::openFile(const QString &filePath)

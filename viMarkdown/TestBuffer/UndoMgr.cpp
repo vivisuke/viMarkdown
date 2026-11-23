@@ -78,6 +78,7 @@ void UndoMgr::init()
 	m_savePointCur = 0;
 	m_lastDelTextSize = 0;
 	m_lastInsTextSize = 0;
+	m_blockLevel = 0;
 	//m_blockOpened = false;
 	m_actionPushed = false;
 	m_stack.clear();
@@ -140,7 +141,7 @@ void UndoMgr::closeBlock()
 void UndoMgr::onSaved()
 {
 	m_savePointCur = m_cur;
-	// ※ 個別行の LINEFLAG_SAVED などのビットパック処理は削除
+	prohibitMergeUndo();	//	保存をまたぐ連続入力が保存前アクションにマージされないようにする
 }
 void UndoMgr::truncateRedo()
 {
@@ -189,7 +190,7 @@ void UndoMgr::prohibitMergeUndo() // 挿入マージ禁止
 		ptr->m_prohibitMerge = true;
 	}
 }
-bool UndoMgr::push_back_insText(int pos, int sz /*, int ln*/)
+bool UndoMgr::push_back_insText(int pos, int sz, uint8_t prevState)
 {
 	// 改行以外の文字を連続した場所に挿入した場合は、直前のアクションに結合（マージ）する
 	if( m_cur != 0 && m_stack[m_cur - 1]->m_type == UndoAction::ACT_INSERT
@@ -211,7 +212,7 @@ bool UndoMgr::push_back_insText(int pos, int sz /*, int ln*/)
 		return false;
 	act->m_pos = pos;
 	act->m_size = sz;
-	// ※ 個別行の LINEFLAG_MODIFIED などの設定処理は削除し、QTextDocument側の modified で一元管理します。
+	act->m_prevState = prevState;
 	push_back(act);
 	return true;
 }
@@ -230,6 +231,15 @@ bool UndoMgr::push_back_delText(int pos, int sz, bool BS /*, int ln*/)
 	act->m_pos = pos;
 	act->m_size = sz;
 	act->m_ix = ix;
+	if( m_buffer ) {
+		const ViewLineMgr &mgr = m_buffer->lineMgr();
+		const int ln1 = mgr.lineAtPos(pos);
+		const int ln2 = mgr.lineAtPos(pos + sz);
+		act->m_prevStates.clear();
+		act->m_prevStates.reserve((size_t)(ln2 - ln1 + 1));
+		for( int ln = ln1; ln <= ln2; ++ln )
+			act->m_prevStates.push_back(static_cast<uint8_t>(mgr.lineState(ln)));
+	}
 	push_back(act);
 	qDebug() << "push_back_delText() pos = " << pos << ", sz = " << sz << ", ix = " << ix << ", delText = " << m_delText.mid(ix, sz);
 	return true;
@@ -248,6 +258,15 @@ UndoActionReplace *UndoMgr::push_back_repText(int pos, int dsz, int isz /*, int 
 	act->m_sizeDel = dsz;
 	act->m_ixDel = ix;
 	act->m_sizeIns = isz;
+	if( m_buffer ) {
+		const ViewLineMgr &mgr = m_buffer->lineMgr();
+		const int ln1 = mgr.lineAtPos(pos);
+		const int ln2 = mgr.lineAtPos(pos + dsz);
+		act->m_prevStates.clear();
+		act->m_prevStates.reserve((size_t)(ln2 - ln1 + 1));
+		for( int ln = ln1; ln <= ln2; ++ln )
+			act->m_prevStates.push_back(static_cast<uint8_t>(mgr.lineState(ln)));
+	}
 	push_back(act);
 	qDebug() << "push_back_repText() pos = " << pos << ", dsz = " << dsz << ", ix = " << ix << ", delText = " << m_delText.mid(ix, dsz);
 	return act;
@@ -262,6 +281,7 @@ int UndoMgr::undo()
 		if( !m_cur ) return false;
 		UndoAction *ptr = m_stack[--m_cur];
 		flag ^= (ptr->m_flags & UndoAction::FLAG_BLOCK);
+		const bool beforeSavePoint = (m_savePointCur > 0 && m_cur < m_savePointCur);
 		switch( ptr->m_type ) {
 		case UndoAction::ACT_INSERT: {
 			auto p = (UndoActionInsert *)ptr;
@@ -272,6 +292,9 @@ int UndoMgr::undo()
 			
 			// ドキュメントから挿入されたテキストを削除
 			basicDeleteText(m_buffer, p->m_pos, p->m_size);
+			ViewLineMgr &mgr = m_buffer->lineMgr();
+			const int ln0 = mgr.lineAtPos(p->m_pos);
+			mgr.setLineState(ln0, beforeSavePoint ? LineMgr::LS_MODIFIED : static_cast<LineMgr::LineState>(p->m_prevState));
 			break;
 		}
 		case UndoAction::ACT_DELETE: {
@@ -281,6 +304,16 @@ int UndoMgr::undo()
 			// 削除されていたテキストを復元（再挿入）
 			basicInsertText(m_buffer, p->m_pos, m_delText.mid(p->m_ix, p->m_size));
 			m_delText.resize(p->m_ix);
+			ViewLineMgr &mgr = m_buffer->lineMgr();
+			const int ln1 = mgr.lineAtPos(p->m_pos);
+			const int ln2 = mgr.lineAtPos(p->m_pos + p->m_size);
+			for( int ln = ln1; ln <= ln2; ++ln ) {
+				const size_t k = (size_t)(ln - ln1);
+				LineMgr::LineState st = beforeSavePoint
+					? LineMgr::LS_MODIFIED
+					: (k < p->m_prevStates.size() ? static_cast<LineMgr::LineState>(p->m_prevStates[k]) : LineMgr::LS_UNMODIFIED);
+				mgr.setLineState(ln, st);
+			}
 			break;
 		}
 		case UndoAction::ACT_REPLACE: {
@@ -294,6 +327,16 @@ int UndoMgr::undo()
 			basicDeleteText(m_buffer, p->m_pos, p->m_sizeIns);
 			basicInsertText(m_buffer, p->m_pos, m_delText.mid(p->m_ixDel, p->m_sizeDel));
 			m_delText.resize(p->m_ixDel);
+			ViewLineMgr &mgr = m_buffer->lineMgr();
+			const int ln1 = mgr.lineAtPos(p->m_pos);
+			const int ln2 = mgr.lineAtPos(p->m_pos + p->m_sizeDel);
+			for( int ln = ln1; ln <= ln2; ++ln ) {
+				const size_t k = (size_t)(ln - ln1);
+				LineMgr::LineState st = beforeSavePoint
+					? LineMgr::LS_MODIFIED
+					: (k < p->m_prevStates.size() ? static_cast<LineMgr::LineState>(p->m_prevStates[k]) : LineMgr::LS_UNMODIFIED);
+				mgr.setLineState(ln, st);
+			}
 			break;
 		}
 		}
@@ -302,6 +345,8 @@ int UndoMgr::undo()
 		}
 	} while( flag );
 	
+	if( m_cur == m_savePointCur )
+		m_buffer->lineMgr().markAllModifiedAsSaved();
 	m_buffer->setModified(m_cur != m_savePointCur);
 	return firstPos >= 0 ? firstPos : pos;
 }
@@ -322,6 +367,11 @@ int UndoMgr::redo()
 			basicInsertText(m_buffer, p->m_pos, m_insText.mid(p->m_ix, p->m_size));
 			m_insText.resize(p->m_ix);
 			pos = p->m_pos + p->m_size;
+			ViewLineMgr &mgr = m_buffer->lineMgr();
+			const int ln1 = mgr.lineAtPos(p->m_pos);
+			const int ln2 = mgr.lineAtPos(p->m_pos + p->m_size);
+			for( int ln = ln1; ln <= ln2; ++ln )
+				mgr.setLineState(ln, LineMgr::LS_MODIFIED);
 			break;
 		}
 		case UndoAction::ACT_DELETE: {
@@ -333,6 +383,8 @@ int UndoMgr::redo()
 			// 再びテキストを削除
 			basicDeleteText(m_buffer, p->m_pos, p->m_size);
 			pos = p->m_pos;
+			ViewLineMgr &mgr = m_buffer->lineMgr();
+			mgr.setLineState(mgr.lineAtPos(p->m_pos), LineMgr::LS_MODIFIED);
 			break;
 		}
 		case UndoAction::ACT_REPLACE: {
@@ -348,6 +400,11 @@ int UndoMgr::redo()
 			
 			// 置換されたテキストの末尾にカーソルを設定
 			pos = p->m_pos + p->m_sizeIns;
+			ViewLineMgr &mgr = m_buffer->lineMgr();
+			const int ln1 = mgr.lineAtPos(p->m_pos);
+			const int ln2 = mgr.lineAtPos(p->m_pos + p->m_sizeIns);
+			for( int ln = ln1; ln <= ln2; ++ln )
+				mgr.setLineState(ln, LineMgr::LS_MODIFIED);
 			break;
 		}
 		}
@@ -356,6 +413,8 @@ int UndoMgr::redo()
 		}
 	} while( flag );
 	
+	if( m_cur == m_savePointCur )
+		m_buffer->lineMgr().markAllModifiedAsSaved();
 	m_buffer->setModified(m_cur != m_savePointCur);
 	return firstPos >= 0 ? firstPos : pos;
 }

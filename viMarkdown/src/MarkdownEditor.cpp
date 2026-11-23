@@ -888,9 +888,10 @@ void MarkdownEditor::moveToNextWordEnd(QTextCursor& cursor, bool shift) {
 #if 1
 	QTextDocument *doc = document();
     const int end = doc->characterCount();  // -1 しない（重要）
+    const int maxPos = qMax(0, end - 1);
     int pos = cursor.position();
-    if (pos >= end - 1) {
-        cursor.setPosition(end, shift ? QTextCursor::KeepAnchor : QTextCursor::MoveAnchor);
+    if (pos >= maxPos) {
+        cursor.setPosition(maxPos, shift ? QTextCursor::KeepAnchor : QTextCursor::MoveAnchor);
         return;
     }
     pos++;    // 1文字進める
@@ -903,7 +904,7 @@ void MarkdownEditor::moveToNextWordEnd(QTextCursor& cursor, bool shift) {
         pos++;
     }
     if (pos >= end) {
-        cursor.setPosition(end, shift ? QTextCursor::KeepAnchor : QTextCursor::MoveAnchor);
+        cursor.setPosition(maxPos, shift ? QTextCursor::KeepAnchor : QTextCursor::MoveAnchor);
         return;
     }
     // 同じ文字タイプの連続をスキップ（単語の終端まで）

@@ -49,7 +49,7 @@ struct UndoActionInsert : public UndoAction
 	bool	m_modified;	//	挿入前に m_ln 行が編集済みだったかどうか
 	bool	m_saved;	//	挿入前に m_ln 行が保存済みだったかどうか
 	bool	m_prohibitMerge;	//	マージ禁止
-	//std::vector<bool>	m_mdfyFlags;
+	uint8_t	m_prevState;		//	挿入前の先頭行の LineState
 public:
 	UndoActionInsert(pos_t pos = 0, int size = 0 /*, uchar flags = 0*/)
 		: UndoAction(ACT_INSERT /*, flags*/)
@@ -57,6 +57,7 @@ public:
 		, m_size(size)
 		, m_ix(0)
 		, m_prohibitMerge(false)
+		, m_prevState(0)
 		{}
 	~UndoActionInsert() {}
 };
@@ -67,8 +68,7 @@ struct UndoActionDelete : public UndoAction
 	int		m_ix;		//	挿入・削除文字列のUndoバッファインデックス
 	int		m_ln;		//	pos の行番号 0 org
 	int		m_lc;		//	削除行数
-	//int		m_mdfyIX;	//	行情報保存位置
-	//std::vector<bool>	m_mdfyFlags;
+	std::vector<uint8_t>	m_prevStates;	//	削除前の影響行の LineState
 public:
 	UndoActionDelete(pos_t pos = 0, int size = 0, int ix = 0, bool BS = false)
 		: UndoAction(ACT_DELETE, (BS ? FLAG_BS : 0))
@@ -88,6 +88,7 @@ struct UndoActionReplace : public UndoAction
 	int		m_sizeDel;	//	削除文字数（for UTF16）
 	int		m_ixDel;	//	削除文字列のUndoバッファインデックス
 	int		m_lcDel;	//	削除行数
+	std::vector<uint8_t>	m_prevStates;	//	置換前の影響行の LineState
 public:
 	UndoActionReplace(pos_t pos = 0, int ln = 0,
 						int sizeIns = 0, int ixIns = 0, int lcIns = 0,
@@ -129,7 +130,7 @@ public:
 	int		redo();
 	bool	push_back(UndoAction *);
 	bool	push_back_delText(pos_t, int, bool BS /*, int ln*/);
-	bool	push_back_insText(pos_t, int /*, int ln*/);
+	bool	push_back_insText(pos_t, int, uint8_t prevState = 0);
 	UndoActionReplace	*push_back_repText(pos_t, int dsz, int isz /*, int ln*/);
 	void	setLcIns(int);
 	void	openBlock();

@@ -27,6 +27,7 @@
      </property>
     </widget>
     <addaction name="action_Open"/>
+    <addaction name="action_Save"/>
     <addaction name="action_Close"/>
     <addaction name="menu_RecentFiles"/>
    </widget>
@@ -87,6 +88,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="action_Save">
+   <property name="text">
+    <string>&amp;Save</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
    </property>
   </action>
   <action name="action_Close">

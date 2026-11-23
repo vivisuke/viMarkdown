@@ -3,9 +3,9 @@
 
 - 罫線保護アルゴリズム
   - QTextDocument::contentsChange(pos, removed, added) シグナル利用
-  - ドキュメントの内容が変更されるたびに発行
-  - 引数：カーソル位置、削除文字数、挿入文字数
-  - 編集位置の右に罫線文字があれば、削除・挿入文字数を参照し、空白を挿入・削除
+  - ドキュメントの内容が変更されるたびに発行 
+  - 引数：カーソル位置、削除文字数、挿入文字数 
+  - 編集位置の右に罫線文字があれば、削除・挿入文字数を参照し、空白を挿入・削除 
 ```CPP
 void MarkdownEditor::onContentsChange(int pos, int removed, int added) {  // シグナルにコネクトされた関数
   if( pos の右に罫線文字が無い ) return;

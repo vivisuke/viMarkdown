@@ -33,6 +33,7 @@ private:
     void onCurrentTabChanged(int index);
     void onTabCloseRequested(int index);
     void onOpen();
+    void onSave();
     void onClose();
     void onSettings();
     void applyLineSpacing(int percent);

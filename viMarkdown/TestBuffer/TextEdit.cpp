@@ -193,6 +193,12 @@ void TextEdit::redo()
 	afterChange(true);
 }
 
+void TextEdit::onSaved()
+{
+	m_doc.onSaved();
+	m_lineNumberArea->update();
+}
+
 int TextEdit::lineHeight() const
 {
 	return fontMetrics().height() + m_lineSpacing;
@@ -348,22 +354,32 @@ void TextEdit::updateLineNumberAreaGeometry()
 
 void TextEdit::lineNumberAreaPaintEvent(QPaintEvent *event)
 {
+	static const QColor kColorUnmodified(0xDC, 0xDC, 0xDC);	//	未編集（明グレー）
+	static const QColor kColorModified(0xFF, 0xFF, 0xFF);	//	編集＆未保存（白）
+	static const QColor kColorSaved(0xC0, 0xE0, 0xC0);		//	編集＆保存済み（淡い緑）
+
 	QPainter painter(m_lineNumberArea);
-	painter.fillRect(event->rect(), palette().color(QPalette::Window));
+	painter.fillRect(event->rect(), kColorUnmodified);
 	const QFontMetrics fm = fontMetrics();
 	const int lh = lineHeight();
 	const int top = verticalScrollBar()->value();
 	const ViewLineMgr &mgr = m_doc.lineMgr();
 	const int rows = m_lineNumberArea->height() / lh + 1;
-	const int right = m_lineNumberArea->width() - fm.horizontalAdvance(QChar(' ')) * 2;	//	右端に半角2文字分の余白を空ける
+	const int areaW = m_lineNumberArea->width();
+	const int right = areaW - fm.horizontalAdvance(QChar(' ')) * 2;	//	右端に半角2文字分の余白を空ける
 	painter.setPen(palette().color(QPalette::Text));
 	for( int i = 0; i < rows; ++i ) {
 		int viewLine = top + i;
 		if( viewLine >= mgr.viewLineCount() ) break;
 		int ln = mgr.viewLineToLine(viewLine);
+		const LineMgr::LineState st = mgr.lineState(ln);
+		if( st != LineMgr::LS_UNMODIFIED ) {
+			const QColor &bg = (st == LineMgr::LS_SAVED) ? kColorSaved : kColorModified;
+			painter.fillRect(0, i * lh, areaW, lh, bg);
+		}
 		if( viewLine != mgr.lineToViewLine(ln) ) continue;	//	折り返しの継続行には番号を付けない
 		QString num = QString::number(ln + 1);
-		painter.drawText(right - fm.horizontalAdvance(num), i * lh + fm.ascent(), num);
+		painter.drawText(right - fm.horizontalAdvance(num), i * lh + fm.ascent() + 2, num);
 	}
 }
 
@@ -470,7 +486,8 @@ void TextEdit::paintEvent(QPaintEvent *event)
 			int x = xOfPos(m_cursor.position());
 			if( !m_preedit.isEmpty() )
 				x += fm.horizontalAdvance(m_preedit.left(m_preeditCursor));
-			painter.fillRect(x, (cv - top) * lh, 1, lh, palette().color(QPalette::Text));
+			const int caretH = fm.ascent() + 2;
+			painter.fillRect(x, (cv - top) * lh, 1, caretH, palette().color(QPalette::Text));
 		}
 	}
 }
@@ -746,7 +763,7 @@ QVariant TextEdit::inputMethodQuery(Qt::InputMethodQuery query) const
 			x += fontMetrics().horizontalAdvance(m_preedit.left(m_preeditCursor));
 		int y = (cv - top) * lh;
 		QPoint pt = viewport()->mapTo(const_cast<TextEdit*>(this), QPoint(x, y));
-		return QRect(pt.x(), pt.y(), 1, lh);
+		return QRect(pt.x(), pt.y(), 1, fontMetrics().height());
 	}
 	case Qt::ImFont:
 		return font();

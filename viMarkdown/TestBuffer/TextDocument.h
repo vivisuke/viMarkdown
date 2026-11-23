@@ -74,14 +74,20 @@ public:
 	//	編集（undo 対象。記録の手順はアプリ版の流儀：挿入は実行後に、削除は実行前に記録する）
 	void insert(pos_t pos, const QString &text) {
 		if( text.isEmpty() ) return;
+		const int ln0 = m_lineMgr.lineAtPos(pos);
+		const uint8_t prevState = static_cast<uint8_t>(m_lineMgr.lineState(ln0));
 		insertRaw(pos, text);
-		m_undoMgr.push_back_insText((int)pos, (int)text.size());
+		const int ln1 = m_lineMgr.lineAtPos(pos + (pos_t)text.size());
+		for( int ln = ln0; ln <= ln1; ++ln )
+			m_lineMgr.setLineState(ln, LineMgr::LS_MODIFIED);
+		m_undoMgr.push_back_insText((int)pos, (int)text.size(), prevState);
 		m_modified = true;
 	}
 	void erase(pos_t pos1, pos_t pos2) {	//	[pos1, pos2) を削除
 		if( pos2 <= pos1 ) return;
 		m_undoMgr.push_back_delText((int)pos1, (int)(pos2 - pos1), false);
 		eraseRaw(pos1, pos2);
+		m_lineMgr.setLineState(m_lineMgr.lineAtPos(pos1), LineMgr::LS_MODIFIED);
 		m_modified = true;
 	}
 	void erase(pos_t pos) { erase(pos, pos + 1); }	//	1文字削除
@@ -95,7 +101,7 @@ public:
 	//	変更状態
 	bool isModified() const { return m_modified; }
 	void setModified(bool b) { m_modified = b; }	//	UndoMgr の undo/redo からも呼ばれる
-	void onSaved() { m_undoMgr.onSaved(); m_modified = false; }	//	保存ポイントを現在位置へ
+	void onSaved() { m_undoMgr.onSaved(); m_lineMgr.markAllModifiedAsSaved(); m_modified = false; }	//	保存ポイントを現在位置へ
 
 	//	行管理・undo 管理へのアクセス
 	ViewLineMgr& lineMgr() { return m_lineMgr; }

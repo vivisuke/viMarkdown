@@ -63,6 +63,7 @@ public:
 
 	void undo();
 	void redo();
+	void onSaved();
 	void setTextChangedCallback(std::function<void()> cb) { m_onTextChanged = std::move(cb); }
 	QVariant inputMethodQuery(Qt::InputMethodQuery query) const override;
 

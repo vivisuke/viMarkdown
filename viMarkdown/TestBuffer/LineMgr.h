@@ -27,9 +27,16 @@ public:
 		LT_QUOTE,
 	};
 
+	enum LineState : uint8_t {
+		LS_UNMODIFIED = 0,	//	未編集（明グレー）
+		LS_MODIFIED,		//	編集済み・未保存（白）
+		LS_SAVED,			//	編集済み・保存済み（淡い緑）
+	};
+
 	struct LineInfo {
-		pos_t		startPos = 0;		//	行開始位置（ギャップ以降は保持値＋m_offset が真値）
-		uint8_t		type = LT_BODY;		//	Markdown の行種別（LineType）
+		pos_t		startPos = 0;			//	行開始位置（ギャップ以降は保持値＋m_offset が真値）
+		uint8_t		type = LT_BODY;			//	Markdown の行種別（LineType）
+		uint8_t		state = LS_UNMODIFIED;	//	行の編集状態（LineState）
 	};
 
 	LineMgr() {
@@ -97,6 +104,26 @@ public:
 		LineInfo info = m_lines[line];
 		info.type = static_cast<uint8_t>(type);
 		m_lines.setAt(line, info);
+	}
+	LineState lineState(int line) const {
+		if( line < 0 || line >= lineCount() ) return LS_UNMODIFIED;
+		return static_cast<LineState>(m_lines[line].state);
+	}
+	void setLineState(int line, LineState state) {
+		if( line < 0 || line >= lineCount() ) return;
+		LineInfo info = m_lines[line];
+		info.state = static_cast<uint8_t>(state);
+		m_lines.setAt(line, info);
+	}
+	void markAllModifiedAsSaved() {
+		const int n = lineCount();
+		for( int i = 0; i < n; ++i ) {
+			if( m_lines[i].state == LS_MODIFIED ) {
+				LineInfo info = m_lines[i];
+				info.state = LS_SAVED;
+				m_lines.setAt(i, info);
+			}
+		}
 	}
 	pos_t lineStartPos(int line) const { return startAt(line); }
 	pos_t lineLength(int line) const {	//	'\n' を含まない長さ
