@@ -44,7 +44,7 @@ SPR# 状 P Open  Close ver   Type  概要
 0040 ◎ C 11/24 11/24 0001│ToDo│File > NewTab Ctrl + T
 0041 ◎ C 11/24 11/24 0001│ToDo│左側ツールバー、メニューと上部ツールバー合体
 0042 ◎ C 11/24 11/24 0001│ToDo│Edit メニュー下に、セパレータ、Cu&t, &Copy, &Paste, Select&All を追加
-0043 ● C 11/24           │ToDo│
+0043 ◎ C 11/24 11/24 0001│ToDo│TextEdit マウス左ダブルクリックで単語単位選択
 0044 ● C 11/24           │ToDo│
 0045 ● C 11/24           │ToDo│
 0046 ● C 11/24           │ToDo│

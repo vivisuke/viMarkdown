@@ -77,6 +77,7 @@ protected:
 	void keyPressEvent(QKeyEvent *event) override;
 	void inputMethodEvent(QInputMethodEvent *event) override;
 	void mousePressEvent(QMouseEvent *event) override;
+	void mouseDoubleClickEvent(QMouseEvent *event) override;
 	void mouseMoveEvent(QMouseEvent *event) override;
 	void mouseReleaseEvent(QMouseEvent *event) override;
 	void wheelEvent(QWheelEvent *event) override;
@@ -95,6 +96,7 @@ private:
 	int xOfPosInViewLine(int viewLine, TextDocument::pos_t pos) const;
 	int xOfPos(TextDocument::pos_t pos) const;	//	位置の x 座標（左マージン込み）
 	TextDocument::pos_t posFromPoint(const QPoint &pt) const;
+	void wordBoundsAt(TextDocument::pos_t pos, TextDocument::pos_t &outStart, TextDocument::pos_t &outEnd) const;
 	void updateScrollBars();
 	void updateWrapWidth();
 	void ensureCursorVisible();
@@ -109,6 +111,9 @@ private:
 	QColor m_emphasisColor = QColor(0x00, 0x33, 0xAA);
 	QColor m_selectionColor = QColor(0xC8, 0xF0, 0xC8);
 	bool m_dragging = false;
+	bool m_wordDragging = false;
+	TextDocument::pos_t m_wordAnchorStart = 0;
+	TextDocument::pos_t m_wordAnchorEnd = 0;
 	QString m_preedit;
 	int m_preeditCursor = 0;
 	LineNumberArea *m_lineNumberArea = nullptr;

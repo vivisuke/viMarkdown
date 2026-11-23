@@ -19,6 +19,32 @@
 namespace {
 const int LEFT_MARGIN = 2;
 
+enum WordCharClass {
+	WCC_NEWLINE = 0,
+	WCC_SPACE,
+	WCC_ALNUM,
+	WCC_HIRAGANA,
+	WCC_KATAKANA,
+	WCC_KANJI,
+	WCC_SYMBOL,
+};
+
+WordCharClass wordCharClass(QChar ch)
+{
+	const ushort u = ch.unicode();
+	if( u == '\n' || u == '\r' ) return WCC_NEWLINE;
+	if( u == ' ' || u == '\t' || u == 0x3000 ) return WCC_SPACE;
+	if( u < 0x80 ) {
+		if( ch.isLetterOrNumber() || u == '_' ) return WCC_ALNUM;
+		return WCC_SYMBOL;
+	}
+	if( (u >= 0x3040 && u <= 0x309F) || u == 0x30FC ) return WCC_HIRAGANA;
+	if( (u >= 0x30A0 && u <= 0x30FF) || (u >= 0xFF65 && u <= 0xFF9F) ) return WCC_KATAKANA;
+	if( (u >= 0x4E00 && u <= 0x9FFF) || (u >= 0x3400 && u <= 0x4DBF) ) return WCC_KANJI;
+	if( ch.isLetterOrNumber() ) return WCC_ALNUM;
+	return WCC_SYMBOL;
+}
+
 struct HighlightSpan {
 	qsizetype start;
 	qsizetype length;
@@ -619,10 +645,39 @@ void TextEdit::keyPressEvent(QKeyEvent *event)
 		QAbstractScrollArea::keyPressEvent(event);
 }
 
+void TextEdit::wordBoundsAt(TextDocument::pos_t pos, TextDocument::pos_t &outStart, TextDocument::pos_t &outEnd) const
+{
+	const TextDocument::pos_t total = m_doc.characterCount();
+	if( total == 0 ) {
+		outStart = outEnd = 0;
+		return;
+	}
+	if( pos < 0 ) pos = 0;
+	if( pos >= total ) pos = total - 1;
+	if( m_doc.characterAt(pos) == QChar('\n') ) {
+		if( pos > 0 && m_doc.characterAt(pos - 1) != QChar('\n') ) {
+			--pos;
+		} else {
+			outStart = outEnd = pos;
+			return;
+		}
+	}
+	const WordCharClass cls = wordCharClass(m_doc.characterAt(pos));
+	TextDocument::pos_t s = pos;
+	while( s > 0 && wordCharClass(m_doc.characterAt(s - 1)) == cls )
+		--s;
+	TextDocument::pos_t e = pos + 1;
+	while( e < total && wordCharClass(m_doc.characterAt(e)) == cls )
+		++e;
+	outStart = s;
+	outEnd = e;
+}
+
 void TextEdit::mousePressEvent(QMouseEvent *event)
 {
 	if( event->button() == Qt::LeftButton ) {
 		m_dragging = true;
+		m_wordDragging = false;
 		bool keep = (event->modifiers() & Qt::ShiftModifier) != 0;
 		m_cursor.setPosition(posFromPoint(event->pos()),
 							 keep ? TextCursor::KeepAnchor : TextCursor::MoveAnchor);
@@ -632,9 +687,35 @@ void TextEdit::mousePressEvent(QMouseEvent *event)
 	}
 }
 
+void TextEdit::mouseDoubleClickEvent(QMouseEvent *event)
+{
+	if( event->button() == Qt::LeftButton ) {
+		wordBoundsAt(posFromPoint(event->pos()), m_wordAnchorStart, m_wordAnchorEnd);
+		m_cursor.setPosition(m_wordAnchorStart);
+		m_cursor.setPosition(m_wordAnchorEnd, TextCursor::KeepAnchor);
+		m_wordDragging = true;
+		m_dragging = false;
+		viewport()->update();
+	} else {
+		QAbstractScrollArea::mouseDoubleClickEvent(event);
+	}
+}
+
 void TextEdit::mouseMoveEvent(QMouseEvent *event)
 {
-	if( m_dragging ) {
+	if( m_wordDragging ) {
+		TextDocument::pos_t s = 0, e = 0;
+		wordBoundsAt(posFromPoint(event->pos()), s, e);
+		if( s < m_wordAnchorStart ) {
+			m_cursor.setPosition(m_wordAnchorEnd);
+			m_cursor.setPosition(s, TextCursor::KeepAnchor);
+		} else {
+			m_cursor.setPosition(m_wordAnchorStart);
+			m_cursor.setPosition(e, TextCursor::KeepAnchor);
+		}
+		ensureCursorVisible();
+		viewport()->update();
+	} else if( m_dragging ) {
 		m_cursor.setPosition(posFromPoint(event->pos()), TextCursor::KeepAnchor);
 		ensureCursorVisible();
 		viewport()->update();
@@ -645,8 +726,10 @@ void TextEdit::mouseMoveEvent(QMouseEvent *event)
 
 void TextEdit::mouseReleaseEvent(QMouseEvent *event)
 {
-	if( event->button() == Qt::LeftButton )
+	if( event->button() == Qt::LeftButton ) {
 		m_dragging = false;
+		m_wordDragging = false;
+	}
 	QAbstractScrollArea::mouseReleaseEvent(event);
 }
 
