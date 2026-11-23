@@ -25,13 +25,14 @@ struct HighlightSpan {
 };
 
 //	論理行 1 行を解析して Markdown の強調スパンを返す（オンデマンド解析）
-QVector<HighlightSpan> highlightMarkdownLine(const QString &lineText, const QColor &headingColor, const QColor &emphColor)
+QVector<HighlightSpan> highlightMarkdownLine(const QString &lineText, LineMgr::LineType lineType,
+                                             const QColor &headingColor, const QColor &emphColor)
 {
 	QVector<HighlightSpan> spans;
 	if( lineText.isEmpty() )
 		return spans;
 
-	if( lineText.startsWith(QChar('#')) ) {
+	if( lineType == LineMgr::LT_HEADING ) {
 		spans.push_back({0, lineText.size(), headingColor});
 		return spans;
 	}
@@ -413,7 +414,7 @@ void TextEdit::paintEvent(QPaintEvent *event)
 				cachedLine = ln;
 				QString logicalText = m_doc.findBlockByNumber(ln).text();
 				if( logicalText.endsWith(QChar('\n')) ) logicalText.chop(1);
-				cachedSpans = highlightMarkdownLine(logicalText, m_headingColor, m_emphasisColor);
+				cachedSpans = highlightMarkdownLine(logicalText, mgr.lineType(ln), m_headingColor, m_emphasisColor);
 			}
 		} else {
 			cachedSpans.clear();

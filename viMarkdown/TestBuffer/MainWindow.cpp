@@ -376,7 +376,8 @@ bool MainWindow::openFile(const QString &filePath)
     if (MarkdownPreview *preview = currentPreviewEdit()) {
         if (isMarkdown) {
             preview->document()->setBaseUrl(QUrl::fromLocalFile(fi.absolutePath() + QLatin1Char('/')));
-            preview->setMarkdown(text);
+            preview->setMarkdown(edit->document());
+            edit->viewport()->update();
         } else {
             preview->clear();
         }

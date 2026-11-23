@@ -2,6 +2,8 @@
 
 #include <QTextEdit>
 
+class TextDocument;
+
 class MarkdownPreview : public QTextEdit
 {
 public:
@@ -9,4 +11,5 @@ public:
 	~MarkdownPreview() override = default;
 
 	void setMarkdown(const QString &markdown);
+	void setMarkdown(TextDocument *srcDoc);
 };

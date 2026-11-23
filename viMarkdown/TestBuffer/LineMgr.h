@@ -20,8 +20,18 @@ class LineMgr
 public:
 	typedef gap_buffer<QChar>::pos_t pos_t;
 
+	enum LineType : uint8_t {
+		LT_BODY = 0,
+		LT_HEADING,
+	};
+
+	struct LineInfo {
+		pos_t		startPos = 0;		//	行開始位置（ギャップ以降は保持値＋m_offset が真値）
+		uint8_t		type = LT_BODY;		//	Markdown の行種別（LineType）
+	};
+
 	LineMgr() {
-		m_lines.push_back(0);	//	空テキストでも1行（開始位置0）
+		m_lines.push_back(LineInfo{0, LT_BODY});	//	空テキストでも1行（開始位置0）
 	}
 	virtual ~LineMgr() = default;	//	ViewLineMgr が継承する
 
@@ -42,7 +52,7 @@ public:
 		m_offset += len;				//	ギャップ以降の行は len だけ後ろへずれる（遅延更新）
 		for( pos_t i = 0; i < len; ++i ) {
 			if( data[i] == QChar('\n') )
-				m_lines.insert(m_lines.gapIndex(), pos + i + 1);	//	新しい行の開始位置（真の座標で保持）
+				m_lines.insert(m_lines.gapIndex(), LineInfo{pos + i + 1, LT_BODY});	//	新しい行の開始位置（真の座標で保持）
 		}
 	}
 	virtual void insert(pos_t pos, QChar ch) {
@@ -62,7 +72,7 @@ public:
 		moveGap(line + 1);
 		//	真の開始位置が (pos, end] にある行は、開始を作った '\n' ごと消える
 		while( m_lines.gapIndex() < m_lines.size()
-			&& m_lines[m_lines.gapIndex()] + m_offset <= end )
+			&& m_lines[m_lines.gapIndex()].startPos + m_offset <= end )
 			m_lines.erase(m_lines.gapIndex());
 		m_offset -= len;				//	ギャップ以降の行は len だけ前へずれる（遅延更新）
 		m_text.erase(pos, len);
@@ -70,12 +80,22 @@ public:
 	virtual void clear() {
 		m_text.clear();
 		m_lines.clear();
-		m_lines.push_back(0);
+		m_lines.push_back(LineInfo{0, LT_BODY});
 		m_offset = 0;
 	}
 
 	//	行情報
 	int lineCount() const { return (int)m_lines.size(); }
+	LineType lineType(int line) const {
+		if( line < 0 || line >= lineCount() ) return LT_BODY;
+		return static_cast<LineType>(m_lines[line].type);
+	}
+	void setLineType(int line, LineType type) {
+		if( line < 0 || line >= lineCount() ) return;
+		LineInfo info = m_lines[line];
+		info.type = static_cast<uint8_t>(type);
+		m_lines.setAt(line, info);
+	}
 	pos_t lineStartPos(int line) const { return startAt(line); }
 	pos_t lineLength(int line) const {	//	'\n' を含まない長さ
 		pos_t start = startAt(line);
@@ -101,7 +121,7 @@ public:
 
 private:
 	pos_t startAt(int line) const {		//	保持値に、ギャップ以降ならオフセットを加える
-		pos_t s = m_lines[line];
+		pos_t s = m_lines[line].startPos;
 		if( line >= m_lines.gapIndex() ) s += m_offset;
 		return s;
 	}
@@ -110,16 +130,22 @@ private:
 	void moveGap(int newGap) {
 		pos_t gap = m_lines.gapIndex();
 		if( newGap > gap ) {
-			for( pos_t i = gap; i < newGap; ++i )
-				m_lines.setAt(i, m_lines[i] + m_offset);
+			for( pos_t i = gap; i < newGap; ++i ) {
+				LineInfo info = m_lines[i];
+				info.startPos += m_offset;
+				m_lines.setAt(i, info);
+			}
 		} else if( newGap < gap ) {
-			for( pos_t i = newGap; i < gap; ++i )
-				m_lines.setAt(i, m_lines[i] - m_offset);
+			for( pos_t i = newGap; i < gap; ++i ) {
+				LineInfo info = m_lines[i];
+				info.startPos -= m_offset;
+				m_lines.setAt(i, info);
+			}
 		}
 		m_lines.setGapIndex(newGap);
 	}
 
-	gap_buffer<QChar>	m_text;		//	テキスト本体
-	gap_buffer<pos_t>	m_lines;	//	行開始位置（ギャップ以降は保持値＋m_offset が真値）
-	pos_t				m_offset = 0;
+	gap_buffer<QChar>		m_text;		//	テキスト本体
+	gap_buffer<LineInfo>	m_lines;	//	行情報（開始位置＋行種別）
+	pos_t					m_offset = 0;
 };
