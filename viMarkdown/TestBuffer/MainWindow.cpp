@@ -94,8 +94,12 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_outlineTree, &QTreeWidget::itemClicked, this, &MainWindow::onOutlineItemClicked);
 
     QMenu *viewMenu = new QMenu(tr("&View"), this);
-    viewMenu->addAction(m_outlineDock->toggleViewAction());
-    viewMenu->addAction(ui->outputBar->toggleViewAction());
+    QAction *outlineAct = m_outlineDock->toggleViewAction();
+    outlineAct->setText(tr("&OutlineBar"));
+    QAction *outputAct = ui->outputBar->toggleViewAction();
+    outputAct->setText(tr("Outpu&tBar"));
+    viewMenu->addAction(outlineAct);
+    viewMenu->addAction(outputAct);
     menuBar()->insertMenu(ui->menuTest->menuAction(), viewMenu);
 
     TextEdit *initialEdit = addEditorTab(QStringLiteral("Untitled-%1").arg(++m_tabNumber));
