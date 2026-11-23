@@ -30,9 +30,12 @@ protected:
 
 private:
     TextEdit *addEditorTab(const QString &title, const QString &filePath = QString());
+    TextEdit *textEditAt(int index) const;
     TextEdit *currentTextEdit() const;
     MarkdownPreview *currentPreviewEdit() const;
     int findTabByFilePath(const QString &cleanPath) const;
+    bool saveTab(int index);
+    bool maybeSaveTab(int index);
     void onCurrentTabChanged(int index);
     void onTabCloseRequested(int index);
     void onNewTab();

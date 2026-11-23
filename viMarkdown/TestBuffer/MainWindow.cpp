@@ -30,6 +30,7 @@
 #include <QTreeWidget>
 #include <QUrl>
 #include <QVBoxLayout>
+#include <memory>
 #include "GapBufferTest.h"
 #include "LineMgrTest.h"
 #include "ViewLineMgrTest.h"
@@ -225,6 +226,55 @@ TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath
         }
         statusBar()->showMessage(tr("Editor Font Size: %1 pt").arg(m_editorFontSize), 5000);
     });
+    auto syncingScroll = std::make_shared<bool>(false);
+    connect(edit->verticalScrollBar(), &QScrollBar::valueChanged, preview, [edit, preview, syncingScroll](int val) {
+        if (*syncingScroll || !edit->markdownHighlight())
+            return;
+        QScrollBar *editSb = edit->verticalScrollBar();
+        QScrollBar *prevSb = preview->verticalScrollBar();
+        if (!editSb || !prevSb)
+            return;
+        *syncingScroll = true;
+        if (editSb->maximum() <= 0 || val <= editSb->minimum()) {
+            prevSb->setValue(prevSb->minimum());
+        } else if (val >= editSb->maximum()) {
+            prevSb->setValue(prevSb->maximum());
+        } else {
+            const ViewLineMgr &mgr = edit->document()->lineMgr();
+            const int ln = mgr.viewLineToLine(val);
+            const int firstVl = mgr.lineToViewLine(ln);
+            const int nVl = mgr.viewLineCountIn(ln);
+            const qreal frac = (nVl > 1) ? qreal(val - firstVl) / qreal(nVl) : 0.0;
+            preview->scrollToSourceLine(ln, frac);
+        }
+        *syncingScroll = false;
+    });
+    connect(preview->verticalScrollBar(), &QScrollBar::valueChanged, edit, [edit, preview, syncingScroll](int val) {
+        if (*syncingScroll || !edit->markdownHighlight())
+            return;
+        QScrollBar *editSb = edit->verticalScrollBar();
+        QScrollBar *prevSb = preview->verticalScrollBar();
+        if (!editSb || !prevSb)
+            return;
+        *syncingScroll = true;
+        if (prevSb->maximum() <= 0 || val <= prevSb->minimum()) {
+            editSb->setValue(editSb->minimum());
+        } else if (val >= prevSb->maximum()) {
+            editSb->setValue(editSb->maximum());
+        } else {
+            int srcLine = 0;
+            qreal frac = 0.0;
+            if (preview->topSourceLine(srcLine, frac)) {
+                const ViewLineMgr &mgr = edit->document()->lineMgr();
+                const int clampedLine = qBound(0, srcLine, mgr.lineCount() - 1);
+                const int firstVl = mgr.lineToViewLine(clampedLine);
+                const int nVl = mgr.viewLineCountIn(clampedLine);
+                const int targetVl = firstVl + qBound(0, static_cast<int>(frac * nVl), qMax(0, nVl - 1));
+                editSb->setValue(qBound(editSb->minimum(), targetVl, editSb->maximum()));
+            }
+        }
+        *syncingScroll = false;
+    });
     splitter->addWidget(edit);
     splitter->addWidget(preview);
     splitter->setStretchFactor(0, 1);
@@ -240,12 +290,17 @@ TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath
     return edit;
 }
 
+TextEdit *MainWindow::textEditAt(int index) const
+{
+    if (!m_tabWidget || index < 0 || index >= m_tabWidget->count())
+        return nullptr;
+    auto *splitter = qobject_cast<QSplitter *>(m_tabWidget->widget(index));
+    return splitter ? dynamic_cast<TextEdit *>(splitter->widget(0)) : nullptr;
+}
+
 TextEdit *MainWindow::currentTextEdit() const
 {
-    if (!m_tabWidget)
-        return nullptr;
-    auto *splitter = qobject_cast<QSplitter *>(m_tabWidget->currentWidget());
-    return splitter ? dynamic_cast<TextEdit *>(splitter->widget(0)) : nullptr;
+    return m_tabWidget ? textEditAt(m_tabWidget->currentIndex()) : nullptr;
 }
 
 MarkdownPreview *MainWindow::currentPreviewEdit() const
@@ -281,9 +336,32 @@ void MainWindow::onCurrentTabChanged(int index)
         edit->setFocus();
 }
 
+bool MainWindow::maybeSaveTab(int index)
+{
+    TextEdit *edit = textEditAt(index);
+    if (!edit || !edit->document()->isModified())
+        return true;
+
+    m_tabWidget->setCurrentIndex(index);
+    const QString title = m_tabWidget->tabText(index);
+    const QMessageBox::StandardButton ret = QMessageBox::warning(
+        this,
+        tr("Unsaved Changes"),
+        tr("'%1' has been modified.\nDo you want to save your changes?").arg(title),
+        QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel,
+        QMessageBox::Save);
+    if (ret == QMessageBox::Save)
+        return saveTab(index);
+    if (ret == QMessageBox::Discard)
+        return true;
+    return false;
+}
+
 void MainWindow::onTabCloseRequested(int index)
 {
     if (!m_tabWidget || index < 0 || index >= m_tabWidget->count())
+        return;
+    if (!maybeSaveTab(index))
         return;
     QWidget *w = m_tabWidget->widget(index);
     removeOutlineForTab(w);
@@ -535,48 +613,59 @@ void MainWindow::onOpen()
     openFile(filePath);
 }
 
-void MainWindow::onSave()
+bool MainWindow::saveTab(int index)
 {
-    TextEdit *edit = currentTextEdit();
-    if (!edit || !m_tabWidget)
-        return;
-    const int ix = m_tabWidget->currentIndex();
-    QWidget *curTab = m_tabWidget->widget(ix);
-    if (!curTab)
-        return;
+    if (!m_tabWidget || index < 0 || index >= m_tabWidget->count())
+        return false;
+    QWidget *tab = m_tabWidget->widget(index);
+    TextEdit *edit = textEditAt(index);
+    if (!tab || !edit)
+        return false;
 
-    QString filePath = curTab->property(PROP_FILE_PATH).toString();
-    if (filePath.isEmpty()) {
+    QString filePath = tab->property(PROP_FILE_PATH).toString();
+    const bool isNewPath = filePath.isEmpty();
+    if (isNewPath) {
         filePath = QFileDialog::getSaveFileName(
             this,
             tr("Save File"),
             m_lastDir,
             tr("Markdown Files (*.md);;Text Files (*.txt);;All Files (*)"));
         if (filePath.isEmpty())
-            return;
-        QFileInfo fi(filePath);
-        filePath = QDir::cleanPath(fi.absoluteFilePath());
-        curTab->setProperty(PROP_FILE_PATH, filePath);
-        m_tabWidget->setTabText(ix, fi.fileName());
-        m_tabWidget->setTabToolTip(ix, filePath);
-        setWindowTitle(fi.fileName() + QStringLiteral(" - TestBuffer"));
-        updateOutlineForTab(curTab);
-        m_lastDir = fi.absolutePath();
-        addToRecentFiles(filePath);
+            return false;
+        filePath = QDir::cleanPath(QFileInfo(filePath).absoluteFilePath());
     }
 
     QFile file(filePath);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QMessageBox::warning(this, tr("Save Error"),
             tr("Could not save file:\n%1\n\n%2").arg(filePath, file.errorString()));
-        return;
+        return false;
     }
     QTextStream out(&file);
     out << edit->toPlainText();
     file.close();
 
+    if (isNewPath) {
+        QFileInfo fi(filePath);
+        tab->setProperty(PROP_FILE_PATH, filePath);
+        m_tabWidget->setTabText(index, fi.fileName());
+        m_tabWidget->setTabToolTip(index, filePath);
+        if (index == m_tabWidget->currentIndex())
+            setWindowTitle(fi.fileName() + QStringLiteral(" - TestBuffer"));
+        updateOutlineForTab(tab);
+        m_lastDir = fi.absolutePath();
+        addToRecentFiles(filePath);
+    }
+
     edit->onSaved();
     statusBar()->showMessage(tr("Saved: %1").arg(filePath), 5000);
+    return true;
+}
+
+void MainWindow::onSave()
+{
+    if (m_tabWidget)
+        saveTab(m_tabWidget->currentIndex());
 }
 
 bool MainWindow::openFile(const QString &filePath)
@@ -702,6 +791,14 @@ void MainWindow::do_output(const QString& txt)
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
+    if (m_tabWidget) {
+        for (int i = 0; i < m_tabWidget->count(); ++i) {
+            if (!maybeSaveTab(i)) {
+                event->ignore();
+                return;
+            }
+        }
+    }
     QSettings settings;
     settings.setValue(KEY_WINDOW_GEOMETRY, saveGeometry());
     settings.setValue(KEY_WINDOW_STATE, saveState());

@@ -7,6 +7,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QScrollBar>
+#include <QSignalBlocker>
 #include <QTextBlock>
 #include <QTextBlockFormat>
 #include <QTextCharFormat>
@@ -446,8 +447,76 @@ void MarkdownPreview::paintEvent(QPaintEvent *event)
 	QTextEdit::paintEvent(event);
 }
 
+void MarkdownPreview::scrollToSourceLine(int srcLine, qreal subLineFrac)
+{
+	QScrollBar *sb = verticalScrollBar();
+	if( !sb || m_srcLineToBlock.isEmpty() )
+		return;
+	QTextDocument *doc = document();
+	QAbstractTextDocumentLayout *layout = doc ? doc->documentLayout() : nullptr;
+	if( !layout )
+		return;
+
+	srcLine = qBound(0, srcLine, static_cast<int>(m_srcLineToBlock.size()) - 1);
+	int bn = m_srcLineToBlock[srcLine];
+	if( bn < 0 ) {
+		for( int i = srcLine + 1; i < m_srcLineToBlock.size(); ++i ) {
+			if( m_srcLineToBlock[i] >= 0 ) {
+				bn = m_srcLineToBlock[i];
+				subLineFrac = 0.0;
+				break;
+			}
+		}
+	}
+	if( bn < 0 ) {
+		for( int i = srcLine - 1; i >= 0; --i ) {
+			if( m_srcLineToBlock[i] >= 0 ) {
+				bn = m_srcLineToBlock[i];
+				subLineFrac = 1.0;
+				break;
+			}
+		}
+	}
+	if( bn < 0 )
+		return;
+
+	const QTextBlock b = doc->findBlockByNumber(bn);
+	if( !b.isValid() )
+		return;
+	const QRectF rect = layout->blockBoundingRect(b);
+	const int targetY = qRound(rect.top() + rect.height() * qBound(0.0, subLineFrac, 1.0));
+	sb->setValue(qBound(sb->minimum(), targetY, sb->maximum()));
+}
+
+bool MarkdownPreview::topSourceLine(int &outLine, qreal &outFrac) const
+{
+	QScrollBar *sb = verticalScrollBar();
+	if( !sb || m_blockToSrcLine.isEmpty() )
+		return false;
+	QTextDocument *doc = document();
+	QAbstractTextDocumentLayout *layout = doc ? doc->documentLayout() : nullptr;
+	if( !layout )
+		return false;
+
+	const qreal scrollY = sb->value();
+	const QTextBlock b = cursorForPosition(QPoint(0, 0)).block();
+	if( !b.isValid() )
+		return false;
+	const int bn = b.blockNumber();
+	if( bn < 0 || bn >= m_blockToSrcLine.size() )
+		return false;
+
+	const QRectF rect = layout->blockBoundingRect(b);
+	outLine = m_blockToSrcLine[bn];
+	outFrac = (rect.height() > 0.0)
+		? qBound(0.0, (scrollY - rect.top()) / rect.height(), 1.0)
+		: 0.0;
+	return true;
+}
+
 void MarkdownPreview::setMarkdown(const QString &markdown)
 {
+	const QSignalBlocker blocker(verticalScrollBar());
 	QTextDocument *doc = document();
 	doc->clear();
 
@@ -457,12 +526,21 @@ void MarkdownPreview::setMarkdown(const QString &markdown)
 	ParseState st;
 	st.basePt = doc->defaultFont().pointSizeF() > 0.0 ? doc->defaultFont().pointSizeF() : 10.0;
 	const QStringList lines = markdown.split(QChar('\n'));
+	m_srcLineToBlock.fill(-1, lines.size());
+	m_blockToSrcLine.clear();
 	for( qsizetype idx = 0; idx < lines.size(); ++idx ) {
 		QString line = lines[idx];
 		if( line.endsWith(QChar('\r')) )
 			line.chop(1);
 
-		parseAndAppendLine(cursor, line, st);
+		const LineMgr::LineType type = parseAndAppendLine(cursor, line, st, static_cast<int>(idx));
+		if( type != LineMgr::LT_CODE_FENCE ) {
+			const int bn = cursor.block().blockNumber();
+			m_srcLineToBlock[idx] = bn;
+			if( m_blockToSrcLine.size() <= bn )
+				m_blockToSrcLine.resize(bn + 1, static_cast<int>(idx));
+			m_blockToSrcLine[bn] = static_cast<int>(idx);
+		}
 	}
 	if( st.inQuote )
 		finishBlockMarginIfNeeded(cursor, kBlockQuote);
@@ -477,10 +555,13 @@ void MarkdownPreview::setMarkdown(const QString &markdown)
 void MarkdownPreview::setMarkdown(TextDocument *srcDoc)
 {
 	if( !srcDoc ) {
+		m_srcLineToBlock.clear();
+		m_blockToSrcLine.clear();
 		clear();
 		return;
 	}
 
+	const QSignalBlocker blocker(verticalScrollBar());
 	const int prevScroll = verticalScrollBar() ? verticalScrollBar()->value() : 0;
 
 	QTextDocument *doc = document();
@@ -493,6 +574,8 @@ void MarkdownPreview::setMarkdown(TextDocument *srcDoc)
 	st.basePt = doc->defaultFont().pointSizeF() > 0.0 ? doc->defaultFont().pointSizeF() : 10.0;
 	ViewLineMgr &mgr = srcDoc->lineMgr();
 	const int nLines = mgr.lineCount();
+	m_srcLineToBlock.fill(-1, nLines);
+	m_blockToSrcLine.clear();
 	for( int ln = 0; ln < nLines; ++ln ) {
 		QString line = srcDoc->findBlockByNumber(ln).text();
 		if( line.endsWith(QChar('\n')) ) line.chop(1);
@@ -500,6 +583,13 @@ void MarkdownPreview::setMarkdown(TextDocument *srcDoc)
 
 		const LineMgr::LineType type = parseAndAppendLine(cursor, line, st, ln);
 		mgr.setLineType(ln, type);
+		if( type != LineMgr::LT_CODE_FENCE ) {
+			const int bn = cursor.block().blockNumber();
+			m_srcLineToBlock[ln] = bn;
+			if( m_blockToSrcLine.size() <= bn )
+				m_blockToSrcLine.resize(bn + 1, ln);
+			m_blockToSrcLine[bn] = ln;
+		}
 	}
 	if( st.inQuote )
 		finishBlockMarginIfNeeded(cursor, kBlockQuote);
