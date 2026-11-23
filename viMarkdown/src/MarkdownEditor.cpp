@@ -2136,7 +2136,22 @@ void MarkdownEditor::reflectWordToPeer(const QTextBlock &block, int start, int l
         // 相手側にも同じインデックス（順番）のインライン差分があれば、
         // その範囲（peerStart, peerLength）を置換対象として採用
         if (diffIndex != -1) {
-            if (auto *peerUserData = dynamic_cast<DiffBlockUserData*>(block2.userData())) {
+            const auto &r = myRanges[diffIndex];
+            if (r.peerStart >= 0) {
+                // calculateAndSetWordDiff() で記録した正確な相手側対応範囲を使う（v0.3 #1457）
+                if (r.peerBlockNum >= 0) {
+                    QTextBlock mapped = doc2->findBlockByNumber(r.peerBlockNum);
+                    if (mapped.isValid()) block2 = mapped;
+                }
+                peerStart = r.peerStart;
+                peerLength = r.peerLength;
+                // 反映元が複数隣接範囲（単語＋空白等）にまたがる場合、相手側も連続する対応範囲を含める
+                for (int j = diffIndex + 1; j < myRanges.size() && myRanges[j].start < start + length; ++j) {
+                    const auto &rn = myRanges[j];
+                    if (rn.peerBlockNum == r.peerBlockNum && rn.peerStart == peerStart + peerLength)
+                        peerLength += rn.peerLength;
+                }
+            } else if (auto *peerUserData = dynamic_cast<DiffBlockUserData*>(block2.userData())) {
                 const auto &peerRanges = peerUserData->ranges;
                 if (diffIndex < peerRanges.size()) {
                     peerStart = peerRanges[diffIndex].start;

@@ -27,12 +27,12 @@ struct WordToken {
 struct DiffRange {
     int start;
     int length;
-#if 0
-    int hogehoge;
-#endif
+    int peerBlockNum = -1;	// 相手側ブロック番号（calculateAndSetWordDiff で設定、v0.3 #1457）
+    int peerStart = -1;		// 相手側ブロック内開始位置
+    int peerLength = 0;		// 相手側置換長（純挿入時は 0）
 public:
-    DiffRange(int s, int l)
-    	: start(s), length(l)
+    DiffRange(int s, int l, int pbn = -1, int ps = -1, int pl = 0)
+    	: start(s), length(l), peerBlockNum(pbn), peerStart(ps), peerLength(pl)
     {}
 };
 

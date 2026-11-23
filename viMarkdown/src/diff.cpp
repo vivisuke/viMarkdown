@@ -779,64 +779,100 @@ void calculateAndSetWordDiff(QTextBlock block1, QTextBlock block2, const QString
     dtl::Diff<WordToken, std::vector<WordToken>> d(tokens1, tokens2);
     d.compose();
     auto ses = d.getSes().getSequence();
-    DiffBlockUserData *userData1 = nullptr;
-    DiffBlockUserData *userData2 = nullptr;
-    QTextBlock head1 = block1, head2 = block2;	// 欠落位置の配分用に先頭ブロックを保持（v0.3 #1363）
-    int offset1 = 0, offset2 = 0;
-    for (const auto &item : ses) {
-    	const WordToken &token = item.first;
-        dtl::elemInfo info = item.second;
-        switch( info.type ) {
-    	case dtl::SES_COMMON:
-    		break;
-    	case dtl::SES_DELETE:
-    		// トークンが属するブロックまで進める（間に差分トークンのない行があっても配分を誤らない。v0.3 #1395）
-    		while( block1.isValid() && token.start > block1.text().size() + offset1 ) {
-		        offset1 += block1.text().size() + 1;
-		        block1.setUserData(userData1);
-		        block1 = block1.next();
-                userData1 = new DiffBlockUserData();
-    		}
-    		if (userData1 == nullptr) {
-                userData1 = new DiffBlockUserData();
-            }
-            userData1->ranges.append({ token.start - offset1, (int)token.text.size() });
-    		break;
-    	case dtl::SES_ADD:
-    		// トークンが属するブロックまで進める（間に差分トークンのない行があっても配分を誤らない。v0.3 #1395）
-    		while( block2.isValid() && token.start > block2.text().size() + offset2 ) {
-		        offset2 += block2.text().size() + 1;
-		        block2.setUserData(userData2);
-		        block2 = block2.next();
-                userData2 = new DiffBlockUserData();
-    		}
-    		if (userData2 == nullptr) {
-                userData2 = new DiffBlockUserData();
-            }
-            userData2->ranges.append({token.start - offset2, (int)token.text.size()});
-    		break;
+
+    // 各ブロックのテキスト内オフセット表を構築（単語範囲と相手側対応位置の正確な紐づけ用。v0.3 #1395, #1457）
+    struct BlockSpan {
+        QTextBlock block;
+        int textStart;
+        int textLen;
+    };
+    auto buildSpans = [](QTextBlock b, int totalLen) {
+        std::vector<BlockSpan> spans;
+        int off = 0;
+        while (b.isValid() && off < totalLen) {
+            int len = b.text().size();
+            spans.push_back({b, off, len});
+            off += len + 1;
+            b = b.next();
         }
-    }
-    if (block1.isValid()) {
-        block1.setUserData(userData1);
-    }
-    if (block2.isValid()) {
-        block2.setUserData(userData2);
-    }
-    // 欠落位置（相手側にだけある単語の位置）を各ブロックに記録する（v0.3 #1363）
-    // 変更区間（COMMON を挟まない削除・追加の連続）単位で記録する。
-    // 削除と追加が対になる分は置換であり欠落ではないため、余った分だけを欠落位置とする
-    std::vector<int> gaps1, gaps2;	// 各テキスト内の文字位置
+        return spans;
+    };
+    std::vector<BlockSpan> spans1 = buildSpans(block1, (int)text1.size());
+    std::vector<BlockSpan> spans2 = buildSpans(block2, (int)text2.size());
+
+    auto locatePos = [](const std::vector<BlockSpan> &spans, int pos, int &outBn, int &outCol) {
+        outBn = -1;
+        outCol = 0;
+        if (spans.empty()) return;
+        for (const auto &sp : spans) {
+            if (pos <= sp.textStart + sp.textLen) {
+                outBn = sp.block.blockNumber();
+                outCol = qBound(0, pos - sp.textStart, sp.textLen);
+                return;
+            }
+        }
+        const auto &last = spans.back();
+        outBn = last.block.blockNumber();
+        outCol = last.textLen;
+    };
+    auto appendRange = [](std::vector<BlockSpan> &spans, int pos, int len, int peerBn, int peerCol, int peerLen) {
+        for (auto &sp : spans) {
+            if (pos <= sp.textStart + sp.textLen) {
+                auto *ud = dynamic_cast<DiffBlockUserData*>(sp.block.userData());
+                if (!ud) {
+                    ud = new DiffBlockUserData();
+                    sp.block.setUserData(ud);
+                }
+                ud->ranges.append(DiffRange(pos - sp.textStart, len, peerBn, peerCol, peerLen));
+                return;
+            }
+        }
+    };
+
+    // 変更区間（COMMON を挟まない削除・追加の連続）単位で単語範囲・相手側対応先・欠落位置を記録する（v0.3 #1363, #1457）
+    std::vector<int> gaps1, gaps2;
     {
         int pos1 = 0, pos2 = 0;
-        int runDel = 0, runAdd = 0;	// 変更区間内の削除・追加トークン数
-        int runDelNL = 0, runAddNL = 0;	// 変更区間内の削除・追加トークンに含まれる改行数
+        int hunkStart1 = 0, hunkStart2 = 0;
+        std::vector<WordToken> delToks, addToks;
+        int runDelNL = 0, runAddNL = 0;
         auto flushRun = [&]() {
+            const int runDel = (int)delToks.size();
+            const int runAdd = (int)addToks.size();
+            if (runDel == 0 && runAdd == 0) return;
+
+            const int endPos1 = delToks.empty() ? hunkStart1 : (delToks.back().start + (int)delToks.back().text.size());
+            const int endPos2 = addToks.empty() ? hunkStart2 : (addToks.back().start + (int)addToks.back().text.size());
+
+            for (int i = 0; i < runDel; ++i) {
+                int pBn = -1, pCol = 0, pLen = 0;
+                if (i < runAdd) {
+                    locatePos(spans2, addToks[i].start, pBn, pCol);
+                    pLen = (int)addToks[i].text.size();
+                } else {
+                    locatePos(spans2, endPos2, pBn, pCol);
+                    pLen = 0;
+                }
+                appendRange(spans1, delToks[i].start, (int)delToks[i].text.size(), pBn, pCol, pLen);
+            }
+            for (int i = 0; i < runAdd; ++i) {
+                int pBn = -1, pCol = 0, pLen = 0;
+                if (i < runDel) {
+                    locatePos(spans1, delToks[i].start, pBn, pCol);
+                    pLen = (int)delToks[i].text.size();
+                } else {
+                    locatePos(spans1, endPos1, pBn, pCol);
+                    pLen = 0;
+                }
+                appendRange(spans2, addToks[i].start, (int)addToks[i].text.size(), pBn, pCol, pLen);
+            }
+
             // 対になる分は置換であり欠落ではない（同一行内の置換でトークン数が食い違うだけの場合は欠落とはしない）
             // 欠落位置とするのは、片側が空の純挿入・純削除か、行構造（改行数）が食い違う場合に限る。
             if (runDel > runAdd && (runAdd == 0 || runDelNL != runAddNL)) gaps2.push_back(pos2);		// 削除が余る → doc2 側の現在位置が欠落位置
             else if (runAdd > runDel && (runDel == 0 || runDelNL != runAddNL)) gaps1.push_back(pos1);	// 追加が余る → doc1 側の現在位置が欠落位置
-            runDel = runAdd = 0;
+            delToks.clear();
+            addToks.clear();
             runDelNL = runAddNL = 0;
         };
         for (const auto &item : ses) {
@@ -847,19 +883,22 @@ void calculateAndSetWordDiff(QTextBlock block1, QTextBlock block2, const QString
             case dtl::SES_COMMON:
                 flushRun();
                 pos1 += sz; pos2 += sz;
+                hunkStart1 = pos1;
+                hunkStart2 = pos2;
                 break;
             case dtl::SES_DELETE:	// doc1 にだけある単語
-                ++runDel;
+                if (delToks.empty() && addToks.empty()) { hunkStart1 = pos1; hunkStart2 = pos2; }
+                delToks.push_back(token);
                 runDelNL += (int)token.text.count(u'\n');
                 pos1 += sz;
                 break;
             case dtl::SES_ADD:		// doc2 にだけある単語
-                ++runAdd;
+                if (delToks.empty() && addToks.empty()) { hunkStart1 = pos1; hunkStart2 = pos2; }
+                addToks.push_back(token);
                 runAddNL += (int)token.text.count(u'\n');
                 pos2 += sz;
                 break;
             }
-
         }
         flushRun();
     }
@@ -881,8 +920,8 @@ void calculateAndSetWordDiff(QTextBlock block1, QTextBlock block2, const QString
             block = block.next();
         }
     };
-    distributeGaps(head1, gaps1, (int)text1.size());
-    distributeGaps(head2, gaps2, (int)text2.size());
+    distributeGaps(block1, gaps1, (int)text1.size());
+    distributeGaps(block2, gaps2, (int)text2.size());
 }
 //void calculateAndSetCharDiff(QTextBlock block1, QTextBlock block2, const std::vector<QChar>& text1, const std::vector<QChar>& text2) {
 void calculateAndSetCharDiff(QTextBlock block1, QTextBlock block2, const QString& text1, const QString& text2) {
