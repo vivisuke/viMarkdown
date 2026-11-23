@@ -139,9 +139,9 @@ public:
 		int line = lineAtPos(pos);
 		pos_t offset = pos - lineStartPos(line);
 		const std::vector<pos_t>& breaks = m_vinfo[line].breaks;
-		int seg = 0;	//	offset 以前に現れる切れ目の数が、そのまま段番号になる
-		while( seg < (int)breaks.size() && breaks[seg] <= offset ) ++seg;
-		return lineToViewLine(line) + seg;
+		size_t seg = 0;	//	offset 以前に現れる切れ目の数が、そのまま段番号になる
+		while( seg < breaks.size() && breaks[seg] <= offset ) ++seg;
+		return lineToViewLine(line) + (int)seg;
 	}
 	int viewLineColumnAtPos(pos_t pos) const {	//	表示行内での pos の桁（半角単位）
 		pos_t start = viewLineStartPos(viewLineAtPos(pos));

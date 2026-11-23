@@ -65,7 +65,7 @@ public:
 			&& m_lines[m_lines.gapIndex()] + m_offset <= end )
 			m_lines.erase(m_lines.gapIndex());
 		m_offset -= len;				//	ギャップ以降の行は len だけ前へずれる（遅延更新）
-		m_text.erase((size_t)pos, (size_t)len);
+		m_text.erase(pos, len);
 	}
 	virtual void clear() {
 		m_text.clear();
