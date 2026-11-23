@@ -12,4 +12,7 @@ public:
 
 	void setMarkdown(const QString &markdown);
 	void setMarkdown(TextDocument *srcDoc);
+
+protected:
+	void paintEvent(QPaintEvent *event) override;
 };

@@ -1,8 +1,11 @@
 #include "MarkdownPreview.h"
 #include "TextDocument.h"
 
+#include <QAbstractTextDocumentLayout>
 #include <QFont>
+#include <QPainter>
 #include <QScrollBar>
+#include <QTextBlock>
 #include <QTextBlockFormat>
 #include <QTextCharFormat>
 #include <QTextCursor>
@@ -10,6 +13,8 @@
 #include <QTextListFormat>
 
 namespace {
+constexpr int kBlockNormal = 0;
+constexpr int kBlockQuote = 1;
 //	見出し行（#〜###### + 空白または行末）を判定し、レベル [1..6] と見出し本文を返す
 int parseHeading(const QString &line, QString &outText)
 {
@@ -55,7 +60,22 @@ bool parseList(const QString &line, int &outIndent, QString &outText)
 	return true;
 }
 
-LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &line, int &activeListIndent)
+//	引用行（"> " または単独の ">"）を判定し、引用本文を返す
+bool parseQuote(const QString &line, QString &outText)
+{
+	if( line.startsWith(QStringLiteral("> ")) ) {
+		outText = line.mid(2);
+		return true;
+	}
+	if( line == QStringLiteral(">") ) {
+		outText.clear();
+		return true;
+	}
+	return false;
+}
+
+LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &line,
+                                     int &activeListIndent, bool &inQuote)
 {
 	static const qreal kHeadingPtSize[7] = { 10.0, 22.0, 18.0, 15.0, 13.0, 11.0, 10.0 };
 	static const QTextListFormat::Style kListStyles[3] = {
@@ -66,8 +86,21 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &line, i
 	static const QTextBlockFormat bodyBlockFmt;
 	static const QTextCharFormat bodyCharFmt;
 
+	auto finishQuoteIfNeeded = [&]() {
+		if( !inQuote ) return;
+		inQuote = false;
+		QTextBlock prev = cursor.block().previous();
+		if( prev.isValid() && prev.userState() == kBlockQuote ) {
+			QTextCursor prevCur(prev);
+			QTextBlockFormat pbf = prev.blockFormat();
+			pbf.setBottomMargin(8.0);
+			prevCur.setBlockFormat(pbf);
+		}
+	};
+
 	QString parsedText;
 	if( const int level = parseHeading(line, parsedText); level > 0 ) {
+		finishQuoteIfNeeded();
 		activeListIndent = 0;
 		if( QTextList *curList = cursor.currentList() )
 			curList->remove(cursor.block());
@@ -81,12 +114,14 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &line, i
 		cf.setFontWeight(QFont::Bold);
 		cf.setFontPointSize(kHeadingPtSize[level]);
 		cursor.setBlockFormat(bf);
+		cursor.block().setUserState(kBlockNormal);
 		cursor.insertText(parsedText, cf);
 		return LineMgr::LT_HEADING;
 	}
 
 	int indent = 0;
 	if( parseList(line, indent, parsedText) ) {
+		finishQuoteIfNeeded();
 		const QTextListFormat::Style style = kListStyles[indent % 3];
 		const int listIndent = indent + 1;
 		activeListIndent = listIndent;
@@ -99,13 +134,33 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &line, i
 			lf.setIndent(listIndent);
 			cursor.createList(lf);
 		}
+		cursor.block().setUserState(kBlockNormal);
 		cursor.insertText(parsedText, bodyCharFmt);
 		return LineMgr::LT_LIST;
 	}
 
+	if( parseQuote(line, parsedText) ) {
+		activeListIndent = 0;
+		if( QTextList *curList = cursor.currentList() )
+			curList->remove(cursor.block());
+		QTextBlockFormat bf;
+		bf.setLeftMargin(24.0);
+		bf.setRightMargin(14.0);
+		bf.setTopMargin(inQuote ? 0.0 : 8.0);
+		bf.setBottomMargin(0.0);
+		cursor.setBlockFormat(bf);
+		cursor.setBlockCharFormat(bodyCharFmt);
+		cursor.block().setUserState(kBlockQuote);
+		cursor.insertText(parsedText, bodyCharFmt);
+		inQuote = true;
+		return LineMgr::LT_QUOTE;
+	}
+
+	finishQuoteIfNeeded();
 	if( QTextList *curList = cursor.currentList() )
 		curList->remove(cursor.block());
 	cursor.setBlockCharFormat(bodyCharFmt);
+	cursor.block().setUserState(kBlockNormal);
 
 	if( line.trimmed().isEmpty() ) {
 		activeListIndent = 0;
@@ -137,6 +192,53 @@ MarkdownPreview::MarkdownPreview(QWidget *parent)
 {
 }
 
+void MarkdownPreview::paintEvent(QPaintEvent *event)
+{
+	//	引用ブロックの背景矩形と左縦線をパディング付きで先描きする
+	if( QTextDocument *doc = document() ) {
+		if( QAbstractTextDocumentLayout *layout = doc->documentLayout() ) {
+			QPainter p(viewport());
+			const QPointF offset(
+				horizontalScrollBar() ? -horizontalScrollBar()->value() : 0.0,
+				verticalScrollBar() ? -verticalScrollBar()->value() : 0.0
+			);
+			const QRectF viewRect(viewport()->rect());
+			constexpr qreal kPadRight = 10.0;
+			constexpr qreal kPadY = 5.0;
+			constexpr qreal kBarWidth = 3.0;
+			constexpr qreal kPadLeft = kPadY + kBarWidth;	//	縦線の内側に上下と同じ余白を確保
+			const QColor quoteBg(0xF0, 0xF8, 0xFF);
+			const QColor quoteBar(0x90, 0xB8, 0xDC);
+
+			QTextBlock b = doc->begin();
+			while( b.isValid() ) {
+				if( b.userState() != kBlockQuote ) {
+					b = b.next();
+					continue;
+				}
+				const qreal leftMargin = b.blockFormat().leftMargin();
+				QRectF groupRect = layout->blockBoundingRect(b).translated(offset);
+				b = b.next();
+				while( b.isValid() && b.userState() == kBlockQuote ) {
+					groupRect = groupRect.united(layout->blockBoundingRect(b).translated(offset));
+					b = b.next();
+				}
+				QRectF bgRect(
+					groupRect.left() + leftMargin - kPadLeft,
+					groupRect.top() - kPadY,
+					groupRect.width() - leftMargin + kPadLeft + kPadRight,
+					groupRect.height() + kPadY * 2.0
+				);
+				if( bgRect.intersects(viewRect) ) {
+					p.fillRect(bgRect, quoteBg);
+					p.fillRect(QRectF(bgRect.left(), bgRect.top(), kBarWidth, bgRect.height()), quoteBar);
+				}
+			}
+		}
+	}
+	QTextEdit::paintEvent(event);
+}
+
 void MarkdownPreview::setMarkdown(const QString &markdown)
 {
 	QTextDocument *doc = document();
@@ -146,6 +248,7 @@ void MarkdownPreview::setMarkdown(const QString &markdown)
 	cursor.beginEditBlock();
 
 	int activeListIndent = 0;
+	bool inQuote = false;
 	const QStringList lines = markdown.split(QChar('\n'));
 	for( qsizetype idx = 0; idx < lines.size(); ++idx ) {
 		if( idx > 0 )
@@ -155,7 +258,12 @@ void MarkdownPreview::setMarkdown(const QString &markdown)
 		if( line.endsWith(QChar('\r')) )
 			line.chop(1);
 
-		parseAndAppendLine(cursor, line, activeListIndent);
+		parseAndAppendLine(cursor, line, activeListIndent, inQuote);
+	}
+	if( inQuote ) {
+		QTextBlockFormat bf = cursor.blockFormat();
+		bf.setBottomMargin(8.0);
+		cursor.setBlockFormat(bf);
 	}
 
 	cursor.endEditBlock();
@@ -179,6 +287,7 @@ void MarkdownPreview::setMarkdown(TextDocument *srcDoc)
 	cursor.beginEditBlock();
 
 	int activeListIndent = 0;
+	bool inQuote = false;
 	ViewLineMgr &mgr = srcDoc->lineMgr();
 	const int nLines = mgr.lineCount();
 	for( int ln = 0; ln < nLines; ++ln ) {
@@ -189,8 +298,13 @@ void MarkdownPreview::setMarkdown(TextDocument *srcDoc)
 		if( line.endsWith(QChar('\n')) ) line.chop(1);
 		if( line.endsWith(QChar('\r')) ) line.chop(1);
 
-		const LineMgr::LineType type = parseAndAppendLine(cursor, line, activeListIndent);
+		const LineMgr::LineType type = parseAndAppendLine(cursor, line, activeListIndent, inQuote);
 		mgr.setLineType(ln, type);
+	}
+	if( inQuote ) {
+		QTextBlockFormat bf = cursor.blockFormat();
+		bf.setBottomMargin(8.0);
+		cursor.setBlockFormat(bf);
 	}
 
 	cursor.endEditBlock();

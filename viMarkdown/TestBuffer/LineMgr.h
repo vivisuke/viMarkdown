@@ -24,6 +24,7 @@ public:
 		LT_BODY = 0,
 		LT_HEADING,
 		LT_LIST,
+		LT_QUOTE,
 	};
 
 	struct LineInfo {
