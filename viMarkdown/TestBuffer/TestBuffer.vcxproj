@@ -96,6 +96,7 @@
     <ClCompile Include="TextDocumentTest.cpp" />
     <ClCompile Include="TextEdit.cpp" />
     <ClCompile Include="UndoMgr.cpp" />
+    <ClCompile Include="ViEngine.cpp" />
     <ClCompile Include="ViewLineMgrTest.cpp" />
     <QtRcc Include="MainWindow.qrc" />
     <QtUic Include="MainWindow.ui" />
@@ -117,6 +118,7 @@
     <ClInclude Include="TextDocumentTest.h" />
     <ClInclude Include="TextEdit.h" />
     <ClInclude Include="UndoMgr.h" />
+    <ClInclude Include="ViEngine.h" />
     <ClInclude Include="ViewLineBlock.h" />
     <ClInclude Include="ViewLineMgr.h" />
     <ClInclude Include="ViewLineMgrTest.h" />

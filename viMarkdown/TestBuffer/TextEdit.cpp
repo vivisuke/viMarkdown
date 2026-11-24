@@ -767,6 +767,17 @@ void TextEdit::applyPreviewEdit(int srcStart, int srcEnd, const QString &text)
 	afterChange(true);
 }
 
+void TextEdit::notifyTextChanged()
+{
+	afterChange(true);
+}
+
+void TextEdit::setViEnabled(bool enabled)
+{
+	m_vi.setEnabled(enabled);
+	viewport()->update();
+}
+
 void TextEdit::onSaved()
 {
 	m_doc.onSaved();
@@ -1138,8 +1149,22 @@ void TextEdit::paintEvent(QPaintEvent *event)
 			const int y0 = (cv - top) * lh;
 			const int caretH = fm.ascent() + 2;
 			if( hasFocus() ) {
-				if( m_caretVisible )
-					painter.fillRect(x, y0, 2, caretH, Qt::red);
+				if( m_caretVisible ) {
+					const bool blockCaret = m_vi.isEnabled() && m_vi.mode() != ViMode::Insert;
+					if( blockCaret ) {
+						const QChar chAt = (m_cursor.position() < m_doc.characterCount())
+							? m_doc.characterAt(m_cursor.position()) : QChar(' ');
+						const int w = (chAt == QChar('\n') || chAt == QChar('\t') || chAt.isNull())
+							? qMax(6, fm.horizontalAdvance(QChar(' ')))
+							: qMax(6, fm.horizontalAdvance(chAt));
+						if( m_vi.mode() == ViMode::Replace )
+							painter.fillRect(x, y0 + caretH - 3, w, 3, Qt::red);
+						else
+							painter.fillRect(x, y0, w, caretH, QColor(255, 0, 0, 120));
+					} else {
+						painter.fillRect(x, y0, 2, caretH, Qt::red);
+					}
+				}
 			} else {
 				painter.fillRect(x, y0, 2, caretH, Qt::black);
 				painter.fillRect(x - 2, y0, 6, 2, Qt::black);
@@ -1151,6 +1176,10 @@ void TextEdit::paintEvent(QPaintEvent *event)
 
 void TextEdit::keyPressEvent(QKeyEvent *event)
 {
+	if( m_vi.handleKeyPress(this, event) ) {
+		event->accept();
+		return;
+	}
 	const bool shift = (event->modifiers() & Qt::ShiftModifier) != 0;
 	const bool ctrl = (event->modifiers() & Qt::ControlModifier) != 0;
 	const TextCursor::MoveMode mode = shift ? TextCursor::KeepAnchor : TextCursor::MoveAnchor;

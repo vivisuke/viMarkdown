@@ -9,6 +9,7 @@ namespace Ui { class MainWindowClass; };
 QT_END_NAMESPACE
 
 class QDockWidget;
+class QLineEdit;
 class QTabWidget;
 class QTreeWidget;
 class QTreeWidgetItem;
@@ -27,6 +28,7 @@ public:
 
 protected:
     void closeEvent(QCloseEvent *event) override;
+    bool eventFilter(QObject *obj, QEvent *event) override;
 
 private:
     TextEdit *addEditorTab(const QString &title, const QString &filePath = QString());
@@ -34,8 +36,11 @@ private:
     TextEdit *currentTextEdit() const;
     MarkdownPreview *currentPreviewEdit() const;
     int findTabByFilePath(const QString &cleanPath) const;
-    bool saveTab(int index);
+    bool saveTab(int index, const QString &explicitPath = QString());
     bool maybeSaveTab(int index);
+    void closeTabForce(int index);
+    void openViCmdLine(QChar prefix);
+    void onViCmdLineReturn();
     void onCurrentTabChanged(int index);
     void onTabCloseRequested(int index);
     void onNewTab();
@@ -75,6 +80,10 @@ private:
     QString m_previewFontFamily;
     int m_previewFontSize = 10;
     bool m_viKeybind = false;
+    QLineEdit *m_cmdLine = nullptr;
+    QChar m_cmdPrefix;
+    QStringList m_exHist;
+    int m_exHistIdx = -1;
     QString m_lastDir;
 };
 

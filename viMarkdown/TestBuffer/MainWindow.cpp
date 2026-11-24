@@ -15,6 +15,7 @@
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
+#include <QKeyEvent>
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
@@ -208,11 +209,24 @@ MainWindow::MainWindow(QWidget *parent)
     });
     updateUndoRedoEnabled();
     connect(ui->action_Settings, &QAction::triggered, this, &MainWindow::onSettings);
+    m_cmdLine = new QLineEdit(this);
+    m_cmdLine->setFrame(false);
+    m_cmdLine->hide();
+    m_cmdLine->installEventFilter(this);
+    statusBar()->addPermanentWidget(m_cmdLine, 1);
+    connect(m_cmdLine, &QLineEdit::returnPressed, this, &MainWindow::onViCmdLineReturn);
+
     connect(ui->action_ViKeybind, &QAction::toggled, this, [this](bool checked) {
         m_viKeybind = checked;
         QSettings settings;
         settings.setValue(KEY_VI_KEYBIND, m_viKeybind);
-        statusBar()->showMessage(m_viKeybind ? tr("vi keybind: ON") : tr("vi keybind: OFF"), 3000);
+        if (m_tabWidget) {
+            for (int i = 0; i < m_tabWidget->count(); ++i) {
+                if (TextEdit *edit = textEditAt(i))
+                    edit->setViEnabled(m_viKeybind);
+            }
+        }
+        statusBar()->showMessage(m_viKeybind ? tr("vi keybind: ON (-- NORMAL --)") : tr("vi keybind: OFF"), 3000);
     });
     connect(ui->menu_RecentFiles, &QMenu::aboutToShow, this, &MainWindow::onAboutToShow_RecentFiles);
     connect(ui->action_gap_buffer, &QAction::triggered, this, [this]() {
@@ -251,6 +265,18 @@ TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath
     edit->setLineSpacing(qRound(edit->fontMetrics().height() * m_lineSpacingPercent / 100.0));
     edit->setHeadingColor(m_headingColor);
     edit->setEmphasisColor(m_emphasisColor);
+    edit->setViEnabled(m_viKeybind);
+    edit->viEngine()->setCallbacks({
+        [this](const QString &msg) { statusBar()->showMessage(msg, 5000); },
+        [this](QChar prefix) { openViCmdLine(prefix); },
+        [this](bool force) {
+            if (!m_tabWidget) return;
+            const int ix = m_tabWidget->currentIndex();
+            if (force) closeTabForce(ix);
+            else onTabCloseRequested(ix);
+        },
+        [this]() { return m_tabWidget ? saveTab(m_tabWidget->currentIndex()) : false; }
+    });
     auto *preview = new MarkdownPreview(splitter);
     {
         QFont pf = preview->font();
@@ -458,17 +484,24 @@ bool MainWindow::maybeSaveTab(int index)
     return false;
 }
 
-void MainWindow::onTabCloseRequested(int index)
+void MainWindow::closeTabForce(int index)
 {
     if (!m_tabWidget || index < 0 || index >= m_tabWidget->count())
-        return;
-    if (!maybeSaveTab(index))
         return;
     QWidget *w = m_tabWidget->widget(index);
     removeOutlineForTab(w);
     m_tabWidget->removeTab(index);
     if (w)
         w->deleteLater();
+}
+
+void MainWindow::onTabCloseRequested(int index)
+{
+    if (!m_tabWidget || index < 0 || index >= m_tabWidget->count())
+        return;
+    if (!maybeSaveTab(index))
+        return;
+    closeTabForce(index);
 }
 
 void MainWindow::onClose()
@@ -773,7 +806,7 @@ void MainWindow::onOpen()
     openFile(filePath);
 }
 
-bool MainWindow::saveTab(int index)
+bool MainWindow::saveTab(int index, const QString &explicitPath)
 {
     if (!m_tabWidget || index < 0 || index >= m_tabWidget->count())
         return false;
@@ -782,9 +815,9 @@ bool MainWindow::saveTab(int index)
     if (!tab || !edit)
         return false;
 
-    QString filePath = tab->property(PROP_FILE_PATH).toString();
-    const bool isNewPath = filePath.isEmpty();
-    if (isNewPath) {
+    QString filePath = explicitPath.isEmpty() ? tab->property(PROP_FILE_PATH).toString() : explicitPath;
+    const bool isNewPath = !explicitPath.isEmpty() || filePath.isEmpty();
+    if (filePath.isEmpty()) {
         filePath = QFileDialog::getSaveFileName(
             this,
             tr("Save File"),
@@ -792,8 +825,9 @@ bool MainWindow::saveTab(int index)
             tr("Markdown Files (*.md);;Text Files (*.txt);;All Files (*)"));
         if (filePath.isEmpty())
             return false;
-        filePath = QDir::cleanPath(QFileInfo(filePath).absoluteFilePath());
     }
+    if (isNewPath)
+        filePath = QDir::cleanPath(QFileInfo(filePath).absoluteFilePath());
 
     QFile file(filePath);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
@@ -947,6 +981,97 @@ void MainWindow::do_output(const QString& txt)
     cursor.movePosition(QTextCursor::End);
     cursor.insertText(txt);
     ui->plainTextEdit->setTextCursor(cursor);
+}
+
+void MainWindow::openViCmdLine(QChar prefix)
+{
+    if (!m_cmdLine) return;
+    m_cmdPrefix = prefix;
+    m_exHistIdx = -1;
+    statusBar()->clearMessage();
+    m_cmdLine->setText(QString(prefix));
+    m_cmdLine->show();
+    m_cmdLine->setFocus();
+    m_cmdLine->setCursorPosition(1);
+}
+
+void MainWindow::onViCmdLineReturn()
+{
+    if (!m_cmdLine) return;
+    QString raw = m_cmdLine->text();
+    m_cmdLine->hide();
+    TextEdit *edit = currentTextEdit();
+    if (edit)
+        edit->setFocus();
+
+    if (raw.isEmpty()) return;
+    const QChar pref = raw[0];
+    const QString body = (pref == QChar(':') || pref == QChar('/') || pref == QChar('?')) ? raw.mid(1) : raw;
+    if (!body.isEmpty()) {
+        m_exHist.removeAll(raw);
+        m_exHist.push_front(raw);
+        while (m_exHist.size() > 50) m_exHist.pop_back();
+    }
+    if (!edit) return;
+
+    if (pref == QChar('/') || pref == QChar('?')) {
+        if (!body.isEmpty())
+            edit->viEngine()->search(edit, body, pref == QChar('/'));
+        return;
+    }
+
+    ViEngine::ExCallbacks cb;
+    cb.showStatus = [this](const QString &msg) { statusBar()->showMessage(msg, 5000); };
+    cb.showOutput = [this](const QString &txt) { do_output(txt); };
+    cb.saveFile = [this](const QString &path) {
+        return m_tabWidget ? saveTab(m_tabWidget->currentIndex(), path) : false;
+    };
+    cb.closeTab = [this](bool force) {
+        if (!m_tabWidget) return;
+        const int ix = m_tabWidget->currentIndex();
+        if (force) closeTabForce(ix);
+        else onTabCloseRequested(ix);
+    };
+    cb.openFile = [this](const QString &path) {
+        if (path.isEmpty()) onOpen();
+        else openFile(path);
+    };
+    edit->viEngine()->executeExCommand(edit, body, cb);
+}
+
+bool MainWindow::eventFilter(QObject *obj, QEvent *event)
+{
+    if (obj == m_cmdLine && event->type() == QEvent::KeyPress) {
+        auto *ke = static_cast<QKeyEvent *>(event);
+        if (ke->key() == Qt::Key_Escape) {
+            m_cmdLine->hide();
+            if (TextEdit *edit = currentTextEdit())
+                edit->setFocus();
+            return true;
+        }
+        if (ke->key() == Qt::Key_Backspace && m_cmdLine->text().size() <= 1) {
+            m_cmdLine->hide();
+            if (TextEdit *edit = currentTextEdit())
+                edit->setFocus();
+            return true;
+        }
+        if (ke->key() == Qt::Key_Up && !m_exHist.isEmpty()) {
+            m_exHistIdx = qMin(m_exHistIdx + 1, static_cast<int>(m_exHist.size()) - 1);
+            m_cmdLine->setText(m_exHist[m_exHistIdx]);
+            return true;
+        }
+        if (ke->key() == Qt::Key_Down) {
+            if (m_exHistIdx > 0) {
+                --m_exHistIdx;
+                m_cmdLine->setText(m_exHist[m_exHistIdx]);
+            } else {
+                m_exHistIdx = -1;
+                m_cmdLine->setText(QString(m_cmdPrefix));
+            }
+            return true;
+        }
+    }
+    return QMainWindow::eventFilter(obj, event);
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)

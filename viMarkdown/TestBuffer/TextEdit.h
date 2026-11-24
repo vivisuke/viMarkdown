@@ -2,6 +2,7 @@
 
 #include "TextDocument.h"
 #include "TextCursor.h"
+#include "ViEngine.h"
 
 #include <QAbstractScrollArea>
 #include <QColor>
@@ -79,6 +80,10 @@ public:
 	void unindent();
 	void setCursorPosition(int pos, int anchor = -1);
 	void applyPreviewEdit(int srcStart, int srcEnd, const QString &text);
+	void notifyTextChanged();
+	ViEngine *viEngine() { return &m_vi; }
+	const ViEngine *viEngine() const { return &m_vi; }
+	void setViEnabled(bool enabled);
 	void onSaved();
 	void setTextChangedCallback(std::function<void()> cb) { m_onTextChanged = std::move(cb); }
 	void setCursorChangedCallback(std::function<void()> cb) { m_onCursorChanged = std::move(cb); }
@@ -136,6 +141,7 @@ private:
 	LineNumberArea *m_lineNumberArea = nullptr;
 	QTimer *m_blinkTimer = nullptr;
 	bool m_caretVisible = true;
+	ViEngine m_vi;
 	std::function<void()> m_onTextChanged;
 	std::function<void()> m_onCursorChanged;
 	std::function<void(int)> m_onFontSizeChange;
