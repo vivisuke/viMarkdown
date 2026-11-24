@@ -1152,7 +1152,7 @@ void MainWindow::onCurrentTabChanged(int ix) {
 }
 void MainWindow::removeHistoryEntries(const QString& title, const QString& fullPath, int pos) {
 	for(int i = m_docLocHist.size(); --i >= 0; ) {		//	重複削除
-		if( (!fullPath.isEmpty() && m_docLocHist[i].m_fullPath == fullPath || m_docLocHist[i].m_fullPath.isEmpty()) &&
+		if( m_docLocHist[i].m_fullPath == fullPath &&
 				m_docLocHist[i].m_title == title && m_docLocHist[i].m_position == pos )
 		{
 			m_docLocHist.removeAt(i);
@@ -2818,6 +2818,43 @@ int isNumListBlock(const QTextBlock& block) {		//	空白+ "数字. " で始ま�
 	if( !txt.mid(i+1).startsWith(". ") ) return 0;
 	return i + 3;
 }
+//	選択範囲（またはカーソル行）に対応する実在ブロック範囲 [startBlock, endBlock] を求める。
+//	diff 表示中にダミー行が混在している場合は、始点・終点を実在行へ寄せた上でダミー行を除去してから返す。
+//	対象がダミー行のみの場合は false を返す。
+static bool resolveLineBlockRange(DocWidget *docWidget, MarkdownEditor *mdEditor, QTextBlock &startBlock, QTextBlock &endBlock) {
+	QTextCursor cursor = mdEditor->textCursor();
+	QTextDocument *doc = mdEditor->document();
+	int startPos = cursor.selectionStart();
+	int endPos = cursor.selectionEnd();
+	startBlock = doc->findBlock(startPos);
+	endBlock = doc->findBlock(endPos);
+	if (endPos > startPos && endPos == endBlock.position())
+		endBlock = endBlock.previous();		//	最終ブロック修正
+	if (!startBlock.isValid() || !endBlock.isValid())
+		return false;
+	if (docWidget->m_diffMode && (docWidget->m_editor->dummyInserted() || docWidget->m_diffview->dummyInserted())) {
+		while (startBlock.isValid() && startBlock.blockNumber() <= endBlock.blockNumber() && isDummyLine(mdEditor, startBlock))
+			startBlock = startBlock.next();
+		while (endBlock.isValid() && endBlock.blockNumber() >= startBlock.blockNumber() && isDummyLine(mdEditor, endBlock))
+			endBlock = endBlock.previous();
+		if (!startBlock.isValid() || !endBlock.isValid() || startBlock.blockNumber() > endBlock.blockNumber())
+			return false;
+		const auto &vbn = mdEditor->diffBlockNumbers();
+		int sbn = startBlock.blockNumber();
+		int ebn = endBlock.blockNumber();
+		int physStart = (sbn >= 0 && sbn < (int)vbn.size()) ? vbn[sbn] : -1;
+		int physEnd   = (ebn >= 0 && ebn < (int)vbn.size()) ? vbn[ebn] : -1;
+		docWidget->m_editor->removeAllDummyLines();
+		docWidget->m_diffview->removeAllDummyLines();
+		if (physStart >= 0 && physEnd >= 0) {
+			startBlock = doc->findBlockByNumber(physStart);
+			endBlock   = doc->findBlockByNumber(physEnd);
+		}
+		if (!startBlock.isValid() || !endBlock.isValid() || startBlock.blockNumber() > endBlock.blockNumber())
+			return false;
+	}
+	return true;
+}
 void MainWindow::onAction_Indent() {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
@@ -2825,18 +2862,12 @@ void MainWindow::onAction_Indent() {
 	//	[v0.3 #1392] diff 表示中は、フォーカスのあるビューに対して処理する（v0.3 #1267 と同様）
 	if( docWidget->m_diffMode && QApplication::focusWidget() == docWidget->m_diffview )
 		mdEditor = docWidget->m_diffview;
+	QTextBlock startBlock, endBlock;
+	if( !resolveLineBlockRange(docWidget, mdEditor, startBlock, endBlock) ) return;
 	QTextCursor cursor = mdEditor->textCursor();
-	QTextDocument *doc = mdEditor->document();
 	mdEditor->openUndoBlock();
 	cursor.beginEditBlock();
-	int startPos = cursor.selectionStart();
-	int endPos = cursor.selectionEnd();
-	// 範囲に含まれる最初のブロックと最後のブロックを取得
-	QTextBlock startBlock = doc->findBlock(startPos);
 	QTextBlock currentBlock = startBlock;
-	QTextBlock endBlock = doc->findBlock(endPos);
-	if (endPos > startPos && endPos == endBlock.position())
-		endBlock = endBlock.previous();		//	最終ブロック修正
 	while (currentBlock.isValid() && currentBlock.blockNumber() <= endBlock.blockNumber()) {
 		cursor.setPosition(currentBlock.position());	//	行頭位置
 		mdEditor->do_insertText(cursor, "  ");
@@ -2866,18 +2897,12 @@ void MainWindow::onAction_UnIndent() {
 	//	[v0.3 #1392] diff 表示中は、フォーカスのあるビューに対して処理する（v0.3 #1267 と同様）
 	if( docWidget->m_diffMode && QApplication::focusWidget() == docWidget->m_diffview )
 		mdEditor = docWidget->m_diffview;
+	QTextBlock startBlock, endBlock;
+	if( !resolveLineBlockRange(docWidget, mdEditor, startBlock, endBlock) ) return;
 	QTextCursor cursor = mdEditor->textCursor();
-	QTextDocument *doc = mdEditor->document();
 	mdEditor->openUndoBlock();
 	cursor.beginEditBlock();
-	int startPos = cursor.selectionStart();
-	int endPos = cursor.selectionEnd();
-	// 範囲に含まれる最初のブロックと最後のブロックを取得
-	QTextBlock startBlock = doc->findBlock(startPos);
 	QTextBlock currentBlock = startBlock;
-	QTextBlock endBlock = doc->findBlock(endPos);
-	if (endPos > startPos && endPos == endBlock.position())
-		endBlock = endBlock.previous();		//	最終ブロック修正
 	while (currentBlock.isValid() && currentBlock.blockNumber() <= endBlock.blockNumber()) {
 		cursor.setPosition(currentBlock.position());	//	行頭位置
 		if( currentBlock.text().startsWith("  ") ) {
@@ -2917,19 +2942,14 @@ void MainWindow::onAction_Checkbox() {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
 	MarkdownEditor *mdEditor = docWidget->m_editor;
+	bool hadSelection = mdEditor->textCursor().hasSelection();
+	QTextBlock startBlock, endBlock;
+	if( !resolveLineBlockRange(docWidget, mdEditor, startBlock, endBlock) ) return;
 	QTextCursor cursor = mdEditor->textCursor();
-	QTextDocument *doc = mdEditor->document();
 	mdEditor->openUndoBlock();
 	cursor.beginEditBlock();
-	bool hadSelection = cursor.hasSelection();
-	int startPos = cursor.selectionStart();
-	int endPos = cursor.selectionEnd();
-	QTextBlock startBlock = doc->findBlock(startPos);		// 範囲に含まれる最初のブロックと最後のブロックを取得
 	QTextBlock currentBlock = startBlock;
-	QTextBlock endBlock = doc->findBlock(endPos);
 	bool remove_checkbox = isCheckboxBlock(currentBlock) != 0;
-	if (endPos > startPos && endPos == endBlock.position())
-		endBlock = endBlock.previous();		//	最終ブロック修正
 	while (currentBlock.isValid() && currentBlock.blockNumber() <= endBlock.blockNumber()) {
 		cursor.setPosition(currentBlock.position());	//	行頭位置
 		if( remove_checkbox ) {
@@ -2977,19 +2997,14 @@ void MainWindow::onAction_List() {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
 	MarkdownEditor *mdEditor = docWidget->m_editor;
+	bool hadSelection = mdEditor->textCursor().hasSelection();
+	QTextBlock startBlock, endBlock;
+	if( !resolveLineBlockRange(docWidget, mdEditor, startBlock, endBlock) ) return;
 	QTextCursor cursor = mdEditor->textCursor();
-	QTextDocument *doc = mdEditor->document();
 	mdEditor->openUndoBlock();
 	cursor.beginEditBlock();
-	bool hadSelection = cursor.hasSelection();
-	int startPos = cursor.selectionStart();
-	int endPos = cursor.selectionEnd();
-	QTextBlock startBlock = doc->findBlock(startPos);		// 範囲に含まれる最初のブロックと最後のブロックを取得
 	QTextBlock currentBlock = startBlock;
-	QTextBlock endBlock = doc->findBlock(endPos);
 	bool remove_list = isListBlock(currentBlock) != 0;
-	if (endPos > startPos && endPos == endBlock.position())
-		endBlock = endBlock.previous();		//	最終ブロック修正
 	while (currentBlock.isValid() && currentBlock.blockNumber() <= endBlock.blockNumber()) {
 		cursor.setPosition(currentBlock.position());	//	行頭位置
 		if( remove_list ) {
@@ -3036,19 +3051,14 @@ void MainWindow::onAction_NumList() {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
 	MarkdownEditor *mdEditor = docWidget->m_editor;
+	bool hadSelection = mdEditor->textCursor().hasSelection();
+	QTextBlock startBlock, endBlock;
+	if( !resolveLineBlockRange(docWidget, mdEditor, startBlock, endBlock) ) return;
 	QTextCursor cursor = mdEditor->textCursor();
-	QTextDocument *doc = mdEditor->document();
 	mdEditor->openUndoBlock();
 	cursor.beginEditBlock();
-	bool hadSelection = cursor.hasSelection();
-	int startPos = cursor.selectionStart();
-	int endPos = cursor.selectionEnd();
-	QTextBlock startBlock = doc->findBlock(startPos);		// 範囲に含まれる最初のブロックと最後のブロックを取得
 	QTextBlock currentBlock = startBlock;
-	QTextBlock endBlock = doc->findBlock(endPos);
 	bool remove_list = isNumListBlock(currentBlock) != 0;
-	if (endPos > startPos && endPos == endBlock.position())
-		endBlock = endBlock.previous();		//	最終ブロック修正
 	while (currentBlock.isValid() && currentBlock.blockNumber() <= endBlock.blockNumber()) {
 		cursor.setPosition(currentBlock.position());	//	行頭位置
 		//cursor.movePosition(QTextCursor::StartOfBlock);			//	行頭移動　←　何故かうまく動作しない？？？

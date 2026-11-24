@@ -553,10 +553,8 @@ void MarkdownPreview::moveToNextWordEnd(QTextCursor& cursor, bool shift) {
 	while (pos < maxPos && getCharType(doc->characterAt(pos)) == Type_Space) {
 		pos++;
 	}
-	if (pos >= maxPos) {
-		cursor.setPosition(maxPos, shift ? QTextCursor::KeepAnchor : QTextCursor::MoveAnchor);
-		return;
-	}
+	if (pos >= maxPos)
+		return;		//	これ以上単語が無いため EOF へは進めない
 	CharType currentType = getCharType(doc->characterAt(pos));
 	while (pos < maxPos && getCharType(doc->characterAt(pos)) == currentType) {
 		pos++;

@@ -1,4 +1,5 @@
 ﻿#include <QDir>
+#include <QFileInfo>
 #include "MainWindow.h"
 #include <QtWidgets/QApplication>
 #include <QSettings>
@@ -10,9 +11,12 @@ extern Global g;
 
 int main(int argc, char *argv[])
 {
-	QString exeDir = QCoreApplication::applicationDirPath();
-	QDir::setCurrent(exeDir);
     QApplication app(argc, argv);
+    QString argFilePath;
+    if (app.arguments().count() > 1)
+        argFilePath = QFileInfo(app.arguments().at(1)).absoluteFilePath();
+    QString exeDir = QCoreApplication::applicationDirPath();
+    QDir::setCurrent(exeDir);
     app.setWindowIcon(QIcon(":/MainWindow/images/viMarkdown.png"));
     QCoreApplication::setOrganizationName("VisualSoftLab");
     QCoreApplication::setApplicationName("viMarkdown");
@@ -42,9 +46,8 @@ int main(int argc, char *argv[])
 	    g.m_japanese = false;
     
     MainWindow window;
-    if (app.arguments().count() > 1) {
-        QString filePath = app.arguments().at(1);
-        window.do_open("", filePath);
+    if (!argFilePath.isEmpty()) {
+        window.do_open("", argFilePath);
     }
     window.show();
     qDebug() << "OK";
