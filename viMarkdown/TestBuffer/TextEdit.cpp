@@ -986,7 +986,31 @@ void TextEdit::lineNumberAreaPaintEvent(QPaintEvent *event)
 	const ViewLineMgr &mgr = m_doc.lineMgr();
 	const int rows = m_lineNumberArea->height() / lh + 1;
 	const int areaW = m_lineNumberArea->width();
-	const int right = areaW - fm.horizontalAdvance(QChar(' ')) * 2;	//	右端に半角2文字分の余白を空ける
+	const int charW = fm.horizontalAdvance(QChar('9'));
+	const int right = areaW - charW * 2;	//	右端に半角2文字分の折り畳みアイコン余白を空ける
+	auto drawFoldArrow = [&](int x, int y, int w, int h, bool rightward) {
+		const int cx = x + w / 2;
+		const int cy = y + h / 2;
+		const int half = qMax(3, qMin(w, h) / 2 - 1);
+		painter.save();
+		painter.setRenderHint(QPainter::Antialiasing, true);
+		painter.setPen(Qt::NoPen);
+		painter.setBrush(QColor(0x80, 0x80, 0x80));
+		QPolygon poly;
+		if( rightward ) {
+			//	▶（折り畳み済み）
+			poly << QPoint(cx - half, cy - half)
+			     << QPoint(cx + half, cy)
+			     << QPoint(cx - half, cy + half);
+		} else {
+			//	▼（折り畳み可能・展開中）
+			poly << QPoint(cx - half, cy - half)
+			     << QPoint(cx + half, cy - half)
+			     << QPoint(cx,        cy + half);
+		}
+		painter.drawPolygon(poly);
+		painter.restore();
+	};
 	painter.setPen(palette().color(QPalette::Text));
 	for( int i = 0; i < rows; ++i ) {
 		int viewLine = top + i;
@@ -1000,6 +1024,14 @@ void TextEdit::lineNumberAreaPaintEvent(QPaintEvent *event)
 		if( viewLine != mgr.lineToViewLine(ln) ) continue;	//	折り返しの継続行には番号を付けない
 		QString num = QString::number(ln + 1);
 		painter.drawText(right - fm.horizontalAdvance(num), i * lh + fm.ascent() + 4, num);
+		if( m_markdownHighlight ) {
+			const int ax = areaW - (charW + charW / 2) + 1;
+			if( mgr.isFolded(ln) ) {
+				drawFoldArrow(ax, i * lh + 4, charW + 2, fm.height(), true);
+			} else if( mgr.isFoldable(ln) ) {
+				drawFoldArrow(ax, i * lh + 4, charW + 2, fm.height(), false);
+			}
+		}
 	}
 }
 
@@ -1035,6 +1067,19 @@ void TextEdit::lineNumberAreaMousePressEvent(QMouseEvent *event)
 	if( event->button() == Qt::LeftButton ) {
 		setFocus();
 		const int ln = logicalLineFromY(event->pos().y());
+		const int foldColX = m_lineNumberArea->width() - fontMetrics().horizontalAdvance(QChar(' ')) * 2;
+		ViewLineMgr &mgr = m_doc.lineMgr();
+		if( m_markdownHighlight && event->pos().x() >= foldColX && (mgr.isFoldable(ln) || mgr.isFolded(ln)) ) {
+			mgr.toggleFold(ln);
+			const int curLn = mgr.lineAtPos(m_cursor.position());
+			if( mgr.isLineHidden(curLn) )
+				m_cursor.setPosition(mgr.lineStartPos(ln));
+			updateScrollBars();
+			ensureCursorVisible();
+			viewport()->update();
+			m_lineNumberArea->update();
+			return;
+		}
 		if( (event->modifiers() & Qt::ShiftModifier) != 0 && m_lineAnchor >= 0 ) {
 			selectLogicalLineRange(m_lineAnchor, ln);
 		} else {
@@ -1191,7 +1236,16 @@ void TextEdit::paintEvent(QPaintEvent *event)
 			painter.drawLine(xPre, yBase + 1, xPre + wPre, yBase + 1);
 			drawColoredSegment(xPre + wPre, yBase, after, segOff + curOff);
 		} else {
-			drawColoredSegment(LEFT_MARGIN, yBase, text, segOff);
+			int xEnd = drawColoredSegment(LEFT_MARGIN, yBase, text, segOff);
+			if( m_markdownHighlight && mgr.isFolded(ln)
+				&& viewLine == mgr.lineToViewLine(ln) + mgr.viewLineCountIn(ln) - 1 ) {
+				const int hiddenCnt = mgr.foldedHiddenCount(ln);
+				if( hiddenCnt > 0 ) {
+					painter.setPen(Qt::blue);
+					painter.drawText(xEnd + fm.horizontalAdvance(QChar(' ')) * 2, yBase,
+						QStringLiteral("[+%1 lines]").arg(hiddenCnt));
+				}
+			}
 		}
 	}
 	//	カーソル（フォーカス時は赤 2px 縦棒、非フォーカス時は黒 2px 幅 I ビーム）

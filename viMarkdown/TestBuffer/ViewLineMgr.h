@@ -137,7 +137,11 @@ public:
 	}
 	int viewLineAtPos(pos_t pos) const {	//	pos を含む表示行
 		int line = lineAtPos(pos);
+		while( line > 0 && m_vinfo[line].hidden ) --line;
+		if( m_vinfo[line].hidden ) return 0;
 		pos_t offset = pos - lineStartPos(line);
+		if( offset < 0 ) offset = 0;
+		if( offset > lineLength(line) ) offset = lineLength(line);
 		const std::vector<pos_t>& breaks = m_vinfo[line].breaks;
 		size_t seg = 0;	//	offset 以前に現れる切れ目の数が、そのまま段番号になる
 		while( seg < breaks.size() && breaks[seg] <= offset ) ++seg;
@@ -179,12 +183,106 @@ public:
 			|| (u >= 0xFFE0 && u <= 0xFFE6);	//	全角記号
 	}
 
+	//	見出し折り畳み
+	int headingLevel(int line) const {
+		if( line < 0 || line >= lineCount() || lineType(line) != LT_HEADING )
+			return 0;
+		const pos_t s = lineStartPos(line);
+		const pos_t len = lineLength(line);
+		pos_t i = 0;
+		while( i < len && (*this)[s + i] == QChar(' ') ) ++i;
+		int h = 0;
+		while( i < len && (*this)[s + i] == QChar('#') && h < 6 ) { ++i; ++h; }
+		return h;
+	}
+	bool isFoldable(int line) const {
+		const int lvl = headingLevel(line);
+		if( lvl == 0 ) return false;
+		if( line + 1 >= lineCount() ) return false;
+		if( line + 1 == lineCount() - 1 && lineLength(line + 1) == 0 ) return false;
+		const int lvl2 = headingLevel(line + 1);
+		return lvl2 == 0 || lvl2 > lvl;
+	}
+	bool isFolded(int line) const {
+		return line >= 0 && line < (int)m_vinfo.size() && m_vinfo[line].folded;
+	}
+	bool isLineHidden(int line) const {
+		return line >= 0 && line < (int)m_vinfo.size() && m_vinfo[line].hidden;
+	}
+	int foldedHiddenCount(int line) const {
+		if( !isFolded(line) ) return 0;
+		int cnt = 0;
+		for( int k = line + 1; k < (int)m_vinfo.size() && m_vinfo[k].hidden; ++k )
+			++cnt;
+		return cnt;
+	}
+	void setFolded(int line, bool folded) {
+		if( line < 0 || line >= (int)m_vinfo.size() ) return;
+		if( folded && !isFoldable(line) ) return;
+		if( m_vinfo[line].folded == folded ) return;
+		m_vinfo[line].folded = folded;
+		rebuildVisibility();
+	}
+	void toggleFold(int line) {
+		setFolded(line, !isFolded(line));
+	}
+	void unfoldAll() {
+		bool changed = false;
+		for( SegInfo &si : m_vinfo ) {
+			if( si.folded || si.hidden ) {
+				si.folded = false;
+				si.hidden = false;
+				changed = true;
+			}
+		}
+		if( changed ) rebuildViewStarts();
+	}
+
 private:
 	struct SegInfo {
 		std::vector<pos_t> breaks;	//	表示行の切れ目（行先頭からの文字オフセット、昇順）
+		bool folded = false;		//	見出し行が折り畳まれているか
+		bool hidden = false;		//	上位見出しの折り畳みで非表示か
 	};
 
-	int segCount(int line) const { return (int)m_vinfo[line].breaks.size() + 1; }
+	int segCount(int line) const {
+		if( m_vinfo[line].hidden ) return 0;
+		return (int)m_vinfo[line].breaks.size() + 1;
+	}
+	void rebuildVisibility() {
+		const int n = lineCount();
+		int hideUntilLevel = 0;		//	0 なら非表示中でない
+		for( int ln = 0; ln < n; ++ln ) {
+			const int lvl = headingLevel(ln);
+			if( hideUntilLevel > 0 ) {
+				if( lvl > 0 && lvl <= hideUntilLevel ) {
+					hideUntilLevel = 0;
+				} else {
+					m_vinfo[ln].hidden = true;
+					continue;
+				}
+			}
+			m_vinfo[ln].hidden = false;
+			if( m_vinfo[ln].folded ) {
+				if( lvl > 0 && isFoldable(ln) )
+					hideUntilLevel = lvl;
+				else
+					m_vinfo[ln].folded = false;
+			}
+		}
+		rebuildViewStarts();
+	}
+	void rebuildViewStarts() {
+		m_vStart.clear();
+		m_vOffset = 0;
+		pos_t acc = 0;
+		for( int ln = 0; ln < lineCount(); ++ln ) {
+			m_vStart.push_back(acc);
+			acc += segCount(ln);
+		}
+		m_viewLineTotal = (int)acc;
+		if( m_viewLineTotal < 1 ) m_viewLineTotal = 1;
+	}
 	//	全行を再ラップし、表示行開始番号を再構築する
 	void rewrapAll() {
 		m_vStart.clear();
