@@ -910,6 +910,37 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 			}
 			return true;
 		}
+		if( pref == QChar('[') || pref == QChar(']') ) {
+			if( effCh == pref ) {
+				TextDocument *doc = edit->document();
+				const ViewLineMgr &mgr = doc->lineMgr();
+				const int totalLines = mgr.lineCount();
+				const int curLn = mgr.lineAtPos(edit->textCursor().position());
+				int targetLn = curLn;
+				const int step = (pref == QChar(']')) ? 1 : -1;
+				int found = 0;
+				for( int ln = curLn + step; ln >= 0 && ln < totalLines; ln += step ) {
+					if( mgr.lineType(ln) == LineMgr::LT_HEADING ) {
+						targetLn = ln;
+						if( ++found >= cnt ) break;
+					}
+				}
+				if( targetLn != curLn ) {
+					const TextDocument::pos_t target = mgr.lineStartPos(targetLn);
+					if( !op.isNull() ) {
+						applyOperatorRange(edit, op, edit->textCursor().position(), target, true, false);
+					} else if( m_mode == ViMode::Visual || m_mode == ViMode::VisualLine ) {
+						m_visualCursor = target;
+						updateVisualSelection(edit);
+					} else {
+						TextCursor c = edit->textCursor();
+						c.setPosition(target);
+						edit->setTextCursor(c);
+					}
+				}
+			}
+			return true;
+		}
 		if( pref == QChar('Z') ) {
 			if( effCh == QChar('Z') ) {
 				if( m_cb.requestSave && m_cb.requestSave() && m_cb.requestQuit )
@@ -980,7 +1011,8 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 			applyOperatorRange(edit, op, pos, mgr.lineStartPos(targetLn), true, false);
 			return true;
 		}
-		if( effCh == QChar('g') || effCh == QChar('f') || effCh == QChar('F') || effCh == QChar('t') || effCh == QChar('T') ) {
+		if( effCh == QChar('g') || effCh == QChar('f') || effCh == QChar('F') || effCh == QChar('t') || effCh == QChar('T')
+			|| effCh == QChar('[') || effCh == QChar(']') ) {
 			m_prefix = effCh;
 			return true;
 		}
@@ -996,7 +1028,8 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 	}
 
 	//	モーション単体（Normal / Visual 共通）
-	if( effCh == QChar('g') || effCh == QChar('f') || effCh == QChar('F') || effCh == QChar('t') || effCh == QChar('T') ) {
+	if( effCh == QChar('g') || effCh == QChar('f') || effCh == QChar('F') || effCh == QChar('t') || effCh == QChar('T')
+		|| effCh == QChar('[') || effCh == QChar(']') ) {
 		m_prefix = effCh;
 		return true;
 	}
