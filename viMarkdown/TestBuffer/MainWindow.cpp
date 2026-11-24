@@ -150,6 +150,22 @@ MainWindow::MainWindow(QWidget *parent)
         if (TextEdit *edit = currentTextEdit())
             edit->selectAll();
     });
+    connect(ui->action_CsvToGfmTable, &QAction::triggered, this, [this]() {
+        if (TextEdit *edit = currentTextEdit()) {
+            if (edit->convertCsvToGfmTable())
+                statusBar()->showMessage(tr("Converted CSV to GFM Table"), 3000);
+            else
+                statusBar()->showMessage(tr("No CSV block or selection to convert"), 3000);
+        }
+    });
+    connect(ui->action_GfmToCsvTable, &QAction::triggered, this, [this]() {
+        if (TextEdit *edit = currentTextEdit()) {
+            if (edit->convertGfmTableToCsv())
+                statusBar()->showMessage(tr("Converted GFM Table to CSV"), 3000);
+            else
+                statusBar()->showMessage(tr("No GFM Table at cursor or selection"), 3000);
+        }
+    });
     updateUndoRedoEnabled();
     connect(ui->action_Settings, &QAction::triggered, this, &MainWindow::onSettings);
     connect(ui->menu_RecentFiles, &QMenu::aboutToShow, this, &MainWindow::onAboutToShow_RecentFiles);

@@ -286,6 +286,337 @@ void TextEdit::toggleCheckboxAtLine(int line, bool checked)
 	afterChange(true);
 }
 
+namespace {
+bool isCsvFenceLine(const QString &line)
+{
+	qsizetype i = 0;
+	while( i < line.size() && i < 3 && line[i] == QChar(' ') )
+		++i;
+	const QStringView rest = QStringView(line).mid(i);
+	if( !rest.startsWith(u"```") )
+		return false;
+	return rest.mid(3).trimmed().compare(u"csv", Qt::CaseInsensitive) == 0;
+}
+
+bool isAnyFenceLine(const QString &line)
+{
+	qsizetype i = 0;
+	while( i < line.size() && i < 3 && line[i] == QChar(' ') )
+		++i;
+	return QStringView(line).mid(i).startsWith(u"```");
+}
+
+bool parseCsvRow(const QString &line, bool &inQuotes, QStringList &curFields, QString &curField)
+{
+	if( !inQuotes ) {
+		curFields.clear();
+		curField.clear();
+	}
+	const qsizetype len = line.size();
+	for( qsizetype i = 0; i < len; ++i ) {
+		const QChar ch = line[i];
+		if( inQuotes ) {
+			if( ch == QChar('"') ) {
+				if( i + 1 < len && line[i + 1] == QChar('"') ) {
+					curField.append(QChar('"'));
+					++i;
+				} else {
+					inQuotes = false;
+				}
+			} else {
+				curField.append(ch);
+			}
+		} else {
+			if( ch == QChar('"') && curField.trimmed().isEmpty() ) {
+				curField.clear();
+				inQuotes = true;
+			} else if( ch == QChar(',') ) {
+				curFields.append(curField.trimmed());
+				curField.clear();
+			} else {
+				curField.append(ch);
+			}
+		}
+	}
+	if( inQuotes ) {
+		curField.append(QStringLiteral("<br>"));
+		return false;
+	}
+	curFields.append(curField.trimmed());
+	return true;
+}
+
+bool splitGfmRow(const QString &line, QStringList &outCells)
+{
+	outCells.clear();
+	const QString trimmed = line.trimmed();
+	if( trimmed.isEmpty() )
+		return false;
+	bool hasPipe = false;
+	for( qsizetype i = 0; i < trimmed.size(); ++i ) {
+		if( trimmed[i] == QChar('\\') ) { ++i; continue; }
+		if( trimmed[i] == QChar('|') ) { hasPipe = true; break; }
+	}
+	if( !hasPipe )
+		return false;
+	qsizetype start = 0;
+	qsizetype end = trimmed.size();
+	if( start < end && trimmed[start] == QChar('|') )
+		++start;
+	if( end > start && trimmed[end - 1] == QChar('|') ) {
+		qsizetype bs = 0;
+		for( qsizetype k = end - 2; k >= start && trimmed[k] == QChar('\\'); --k )
+			++bs;
+		if( (bs % 2) == 0 )
+			--end;
+	}
+	QString cell;
+	for( qsizetype i = start; i < end; ++i ) {
+		if( trimmed[i] == QChar('\\') && i + 1 < end && trimmed[i + 1] == QChar('|') ) {
+			cell.append(QChar('|'));
+			++i;
+		} else if( trimmed[i] == QChar('|') ) {
+			outCells.append(cell.trimmed());
+			cell.clear();
+		} else {
+			cell.append(trimmed[i]);
+		}
+	}
+	outCells.append(cell.trimmed());
+	return !outCells.isEmpty();
+}
+
+bool isGfmSepRow(const QString &line)
+{
+	QStringList cells;
+	if( !splitGfmRow(line, cells) )
+		return false;
+	for( const QString &c : cells ) {
+		if( c.isEmpty() ) return false;
+		qsizetype s = 0, e = c.size();
+		if( c[s] == QChar(':') ) ++s;
+		if( e > s && c[e - 1] == QChar(':') ) --e;
+		if( e <= s ) return false;
+		for( qsizetype k = s; k < e; ++k ) {
+			if( c[k] != QChar('-') ) return false;
+		}
+	}
+	return true;
+}
+
+QString escapeCsvCell(const QString &cell)
+{
+	if( cell.contains(QChar(',')) || cell.contains(QChar('"')) || cell.contains(QChar('\n')) ) {
+		QString escaped = cell;
+		escaped.replace(QStringLiteral("\""), QStringLiteral("\"\""));
+		return QChar('"') + escaped + QChar('"');
+	}
+	return cell;
+}
+
+QString escapeGfmCell(QString cell)
+{
+	cell.replace(QStringLiteral("|"), QStringLiteral("\\|"));
+	return cell;
+}
+}
+
+bool TextEdit::convertCsvToGfmTable()
+{
+	const ViewLineMgr &mgr = m_doc.lineMgr();
+	const int nLines = mgr.lineCount();
+	auto lineStr = [&](int ln) {
+		QString s = m_doc.findBlockByNumber(ln).text();
+		if( s.endsWith(QChar('\n')) ) s.chop(1);
+		if( s.endsWith(QChar('\r')) ) s.chop(1);
+		return s;
+	};
+
+	int startLine = -1;
+	int endLine = -1;
+	int dataStart = -1;
+	int dataEnd = -1;
+
+	//	1) カーソル位置（または選択先頭）を含む ```csv ... ``` ブロックを探索
+	const int curLine = mgr.lineAtPos(m_cursor.hasSelection() ? m_cursor.selectionStart() : m_cursor.position());
+	int openFence = -1;
+	for( int ln = curLine; ln >= 0; --ln ) {
+		const QString s = lineStr(ln);
+		if( isCsvFenceLine(s) ) {
+			openFence = ln;
+			break;
+		}
+		if( ln < curLine && isAnyFenceLine(s) )
+			break;
+	}
+	if( openFence >= 0 ) {
+		int closeFence = -1;
+		for( int ln = openFence + 1; ln < nLines; ++ln ) {
+			if( isAnyFenceLine(lineStr(ln)) ) {
+				closeFence = ln;
+				break;
+			}
+		}
+		if( closeFence >= curLine ) {
+			startLine = openFence;
+			endLine = closeFence;
+			dataStart = openFence + 1;
+			dataEnd = closeFence - 1;
+		}
+	}
+
+	//	2) フェンス外で選択範囲がある場合は選択行をそのまま CSV として変換
+	if( startLine < 0 && m_cursor.hasSelection() ) {
+		startLine = mgr.lineAtPos(m_cursor.selectionStart());
+		TextDocument::pos_t selEnd = m_cursor.selectionEnd();
+		endLine = mgr.lineAtPos(selEnd);
+		if( endLine > startLine && selEnd == mgr.lineStartPos(endLine) )
+			--endLine;
+		dataStart = startLine;
+		dataEnd = endLine;
+	}
+
+	if( startLine < 0 || dataStart > dataEnd )
+		return false;
+
+	QList<QStringList> rows;
+	bool inQuotes = false;
+	QStringList curFields;
+	QString curField;
+	for( int ln = dataStart; ln <= dataEnd; ++ln ) {
+		const QString s = lineStr(ln);
+		if( !inQuotes && s.trimmed().isEmpty() )
+			continue;
+		if( parseCsvRow(s, inQuotes, curFields, curField) )
+			rows.append(curFields);
+	}
+	if( inQuotes && !curFields.isEmpty() ) {
+		curFields.append(curField.trimmed());
+		rows.append(curFields);
+	}
+	if( rows.isEmpty() )
+		return false;
+
+	int maxCols = 0;
+	for( const QStringList &r : rows )
+		maxCols = qMax(maxCols, static_cast<int>(r.size()));
+	if( maxCols <= 0 )
+		return false;
+
+	static const QRegularExpression kNumberRe(QStringLiteral(R"(^[+-]?(\d+\.\d*|\d+|\.\d+)%?$)"));
+	QStringList outLines;
+	auto buildRow = [&](const QStringList &r) {
+		QString line = QStringLiteral("|");
+		for( int c = 0; c < maxCols; ++c ) {
+			const QString cell = (c < r.size()) ? escapeGfmCell(r[c]) : QString();
+			line += QStringLiteral(" ") + cell + QStringLiteral(" |");
+		}
+		return line;
+	};
+	outLines.append(buildRow(rows[0]));
+
+	QString sepLine = QStringLiteral("|");
+	for( int c = 0; c < maxCols; ++c ) {
+		bool anyData = false;
+		bool allNumeric = true;
+		for( int r = 1; r < rows.size(); ++r ) {
+			if( c < rows[r].size() && !rows[r][c].isEmpty() ) {
+				anyData = true;
+				if( !kNumberRe.match(rows[r][c]).hasMatch() ) {
+					allNumeric = false;
+					break;
+				}
+			}
+		}
+		sepLine += (anyData && allNumeric) ? QStringLiteral(" ---: |") : QStringLiteral(" --- |");
+	}
+	outLines.append(sepLine);
+
+	for( int r = 1; r < rows.size(); ++r )
+		outLines.append(buildRow(rows[r]));
+
+	const TextDocument::pos_t repStart = mgr.lineStartPos(startLine);
+	TextDocument::pos_t repEnd = mgr.lineStartPos(endLine) + mgr.lineLength(endLine);
+	if( repEnd > repStart && m_doc.characterAt(repEnd - 1) == QChar('\n') )
+		--repEnd;
+
+	m_doc.undoMgr().openBlock();
+	m_doc.erase(repStart, repEnd);
+	m_doc.insert(repStart, outLines.join(QChar('\n')));
+	m_doc.undoMgr().closeBlock();
+	m_cursor.setPosition(repStart);
+	afterChange(true);
+	return true;
+}
+
+bool TextEdit::convertGfmTableToCsv()
+{
+	const ViewLineMgr &mgr = m_doc.lineMgr();
+	const int nLines = mgr.lineCount();
+	auto lineStr = [&](int ln) {
+		QString s = m_doc.findBlockByNumber(ln).text();
+		if( s.endsWith(QChar('\n')) ) s.chop(1);
+		if( s.endsWith(QChar('\r')) ) s.chop(1);
+		return s;
+	};
+
+	int startLine = -1;
+	int endLine = -1;
+
+	if( m_cursor.hasSelection() ) {
+		startLine = mgr.lineAtPos(m_cursor.selectionStart());
+		TextDocument::pos_t selEnd = m_cursor.selectionEnd();
+		endLine = mgr.lineAtPos(selEnd);
+		if( endLine > startLine && selEnd == mgr.lineStartPos(endLine) )
+			--endLine;
+	} else {
+		const int curLine = mgr.lineAtPos(m_cursor.position());
+		QStringList tmp;
+		if( !splitGfmRow(lineStr(curLine), tmp) )
+			return false;
+		startLine = curLine;
+		while( startLine > 0 && splitGfmRow(lineStr(startLine - 1), tmp) )
+			--startLine;
+		endLine = curLine;
+		while( endLine + 1 < nLines && splitGfmRow(lineStr(endLine + 1), tmp) )
+			++endLine;
+	}
+
+	if( startLine < 0 || endLine <= startLine )
+		return false;
+	if( !isGfmSepRow(lineStr(startLine + 1)) )
+		return false;
+
+	QStringList outLines;
+	outLines.append(QStringLiteral("```csv"));
+	for( int ln = startLine; ln <= endLine; ++ln ) {
+		if( ln == startLine + 1 )
+			continue;	//	GFM 区切り行をスキップ
+		QStringList cells;
+		if( !splitGfmRow(lineStr(ln), cells) )
+			continue;
+		QStringList csvCells;
+		csvCells.reserve(cells.size());
+		for( const QString &c : cells )
+			csvCells.append(escapeCsvCell(c));
+		outLines.append(csvCells.join(QChar(',')));
+	}
+	outLines.append(QStringLiteral("```"));
+
+	const TextDocument::pos_t repStart = mgr.lineStartPos(startLine);
+	TextDocument::pos_t repEnd = mgr.lineStartPos(endLine) + mgr.lineLength(endLine);
+	if( repEnd > repStart && m_doc.characterAt(repEnd - 1) == QChar('\n') )
+		--repEnd;
+
+	m_doc.undoMgr().openBlock();
+	m_doc.erase(repStart, repEnd);
+	m_doc.insert(repStart, outLines.join(QChar('\n')));
+	m_doc.undoMgr().closeBlock();
+	m_cursor.setPosition(repStart);
+	afterChange(true);
+	return true;
+}
+
 void TextEdit::onSaved()
 {
 	m_doc.onSaved();
