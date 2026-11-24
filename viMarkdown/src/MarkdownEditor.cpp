@@ -4838,14 +4838,16 @@ int MarkdownEditor::countCharUntil(QTextBlock block, int pos, QChar ch) const
 							ix += 4;	//	skip "<!--"
 							continue;
 						} else {
-							int openIX, closeIX;
-							if( isInLinkURL(block.position() + ix, openIX, closeIX) && ix >= openIX - 1 ) {		//	"](" 以降
-								//while( ++ix < buf.size() && buf[ix] != ')' ) {}
-								ix = closeIX;
-							}
 							if( block.position() + ix >= pos ) {
 								finished = true;
 								break;
+							}
+							int openIX, closeIX;
+							if( (buf[ix] == u'(' && ix + 1 < buf.size() && isInLinkURL(block.position() + ix + 1, openIX, closeIX) && openIX == ix) ||
+								(isInLinkURL(block.position() + ix, openIX, closeIX) && ix >= openIX) )
+							{
+								ix = closeIX + 1;
+								continue;
 							}
 							if( ix < buf.size() && ((data->m_charFlags[ix] == PCF_VISIBLE &&
 								(buf[ix] == ch || (ch == QChar(0x00a0) && QStringView(buf).mid(ix).startsWith(u"&nbsp;")))) ||
