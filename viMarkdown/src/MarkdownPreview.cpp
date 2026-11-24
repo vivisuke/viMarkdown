@@ -2253,19 +2253,20 @@ void MarkdownPreview::setCursorByContext(const PosContext &context, const PosCon
 	}
 	m_processing = true;
 	QTextCursor cursor = textCursor();
+	const int maxPos = qMax(0, document()->characterCount() - 1);
 	if( acontext.m_nth == 0 ) {		//	非選択状態
 		int pos = findPosition(context);
 		if( pos >= 0 ) {
-			cursor.setPosition(pos);
+			cursor.setPosition(qBound(0, pos, maxPos));
 			setTextCursor(cursor);
 		}
 	} else {
 		int pos = findPosition(acontext);
 		if( pos >= 0 ) {
-			cursor.setPosition(pos);
+			cursor.setPosition(qBound(0, pos, maxPos));
 			pos = findPosition(context);
 			if (pos >= 0) {
-				cursor.setPosition(pos, QTextCursor::KeepAnchor);
+				cursor.setPosition(qBound(0, pos, maxPos), QTextCursor::KeepAnchor);
 				setTextCursor(cursor);
 			}
 		}

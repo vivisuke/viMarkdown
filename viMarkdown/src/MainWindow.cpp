@@ -659,8 +659,15 @@ void MainWindow::onAction_Grep() {
 		if( !searchText.isEmpty() ) {
 			save_settings();
 			if( g.m_clearOutput ) onAction_ClearOutput();
+			g.m_lastSearchedPat = searchText;
 			m_searchHist.push_front(searchText);
 			m_searchHist.removeDuplicates();	//	重複削除
+			{
+				QSignalBlocker blocker(m_searchCB);
+				m_searchCB->clear();
+				m_searchCB->addItems(m_searchHist);
+				m_searchCB->setCurrentText(searchText);
+			}
 			m_grepDirHist.push_front(dirPath);
 			m_grepDirHist.removeDuplicates();	//	重複削除
 			m_nMatchLines = m_nGrepFiles = 0;
