@@ -746,6 +746,27 @@ void TextEdit::setCursorPosition(int pos, int anchor)
 	viewport()->update();
 }
 
+void TextEdit::applyPreviewEdit(int srcStart, int srcEnd, const QString &text)
+{
+	const int maxPos = m_doc.characterCount();
+	srcStart = qBound(0, srcStart, maxPos);
+	srcEnd = qBound(srcStart, srcEnd, maxPos);
+	const bool hasErase = (srcEnd > srcStart);
+	const bool hasInsert = !text.isEmpty();
+	if( !hasErase && !hasInsert )
+		return;
+	if( hasErase && hasInsert )
+		m_doc.undoMgr().openBlock();
+	if( hasErase )
+		m_doc.erase(srcStart, srcEnd);
+	if( hasInsert )
+		m_doc.insert(srcStart, text);
+	if( hasErase && hasInsert )
+		m_doc.undoMgr().closeBlock();
+	m_cursor.setPosition(srcStart + static_cast<int>(text.size()));
+	afterChange(true);
+}
+
 void TextEdit::onSaved()
 {
 	m_doc.onSaved();

@@ -30,9 +30,16 @@ public:
 	void setCursorFromSrcPos(int srcPos, int srcAnchor = -1);
 	void setFontSizeChangeCallback(std::function<void(int)> cb) { m_onFontSizeChange = std::move(cb); }
 	void setCheckboxToggledCallback(std::function<void(int, bool)> cb) { m_onCheckboxToggled = std::move(cb); }
+	void setEditCallback(std::function<void(int, int, const QString &)> cb) { m_onEdit = std::move(cb); }
+	void setUndoRedoCallback(std::function<void(bool)> cb) { m_onUndoRedo = std::move(cb); }
+
+	void cutToSource();
+	void pasteToSource();
 
 protected:
 	void paintEvent(QPaintEvent *event) override;
+	void keyPressEvent(QKeyEvent *event) override;
+	void inputMethodEvent(QInputMethodEvent *event) override;
 	void mousePressEvent(QMouseEvent *event) override;
 	void mouseMoveEvent(QMouseEvent *event) override;
 	void wheelEvent(QWheelEvent *event) override;
@@ -55,4 +62,6 @@ private:
 	bool m_caretVisible = true;
 	std::function<void(int)> m_onFontSizeChange;
 	std::function<void(int, bool)> m_onCheckboxToggled;
+	std::function<void(int, int, const QString &)> m_onEdit;
+	std::function<void(bool)> m_onUndoRedo;
 };

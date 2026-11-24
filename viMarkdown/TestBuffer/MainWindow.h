@@ -74,6 +74,7 @@ private:
     int m_editorFontSize = 10;
     QString m_previewFontFamily;
     int m_previewFontSize = 10;
+    bool m_viKeybind = false;
     QString m_lastDir;
 };
 

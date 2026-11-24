@@ -78,6 +78,7 @@ public:
 	void indent();
 	void unindent();
 	void setCursorPosition(int pos, int anchor = -1);
+	void applyPreviewEdit(int srcStart, int srcEnd, const QString &text);
 	void onSaved();
 	void setTextChangedCallback(std::function<void()> cb) { m_onTextChanged = std::move(cb); }
 	void setCursorChangedCallback(std::function<void()> cb) { m_onCursorChanged = std::move(cb); }

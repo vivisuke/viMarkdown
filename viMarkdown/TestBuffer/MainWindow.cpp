@@ -49,6 +49,7 @@ const QStringView KEY_PREVIEW_FONT_SIZE(u"preview/fontSize");
 const QStringView KEY_TABLE_HEADER_COLOR(u"preview/tableHeaderColor");
 const QStringView KEY_TABLE_ZEBRA_COLOR1(u"preview/tableZebraColor1");
 const QStringView KEY_TABLE_ZEBRA_COLOR2(u"preview/tableZebraColor2");
+const QStringView KEY_VI_KEYBIND(u"editor/viKeybind");
 const QStringView KEY_WINDOW_GEOMETRY(u"window/geometry");
 const QStringView KEY_WINDOW_STATE(u"window/state");
 const char PROP_FILE_PATH[] = "filePath";
@@ -86,7 +87,9 @@ MainWindow::MainWindow(QWidget *parent)
         if (tz1.isValid()) m_tableZebraColor1 = tz1;
         QColor tz2 = settings.value(KEY_TABLE_ZEBRA_COLOR2, m_tableZebraColor2).value<QColor>();
         if (tz2.isValid()) m_tableZebraColor2 = tz2;
+        m_viKeybind = settings.value(KEY_VI_KEYBIND, false).toBool();
     }
+    ui->action_ViKeybind->setChecked(m_viKeybind);
     m_tabWidget = new QTabWidget(this);
     m_tabWidget->setTabsClosable(true);
     m_tabWidget->setMovable(true);
@@ -137,6 +140,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->action_Redo, &QAction::triggered, this, &MainWindow::onRedo);
     connect(ui->action_Cut, &QAction::triggered, this, [this]() {
         if (QWidget *fw = QApplication::focusWidget()) {
+            if (auto *prev = dynamic_cast<MarkdownPreview *>(fw)) { prev->cutToSource(); return; }
             if (auto *te = qobject_cast<QTextEdit *>(fw)) { te->cut(); return; }
         }
         if (TextEdit *edit = currentTextEdit())
@@ -152,6 +156,7 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(ui->action_Paste, &QAction::triggered, this, [this]() {
         if (QWidget *fw = QApplication::focusWidget()) {
+            if (auto *prev = dynamic_cast<MarkdownPreview *>(fw)) { prev->pasteToSource(); return; }
             if (auto *te = qobject_cast<QTextEdit *>(fw)) { te->paste(); return; }
         }
         if (TextEdit *edit = currentTextEdit())
@@ -203,6 +208,12 @@ MainWindow::MainWindow(QWidget *parent)
     });
     updateUndoRedoEnabled();
     connect(ui->action_Settings, &QAction::triggered, this, &MainWindow::onSettings);
+    connect(ui->action_ViKeybind, &QAction::toggled, this, [this](bool checked) {
+        m_viKeybind = checked;
+        QSettings settings;
+        settings.setValue(KEY_VI_KEYBIND, m_viKeybind);
+        statusBar()->showMessage(m_viKeybind ? tr("vi keybind: ON") : tr("vi keybind: OFF"), 3000);
+    });
     connect(ui->menu_RecentFiles, &QMenu::aboutToShow, this, &MainWindow::onAboutToShow_RecentFiles);
     connect(ui->action_gap_buffer, &QAction::triggered, this, [this]() {
         do_test_gapBuffer(this);
@@ -263,6 +274,15 @@ TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath
     });
     preview->setCheckboxToggledCallback([edit](int line, bool checked) {
         edit->toggleCheckboxAtLine(line, checked);
+    });
+    preview->setEditCallback([edit](int srcStart, int srcEnd, const QString &text) {
+        edit->applyPreviewEdit(srcStart, srcEnd, text);
+    });
+    preview->setUndoRedoCallback([edit](bool isRedo) {
+        if (isRedo)
+            edit->redo();
+        else
+            edit->undo();
     });
     auto syncingCursor = std::make_shared<bool>(false);
     edit->setTextChangedCallback([this, splitter, edit, preview, syncingCursor]() {

@@ -2,11 +2,15 @@
 #include "TextDocument.h"
 
 #include <QAbstractTextDocumentLayout>
+#include <QApplication>
+#include <QClipboard>
 #include <QDesktopServices>
 #include <QFileInfo>
 #include <QFont>
 #include <QFontDatabase>
 #include <QImage>
+#include <QInputMethodEvent>
+#include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QRegularExpression>
@@ -1246,6 +1250,148 @@ void MarkdownPreview::focusOutEvent(QFocusEvent *event)
 		m_blinkTimer->stop();
 	m_caretVisible = true;
 	viewport()->update();
+}
+
+void MarkdownPreview::cutToSource()
+{
+	if( !m_onEdit ) {
+		QTextEdit::cut();
+		return;
+	}
+	const QTextCursor pc = textCursor();
+	if( !pc.hasSelection() )
+		return;
+	QString sel = pc.selectedText();
+	sel.replace(QChar::ParagraphSeparator, QChar('\n'));
+	QApplication::clipboard()->setText(sel);
+	const int srcStart = prvToSrcPos(pc.selectionStart());
+	const int srcEnd = prvToSrcPos(pc.selectionEnd());
+	m_onEdit(srcStart, srcEnd, QString());
+}
+
+void MarkdownPreview::pasteToSource()
+{
+	if( !m_onEdit ) {
+		QTextEdit::paste();
+		return;
+	}
+	QString text = QApplication::clipboard()->text();
+	if( text.isEmpty() )
+		return;
+	text.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+	text.replace(QChar('\r'), QChar('\n'));
+	const QTextCursor pc = textCursor();
+	const int srcStart = pc.hasSelection() ? prvToSrcPos(pc.selectionStart()) : prvToSrcPos(pc.position());
+	const int srcEnd = pc.hasSelection() ? prvToSrcPos(pc.selectionEnd()) : srcStart;
+	m_onEdit(srcStart, srcEnd, text);
+}
+
+void MarkdownPreview::keyPressEvent(QKeyEvent *event)
+{
+	if( !m_onEdit ) {
+		QTextEdit::keyPressEvent(event);
+		return;
+	}
+
+	const bool ctrl = (event->modifiers() & Qt::ControlModifier) != 0;
+	const bool alt = (event->modifiers() & Qt::AltModifier) != 0;
+	const bool shift = (event->modifiers() & Qt::ShiftModifier) != 0;
+
+	if( ctrl && !alt ) {
+		if( event->key() == Qt::Key_Z ) {
+			if( m_onUndoRedo ) m_onUndoRedo(shift);
+			event->accept();
+			return;
+		}
+		if( event->key() == Qt::Key_Y ) {
+			if( m_onUndoRedo ) m_onUndoRedo(true);
+			event->accept();
+			return;
+		}
+		if( event->key() == Qt::Key_X ) {
+			cutToSource();
+			event->accept();
+			return;
+		}
+		if( event->key() == Qt::Key_V ) {
+			pasteToSource();
+			event->accept();
+			return;
+		}
+		//	Ctrl+C / Ctrl+A / Ctrl+矢印 などは QTextEdit に任せる
+		QTextEdit::keyPressEvent(event);
+		return;
+	}
+
+	const QTextCursor pc = textCursor();
+	if( event->key() == Qt::Key_Backspace ) {
+		if( pc.hasSelection() ) {
+			m_onEdit(prvToSrcPos(pc.selectionStart()), prvToSrcPos(pc.selectionEnd()), QString());
+		} else if( pc.position() > 0 ) {
+			const int srcEnd = prvToSrcPos(pc.position());
+			int srcStart = prvToSrcPos(pc.position() - 1);
+			if( srcStart >= srcEnd && srcEnd > 0 )
+				srcStart = srcEnd - 1;
+			if( srcStart < srcEnd )
+				m_onEdit(srcStart, srcEnd, QString());
+		}
+		event->accept();
+		return;
+	}
+	if( event->key() == Qt::Key_Delete ) {
+		if( pc.hasSelection() ) {
+			m_onEdit(prvToSrcPos(pc.selectionStart()), prvToSrcPos(pc.selectionEnd()), QString());
+		} else if( document() && pc.position() < document()->characterCount() - 1 ) {
+			const int srcStart = prvToSrcPos(pc.position());
+			int srcEnd = prvToSrcPos(pc.position() + 1);
+			if( srcEnd <= srcStart )
+				srcEnd = srcStart + 1;
+			m_onEdit(srcStart, srcEnd, QString());
+		}
+		event->accept();
+		return;
+	}
+	if( event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter ) {
+		const int srcStart = pc.hasSelection() ? prvToSrcPos(pc.selectionStart()) : prvToSrcPos(pc.position());
+		const int srcEnd = pc.hasSelection() ? prvToSrcPos(pc.selectionEnd()) : srcStart;
+		m_onEdit(srcStart, srcEnd, QStringLiteral("\n"));
+		event->accept();
+		return;
+	}
+
+	const QString txt = event->text();
+	if( !ctrl && !alt && !txt.isEmpty() && txt[0] >= QChar(0x20) && txt[0] != QChar(0x7f) ) {
+		const int srcStart = pc.hasSelection() ? prvToSrcPos(pc.selectionStart()) : prvToSrcPos(pc.position());
+		const int srcEnd = pc.hasSelection() ? prvToSrcPos(pc.selectionEnd()) : srcStart;
+		m_onEdit(srcStart, srcEnd, txt);
+		event->accept();
+		return;
+	}
+
+	QTextEdit::keyPressEvent(event);
+}
+
+void MarkdownPreview::inputMethodEvent(QInputMethodEvent *event)
+{
+	if( !m_onEdit ) {
+		QTextEdit::inputMethodEvent(event);
+		return;
+	}
+	const QString commit = event->commitString();
+	const QString preedit = event->preeditString();
+	if( !commit.isEmpty() ) {
+		const QTextCursor pc = textCursor();
+		const int srcStart = pc.hasSelection() ? prvToSrcPos(pc.selectionStart()) : prvToSrcPos(pc.position());
+		const int srcEnd = pc.hasSelection() ? prvToSrcPos(pc.selectionEnd()) : srcStart;
+		m_onEdit(srcStart, srcEnd, commit);
+		if( !preedit.isEmpty() ) {
+			QInputMethodEvent preEvent(preedit, event->attributes());
+			QTextEdit::inputMethodEvent(&preEvent);
+		}
+		event->accept();
+		return;
+	}
+	QTextEdit::inputMethodEvent(event);
 }
 
 void MarkdownPreview::updateImageSizes()

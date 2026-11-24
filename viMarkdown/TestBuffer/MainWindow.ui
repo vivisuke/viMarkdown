@@ -80,6 +80,7 @@
      <string>&amp;Other</string>
     </property>
     <addaction name="action_Settings"/>
+    <addaction name="action_ViKeybind"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -339,6 +340,17 @@
    </property>
    <property name="shortcut">
     <string>F8</string>
+   </property>
+  </action>
+  <action name="action_ViKeybind">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>&amp;vi keybind</string>
    </property>
   </action>
  </widget>
