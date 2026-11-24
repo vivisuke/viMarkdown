@@ -85,6 +85,14 @@ QVector<HighlightSpan> highlightMarkdownLine(const QString &lineText, LineMgr::L
 			++inlineStart;
 		if( inlineStart + 2 <= lineText.size() )
 			inlineStart += 2;	//	リストマーカー（"- " / "* " / "+ "）をスキップ
+	} else if( lineType == LineMgr::LT_NUM_LIST ) {
+		while( inlineStart < lineText.size()
+			&& (lineText[inlineStart] == QChar(' ') || lineText[inlineStart] == QChar('\t')) )
+			++inlineStart;
+		while( inlineStart < lineText.size() && lineText[inlineStart] >= QChar('0') && lineText[inlineStart] <= QChar('9') )
+			++inlineStart;
+		if( inlineStart + 2 <= lineText.size() && lineText[inlineStart] == QChar('.') )
+			inlineStart += 2;	//	番号付きリストマーカー（"1. " 等）をスキップ
 	}
 
 	static const QRegularExpression reBoldItalic(QStringLiteral(R"(\*\*\*([^\*]+)\*\*\*)"));
@@ -615,6 +623,94 @@ bool TextEdit::convertGfmTableToCsv()
 	m_cursor.setPosition(repStart);
 	afterChange(true);
 	return true;
+}
+
+void TextEdit::setLineAlignment(Qt::Alignment align)
+{
+	const ViewLineMgr &mgr = m_doc.lineMgr();
+	int startLine = 0;
+	int endLine = 0;
+	if( m_cursor.hasSelection() ) {
+		startLine = mgr.lineAtPos(m_cursor.selectionStart());
+		const TextDocument::pos_t selEnd = m_cursor.selectionEnd();
+		endLine = mgr.lineAtPos(selEnd);
+		if( endLine > startLine && selEnd == mgr.lineStartPos(endLine) )
+			--endLine;
+	} else {
+		startLine = endLine = mgr.lineAtPos(m_cursor.position());
+	}
+
+	auto findAlignCommentRange = [](const QString &line, qsizetype &outStart, qsizetype &outEnd) -> bool {
+		qsizetype i = 0;
+		while( i < line.size() && (line[i] == QChar(' ') || line[i] == QChar('\t')) )
+			++i;
+		if( i + 4 > line.size() || QStringView(line).mid(i, 4) != u"<!--" )
+			return false;
+		const qsizetype endPos = line.indexOf(QStringLiteral("-->"), i + 4);
+		if( endPos < 0 )
+			return false;
+		const QStringView body = QStringView(line).mid(i + 4, endPos - (i + 4)).trimmed();
+		const qsizetype colon = body.indexOf(QChar(':'));
+		if( colon < 0 )
+			return false;
+		if( body.left(colon).trimmed().compare(u"align", Qt::CaseInsensitive) != 0 )
+			return false;
+		const QStringView val = body.mid(colon + 1).trimmed();
+		if( val.compare(u"left", Qt::CaseInsensitive) != 0
+			&& val.compare(u"center", Qt::CaseInsensitive) != 0
+			&& val.compare(u"right", Qt::CaseInsensitive) != 0 )
+			return false;
+		outStart = i;
+		outEnd = endPos + 3;
+		return true;
+	};
+
+	auto isH1Text = [](const QString &s) -> bool {
+		qsizetype i = 0;
+		while( i < s.size() && (s[i] == QChar(' ') || s[i] == QChar('\t')) )
+			++i;
+		return i < s.size() && s[i] == QChar('#')
+			&& (i + 1 == s.size() || s[i + 1] == QChar(' ') || s[i + 1] == QChar('\t'));
+	};
+
+	const bool multiLine = (endLine > startLine);
+	bool changed = false;
+	m_doc.undoMgr().openBlock();
+	for( int ln = endLine; ln >= startLine; --ln ) {
+		QString line = m_doc.findBlockByNumber(ln).text();
+		if( line.endsWith(QChar('\n')) ) line.chop(1);
+		if( line.endsWith(QChar('\r')) ) line.chop(1);
+		if( multiLine && line.trimmed().isEmpty() )
+			continue;
+
+		const TextDocument::pos_t lineStart = mgr.lineStartPos(ln);
+		qsizetype cStart = 0, cEnd = 0;
+		const bool hadComment = findAlignCommentRange(line, cStart, cEnd);
+		const QString stripped = hadComment ? (line.left(cStart) + line.mid(cEnd)) : line;
+
+		QString tag;
+		if( align == Qt::AlignCenter )
+			tag = QStringLiteral("<!-- align:center -->");
+		else if( align == Qt::AlignRight )
+			tag = QStringLiteral("<!-- align:right -->");
+		else if( align == Qt::AlignLeft && isH1Text(stripped) )
+			tag = QStringLiteral("<!-- align:left -->");
+
+		if( hadComment ) {
+			if( line.mid(cStart, cEnd - cStart) == tag )
+				continue;
+			m_doc.erase(lineStart + cStart, lineStart + cEnd);
+			if( !tag.isEmpty() )
+				m_doc.insert(lineStart + cStart, tag);
+			changed = true;
+		} else if( !tag.isEmpty() ) {
+			m_doc.insert(lineStart, tag);
+			changed = true;
+		}
+	}
+	m_doc.undoMgr().closeBlock();
+	if( changed )
+		afterChange(true);
 }
 
 void TextEdit::onSaved()
@@ -1263,25 +1359,43 @@ void TextEdit::handleReturnKey()
 		const TextDocument::pos_t lineStart = mgr.lineStartPos(ln);
 		const TextDocument::pos_t lineEnd = mgr.lineEndPos(ln);
 		const LineMgr::LineType lt = mgr.lineType(ln);
-		if( (lt == LineMgr::LT_LIST || lt == LineMgr::LT_CHECKBOX) && m_cursor.position() == lineEnd ) {
+		if( (lt == LineMgr::LT_LIST || lt == LineMgr::LT_CHECKBOX || lt == LineMgr::LT_NUM_LIST)
+			&& m_cursor.position() == lineEnd ) {
 			QString lineText = m_doc.findBlockByNumber(ln).text();
 			if( lineText.endsWith(QChar('\n')) ) lineText.chop(1);
 			if( lineText.endsWith(QChar('\r')) ) lineText.chop(1);
 			qsizetype i = 0;
 			while( i < lineText.size() && (lineText[i] == QChar(' ') || lineText[i] == QChar('\t')) )
 				++i;
-			const qsizetype markerLen = (lt == LineMgr::LT_CHECKBOX) ? 6 : 2;
-			if( i + markerLen <= lineText.size() ) {
-				if( i + markerLen == lineText.size() ) {
-					//	マーカーだけの空行で Enter → リスト終了
-					m_doc.erase(lineStart, lineEnd);
+			if( lt == LineMgr::LT_NUM_LIST ) {
+				qsizetype d = i;
+				while( d < lineText.size() && lineText[d] >= QChar('0') && lineText[d] <= QChar('9') )
+					++d;
+				if( d > i && d + 2 <= lineText.size() && lineText[d] == QChar('.')
+					&& (lineText[d + 1] == QChar(' ') || lineText[d + 1] == QChar('\t')) ) {
+					if( d + 2 == lineText.size() ) {
+						//	マーカーだけの空行で Enter → リスト終了
+						m_doc.erase(lineStart, lineEnd);
+						return;
+					}
+					const QString prefix = lineText.left(i) + QStringLiteral("1. ");
+					m_cursor.insertText(QStringLiteral("\n") + prefix);
 					return;
 				}
-				const QString prefix = (lt == LineMgr::LT_CHECKBOX)
-					? (lineText.left(i + 2) + QStringLiteral("[ ] "))
-					: lineText.left(i + 2);
-				m_cursor.insertText(QStringLiteral("\n") + prefix);
-				return;
+			} else {
+				const qsizetype markerLen = (lt == LineMgr::LT_CHECKBOX) ? 6 : 2;
+				if( i + markerLen <= lineText.size() ) {
+					if( i + markerLen == lineText.size() ) {
+						//	マーカーだけの空行で Enter → リスト終了
+						m_doc.erase(lineStart, lineEnd);
+						return;
+					}
+					const QString prefix = (lt == LineMgr::LT_CHECKBOX)
+						? (lineText.left(i + 2) + QStringLiteral("[ ] "))
+						: lineText.left(i + 2);
+					m_cursor.insertText(QStringLiteral("\n") + prefix);
+					return;
+				}
 			}
 		}
 	}

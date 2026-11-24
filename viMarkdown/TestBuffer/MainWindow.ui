@@ -36,6 +36,14 @@
     <property name="title">
      <string>&amp;Edit</string>
     </property>
+    <widget class="QMenu" name="menu_Format">
+     <property name="title">
+      <string>&amp;Format</string>
+     </property>
+     <addaction name="action_AlignLeft"/>
+     <addaction name="action_AlignCenter"/>
+     <addaction name="action_AlignRight"/>
+    </widget>
     <widget class="QMenu" name="menu_Convert">
      <property name="title">
       <string>Convert (&amp;X)</string>
@@ -51,6 +59,7 @@
     <addaction name="action_Paste"/>
     <addaction name="action_SelectAll"/>
     <addaction name="separator"/>
+    <addaction name="menu_Format"/>
     <addaction name="menu_Convert"/>
    </widget>
    <widget class="QMenu" name="menuTest">
@@ -84,6 +93,10 @@
    </attribute>
    <addaction name="action_Undo"/>
    <addaction name="action_Redo"/>
+   <addaction name="separator"/>
+   <addaction name="action_AlignLeft"/>
+   <addaction name="action_AlignCenter"/>
+   <addaction name="action_AlignRight"/>
   </widget>
   <widget class="QToolBar" name="fileToolBar">
    <property name="windowTitle">
@@ -238,6 +251,33 @@
   <action name="action_GfmToCsvTable">
    <property name="text">
     <string>GFM -&gt; &amp;CSV Table</string>
+   </property>
+  </action>
+  <action name="action_AlignLeft">
+   <property name="icon">
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/format_align_left_48.png</normaloff>:/MainWindow/images/format_align_left_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>Align &amp;Left</string>
+   </property>
+  </action>
+  <action name="action_AlignCenter">
+   <property name="icon">
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/format_align_center_48.png</normaloff>:/MainWindow/images/format_align_center_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>Align &amp;Center</string>
+   </property>
+  </action>
+  <action name="action_AlignRight">
+   <property name="icon">
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/format_align_right_48.png</normaloff>:/MainWindow/images/format_align_right_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>Align &amp;Right</string>
    </property>
   </action>
   <action name="action_gap_buffer">

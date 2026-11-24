@@ -6,5 +6,8 @@
         <file>images/content_cut_48.png</file>
         <file>images/content_copy_48.png</file>
         <file>images/content_paste_48.png</file>
+        <file>images/format_align_left_48.png</file>
+        <file>images/format_align_center_48.png</file>
+        <file>images/format_align_right_48.png</file>
     </qresource>
 </RCC>

@@ -73,6 +73,7 @@ public:
 	void toggleCheckboxAtLine(int line, bool checked);
 	bool convertCsvToGfmTable();
 	bool convertGfmTableToCsv();
+	void setLineAlignment(Qt::Alignment align);
 	void onSaved();
 	void setTextChangedCallback(std::function<void()> cb) { m_onTextChanged = std::move(cb); }
 	void setFontSizeChangeCallback(std::function<void(int)> cb) { m_onFontSizeChange = std::move(cb); }

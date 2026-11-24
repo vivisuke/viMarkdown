@@ -618,6 +618,37 @@ bool parseList(const QString &line, int &outIndent, QString &outText)
 	return true;
 }
 
+//	番号付きリスト行（[空白]* [0-9]+ ". " テキスト）を判定し、インデント階層・開始番号・本文を返す
+bool parseNumList(const QString &line, int &outIndent, int &outNum, QString &outText)
+{
+	qsizetype i = 0;
+	int spaces = 0;
+	while( i < line.size() ) {
+		if( line[i] == QChar(' ') ) {
+			++spaces;
+			++i;
+		} else if( line[i] == QChar('\t') ) {
+			spaces += 2;
+			++i;
+		} else {
+			break;
+		}
+	}
+	qsizetype d = i;
+	while( d < line.size() && line[d] >= QChar('0') && line[d] <= QChar('9') )
+		++d;
+	if( d == i || d + 1 >= line.size() )
+		return false;
+	if( line[d] != QChar('.') )
+		return false;
+	if( line[d + 1] != QChar(' ') && line[d + 1] != QChar('\t') )
+		return false;
+	outIndent = spaces / 2;
+	outNum = line.mid(i, d - i).toInt();
+	outText = line.mid(d + 2);
+	return true;
+}
+
 //	引用行（"> " または単独の ">"）を判定し、引用本文を返す
 bool parseQuote(const QString &line, QString &outText)
 {
@@ -634,6 +665,7 @@ bool parseQuote(const QString &line, QString &outText)
 
 struct ParseState {
 	int activeListIndent = 0;
+	int listNum = 0;
 	bool inQuote = false;
 	bool inCodeBlock = false;
 	bool codeHasLines = false;
@@ -712,6 +744,39 @@ QString stripHtmlComments(const QString &line, bool &inComment, bool &outComment
 	return out;
 }
 
+//	行頭の <!-- align:left|center|right --> を判定して配置を返す（空白・大小文字許容）
+bool parseAlignDirective(const QString &rawLine, Qt::Alignment &outAlign)
+{
+	qsizetype i = 0;
+	while( i < rawLine.size() && (rawLine[i] == QChar(' ') || rawLine[i] == QChar('\t')) )
+		++i;
+	if( i + 4 > rawLine.size() || QStringView(rawLine).mid(i, 4) != u"<!--" )
+		return false;
+	const qsizetype endPos = rawLine.indexOf(QStringLiteral("-->"), i + 4);
+	if( endPos < 0 )
+		return false;
+	const QStringView body = QStringView(rawLine).mid(i + 4, endPos - (i + 4)).trimmed();
+	const qsizetype colon = body.indexOf(QChar(':'));
+	if( colon < 0 )
+		return false;
+	if( body.left(colon).trimmed().compare(u"align", Qt::CaseInsensitive) != 0 )
+		return false;
+	const QStringView val = body.mid(colon + 1).trimmed();
+	if( val.compare(u"left", Qt::CaseInsensitive) == 0 ) {
+		outAlign = Qt::AlignLeft;
+		return true;
+	}
+	if( val.compare(u"center", Qt::CaseInsensitive) == 0 ) {
+		outAlign = Qt::AlignCenter;
+		return true;
+	}
+	if( val.compare(u"right", Qt::CaseInsensitive) == 0 ) {
+		outAlign = Qt::AlignRight;
+		return true;
+	}
+	return false;
+}
+
 void finishBlockMarginIfNeeded(QTextCursor &cursor, int expectedState)
 {
 	QTextBlock b = cursor.block();
@@ -782,15 +847,26 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &rawLine
 		return LineMgr::LT_CODE_BLOCK;
 	}
 
+	Qt::Alignment lineAlign = Qt::Alignment();
+	const bool hasAlign = (!st.inHtmlComment && parseAlignDirective(rawLine, lineAlign));
+
 	bool commentOnly = false;
 	const QString line = stripHtmlComments(rawLine, st.inHtmlComment, commentOnly);
 	if( commentOnly )
 		return LineMgr::LT_BODY;
 
+	auto applyAlignIfNeeded = [&]() {
+		if( !hasAlign ) return;
+		QTextBlockFormat bf = cursor.blockFormat();
+		bf.setAlignment(lineAlign);
+		cursor.setBlockFormat(bf);
+	};
+
 	QString parsedText;
 	if( const int level = parseHeading(line, parsedText); level > 0 ) {
 		finishQuoteIfNeeded();
 		st.activeListIndent = 0;
+		st.listNum = 0;
 		beginEmittedBlock();
 		if( QTextList *curList = cursor.currentList() )
 			curList->remove(cursor.block());
@@ -804,6 +880,7 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &rawLine
 		cf.setFontWeight(QFont::Bold);
 		cf.setFontPointSize(st.basePt * kHeadingScale[level]);
 		cursor.setBlockFormat(bf);
+		applyAlignIfNeeded();
 		cursor.block().setUserState(kBlockNormal);
 		insertInlineFormatted(cursor, parsedText, cf, st.basePt, st.maxImgWidth, &st.hasImages);
 		return LineMgr::LT_HEADING;
@@ -828,6 +905,7 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &rawLine
 		QTextBlockFormat bf = cursor.blockFormat();
 		bf.setMarker(checked ? QTextBlockFormat::MarkerType::Checked : QTextBlockFormat::MarkerType::Unchecked);
 		cursor.setBlockFormat(bf);
+		applyAlignIfNeeded();
 		cursor.block().setUserState(srcLine >= 0 ? (kBlockCheckboxBase + srcLine) : kBlockNormal);
 		insertInlineFormatted(cursor, parsedText, bodyCharFmt, st.basePt, st.maxImgWidth, &st.hasImages);
 		return LineMgr::LT_CHECKBOX;
@@ -852,9 +930,45 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &rawLine
 			bf.setMarker(QTextBlockFormat::MarkerType::NoMarker);
 			cursor.setBlockFormat(bf);
 		}
+		applyAlignIfNeeded();
 		cursor.block().setUserState(kBlockNormal);
 		insertInlineFormatted(cursor, parsedText, bodyCharFmt, st.basePt, st.maxImgWidth, &st.hasImages);
 		return LineMgr::LT_LIST;
+	}
+
+	int listNum = 1;
+	if( parseNumList(line, indent, listNum, parsedText) ) {
+		finishQuoteIfNeeded();
+		beginEmittedBlock();
+		const int listIndent = indent + 1;
+		st.activeListIndent = listIndent;
+		if( listNum > 1 )
+			st.listNum = listNum - 1;
+		else if( listNum == 0 )
+			st.listNum = 0;
+		++st.listNum;
+		cursor.setBlockCharFormat(bodyCharFmt);
+		QTextList *curList = cursor.currentList();
+		const bool needNewList = (listNum != 1)
+			|| !curList
+			|| curList->format().indent() != listIndent
+			|| curList->format().style() != QTextListFormat::ListDecimal;
+		if( needNewList ) {
+			cursor.setBlockFormat(bodyBlockFmt);
+			QTextListFormat lf;
+			lf.setStyle(QTextListFormat::ListDecimal);
+			lf.setIndent(listIndent);
+			lf.setStart(st.listNum);
+			cursor.createList(lf);
+		} else if( cursor.blockFormat().marker() != QTextBlockFormat::MarkerType::NoMarker ) {
+			QTextBlockFormat bf = cursor.blockFormat();
+			bf.setMarker(QTextBlockFormat::MarkerType::NoMarker);
+			cursor.setBlockFormat(bf);
+		}
+		applyAlignIfNeeded();
+		cursor.block().setUserState(kBlockNormal);
+		insertInlineFormatted(cursor, parsedText, bodyCharFmt, st.basePt, st.maxImgWidth, &st.hasImages);
+		return LineMgr::LT_NUM_LIST;
 	}
 
 	if( parseQuote(line, parsedText) ) {
@@ -868,6 +982,7 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &rawLine
 		bf.setTopMargin(st.inQuote ? 0.0 : 8.0);
 		bf.setBottomMargin(0.0);
 		cursor.setBlockFormat(bf);
+		applyAlignIfNeeded();
 		cursor.setBlockCharFormat(bodyCharFmt);
 		cursor.block().setUserState(kBlockQuote);
 		insertInlineFormatted(cursor, parsedText, bodyCharFmt, st.basePt, st.maxImgWidth, &st.hasImages);
@@ -897,11 +1012,13 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &rawLine
 		QTextBlockFormat bf;
 		bf.setIndent(st.activeListIndent);
 		cursor.setBlockFormat(bf);
+		applyAlignIfNeeded();
 		insertInlineFormatted(cursor, line.mid(textStart), bodyCharFmt, st.basePt, st.maxImgWidth, &st.hasImages);
 		return LineMgr::LT_BODY;
 	}
 
 	cursor.setBlockFormat(bodyBlockFmt);
+	applyAlignIfNeeded();
 	insertInlineFormatted(cursor, line, bodyCharFmt, st.basePt, st.maxImgWidth, &st.hasImages);
 	return LineMgr::LT_BODY;
 }

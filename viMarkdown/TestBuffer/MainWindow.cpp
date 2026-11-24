@@ -175,6 +175,18 @@ MainWindow::MainWindow(QWidget *parent)
                 statusBar()->showMessage(tr("No GFM Table at cursor or selection"), 3000);
         }
     });
+    connect(ui->action_AlignLeft, &QAction::triggered, this, [this]() {
+        if (TextEdit *edit = currentTextEdit())
+            edit->setLineAlignment(Qt::AlignLeft);
+    });
+    connect(ui->action_AlignCenter, &QAction::triggered, this, [this]() {
+        if (TextEdit *edit = currentTextEdit())
+            edit->setLineAlignment(Qt::AlignCenter);
+    });
+    connect(ui->action_AlignRight, &QAction::triggered, this, [this]() {
+        if (TextEdit *edit = currentTextEdit())
+            edit->setLineAlignment(Qt::AlignRight);
+    });
     updateUndoRedoEnabled();
     connect(ui->action_Settings, &QAction::triggered, this, &MainWindow::onSettings);
     connect(ui->menu_RecentFiles, &QMenu::aboutToShow, this, &MainWindow::onAboutToShow_RecentFiles);
