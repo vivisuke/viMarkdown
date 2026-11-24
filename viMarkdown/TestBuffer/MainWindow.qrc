@@ -9,5 +9,7 @@
         <file>images/format_align_left_48.png</file>
         <file>images/format_align_center_48.png</file>
         <file>images/format_align_right_48.png</file>
+        <file>images/format_indent_increase_48.png</file>
+        <file>images/format_indent_decrease_48.png</file>
     </qresource>
 </RCC>

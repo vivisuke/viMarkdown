@@ -187,6 +187,14 @@ MainWindow::MainWindow(QWidget *parent)
         if (TextEdit *edit = currentTextEdit())
             edit->setLineAlignment(Qt::AlignRight);
     });
+    connect(ui->action_Indent, &QAction::triggered, this, [this]() {
+        if (TextEdit *edit = currentTextEdit())
+            edit->indent();
+    });
+    connect(ui->action_Unindent, &QAction::triggered, this, [this]() {
+        if (TextEdit *edit = currentTextEdit())
+            edit->unindent();
+    });
     updateUndoRedoEnabled();
     connect(ui->action_Settings, &QAction::triggered, this, &MainWindow::onSettings);
     connect(ui->menu_RecentFiles, &QMenu::aboutToShow, this, &MainWindow::onAboutToShow_RecentFiles);

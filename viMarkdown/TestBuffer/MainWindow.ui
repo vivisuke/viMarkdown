@@ -60,6 +60,8 @@
     <addaction name="action_SelectAll"/>
     <addaction name="separator"/>
     <addaction name="menu_Format"/>
+    <addaction name="action_Indent"/>
+    <addaction name="action_Unindent"/>
     <addaction name="menu_Convert"/>
    </widget>
    <widget class="QMenu" name="menuTest">
@@ -97,6 +99,9 @@
    <addaction name="action_AlignLeft"/>
    <addaction name="action_AlignCenter"/>
    <addaction name="action_AlignRight"/>
+   <addaction name="separator"/>
+   <addaction name="action_Indent"/>
+   <addaction name="action_Unindent"/>
   </widget>
   <widget class="QToolBar" name="fileToolBar">
    <property name="windowTitle">
@@ -278,6 +283,24 @@
    </property>
    <property name="text">
     <string>Align &amp;Right</string>
+   </property>
+  </action>
+  <action name="action_Indent">
+   <property name="icon">
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/format_indent_increase_48.png</normaloff>:/MainWindow/images/format_indent_increase_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Indent</string>
+   </property>
+  </action>
+  <action name="action_Unindent">
+   <property name="icon">
+    <iconset resource="MainWindow.qrc">
+     <normaloff>:/MainWindow/images/format_indent_decrease_48.png</normaloff>:/MainWindow/images/format_indent_decrease_48.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Unindent</string>
    </property>
   </action>
   <action name="action_gap_buffer">

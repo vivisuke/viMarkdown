@@ -53,7 +53,7 @@ SPR# 状 P Open  Close ver   Type  概要
 0049 ◎ C 11/24 11/24 0001│ToDo│GFM, CSV表
 0050 ◎ C 11/24 11/24 0001│ToDo│GFM, CSV表：ヘッダ、ゼブラカラー１・２
 0051 ◎ C 11/24 11/24 0001│ToDo│左・中央・右寄せ指定
-0052 ● C 11/24           │ToDo│
+0052 ◎ C 11/24 11/24 0001│ToDo│Indent, Unindent
 0053 ● C 11/24           │ToDo│
 0054 ● C 11/24           │ToDo│
 0055 ● C 11/24           │ToDo│

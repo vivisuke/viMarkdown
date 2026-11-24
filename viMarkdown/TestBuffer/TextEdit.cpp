@@ -713,6 +713,18 @@ void TextEdit::setLineAlignment(Qt::Alignment align)
 		afterChange(true);
 }
 
+void TextEdit::indent()
+{
+	if( indentSelection(false) )
+		afterChange(true);
+}
+
+void TextEdit::unindent()
+{
+	if( indentSelection(true) )
+		afterChange(true);
+}
+
 void TextEdit::onSaved()
 {
 	m_doc.onSaved();
