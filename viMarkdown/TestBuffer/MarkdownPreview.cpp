@@ -25,8 +25,10 @@
 #include <QTextTableCell>
 #include <QTextTableCellFormat>
 #include <QTextTableFormat>
+#include <QTimer>
 #include <QUrl>
 #include <QWheelEvent>
+#include <algorithm>
 
 namespace {
 constexpr int kBlockNormal = 0;
@@ -84,14 +86,27 @@ qsizetype findClosingDelim(const QString &text, qsizetype from, const QString &d
 }
 
 //	インライン装飾（**太字** / *斜体* / ***太字斜体*** / ~~打消し~~ / `コード` / ![alt](src) / [text](url)）をパースして挿入
-void insertInlineFormatted(QTextCursor &cursor, const QString &text, const QTextCharFormat &baseFmt, qreal basePt, qreal maxImgWidth, bool *outHasImages = nullptr)
+void insertInlineFormatted(
+	QTextCursor &cursor,
+	const QString &text,
+	const QTextCharFormat &baseFmt,
+	qreal basePt,
+	qreal maxImgWidth,
+	bool *outHasImages = nullptr,
+	int srcBasePos = -1,
+	QVector<MarkdownPreview::SyncSpan> *spans = nullptr)
 {
 	const qsizetype len = text.size();
 	QString plainBuf;
+	int plainSrcStart = -1;
 	auto flushPlain = [&]() {
 		if( !plainBuf.isEmpty() ) {
+			const int prvPos = cursor.position();
 			cursor.insertText(plainBuf, baseFmt);
+			if( spans && srcBasePos >= 0 && plainSrcStart >= 0 )
+				spans->push_back({plainSrcStart, prvPos, static_cast<int>(plainBuf.size())});
 			plainBuf.clear();
+			plainSrcStart = -1;
 		}
 	};
 
@@ -99,9 +114,13 @@ void insertInlineFormatted(QTextCursor &cursor, const QString &text, const QText
 	while( i < len ) {
 		const QChar ch = text[i];
 
-		//	バックスラッシュエスケープ
+		//	バックスラッシュエスケープ（2文字→1文字なので境界でフラッシュして1:1対応を維持）
 		if( ch == QChar('\\') && i + 1 < len && isEscapablePunct(text[i + 1]) ) {
-			plainBuf.append(text[i + 1]);
+			flushPlain();
+			const int prvPos = cursor.position();
+			cursor.insertText(QString(text[i + 1]), baseFmt);
+			if( spans && srcBasePos >= 0 )
+				spans->push_back({srcBasePos + static_cast<int>(i + 1), prvPos, 1});
 			i += 2;
 			continue;
 		}
@@ -128,17 +147,25 @@ void insertInlineFormatted(QTextCursor &cursor, const QString &text, const QText
 			}
 			if( closePos >= 0 ) {
 				flushPlain();
-				QString code = text.mid(i + tickCount, closePos - (i + tickCount));
-				if( code.size() >= 2 && code.front() == QChar(' ') && code.back() == QChar(' ') && !code.trimmed().isEmpty() )
+				qsizetype codeStart = i + tickCount;
+				QString code = text.mid(codeStart, closePos - codeStart);
+				if( code.size() >= 2 && code.front() == QChar(' ') && code.back() == QChar(' ') && !code.trimmed().isEmpty() ) {
 					code = code.mid(1, code.size() - 2);
+					++codeStart;
+				}
 				QTextCharFormat cf = baseFmt;
 				const qreal pt = (baseFmt.fontPointSize() > 0.0) ? baseFmt.fontPointSize() : basePt;
 				cf.setFont(codeBlockFont(pt));
 				cf.setBackground(QColor(0xEA, 0xEC, 0xEF));
+				const int prvPos = cursor.position();
 				cursor.insertText(code, cf);
+				if( spans && srcBasePos >= 0 )
+					spans->push_back({srcBasePos + static_cast<int>(codeStart), prvPos, static_cast<int>(code.size())});
 				i = closePos + tickCount;
 				continue;
 			}
+			if( plainBuf.isEmpty() )
+				plainSrcStart = (srcBasePos >= 0) ? (srcBasePos + static_cast<int>(i)) : -1;
 			plainBuf.append(text.mid(i, tickCount));
 			i += tickCount;
 			continue;
@@ -177,6 +204,7 @@ void insertInlineFormatted(QTextCursor &cursor, const QString &text, const QText
 						url = doc->baseUrl().resolved(url);
 					const QString localPath = url.isLocalFile() ? url.toLocalFile() : src;
 					QImage img(localPath);
+					const int prvPos = cursor.position();
 					if( !img.isNull() && doc ) {
 						const QUrl resUrl = QUrl::fromLocalFile(QFileInfo(localPath).absoluteFilePath());
 						doc->addResource(QTextDocument::ImageResource, resUrl, img);
@@ -192,10 +220,18 @@ void insertInlineFormatted(QTextCursor &cursor, const QString &text, const QText
 						cursor.insertImage(imgFmt);
 						if( outHasImages )
 							*outHasImages = true;
+						if( spans && srcBasePos >= 0 ) {
+							spans->push_back({srcBasePos + static_cast<int>(i), prvPos, 0});
+							spans->push_back({srcBasePos + static_cast<int>(closeParen + 1), cursor.position(), 0});
+						}
 					} else {
 						QTextCharFormat cf = baseFmt;
 						cf.setForeground(QColor(0x88, 0x88, 0x88));
 						cursor.insertText(alt.isEmpty() ? src : QStringLiteral("[%1]").arg(alt), cf);
+						if( spans && srcBasePos >= 0 ) {
+							spans->push_back({srcBasePos + static_cast<int>(i), prvPos, 0});
+							spans->push_back({srcBasePos + static_cast<int>(closeParen + 1), cursor.position(), 0});
+						}
 					}
 					i = closeParen + 1;
 					continue;
@@ -233,7 +269,10 @@ void insertInlineFormatted(QTextCursor &cursor, const QString &text, const QText
 					cf.setAnchorHref(url);
 					cf.setForeground(QColor(0x00, 0x55, 0xCC));
 					cf.setFontUnderline(true);
-					insertInlineFormatted(cursor, label.isEmpty() ? url : label, cf, basePt, maxImgWidth, outHasImages);
+					const int subSrcBase = (srcBasePos >= 0)
+						? (srcBasePos + static_cast<int>(label.isEmpty() ? (closeBracket + 2) : (i + 1)))
+						: -1;
+					insertInlineFormatted(cursor, label.isEmpty() ? url : label, cf, basePt, maxImgWidth, outHasImages, subSrcBase, spans);
 					i = closeParen + 1;
 					continue;
 				}
@@ -248,7 +287,8 @@ void insertInlineFormatted(QTextCursor &cursor, const QString &text, const QText
 				QTextCharFormat cf = baseFmt;
 				cf.setFontWeight(QFont::Bold);
 				cf.setFontItalic(true);
-				insertInlineFormatted(cursor, text.mid(i + 3, closePos - (i + 3)), cf, basePt, maxImgWidth, outHasImages);
+				const int subSrcBase = (srcBasePos >= 0) ? (srcBasePos + static_cast<int>(i + 3)) : -1;
+				insertInlineFormatted(cursor, text.mid(i + 3, closePos - (i + 3)), cf, basePt, maxImgWidth, outHasImages, subSrcBase, spans);
 				i = closePos + 3;
 				continue;
 			}
@@ -261,7 +301,8 @@ void insertInlineFormatted(QTextCursor &cursor, const QString &text, const QText
 				flushPlain();
 				QTextCharFormat cf = baseFmt;
 				cf.setFontWeight(QFont::Bold);
-				insertInlineFormatted(cursor, text.mid(i + 2, closePos - (i + 2)), cf, basePt, maxImgWidth, outHasImages);
+				const int subSrcBase = (srcBasePos >= 0) ? (srcBasePos + static_cast<int>(i + 2)) : -1;
+				insertInlineFormatted(cursor, text.mid(i + 2, closePos - (i + 2)), cf, basePt, maxImgWidth, outHasImages, subSrcBase, spans);
 				i = closePos + 2;
 				continue;
 			}
@@ -274,7 +315,8 @@ void insertInlineFormatted(QTextCursor &cursor, const QString &text, const QText
 				flushPlain();
 				QTextCharFormat cf = baseFmt;
 				cf.setFontStrikeOut(true);
-				insertInlineFormatted(cursor, text.mid(i + 2, closePos - (i + 2)), cf, basePt, maxImgWidth, outHasImages);
+				const int subSrcBase = (srcBasePos >= 0) ? (srcBasePos + static_cast<int>(i + 2)) : -1;
+				insertInlineFormatted(cursor, text.mid(i + 2, closePos - (i + 2)), cf, basePt, maxImgWidth, outHasImages, subSrcBase, spans);
 				i = closePos + 2;
 				continue;
 			}
@@ -300,7 +342,8 @@ void insertInlineFormatted(QTextCursor &cursor, const QString &text, const QText
 				flushPlain();
 				QTextCharFormat cf = baseFmt;
 				cf.setFontItalic(true);
-				insertInlineFormatted(cursor, text.mid(i + 1, closePos - (i + 1)), cf, basePt, maxImgWidth, outHasImages);
+				const int subSrcBase = (srcBasePos >= 0) ? (srcBasePos + static_cast<int>(i + 1)) : -1;
+				insertInlineFormatted(cursor, text.mid(i + 1, closePos - (i + 1)), cf, basePt, maxImgWidth, outHasImages, subSrcBase, spans);
 				i = closePos + 1;
 				continue;
 			}
@@ -322,7 +365,8 @@ void insertInlineFormatted(QTextCursor &cursor, const QString &text, const QText
 					flushPlain();
 					QTextCharFormat cf = baseFmt;
 					cf.setVerticalAlignment(QTextCharFormat::AlignSuperScript);
-					insertInlineFormatted(cursor, text.mid(i + 2, closeBrace - (i + 2)), cf, basePt, maxImgWidth, outHasImages);
+					const int subSrcBase = (srcBasePos >= 0) ? (srcBasePos + static_cast<int>(i + 2)) : -1;
+					insertInlineFormatted(cursor, text.mid(i + 2, closeBrace - (i + 2)), cf, basePt, maxImgWidth, outHasImages, subSrcBase, spans);
 					i = closeBrace + 1;
 					continue;
 				}
@@ -337,7 +381,11 @@ void insertInlineFormatted(QTextCursor &cursor, const QString &text, const QText
 				flushPlain();
 				QTextCharFormat cf = baseFmt;
 				cf.setVerticalAlignment(QTextCharFormat::AlignSuperScript);
-				cursor.insertText(text.mid(i + 1, numEnd - (i + 1)), cf);
+				const int prvPos = cursor.position();
+				const QString numStr = text.mid(i + 1, numEnd - (i + 1));
+				cursor.insertText(numStr, cf);
+				if( spans && srcBasePos >= 0 )
+					spans->push_back({srcBasePos + static_cast<int>(i + 1), prvPos, static_cast<int>(numStr.size())});
 				i = numEnd;
 				continue;
 			}
@@ -352,7 +400,8 @@ void insertInlineFormatted(QTextCursor &cursor, const QString &text, const QText
 					flushPlain();
 					QTextCharFormat cf = baseFmt;
 					cf.setVerticalAlignment(QTextCharFormat::AlignSuperScript);
-					insertInlineFormatted(cursor, text.mid(i + 1, closePos - (i + 1)), cf, basePt, maxImgWidth, outHasImages);
+					const int subSrcBase = (srcBasePos >= 0) ? (srcBasePos + static_cast<int>(i + 1)) : -1;
+					insertInlineFormatted(cursor, text.mid(i + 1, closePos - (i + 1)), cf, basePt, maxImgWidth, outHasImages, subSrcBase, spans);
 					i = closePos + 1;
 					continue;
 				}
@@ -375,7 +424,8 @@ void insertInlineFormatted(QTextCursor &cursor, const QString &text, const QText
 					flushPlain();
 					QTextCharFormat cf = baseFmt;
 					cf.setVerticalAlignment(QTextCharFormat::AlignSubScript);
-					insertInlineFormatted(cursor, text.mid(i + 2, closeBrace - (i + 2)), cf, basePt, maxImgWidth, outHasImages);
+					const int subSrcBase = (srcBasePos >= 0) ? (srcBasePos + static_cast<int>(i + 2)) : -1;
+					insertInlineFormatted(cursor, text.mid(i + 2, closeBrace - (i + 2)), cf, basePt, maxImgWidth, outHasImages, subSrcBase, spans);
 					i = closeBrace + 1;
 					continue;
 				}
@@ -387,12 +437,18 @@ void insertInlineFormatted(QTextCursor &cursor, const QString &text, const QText
 				flushPlain();
 				QTextCharFormat cf = baseFmt;
 				cf.setVerticalAlignment(QTextCharFormat::AlignSubScript);
-				cursor.insertText(text.mid(i + 1, numEnd - (i + 1)), cf);
+				const int prvPos = cursor.position();
+				const QString numStr = text.mid(i + 1, numEnd - (i + 1));
+				cursor.insertText(numStr, cf);
+				if( spans && srcBasePos >= 0 )
+					spans->push_back({srcBasePos + static_cast<int>(i + 1), prvPos, static_cast<int>(numStr.size())});
 				i = numEnd;
 				continue;
 			}
 		}
 
+		if( plainBuf.isEmpty() )
+			plainSrcStart = (srcBasePos >= 0) ? (srcBasePos + static_cast<int>(i)) : -1;
 		plainBuf.append(ch);
 		++i;
 	}
@@ -422,46 +478,62 @@ bool isCsvFence(const QString &line)
 }
 
 //	GFM テーブルの1行をセル配列に分解（\| はエスケープされたリテラル '|' として扱う）
-bool parseGfmTableRow(const QString &line, QStringList &outCells)
+bool parseGfmTableRow(const QString &line, QStringList &outCells, QVector<int> *outCellCols = nullptr)
 {
 	outCells.clear();
-	const QString trimmed = line.trimmed();
-	if( trimmed.isEmpty() )
+	if( outCellCols ) outCellCols->clear();
+	qsizetype leadWs = 0;
+	while( leadWs < line.size() && line[leadWs].isSpace() )
+		++leadWs;
+	qsizetype end = line.size();
+	while( end > leadWs && line[end - 1].isSpace() )
+		--end;
+	if( leadWs >= end )
 		return false;
+
 	bool hasUnescapedPipe = false;
-	for( qsizetype i = 0; i < trimmed.size(); ++i ) {
-		if( trimmed[i] == QChar('\\') ) { ++i; continue; }
-		if( trimmed[i] == QChar('|') ) { hasUnescapedPipe = true; break; }
+	for( qsizetype i = leadWs; i < end; ++i ) {
+		if( line[i] == QChar('\\') ) { ++i; continue; }
+		if( line[i] == QChar('|') ) { hasUnescapedPipe = true; break; }
 	}
 	if( !hasUnescapedPipe )
 		return false;
 
-	qsizetype start = 0;
-	qsizetype end = trimmed.size();
-	if( start < end && trimmed[start] == QChar('|') )
+	qsizetype start = leadWs;
+	if( start < end && line[start] == QChar('|') )
 		++start;
-	if( end > start && trimmed[end - 1] == QChar('|') ) {
-		//	末尾の '|' がエスケープされていない場合のみ除去
+	if( end > start && line[end - 1] == QChar('|') ) {
 		qsizetype bs = 0;
-		for( qsizetype k = end - 2; k >= start && trimmed[k] == QChar('\\'); --k )
+		for( qsizetype k = end - 2; k >= start && line[k] == QChar('\\'); --k )
 			++bs;
 		if( (bs % 2) == 0 )
 			--end;
 	}
 
 	QString cell;
+	qsizetype cellRawStart = start;
+	auto pushCell = [&](qsizetype rawEnd) {
+		qsizetype trimmedStart = cellRawStart;
+		while( trimmedStart < rawEnd && line[trimmedStart].isSpace() )
+			++trimmedStart;
+		outCells.append(cell.trimmed());
+		if( outCellCols )
+			outCellCols->append(static_cast<int>(trimmedStart));
+		cell.clear();
+	};
+
 	for( qsizetype i = start; i < end; ++i ) {
-		if( trimmed[i] == QChar('\\') && i + 1 < end && trimmed[i + 1] == QChar('|') ) {
+		if( line[i] == QChar('\\') && i + 1 < end && line[i + 1] == QChar('|') ) {
 			cell.append(QChar('|'));
 			++i;
-		} else if( trimmed[i] == QChar('|') ) {
-			outCells.append(cell.trimmed());
-			cell.clear();
+		} else if( line[i] == QChar('|') ) {
+			pushCell(i);
+			cellRawStart = i + 1;
 		} else {
-			cell.append(trimmed[i]);
+			cell.append(line[i]);
 		}
 	}
-	outCells.append(cell.trimmed());
+	pushCell(end);
 	return !outCells.isEmpty();
 }
 
@@ -498,34 +570,53 @@ bool parseGfmTableSeparator(const QString &line, QVector<Qt::Alignment> &outAlig
 }
 
 //	RFC 4180 風 CSV 1行パース（ダブルクォート・"" エスケープ・複数行セル対応）。行が完了したら true
-bool parseCsvLine(const QString &line, bool &inQuotes, QStringList &curFields, QString &curField)
+bool parseCsvLine(const QString &line, bool &inQuotes, QStringList &curFields, QString &curField, QVector<int> *curFieldCols = nullptr)
 {
 	if( !inQuotes ) {
 		curFields.clear();
 		curField.clear();
+		if( curFieldCols ) curFieldCols->clear();
 	}
 	const qsizetype len = line.size();
+	qsizetype fieldStartCol = 0;
+	bool recordedCol = false;
+	auto recordStart = [&](qsizetype col) {
+		if( !recordedCol ) {
+			fieldStartCol = col;
+			recordedCol = true;
+		}
+	};
 	for( qsizetype i = 0; i < len; ++i ) {
 		const QChar ch = line[i];
 		if( inQuotes ) {
 			if( ch == QChar('"') ) {
 				if( i + 1 < len && line[i + 1] == QChar('"') ) {
+					recordStart(i);
 					curField.append(QChar('"'));
 					++i;
 				} else {
 					inQuotes = false;
 				}
 			} else {
+				recordStart(i);
 				curField.append(ch);
 			}
 		} else {
 			if( ch == QChar('"') && curField.trimmed().isEmpty() ) {
 				curField.clear();
 				inQuotes = true;
+				fieldStartCol = i + 1;
+				recordedCol = true;
 			} else if( ch == QChar(',') ) {
 				curFields.append(curField.trimmed());
+				if( curFieldCols )
+					curFieldCols->append(static_cast<int>(recordedCol ? fieldStartCol : i));
 				curField.clear();
+				fieldStartCol = i + 1;
+				recordedCol = false;
 			} else {
+				if( !ch.isSpace() )
+					recordStart(i);
 				curField.append(ch);
 			}
 		}
@@ -535,6 +626,8 @@ bool parseCsvLine(const QString &line, bool &inQuotes, QStringList &curFields, Q
 		return false;
 	}
 	curFields.append(curField.trimmed());
+	if( curFieldCols )
+		curFieldCols->append(static_cast<int>(recordedCol ? fieldStartCol : len));
 	return true;
 }
 //	見出し行（#〜###### + 空白または行末）を判定し、レベル [1..6] と見出し本文を返す
@@ -681,9 +774,10 @@ struct ParseState {
 };
 
 //	HTML コメント（<!-- ... -->、複数行またぎ対応）を除去する。インラインコード内の `<!--` は保持する。
-QString stripHtmlComments(const QString &line, bool &inComment, bool &outCommentOnly)
+QString stripHtmlComments(const QString &line, bool &inComment, bool &outCommentOnly, qsizetype *outLeadStrip = nullptr)
 {
 	outCommentOnly = false;
+	if( outLeadStrip ) *outLeadStrip = 0;
 	const qsizetype len = line.size();
 	QString out;
 	out.reserve(len);
@@ -700,6 +794,8 @@ QString stripHtmlComments(const QString &line, bool &inComment, bool &outComment
 			}
 			inComment = false;
 			i = endPos + 3;
+			if( out.isEmpty() && outLeadStrip )
+				*outLeadStrip = i;
 			continue;
 		}
 		if( line[i] == QChar('`') ) {
@@ -734,6 +830,8 @@ QString stripHtmlComments(const QString &line, bool &inComment, bool &outComment
 				break;
 			}
 			i = endPos + 3;
+			if( out.isEmpty() && outLeadStrip )
+				*outLeadStrip = i;
 			continue;
 		}
 		out.append(line[i]);
@@ -788,7 +886,13 @@ void finishBlockMarginIfNeeded(QTextCursor &cursor, int expectedState)
 	}
 }
 
-LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &rawLine, ParseState &st, int srcLine = -1)
+LineMgr::LineType parseAndAppendLine(
+	QTextCursor &cursor,
+	const QString &rawLine,
+	ParseState &st,
+	int srcLine = -1,
+	int lineStartPos = -1,
+	QVector<MarkdownPreview::SyncSpan> *spans = nullptr)
 {
 	static const qreal kHeadingScale[7] = { 1.0, 2.2, 1.8, 1.5, 1.3, 1.1, 1.0 };
 	static const QTextListFormat::Style kListStyles[3] = {
@@ -811,6 +915,13 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &rawLine
 			cursor.insertBlock();
 		st.hasEmittedBlock = true;
 		st.lastLineEmitted = true;
+	};
+	auto emitInlineWithAnchor = [&](const QString &txt, const QTextCharFormat &fmt, int srcBase) {
+		const qsizetype before = spans ? spans->size() : 0;
+		const int prvStart = cursor.position();
+		insertInlineFormatted(cursor, txt, fmt, st.basePt, st.maxImgWidth, &st.hasImages, srcBase, spans);
+		if( spans && srcBase >= 0 && spans->size() == before )
+			spans->push_back({srcBase, prvStart, 0});
 	};
 
 	if( !st.inHtmlComment && isCodeFence(rawLine) ) {
@@ -842,7 +953,10 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &rawLine
 		cursor.setBlockFormat(bf);
 		cursor.setBlockCharFormat(cf);
 		cursor.block().setUserState(kBlockCode);
+		const int prvPos = cursor.position();
 		cursor.insertText(rawLine, cf);
+		if( spans && lineStartPos >= 0 )
+			spans->push_back({lineStartPos, prvPos, static_cast<int>(rawLine.size())});
 		st.codeHasLines = true;
 		return LineMgr::LT_CODE_BLOCK;
 	}
@@ -851,9 +965,11 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &rawLine
 	const bool hasAlign = (!st.inHtmlComment && parseAlignDirective(rawLine, lineAlign));
 
 	bool commentOnly = false;
-	const QString line = stripHtmlComments(rawLine, st.inHtmlComment, commentOnly);
+	qsizetype leadStrip = 0;
+	const QString line = stripHtmlComments(rawLine, st.inHtmlComment, commentOnly, &leadStrip);
 	if( commentOnly )
 		return LineMgr::LT_BODY;
+	const int strippedLineStart = (lineStartPos >= 0) ? (lineStartPos + static_cast<int>(leadStrip)) : -1;
 
 	auto applyAlignIfNeeded = [&]() {
 		if( !hasAlign ) return;
@@ -882,7 +998,8 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &rawLine
 		cursor.setBlockFormat(bf);
 		applyAlignIfNeeded();
 		cursor.block().setUserState(kBlockNormal);
-		insertInlineFormatted(cursor, parsedText, cf, st.basePt, st.maxImgWidth, &st.hasImages);
+		const int srcBase = (strippedLineStart >= 0) ? (strippedLineStart + static_cast<int>(line.size() - parsedText.size())) : -1;
+		emitInlineWithAnchor(parsedText, cf, srcBase);
 		return LineMgr::LT_HEADING;
 	}
 
@@ -907,7 +1024,8 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &rawLine
 		cursor.setBlockFormat(bf);
 		applyAlignIfNeeded();
 		cursor.block().setUserState(srcLine >= 0 ? (kBlockCheckboxBase + srcLine) : kBlockNormal);
-		insertInlineFormatted(cursor, parsedText, bodyCharFmt, st.basePt, st.maxImgWidth, &st.hasImages);
+		const int srcBase = (strippedLineStart >= 0) ? (strippedLineStart + static_cast<int>(line.size() - parsedText.size())) : -1;
+		emitInlineWithAnchor(parsedText, bodyCharFmt, srcBase);
 		return LineMgr::LT_CHECKBOX;
 	}
 
@@ -932,7 +1050,8 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &rawLine
 		}
 		applyAlignIfNeeded();
 		cursor.block().setUserState(kBlockNormal);
-		insertInlineFormatted(cursor, parsedText, bodyCharFmt, st.basePt, st.maxImgWidth, &st.hasImages);
+		const int srcBase = (strippedLineStart >= 0) ? (strippedLineStart + static_cast<int>(line.size() - parsedText.size())) : -1;
+		emitInlineWithAnchor(parsedText, bodyCharFmt, srcBase);
 		return LineMgr::LT_LIST;
 	}
 
@@ -967,7 +1086,8 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &rawLine
 		}
 		applyAlignIfNeeded();
 		cursor.block().setUserState(kBlockNormal);
-		insertInlineFormatted(cursor, parsedText, bodyCharFmt, st.basePt, st.maxImgWidth, &st.hasImages);
+		const int srcBase = (strippedLineStart >= 0) ? (strippedLineStart + static_cast<int>(line.size() - parsedText.size())) : -1;
+		emitInlineWithAnchor(parsedText, bodyCharFmt, srcBase);
 		return LineMgr::LT_NUM_LIST;
 	}
 
@@ -985,7 +1105,8 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &rawLine
 		applyAlignIfNeeded();
 		cursor.setBlockCharFormat(bodyCharFmt);
 		cursor.block().setUserState(kBlockQuote);
-		insertInlineFormatted(cursor, parsedText, bodyCharFmt, st.basePt, st.maxImgWidth, &st.hasImages);
+		const int srcBase = (strippedLineStart >= 0) ? (strippedLineStart + static_cast<int>(line.size() - parsedText.size())) : -1;
+		emitInlineWithAnchor(parsedText, bodyCharFmt, srcBase);
 		st.inQuote = true;
 		return LineMgr::LT_QUOTE;
 	}
@@ -1000,7 +1121,10 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &rawLine
 	if( line.trimmed().isEmpty() ) {
 		st.activeListIndent = 0;
 		cursor.setBlockFormat(bodyBlockFmt);
+		const int prvPos = cursor.position();
 		cursor.insertText(line, bodyCharFmt);
+		if( spans && strippedLineStart >= 0 )
+			spans->push_back({strippedLineStart, prvPos, static_cast<int>(line.size())});
 		return LineMgr::LT_BODY;
 	}
 
@@ -1013,13 +1137,14 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &rawLine
 		bf.setIndent(st.activeListIndent);
 		cursor.setBlockFormat(bf);
 		applyAlignIfNeeded();
-		insertInlineFormatted(cursor, line.mid(textStart), bodyCharFmt, st.basePt, st.maxImgWidth, &st.hasImages);
+		const int srcBase = (strippedLineStart >= 0) ? (strippedLineStart + static_cast<int>(textStart)) : -1;
+		emitInlineWithAnchor(line.mid(textStart), bodyCharFmt, srcBase);
 		return LineMgr::LT_BODY;
 	}
 
 	cursor.setBlockFormat(bodyBlockFmt);
 	applyAlignIfNeeded();
-	insertInlineFormatted(cursor, line, bodyCharFmt, st.basePt, st.maxImgWidth, &st.hasImages);
+	emitInlineWithAnchor(line, bodyCharFmt, strippedLineStart);
 	return LineMgr::LT_BODY;
 }
 }
@@ -1027,13 +1152,27 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &rawLine
 MarkdownPreview::MarkdownPreview(QWidget *parent)
 	: QTextEdit(parent)
 {
-	setReadOnly(true);
+	setReadOnly(false);
+	setCursorWidth(0);	//	自前の赤カーソル／黒 I ビームを描画する
 	viewport()->setMouseTracking(true);
+	m_blinkTimer = new QTimer(this);
+	m_blinkTimer->setInterval(500);
+	connect(m_blinkTimer, &QTimer::timeout, this, [this]() {
+		m_caretVisible = !m_caretVisible;
+		viewport()->update();
+	});
+	connect(this, &QTextEdit::cursorPositionChanged, this, [this]() {
+		m_caretVisible = true;
+		if( hasFocus() && m_blinkTimer )
+			m_blinkTimer->start();
+		viewport()->update();
+	});
 }
 
 void MarkdownPreview::mouseMoveEvent(QMouseEvent *event)
 {
-	const QString href = anchorAt(event->pos());
+	const bool ctrl = (event->modifiers() & Qt::ControlModifier) != 0;
+	const QString href = ctrl ? anchorAt(event->pos()) : QString();
 	viewport()->setCursor(href.isEmpty() ? Qt::IBeamCursor : Qt::PointingHandCursor);
 	QTextEdit::mouseMoveEvent(event);
 }
@@ -1058,14 +1197,16 @@ void MarkdownPreview::mousePressEvent(QMouseEvent *event)
 				return;
 			}
 		}
-		const QString href = anchorAt(event->pos());
-		if( !href.isEmpty() ) {
-			QUrl url(href);
-			if( url.isRelative() && document() && document()->baseUrl().isValid() )
-				url = document()->baseUrl().resolved(url);
-			QDesktopServices::openUrl(url);
-			event->accept();
-			return;
+		if( (event->modifiers() & Qt::ControlModifier) != 0 ) {
+			const QString href = anchorAt(event->pos());
+			if( !href.isEmpty() ) {
+				QUrl url(href);
+				if( url.isRelative() && document() && document()->baseUrl().isValid() )
+					url = document()->baseUrl().resolved(url);
+				QDesktopServices::openUrl(url);
+				event->accept();
+				return;
+			}
 		}
 	}
 	QTextEdit::mousePressEvent(event);
@@ -1087,6 +1228,24 @@ void MarkdownPreview::resizeEvent(QResizeEvent *event)
 {
 	QTextEdit::resizeEvent(event);
 	updateImageSizes();
+}
+
+void MarkdownPreview::focusInEvent(QFocusEvent *event)
+{
+	QTextEdit::focusInEvent(event);
+	m_caretVisible = true;
+	if( m_blinkTimer )
+		m_blinkTimer->start();
+	viewport()->update();
+}
+
+void MarkdownPreview::focusOutEvent(QFocusEvent *event)
+{
+	QTextEdit::focusOutEvent(event);
+	if( m_blinkTimer )
+		m_blinkTimer->stop();
+	m_caretVisible = true;
+	viewport()->update();
 }
 
 void MarkdownPreview::updateImageSizes()
@@ -1198,6 +1357,25 @@ void MarkdownPreview::paintEvent(QPaintEvent *event)
 		}
 	}
 	QTextEdit::paintEvent(event);
+	//	カーソル（フォーカス時は赤 2px 点滅、非フォーカス時は黒 2px 幅 I ビーム）
+	if( !textCursor().hasSelection() ) {
+		const QRect r = cursorRect();
+		const int h = qMax(4, r.height());
+		const QRect caretBounds(r.left() - 2, r.top(), 6, h);
+		if( r.height() > 0 && viewport()->rect().intersects(caretBounds) ) {
+			QPainter p(viewport());
+			const int x = r.left();
+			const int y0 = r.top();
+			if( hasFocus() ) {
+				if( m_caretVisible )
+					p.fillRect(x, y0, 2, h, Qt::red);
+			} else {
+				p.fillRect(x, y0, 2, h, Qt::black);
+				p.fillRect(x - 2, y0, 6, 2, Qt::black);
+				p.fillRect(x - 2, y0 + h - 2, 6, 2, Qt::black);
+			}
+		}
+	}
 }
 
 void MarkdownPreview::scrollToSourceLine(int srcLine, qreal subLineFrac)
@@ -1267,14 +1445,69 @@ bool MarkdownPreview::topSourceLine(int &outLine, qreal &outFrac) const
 	return true;
 }
 
+int MarkdownPreview::srcToPrvPos(int srcPos) const
+{
+	if( m_syncSpans.isEmpty() )
+		return 0;
+	auto it = std::upper_bound(m_syncSpans.begin(), m_syncSpans.end(), srcPos,
+		[](int pos, const SyncSpan &s) { return pos < s.srcPos; });
+	if( it == m_syncSpans.begin() )
+		return m_syncSpans.front().prvPos;
+	const SyncSpan &prev = *(it - 1);
+	if( srcPos <= prev.srcPos + prev.len )
+		return prev.prvPos + (srcPos - prev.srcPos);
+	if( it != m_syncSpans.end() )
+		return it->prvPos;
+	return prev.prvPos + prev.len;
+}
+
+int MarkdownPreview::prvToSrcPos(int prvPos) const
+{
+	if( m_syncSpans.isEmpty() )
+		return 0;
+	auto it = std::upper_bound(m_syncSpans.begin(), m_syncSpans.end(), prvPos,
+		[](int pos, const SyncSpan &s) { return pos < s.prvPos; });
+	if( it == m_syncSpans.begin() )
+		return m_syncSpans.front().srcPos;
+	const SyncSpan &prev = *(it - 1);
+	if( prvPos <= prev.prvPos + prev.len )
+		return prev.srcPos + (prvPos - prev.prvPos);
+	if( it != m_syncSpans.end() )
+		return it->srcPos;
+	return prev.srcPos + prev.len;
+}
+
+void MarkdownPreview::setCursorFromSrcPos(int srcPos, int srcAnchor)
+{
+	QTextDocument *doc = document();
+	if( !doc || m_syncSpans.isEmpty() )
+		return;
+	const int maxPos = qMax(0, doc->characterCount() - 1);
+	const int prvPos = qBound(0, srcToPrvPos(srcPos), maxPos);
+	const QSignalBlocker blocker(this);
+	QTextCursor cur = textCursor();
+	if( srcAnchor >= 0 && srcAnchor != srcPos ) {
+		const int prvAnchor = qBound(0, srcToPrvPos(srcAnchor), maxPos);
+		cur.setPosition(prvAnchor);
+		cur.setPosition(prvPos, QTextCursor::KeepAnchor);
+	} else {
+		cur.setPosition(prvPos);
+	}
+	setTextCursor(cur);
+	viewport()->update();
+}
+
 void insertStyledTable(
 	QTextCursor &cursor,
 	const QList<QStringList> &rows,
 	const QVector<int> &rowSrcLines,
+	const QVector<int> &rowStartPos,
+	const QList<QVector<int>> &rowCellCols,
 	const QVector<Qt::Alignment> &aligns,
 	ParseState &st,
 	QVector<int> &srcLineToBlock,
-	QVector<int> &blockToSrcLine)
+	QVector<int> &blockToSrcLine,
+	QVector<MarkdownPreview::SyncSpan> *spans)
 {
 	if( rows.isEmpty() )
 		return;
@@ -1388,7 +1621,16 @@ void insertStyledTable(
 			if( r == 0 )
 				cf.setFontWeight(QFont::Bold);
 			cellCur.setCharFormat(cf);
-			insertInlineFormatted(cellCur, cellText, cf, st.basePt, st.maxImgWidth, &st.hasImages);
+			int cellSrcBase = -1;
+			if( r < rowStartPos.size() && rowStartPos[r] >= 0
+				&& r < rowCellCols.size() && c < rowCellCols[r].size() ) {
+				cellSrcBase = rowStartPos[r] + rowCellCols[r][c];
+			}
+			const qsizetype spansBefore = spans ? spans->size() : 0;
+			const int cellPrvStart = cellCur.position();
+			insertInlineFormatted(cellCur, cellText, cf, st.basePt, st.maxImgWidth, &st.hasImages, cellSrcBase, spans);
+			if( spans && cellSrcBase >= 0 && spans->size() == spansBefore )
+				spans->push_back({cellSrcBase, cellPrvStart, 0});
 
 			const int bn = cell.firstCursorPosition().block().blockNumber();
 			if( srcLine >= 0 ) {
@@ -1419,6 +1661,7 @@ void MarkdownPreview::setTableColors(const QColor &header, const QColor &zebra1,
 void MarkdownPreview::setMarkdown(const QString &markdown)
 {
 	const QSignalBlocker blocker(verticalScrollBar());
+	const QSignalBlocker selfBlocker(this);
 	QTextDocument *doc = document();
 	doc->clear();
 
@@ -1435,23 +1678,33 @@ void MarkdownPreview::setMarkdown(const QString &markdown)
 	const QStringList rawLines = markdown.split(QChar('\n'));
 	const int nLines = static_cast<int>(rawLines.size());
 	QStringList lines;
+	QVector<int> lineStarts;
 	lines.reserve(nLines);
+	lineStarts.reserve(nLines);
+	int accPos = 0;
 	for( int i = 0; i < nLines; ++i ) {
+		lineStarts.append(accPos);
+		accPos += static_cast<int>(rawLines[i].size()) + 1;
 		QString s = rawLines[i];
 		if( s.endsWith(QChar('\r')) ) s.chop(1);
 		lines.append(s);
 	}
 	m_srcLineToBlock.fill(-1, nLines);
 	m_blockToSrcLine.clear();
+	m_syncSpans.clear();
+	m_syncSpans.reserve(nLines * 2);
 
 	for( int ln = 0; ln < nLines; ++ln ) {
 		const QString &line = lines[ln];
 		if( !st.inCodeBlock && !st.inHtmlComment && isCsvFence(line) ) {
 			QList<QStringList> rows;
 			QVector<int> rowSrcLines;
+			QVector<int> rowStartPos;
+			QList<QVector<int>> rowCellCols;
 			bool inQuotes = false;
 			bool csvInComment = false;
 			QStringList curFields;
+			QVector<int> curCols;
 			QString curField;
 			int rowStartLine = ln + 1;
 			while( ++ln < nLines && !isCodeFence(lines[ln]) ) {
@@ -1463,27 +1716,36 @@ void MarkdownPreview::setMarkdown(const QString &markdown)
 				}
 				if( !inQuotes )
 					rowStartLine = ln;
-				if( parseCsvLine(cleaned, inQuotes, curFields, curField) ) {
+				if( parseCsvLine(cleaned, inQuotes, curFields, curField, &curCols) ) {
 					rows.append(curFields);
 					rowSrcLines.append(rowStartLine);
+					rowStartPos.append(lineStarts[rowStartLine]);
+					rowCellCols.append(curCols);
 				}
 			}
 			if( inQuotes && !curFields.isEmpty() ) {
 				curFields.append(curField.trimmed());
 				rows.append(curFields);
 				rowSrcLines.append(rowStartLine);
+				rowStartPos.append(lineStarts[rowStartLine]);
+				rowCellCols.append(curCols);
 			}
-			insertStyledTable(cursor, rows, rowSrcLines, {}, st, m_srcLineToBlock, m_blockToSrcLine);
+			insertStyledTable(cursor, rows, rowSrcLines, rowStartPos, rowCellCols, {}, st, m_srcLineToBlock, m_blockToSrcLine, &m_syncSpans);
 			continue;
 		}
 		if( !st.inCodeBlock && !st.inHtmlComment && ln + 1 < nLines ) {
 			QStringList headerCells;
+			QVector<int> headerCols;
 			QVector<Qt::Alignment> aligns;
-			if( parseGfmTableRow(line, headerCells) && parseGfmTableSeparator(lines[ln + 1], aligns) ) {
+			if( parseGfmTableRow(line, headerCells, &headerCols) && parseGfmTableSeparator(lines[ln + 1], aligns) ) {
 				QList<QStringList> rows;
 				QVector<int> rowSrcLines;
+				QVector<int> rowStartPos;
+				QList<QVector<int>> rowCellCols;
 				rows.append(headerCells);
 				rowSrcLines.append(ln);
+				rowStartPos.append(lineStarts[ln]);
+				rowCellCols.append(headerCols);
 				ln += 1;	//	区切り行を消費
 				bool tblComment = false;
 				while( ln + 1 < nLines ) {
@@ -1494,18 +1756,21 @@ void MarkdownPreview::setMarkdown(const QString &markdown)
 						continue;
 					}
 					QStringList rowCells;
-					if( !parseGfmTableRow(cleaned, rowCells) )
+					QVector<int> rowCols;
+					if( !parseGfmTableRow(cleaned, rowCells, &rowCols) )
 						break;
 					++ln;
 					rows.append(rowCells);
 					rowSrcLines.append(ln);
+					rowStartPos.append(lineStarts[ln]);
+					rowCellCols.append(rowCols);
 				}
-				insertStyledTable(cursor, rows, rowSrcLines, aligns, st, m_srcLineToBlock, m_blockToSrcLine);
+				insertStyledTable(cursor, rows, rowSrcLines, rowStartPos, rowCellCols, aligns, st, m_srcLineToBlock, m_blockToSrcLine, &m_syncSpans);
 				continue;
 			}
 		}
 
-		parseAndAppendLine(cursor, line, st, ln);
+		parseAndAppendLine(cursor, line, st, ln, lineStarts[ln], &m_syncSpans);
 		if( st.lastLineEmitted ) {
 			const int bn = cursor.block().blockNumber();
 			m_srcLineToBlock[ln] = bn;
@@ -1531,6 +1796,7 @@ void MarkdownPreview::setMarkdown(TextDocument *srcDoc)
 	if( !srcDoc ) {
 		m_srcLineToBlock.clear();
 		m_blockToSrcLine.clear();
+		m_syncSpans.clear();
 		m_hasImages = false;
 		m_lastImageMaxWidth = -1;
 		clear();
@@ -1538,6 +1804,7 @@ void MarkdownPreview::setMarkdown(TextDocument *srcDoc)
 	}
 
 	const QSignalBlocker blocker(verticalScrollBar());
+	const QSignalBlocker selfBlocker(this);
 	const int prevScroll = verticalScrollBar() ? verticalScrollBar()->value() : 0;
 
 	QTextDocument *doc = document();
@@ -1556,8 +1823,11 @@ void MarkdownPreview::setMarkdown(TextDocument *srcDoc)
 	ViewLineMgr &mgr = srcDoc->lineMgr();
 	const int nLines = mgr.lineCount();
 	QStringList lines;
+	QVector<int> lineStarts;
 	lines.reserve(nLines);
+	lineStarts.reserve(nLines);
 	for( int ln = 0; ln < nLines; ++ln ) {
+		lineStarts.append(static_cast<int>(mgr.lineStartPos(ln)));
 		QString line = srcDoc->findBlockByNumber(ln).text();
 		if( line.endsWith(QChar('\n')) ) line.chop(1);
 		if( line.endsWith(QChar('\r')) ) line.chop(1);
@@ -1565,6 +1835,8 @@ void MarkdownPreview::setMarkdown(TextDocument *srcDoc)
 	}
 	m_srcLineToBlock.fill(-1, nLines);
 	m_blockToSrcLine.clear();
+	m_syncSpans.clear();
+	m_syncSpans.reserve(nLines * 2);
 
 	for( int ln = 0; ln < nLines; ++ln ) {
 		const QString &line = lines[ln];
@@ -1572,9 +1844,12 @@ void MarkdownPreview::setMarkdown(TextDocument *srcDoc)
 			mgr.setLineType(ln, LineMgr::LT_CODE_FENCE);
 			QList<QStringList> rows;
 			QVector<int> rowSrcLines;
+			QVector<int> rowStartPos;
+			QList<QVector<int>> rowCellCols;
 			bool inQuotes = false;
 			bool csvInComment = false;
 			QStringList curFields;
+			QVector<int> curCols;
 			QString curField;
 			int rowStartLine = ln + 1;
 			while( ++ln < nLines && !isCodeFence(lines[ln]) ) {
@@ -1587,9 +1862,11 @@ void MarkdownPreview::setMarkdown(TextDocument *srcDoc)
 				}
 				if( !inQuotes )
 					rowStartLine = ln;
-				if( parseCsvLine(cleaned, inQuotes, curFields, curField) ) {
+				if( parseCsvLine(cleaned, inQuotes, curFields, curField, &curCols) ) {
 					rows.append(curFields);
 					rowSrcLines.append(rowStartLine);
+					rowStartPos.append(lineStarts[rowStartLine]);
+					rowCellCols.append(curCols);
 				}
 			}
 			if( ln < nLines && isCodeFence(lines[ln]) )
@@ -1598,20 +1875,27 @@ void MarkdownPreview::setMarkdown(TextDocument *srcDoc)
 				curFields.append(curField.trimmed());
 				rows.append(curFields);
 				rowSrcLines.append(rowStartLine);
+				rowStartPos.append(lineStarts[rowStartLine]);
+				rowCellCols.append(curCols);
 			}
-			insertStyledTable(cursor, rows, rowSrcLines, {}, st, m_srcLineToBlock, m_blockToSrcLine);
+			insertStyledTable(cursor, rows, rowSrcLines, rowStartPos, rowCellCols, {}, st, m_srcLineToBlock, m_blockToSrcLine, &m_syncSpans);
 			continue;
 		}
 		if( !st.inCodeBlock && !st.inHtmlComment && ln + 1 < nLines ) {
 			QStringList headerCells;
+			QVector<int> headerCols;
 			QVector<Qt::Alignment> aligns;
-			if( parseGfmTableRow(line, headerCells) && parseGfmTableSeparator(lines[ln + 1], aligns) ) {
+			if( parseGfmTableRow(line, headerCells, &headerCols) && parseGfmTableSeparator(lines[ln + 1], aligns) ) {
 				QList<QStringList> rows;
 				QVector<int> rowSrcLines;
+				QVector<int> rowStartPos;
+				QList<QVector<int>> rowCellCols;
 				mgr.setLineType(ln, LineMgr::LT_TABLE);
 				mgr.setLineType(ln + 1, LineMgr::LT_TABLE);
 				rows.append(headerCells);
 				rowSrcLines.append(ln);
+				rowStartPos.append(lineStarts[ln]);
+				rowCellCols.append(headerCols);
 				ln += 1;	//	区切り行を消費
 				bool tblComment = false;
 				while( ln + 1 < nLines ) {
@@ -1623,19 +1907,22 @@ void MarkdownPreview::setMarkdown(TextDocument *srcDoc)
 						continue;
 					}
 					QStringList rowCells;
-					if( !parseGfmTableRow(cleaned, rowCells) )
+					QVector<int> rowCols;
+					if( !parseGfmTableRow(cleaned, rowCells, &rowCols) )
 						break;
 					++ln;
 					mgr.setLineType(ln, LineMgr::LT_TABLE);
 					rows.append(rowCells);
 					rowSrcLines.append(ln);
+					rowStartPos.append(lineStarts[ln]);
+					rowCellCols.append(rowCols);
 				}
-				insertStyledTable(cursor, rows, rowSrcLines, aligns, st, m_srcLineToBlock, m_blockToSrcLine);
+				insertStyledTable(cursor, rows, rowSrcLines, rowStartPos, rowCellCols, aligns, st, m_srcLineToBlock, m_blockToSrcLine, &m_syncSpans);
 				continue;
 			}
 		}
 
-		const LineMgr::LineType type = parseAndAppendLine(cursor, line, st, ln);
+		const LineMgr::LineType type = parseAndAppendLine(cursor, line, st, ln, lineStarts[ln], &m_syncSpans);
 		mgr.setLineType(ln, type);
 		if( st.lastLineEmitted ) {
 			const int bn = cursor.block().blockNumber();

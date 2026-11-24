@@ -5,11 +5,18 @@
 #include <QVector>
 #include <functional>
 
+class QTimer;
 class TextDocument;
 
 class MarkdownPreview : public QTextEdit
 {
 public:
+	struct SyncSpan {
+		int srcPos = 0;	//	TextDocument 側の文字位置
+		int prvPos = 0;	//	MarkdownPreview 側の文字位置
+		int len = 0;	//	1対1対応する文字数（空行・空項目アンカーは 0）
+	};
+
 	explicit MarkdownPreview(QWidget *parent = nullptr);
 	~MarkdownPreview() override = default;
 
@@ -18,6 +25,9 @@ public:
 	void setTableColors(const QColor &header, const QColor &zebra1, const QColor &zebra2);
 	void scrollToSourceLine(int srcLine, qreal subLineFrac = 0.0);
 	bool topSourceLine(int &outLine, qreal &outFrac) const;
+	int srcToPrvPos(int srcPos) const;
+	int prvToSrcPos(int prvPos) const;
+	void setCursorFromSrcPos(int srcPos, int srcAnchor = -1);
 	void setFontSizeChangeCallback(std::function<void(int)> cb) { m_onFontSizeChange = std::move(cb); }
 	void setCheckboxToggledCallback(std::function<void(int, bool)> cb) { m_onCheckboxToggled = std::move(cb); }
 
@@ -27,17 +37,22 @@ protected:
 	void mouseMoveEvent(QMouseEvent *event) override;
 	void wheelEvent(QWheelEvent *event) override;
 	void resizeEvent(QResizeEvent *event) override;
+	void focusInEvent(QFocusEvent *event) override;
+	void focusOutEvent(QFocusEvent *event) override;
 
 private:
 	void updateImageSizes();
 
 	QVector<int> m_srcLineToBlock;
 	QVector<int> m_blockToSrcLine;
+	QVector<SyncSpan> m_syncSpans;
 	bool m_hasImages = false;
 	int m_lastImageMaxWidth = -1;
 	QColor m_tableHeaderColor = QColor(0xE6, 0xF0, 0xFF);
 	QColor m_tableZebraColor1 = QColor(0xFF, 0xFF, 0xFF);
 	QColor m_tableZebraColor2 = QColor(0xFF, 0xFF, 0xE0);
+	QTimer *m_blinkTimer = nullptr;
+	bool m_caretVisible = true;
 	std::function<void(int)> m_onFontSizeChange;
 	std::function<void(int, bool)> m_onCheckboxToggled;
 };

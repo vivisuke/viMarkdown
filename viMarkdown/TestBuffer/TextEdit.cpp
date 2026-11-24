@@ -14,6 +14,7 @@
 #include <QRegularExpression>
 #include <QResizeEvent>
 #include <QScrollBar>
+#include <QTimer>
 #include <QWheelEvent>
 
 namespace {
@@ -145,6 +146,12 @@ TextEdit::TextEdit(QWidget *parent)
 	updateLineNumberAreaGeometry();
 	connect(verticalScrollBar(), &QScrollBar::valueChanged, this,
 			[this](int) { viewport()->update(); m_lineNumberArea->update(); });
+	m_blinkTimer = new QTimer(this);
+	m_blinkTimer->setInterval(500);
+	connect(m_blinkTimer, &QTimer::timeout, this, [this]() {
+		m_caretVisible = !m_caretVisible;
+		viewport()->update();
+	});
 }
 
 void TextEdit::setPlainText(const QString &text)
@@ -725,6 +732,20 @@ void TextEdit::unindent()
 		afterChange(true);
 }
 
+void TextEdit::setCursorPosition(int pos, int anchor)
+{
+	const int maxPos = m_doc.characterCount();
+	pos = qBound(0, pos, maxPos);
+	if( anchor >= 0 && anchor != pos ) {
+		anchor = qBound(0, anchor, maxPos);
+		m_cursor.setPosition(anchor);
+		m_cursor.setPosition(pos, TextCursor::KeepAnchor);
+	} else {
+		m_cursor.setPosition(pos);
+	}
+	viewport()->update();
+}
+
 void TextEdit::onSaved()
 {
 	m_doc.onSaved();
@@ -866,11 +887,17 @@ void TextEdit::afterChange(bool textChanged)
 {
 	if( textChanged && m_onTextChanged )
 		m_onTextChanged();
+	if( hasFocus() && m_blinkTimer ) {
+		m_caretVisible = true;
+		m_blinkTimer->start();
+	}
 	updateScrollBars();
 	ensureCursorVisible();
 	viewport()->update();
 	m_lineNumberArea->update();
 	QGuiApplication::inputMethod()->update(Qt::ImCursorRectangle);
+	if( m_onCursorChanged )
+		m_onCursorChanged();
 }
 
 int TextEdit::lineNumberAreaWidth() const
@@ -1080,15 +1107,23 @@ void TextEdit::paintEvent(QPaintEvent *event)
 			drawColoredSegment(LEFT_MARGIN, y + fm.ascent(), text, segOff);
 		}
 	}
-	//	カーソル（フォーカス時のみ）
-	if( hasFocus() && !hasSel ) {
+	//	カーソル（フォーカス時は赤 2px 縦棒、非フォーカス時は黒 2px 幅 I ビーム）
+	if( !hasSel ) {
 		int cv = mgr.viewLineAtPos(m_cursor.position());
 		if( cv >= top && cv < top + rows ) {
 			int x = xOfPos(m_cursor.position());
 			if( !m_preedit.isEmpty() )
 				x += fm.horizontalAdvance(m_preedit.left(m_preeditCursor));
+			const int y0 = (cv - top) * lh;
 			const int caretH = fm.ascent() + 2;
-			painter.fillRect(x, (cv - top) * lh, 2, caretH, Qt::red);
+			if( hasFocus() ) {
+				if( m_caretVisible )
+					painter.fillRect(x, y0, 2, caretH, Qt::red);
+			} else {
+				painter.fillRect(x, y0, 2, caretH, Qt::black);
+				painter.fillRect(x - 2, y0, 6, 2, Qt::black);
+				painter.fillRect(x - 2, y0 + caretH - 2, 6, 2, Qt::black);
+			}
 		}
 	}
 }
@@ -1226,7 +1261,13 @@ void TextEdit::mousePressEvent(QMouseEvent *event)
 		bool keep = (event->modifiers() & Qt::ShiftModifier) != 0;
 		m_cursor.setPosition(posFromPoint(event->pos()),
 							 keep ? TextCursor::KeepAnchor : TextCursor::MoveAnchor);
+		if( m_blinkTimer ) {
+			m_caretVisible = true;
+			m_blinkTimer->start();
+		}
 		viewport()->update();
+		if( m_onCursorChanged )
+			m_onCursorChanged();
 	} else {
 		QAbstractScrollArea::mousePressEvent(event);
 	}
@@ -1241,6 +1282,8 @@ void TextEdit::mouseDoubleClickEvent(QMouseEvent *event)
 		m_wordDragging = true;
 		m_dragging = false;
 		viewport()->update();
+		if( m_onCursorChanged )
+			m_onCursorChanged();
 	} else {
 		QAbstractScrollArea::mouseDoubleClickEvent(event);
 	}
@@ -1260,10 +1303,14 @@ void TextEdit::mouseMoveEvent(QMouseEvent *event)
 		}
 		ensureCursorVisible();
 		viewport()->update();
+		if( m_onCursorChanged )
+			m_onCursorChanged();
 	} else if( m_dragging ) {
 		m_cursor.setPosition(posFromPoint(event->pos()), TextCursor::KeepAnchor);
 		ensureCursorVisible();
 		viewport()->update();
+		if( m_onCursorChanged )
+			m_onCursorChanged();
 	} else {
 		QAbstractScrollArea::mouseMoveEvent(event);
 	}
@@ -1302,6 +1349,9 @@ void TextEdit::resizeEvent(QResizeEvent *event)
 void TextEdit::focusInEvent(QFocusEvent *event)
 {
 	QAbstractScrollArea::focusInEvent(event);
+	m_caretVisible = true;
+	if( m_blinkTimer )
+		m_blinkTimer->start();
 	viewport()->update();
 	QGuiApplication::inputMethod()->update(Qt::ImCursorRectangle);
 }
@@ -1309,6 +1359,9 @@ void TextEdit::focusInEvent(QFocusEvent *event)
 void TextEdit::focusOutEvent(QFocusEvent *event)
 {
 	QAbstractScrollArea::focusOutEvent(event);
+	if( m_blinkTimer )
+		m_blinkTimer->stop();
+	m_caretVisible = true;
 	viewport()->update();
 }
 

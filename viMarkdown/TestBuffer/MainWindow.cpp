@@ -136,6 +136,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->action_Undo, &QAction::triggered, this, &MainWindow::onUndo);
     connect(ui->action_Redo, &QAction::triggered, this, &MainWindow::onRedo);
     connect(ui->action_Cut, &QAction::triggered, this, [this]() {
+        if (QWidget *fw = QApplication::focusWidget()) {
+            if (auto *te = qobject_cast<QTextEdit *>(fw)) { te->cut(); return; }
+        }
         if (TextEdit *edit = currentTextEdit())
             edit->cut();
     });
@@ -148,6 +151,9 @@ MainWindow::MainWindow(QWidget *parent)
             edit->copy();
     });
     connect(ui->action_Paste, &QAction::triggered, this, [this]() {
+        if (QWidget *fw = QApplication::focusWidget()) {
+            if (auto *te = qobject_cast<QTextEdit *>(fw)) { te->paste(); return; }
+        }
         if (TextEdit *edit = currentTextEdit())
             edit->paste();
     });
@@ -258,10 +264,39 @@ TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath
     preview->setCheckboxToggledCallback([edit](int line, bool checked) {
         edit->toggleCheckboxAtLine(line, checked);
     });
-    edit->setTextChangedCallback([this, splitter, edit, preview]() {
+    auto syncingCursor = std::make_shared<bool>(false);
+    edit->setTextChangedCallback([this, splitter, edit, preview, syncingCursor]() {
         preview->setMarkdown(edit->document());
+        if (!*syncingCursor && edit->markdownHighlight()) {
+            *syncingCursor = true;
+            const TextCursor tc = edit->textCursor();
+            preview->setCursorFromSrcPos(
+                static_cast<int>(tc.position()),
+                tc.hasSelection() ? static_cast<int>(tc.anchor()) : -1);
+            *syncingCursor = false;
+        }
         updateOutlineForTab(splitter);
         updateUndoRedoEnabled();
+    });
+    edit->setCursorChangedCallback([edit, preview, syncingCursor]() {
+        if (*syncingCursor || !edit->markdownHighlight())
+            return;
+        *syncingCursor = true;
+        const TextCursor tc = edit->textCursor();
+        preview->setCursorFromSrcPos(
+            static_cast<int>(tc.position()),
+            tc.hasSelection() ? static_cast<int>(tc.anchor()) : -1);
+        *syncingCursor = false;
+    });
+    connect(preview, &QTextEdit::cursorPositionChanged, edit, [edit, preview, syncingCursor]() {
+        if (*syncingCursor || !edit->markdownHighlight())
+            return;
+        *syncingCursor = true;
+        const QTextCursor pc = preview->textCursor();
+        const int srcPos = preview->prvToSrcPos(pc.position());
+        const int srcAnchor = pc.hasSelection() ? preview->prvToSrcPos(pc.anchor()) : -1;
+        edit->setCursorPosition(srcPos, srcAnchor);
+        *syncingCursor = false;
     });
     edit->setFontSizeChangeCallback([this](int delta) {
         const int newSize = qBound(3, m_editorFontSize + delta, 64);

@@ -20,6 +20,7 @@
 class LineNumberArea;
 class QFontMetrics;
 class QPainter;
+class QTimer;
 
 class TextEdit : public QAbstractScrollArea
 {
@@ -76,8 +77,10 @@ public:
 	void setLineAlignment(Qt::Alignment align);
 	void indent();
 	void unindent();
+	void setCursorPosition(int pos, int anchor = -1);
 	void onSaved();
 	void setTextChangedCallback(std::function<void()> cb) { m_onTextChanged = std::move(cb); }
+	void setCursorChangedCallback(std::function<void()> cb) { m_onCursorChanged = std::move(cb); }
 	void setFontSizeChangeCallback(std::function<void(int)> cb) { m_onFontSizeChange = std::move(cb); }
 	QVariant inputMethodQuery(Qt::InputMethodQuery query) const override;
 
@@ -130,7 +133,10 @@ private:
 	QString m_preedit;
 	int m_preeditCursor = 0;
 	LineNumberArea *m_lineNumberArea = nullptr;
+	QTimer *m_blinkTimer = nullptr;
+	bool m_caretVisible = true;
 	std::function<void()> m_onTextChanged;
+	std::function<void()> m_onCursorChanged;
 	std::function<void(int)> m_onFontSizeChange;
 };
 
