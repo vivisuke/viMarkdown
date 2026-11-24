@@ -203,6 +203,18 @@ public:
 		const int lvl2 = headingLevel(line + 1);
 		return lvl2 == 0 || lvl2 > lvl;
 	}
+	int foldableEndLine(int line) const {
+		const int lvl = headingLevel(line);
+		if( lvl == 0 ) return -1;
+		int last = line;
+		const int n = lineCount();
+		for( int ln = line + 1; ln < n; ++ln ) {
+			const int l2 = headingLevel(ln);
+			if( l2 != 0 && l2 <= lvl ) break;
+			last = ln;
+		}
+		return (last > line) ? last : -1;
+	}
 	bool isFolded(int line) const {
 		return line >= 0 && line < (int)m_vinfo.size() && m_vinfo[line].folded;
 	}
@@ -226,6 +238,16 @@ public:
 	void toggleFold(int line) {
 		setFolded(line, !isFolded(line));
 	}
+	void foldAll() {
+		bool changed = false;
+		for( int ln = 0; ln < lineCount(); ++ln ) {
+			if( isFoldable(ln) && !m_vinfo[ln].folded ) {
+				m_vinfo[ln].folded = true;
+				changed = true;
+			}
+		}
+		if( changed ) rebuildVisibility();
+	}
 	void unfoldAll() {
 		bool changed = false;
 		for( SegInfo &si : m_vinfo ) {
@@ -236,6 +258,20 @@ public:
 			}
 		}
 		if( changed ) rebuildViewStarts();
+	}
+	bool unfoldContaining(int line) {
+		if( line < 0 || line >= (int)m_vinfo.size() || !m_vinfo[line].hidden )
+			return false;
+		bool changed = false;
+		while( m_vinfo[line].hidden ) {
+			int k = line - 1;
+			while( k >= 0 && !m_vinfo[k].folded ) --k;
+			if( k < 0 ) break;
+			m_vinfo[k].folded = false;
+			rebuildVisibility();
+			changed = true;
+		}
+		return changed;
 	}
 
 private:

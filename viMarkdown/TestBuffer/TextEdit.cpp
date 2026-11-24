@@ -801,6 +801,14 @@ void TextEdit::notifyTextChanged()
 	afterChange(true);
 }
 
+void TextEdit::refreshAfterFold()
+{
+	updateScrollBars();
+	ensureCursorVisible();
+	viewport()->update();
+	m_lineNumberArea->update();
+}
+
 void TextEdit::setViEnabled(bool enabled)
 {
 	m_vi.setEnabled(enabled);
@@ -1033,6 +1041,31 @@ void TextEdit::lineNumberAreaPaintEvent(QPaintEvent *event)
 			}
 		}
 	}
+	//	折り畳み範囲の青線（▼ホバー中、または展開中の見出し行頭カーソル時）
+	if( m_markdownHighlight ) {
+		int foldHead = -1;
+		if( m_hoverFoldLine >= 0 && mgr.isFoldable(m_hoverFoldLine) && !mgr.isFolded(m_hoverFoldLine) ) {
+			foldHead = m_hoverFoldLine;
+		} else {
+			const int curLn = mgr.lineAtPos(m_cursor.position());
+			if( m_cursor.position() == mgr.lineStartPos(curLn) && mgr.isFoldable(curLn) && !mgr.isFolded(curLn) )
+				foldHead = curLn;
+		}
+		if( foldHead >= 0 ) {
+			int endLn = mgr.foldableEndLine(foldHead);
+			while( endLn > foldHead && mgr.isLineHidden(endLn) ) --endLn;
+			if( endLn > foldHead ) {
+				const int startVL = mgr.lineToViewLine(foldHead) + mgr.viewLineCountIn(foldHead) - 1;
+				const int endVL = mgr.lineToViewLine(endLn) + mgr.viewLineCountIn(endLn) - 1;
+				const int y1 = (startVL - top + 1) * lh;
+				const int y2 = (endVL - top + 1) * lh - 1;
+				const int x = areaW - charW + 1;
+				painter.setPen(Qt::blue);
+				painter.drawLine(x, y1, x, y2);
+				painter.drawLine(x, y2, areaW, y2);
+			}
+		}
+	}
 }
 
 int TextEdit::logicalLineFromY(int y) const
@@ -1093,7 +1126,21 @@ void TextEdit::lineNumberAreaMousePressEvent(QMouseEvent *event)
 
 void TextEdit::lineNumberAreaMouseMoveEvent(QMouseEvent *event)
 {
-	if( !m_lineDragging || m_lineAnchor < 0 ) return;
+	if( !m_lineDragging || m_lineAnchor < 0 ) {
+		int hoverLn = -1;
+		const int foldColX = m_lineNumberArea->width() - fontMetrics().horizontalAdvance(QChar('9')) * 2;
+		if( m_markdownHighlight && event->pos().x() >= foldColX ) {
+			const int ln = logicalLineFromY(event->pos().y());
+			const ViewLineMgr &mgr = m_doc.lineMgr();
+			if( mgr.isFoldable(ln) && !mgr.isFolded(ln) )
+				hoverLn = ln;
+		}
+		if( hoverLn != m_hoverFoldLine ) {
+			m_hoverFoldLine = hoverLn;
+			m_lineNumberArea->update();
+		}
+		return;
+	}
 	int y = event->pos().y();
 	const int vh = viewport()->height();
 	QScrollBar *vbar = verticalScrollBar();
@@ -1115,6 +1162,15 @@ void TextEdit::lineNumberAreaMouseReleaseEvent(QMouseEvent *event)
 {
 	if( event->button() == Qt::LeftButton )
 		m_lineDragging = false;
+}
+
+void TextEdit::lineNumberAreaLeaveEvent(QEvent *event)
+{
+	Q_UNUSED(event);
+	if( m_hoverFoldLine != -1 ) {
+		m_hoverFoldLine = -1;
+		m_lineNumberArea->update();
+	}
 }
 
 void TextEdit::paintEvent(QPaintEvent *event)

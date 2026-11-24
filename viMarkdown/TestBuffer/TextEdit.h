@@ -73,6 +73,7 @@ public:
 	void lineNumberAreaMousePressEvent(QMouseEvent *event);
 	void lineNumberAreaMouseMoveEvent(QMouseEvent *event);
 	void lineNumberAreaMouseReleaseEvent(QMouseEvent *event);
+	void lineNumberAreaLeaveEvent(QEvent *event);
 
 	void undo();
 	void redo();
@@ -89,6 +90,7 @@ public:
 	void setCursorPosition(int pos, int anchor = -1);
 	void applyPreviewEdit(int srcStart, int srcEnd, const QString &text);
 	void notifyTextChanged();
+	void refreshAfterFold();
 	ViEngine *viEngine() { return &m_vi; }
 	const ViEngine *viEngine() const { return &m_vi; }
 	void setViEnabled(bool enabled);
@@ -147,6 +149,7 @@ private:
 	TextDocument::pos_t m_wordAnchorEnd = 0;
 	bool m_lineDragging = false;
 	int m_lineAnchor = -1;
+	int m_hoverFoldLine = -1;
 	QString m_preedit;
 	int m_preeditCursor = 0;
 	LineNumberArea *m_lineNumberArea = nullptr;
@@ -165,13 +168,16 @@ private:
 class LineNumberArea : public QWidget
 {
 public:
-	explicit LineNumberArea(TextEdit *editor) : QWidget(editor), m_editor(editor) {}
+	explicit LineNumberArea(TextEdit *editor) : QWidget(editor), m_editor(editor) {
+		setMouseTracking(true);
+	}
 	QSize sizeHint() const override { return QSize(m_editor->lineNumberAreaWidth(), 0); }
 protected:
 	void paintEvent(QPaintEvent *event) override { m_editor->lineNumberAreaPaintEvent(event); }
 	void mousePressEvent(QMouseEvent *event) override { m_editor->lineNumberAreaMousePressEvent(event); }
 	void mouseMoveEvent(QMouseEvent *event) override { m_editor->lineNumberAreaMouseMoveEvent(event); }
 	void mouseReleaseEvent(QMouseEvent *event) override { m_editor->lineNumberAreaMouseReleaseEvent(event); }
+	void leaveEvent(QEvent *event) override { m_editor->lineNumberAreaLeaveEvent(event); }
 private:
 	TextEdit *m_editor;
 };

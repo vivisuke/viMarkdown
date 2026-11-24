@@ -386,7 +386,14 @@ bool ViEngine::computeMotionTarget(
 	}
 	case 'j': {
 		const int col = static_cast<int>(pos - mgr.lineStartPos(curLine));
-		const int targetLn = qMin(nLines - 1, curLine + count);
+		int targetLn = curLine;
+		for( int rem = count; rem > 0; ) {
+			int nextLn = targetLn + 1;
+			while( nextLn < nLines && mgr.isLineHidden(nextLn) ) ++nextLn;
+			if( nextLn >= nLines ) break;
+			targetLn = nextLn;
+			--rem;
+		}
 		const TextDocument::pos_t s = mgr.lineStartPos(targetLn);
 		const TextDocument::pos_t e = mgr.lineEndPos(targetLn);
 		outPos = qMin(s + col, qMax(s, e - 1));
@@ -395,7 +402,14 @@ bool ViEngine::computeMotionTarget(
 	}
 	case 'k': {
 		const int col = static_cast<int>(pos - mgr.lineStartPos(curLine));
-		const int targetLn = qMax(0, curLine - count);
+		int targetLn = curLine;
+		for( int rem = count; rem > 0; ) {
+			int prevLn = targetLn - 1;
+			while( prevLn >= 0 && mgr.isLineHidden(prevLn) ) --prevLn;
+			if( prevLn < 0 ) break;
+			targetLn = prevLn;
+			--rem;
+		}
 		const TextDocument::pos_t s = mgr.lineStartPos(targetLn);
 		const TextDocument::pos_t e = mgr.lineEndPos(targetLn);
 		outPos = qMin(s + col, qMax(s, e - 1));
@@ -416,13 +430,27 @@ bool ViEngine::computeMotionTarget(
 		return true;
 	}
 	case '+': {
-		const int targetLn = qMin(nLines - 1, curLine + count);
+		int targetLn = curLine;
+		for( int rem = count; rem > 0; ) {
+			int nextLn = targetLn + 1;
+			while( nextLn < nLines && mgr.isLineHidden(nextLn) ) ++nextLn;
+			if( nextLn >= nLines ) break;
+			targetLn = nextLn;
+			--rem;
+		}
 		outPos = firstNonBlankPos(*doc, targetLn);
 		outLinewise = true;
 		return true;
 	}
 	case '-': {
-		const int targetLn = qMax(0, curLine - count);
+		int targetLn = curLine;
+		for( int rem = count; rem > 0; ) {
+			int prevLn = targetLn - 1;
+			while( prevLn >= 0 && mgr.isLineHidden(prevLn) ) --prevLn;
+			if( prevLn < 0 ) break;
+			targetLn = prevLn;
+			--rem;
+		}
 		outPos = firstNonBlankPos(*doc, targetLn);
 		outLinewise = true;
 		return true;
@@ -738,6 +766,8 @@ bool ViEngine::search(TextEdit *edit, const QString &pattern, bool forward, int 
 		cur = static_cast<TextDocument::pos_t>(foundPos);
 	}
 
+	if( doc->lineMgr().unfoldContaining(doc->lineMgr().lineAtPos(cur)) )
+		edit->refreshAfterFold();
 	if( m_mode == ViMode::Visual || m_mode == ViMode::VisualLine ) {
 		m_visualCursor = cur;
 		updateVisualSelection(edit);
@@ -941,6 +971,64 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 			}
 			return true;
 		}
+		if( pref == QChar('z') ) {
+			if( edit->markdownHighlight() ) {
+				TextDocument *doc = edit->document();
+				ViewLineMgr &mgr = doc->lineMgr();
+				const int curLn = mgr.lineAtPos(edit->textCursor().position());
+				auto findTargetHeading = [&]() -> int {
+					if( mgr.headingLevel(curLn) > 0 && (mgr.isFoldable(curLn) || mgr.isFolded(curLn)) )
+						return curLn;
+					for( int k = curLn - 1; k >= 0; --k ) {
+						if( mgr.headingLevel(k) > 0 && mgr.isFoldable(k) )
+							return k;
+					}
+					return -1;
+				};
+				if( effCh == QChar('a') ) {
+					const int h = findTargetHeading();
+					if( h >= 0 ) {
+						mgr.toggleFold(h);
+						if( mgr.isLineHidden(curLn) ) {
+							TextCursor c = edit->textCursor();
+							c.setPosition(mgr.lineStartPos(h));
+							edit->setTextCursor(c);
+						}
+						edit->refreshAfterFold();
+					}
+				} else if( effCh == QChar('c') ) {
+					const int h = findTargetHeading();
+					if( h >= 0 && !mgr.isFolded(h) ) {
+						mgr.setFolded(h, true);
+						if( mgr.isLineHidden(curLn) ) {
+							TextCursor c = edit->textCursor();
+							c.setPosition(mgr.lineStartPos(h));
+							edit->setTextCursor(c);
+						}
+						edit->refreshAfterFold();
+					}
+				} else if( effCh == QChar('o') ) {
+					if( mgr.isFolded(curLn) ) {
+						mgr.setFolded(curLn, false);
+						edit->refreshAfterFold();
+					}
+				} else if( effCh == QChar('M') ) {
+					mgr.foldAll();
+					int visLn = curLn;
+					while( visLn > 0 && mgr.isLineHidden(visLn) ) --visLn;
+					if( visLn != curLn ) {
+						TextCursor c = edit->textCursor();
+						c.setPosition(mgr.lineStartPos(visLn));
+						edit->setTextCursor(c);
+					}
+					edit->refreshAfterFold();
+				} else if( effCh == QChar('R') ) {
+					mgr.unfoldAll();
+					edit->refreshAfterFold();
+				}
+			}
+			return true;
+		}
 		if( pref == QChar('Z') ) {
 			if( effCh == QChar('Z') ) {
 				if( m_cb.requestSave && m_cb.requestSave() && m_cb.requestQuit )
@@ -1029,8 +1117,16 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 
 	//	モーション単体（Normal / Visual 共通）
 	if( effCh == QChar('g') || effCh == QChar('f') || effCh == QChar('F') || effCh == QChar('t') || effCh == QChar('T')
-		|| effCh == QChar('[') || effCh == QChar(']') ) {
+		|| effCh == QChar('[') || effCh == QChar(']') || (m_mode == ViMode::Normal && effCh == QChar('z')) ) {
 		m_prefix = effCh;
+		return true;
+	}
+	//	viMarkdown / ViVi オリジナル：見出し行の行頭での h で折り畳み・展開をトグル
+	if( m_mode == ViMode::Normal && effCh == QChar('h') && edit->markdownHighlight()
+		&& pos == mgr.lineStartPos(curLine) && (mgr.isFoldable(curLine) || mgr.isFolded(curLine)) ) {
+		doc->lineMgr().toggleFold(curLine);
+		edit->refreshAfterFold();
+		resetPending();
 		return true;
 	}
 	{
