@@ -2461,6 +2461,8 @@ bool MainWindow::do_save(bool fDialog, int ix) {
 	}
 	return do_save(fullPath, ix);
 }
+int parseMdFile(const QString fullPath, DayInfo &di);
+
 bool MainWindow::do_save(const QString& fullPath, int ix) {
 	if( ix < 0 )
 		ix = ui->tabWidget->currentIndex();
@@ -2507,8 +2509,26 @@ bool MainWindow::do_save(const QString& fullPath, int ix) {
 	docWidget->m_saving = false;
 	if( isSameFile )
 		m_watcher->addPath(fullPath);
-	//QDate today = QDate::currentDate();
-	onCalendarPageChanged(ui->calendarWidget->yearShown(), ui->calendarWidget->monthShown());		//	ちょっち手抜き
+	if( saved && !g.m_defaultDir.isEmpty() ) {
+		QFileInfo fi(absTarget);
+		QDate date = QDate::fromString(fi.baseName(), "yyyyMMdd");
+		if( fi.suffix().compare("md", Qt::CaseInsensitive) == 0 && date.isValid() ) {
+			QString expectedDir = QDir::cleanPath(QString("%1/diary/%2/%3")
+				.arg(g.m_defaultDir)
+				.arg(date.year(), 4, 10, QChar('0'))
+				.arg(date.month(), 2, 10, QChar('0')));
+			if( QDir::cleanPath(fi.absolutePath()).compare(expectedDir, Qt::CaseInsensitive) == 0 ) {
+				DayInfo di;
+				di.m_lastModified = fi.lastModified();
+				parseMdFile(absTarget, di);
+				ui->calendarWidget->setDayInfoMap(date, di);
+				QTextCharFormat hasDiaryFormat;
+				hasDiaryFormat.setBackground(Qt::transparent);
+				ui->calendarWidget->setDateTextFormat(date, hasDiaryFormat);
+				ui->calendarWidget->update();
+			}
+		}
+	}
 	return saved;
 }
 void MainWindow::onAction_ExportAsPDF() {

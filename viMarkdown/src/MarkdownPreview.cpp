@@ -934,7 +934,13 @@ void MarkdownPreview::insertMarkdown(QTextDocument *doc, int bn0, int nBlocks, /
 		BlockData *data2 = nullptr;
 		if( m_ix + 1 < nBlocks && srcBlock.next().isValid())
 			data2 = getBlockData(srcBlock.next());
-		if( buf.startsWith('#') ) {
+		auto isAtxHeading = [](QStringView s) {
+			int i = 0;
+			while( i < s.size() && s[i] == u'#' ) ++i;
+			if( i < 1 || i > 6 ) return false;
+			return i == s.size() || s[i] == u' ' || s[i] == u'\t';
+		};
+		if( isAtxHeading(buf) ) {
 			do_body(srcBlock0, cursor);
 			do_heading(srcBlock, cursor, buf);
 		} else if( re_checkbox.match(buf).hasMatch() ) {		//	"- [ ] "

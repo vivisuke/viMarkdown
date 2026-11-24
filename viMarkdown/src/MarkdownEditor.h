@@ -78,7 +78,15 @@ public:
 protected:
 	void highlightBlock(const QString &text) override {
 		if( m_highlightMarkdown ) {
-			if (text.startsWith("#")) {
+			auto isAtxHeading = [](QStringView s) {
+				int i = 0;
+				while( i < s.size() && s[i] == u' ' ) ++i;
+				int h = 0;
+				while( i < s.size() && s[i] == u'#' ) { ++i; ++h; }
+				if( h < 1 || h > 6 ) return false;
+				return i == s.size() || s[i] == u' ' || s[i] == u'\t';
+			};
+			if (isAtxHeading(text)) {
 				QTextCharFormat fmt_darkred;
 				fmt_darkred.setForeground(g.m_headingsColor);
 				setFormat(0, text.length(), fmt_darkred);
