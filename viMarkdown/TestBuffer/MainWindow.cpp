@@ -36,6 +36,7 @@
 #include "LineMgrTest.h"
 #include "ViewLineMgrTest.h"
 #include "TextDocumentTest.h"
+#include "ViTest.h"
 
 namespace {
 const int N_RECENT_FILES = 10 + 26;
@@ -47,6 +48,7 @@ const QStringView KEY_EDITOR_FONT_FAMILY(u"editor/fontFamily");
 const QStringView KEY_EDITOR_FONT_SIZE(u"editor/fontSize");
 const QStringView KEY_PREVIEW_FONT_FAMILY(u"preview/fontFamily");
 const QStringView KEY_PREVIEW_FONT_SIZE(u"preview/fontSize");
+const QStringView KEY_OUTPUT_FONT_SIZE(u"output/fontSize");
 const QStringView KEY_TABLE_HEADER_COLOR(u"preview/tableHeaderColor");
 const QStringView KEY_TABLE_ZEBRA_COLOR1(u"preview/tableZebraColor1");
 const QStringView KEY_TABLE_ZEBRA_COLOR2(u"preview/tableZebraColor2");
@@ -82,6 +84,7 @@ MainWindow::MainWindow(QWidget *parent)
         m_editorFontSize = qBound(3, settings.value(KEY_EDITOR_FONT_SIZE, 10).toInt(), 64);
         m_previewFontFamily = settings.value(KEY_PREVIEW_FONT_FAMILY).toString();
         m_previewFontSize = qBound(3, settings.value(KEY_PREVIEW_FONT_SIZE, 10).toInt(), 64);
+        m_outputFontSize = qBound(3, settings.value(KEY_OUTPUT_FONT_SIZE, 10).toInt(), 64);
         QColor thc = settings.value(KEY_TABLE_HEADER_COLOR, m_tableHeaderColor).value<QColor>();
         if (thc.isValid()) m_tableHeaderColor = thc;
         QColor tz1 = settings.value(KEY_TABLE_ZEBRA_COLOR1, m_tableZebraColor1).value<QColor>();
@@ -91,6 +94,7 @@ MainWindow::MainWindow(QWidget *parent)
         m_viKeybind = settings.value(KEY_VI_KEYBIND, false).toBool();
     }
     ui->action_ViKeybind->setChecked(m_viKeybind);
+    applyOutputFontSize(m_outputFontSize);
     m_tabWidget = new QTabWidget(this);
     m_tabWidget->setTabsClosable(true);
     m_tabWidget->setMovable(true);
@@ -246,6 +250,9 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(ui->action_TextDocument, &QAction::triggered, this, [this]() {
         do_test_textDocument(this);
+    });
+    connect(ui->action_TestVi, &QAction::triggered, this, [this]() {
+        do_test_vi(this);
     });
 }
 
@@ -624,6 +631,16 @@ void MainWindow::applyPreviewFont(const QString &family, int pointSize)
     }
 }
 
+void MainWindow::applyOutputFontSize(int pointSize)
+{
+    m_outputFontSize = qBound(3, pointSize, 64);
+    if (ui && ui->plainTextEdit) {
+        QFont f = ui->plainTextEdit->font();
+        f.setPointSize(m_outputFontSize);
+        ui->plainTextEdit->setFont(f);
+    }
+}
+
 void MainWindow::onSettings()
 {
     const int origPercent = m_lineSpacingPercent;
@@ -633,6 +650,7 @@ void MainWindow::onSettings()
     const int origFontSize = m_editorFontSize;
     const QString origPreviewFontFamily = m_previewFontFamily;
     const int origPreviewFontSize = m_previewFontSize;
+    const int origOutputFontSize = m_outputFontSize;
     const QColor origTableHeader = m_tableHeaderColor;
     const QColor origTableZebra1 = m_tableZebraColor1;
     const QColor origTableZebra2 = m_tableZebraColor2;
@@ -756,6 +774,19 @@ void MainWindow::onSettings()
     groupsRow->addWidget(previewGroup, 1);
 
     layout->addLayout(groupsRow);
+
+    auto *outputGroup = new QGroupBox(tr("Output"), &dlg);
+    auto *outputForm = new QFormLayout(outputGroup);
+    auto *outputFontSizeSpin = new QSpinBox(outputGroup);
+    outputFontSizeSpin->setRange(3, 64);
+    outputFontSizeSpin->setSingleStep(1);
+    outputFontSizeSpin->setSuffix(QStringLiteral(" pt"));
+    outputFontSizeSpin->setValue(m_outputFontSize);
+    connect(outputFontSizeSpin, &QSpinBox::valueChanged, this, [this](int val) {
+        applyOutputFontSize(val);
+    });
+    outputForm->addRow(tr("Font Size:"), outputFontSizeSpin);
+    layout->addWidget(outputGroup);
     layout->addStretch();
 
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dlg);
@@ -778,9 +809,11 @@ void MainWindow::onSettings()
         settings.setValue(KEY_TABLE_HEADER_COLOR, m_tableHeaderColor);
         settings.setValue(KEY_TABLE_ZEBRA_COLOR1, m_tableZebraColor1);
         settings.setValue(KEY_TABLE_ZEBRA_COLOR2, m_tableZebraColor2);
+        settings.setValue(KEY_OUTPUT_FONT_SIZE, m_outputFontSize);
     } else {
         applyEditorFont(origFontFamily, origFontSize);
         applyPreviewFont(origPreviewFontFamily, origPreviewFontSize);
+        applyOutputFontSize(origOutputFontSize);
         applyLineSpacing(origPercent);
         applyColors(origHeading, origEmphasis);
         applyTableColors(origTableHeader, origTableZebra1, origTableZebra2);
@@ -981,6 +1014,9 @@ void MainWindow::do_output(const QString& txt)
     cursor.movePosition(QTextCursor::End);
     cursor.insertText(txt);
     ui->plainTextEdit->setTextCursor(cursor);
+    ui->plainTextEdit->ensureCursorVisible();
+    if (txt.contains(QChar('\n')))
+        QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 }
 
 void MainWindow::openViCmdLine(QChar prefix)

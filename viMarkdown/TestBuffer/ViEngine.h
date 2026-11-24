@@ -37,6 +37,8 @@ public:
 	ViMode mode() const { return m_mode; }
 	void setMode(ViMode m, TextEdit *edit = nullptr);
 	QString modeLabel() const;
+	TextDocument::pos_t visualAnchor() const { return m_visualAnchor; }
+	TextDocument::pos_t visualCursor() const { return m_visualCursor; }
 
 	void setCallbacks(Callbacks cb) { m_cb = std::move(cb); }
 
@@ -78,6 +80,8 @@ private:
 	QChar m_lastFindChar;
 	QChar m_lastFindCmd;		//	'f', 'F', 't', 'T'
 	TextDocument::pos_t m_visualAnchor = 0;
+	TextDocument::pos_t m_visualCursor = 0;
+	bool m_changeUndoOpen = false;
 	QString m_yankBuf;
 	bool m_yankLinewise = false;
 	QString m_lastSearchPat;

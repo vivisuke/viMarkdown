@@ -79,8 +79,15 @@
     <property name="title">
      <string>&amp;Other</string>
     </property>
+    <widget class="QMenu" name="menu_OtherTest">
+     <property name="title">
+      <string>&amp;Test</string>
+     </property>
+     <addaction name="action_TestVi"/>
+    </widget>
     <addaction name="action_Settings"/>
     <addaction name="action_ViKeybind"/>
+    <addaction name="menu_OtherTest"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -351,6 +358,14 @@
    </property>
    <property name="text">
     <string>&amp;vi keybind</string>
+   </property>
+  </action>
+  <action name="action_TestVi">
+   <property name="text">
+    <string>&amp;vi</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Alt+V</string>
    </property>
   </action>
  </widget>

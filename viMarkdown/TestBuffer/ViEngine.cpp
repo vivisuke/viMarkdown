@@ -9,6 +9,8 @@
 #include <algorithm>
 
 namespace {
+constexpr uchar kUndoFlagLinewise = UndoAction::FLAG_LINEWISE;
+
 enum ViCharClass {
 	VCC_NEWLINE = 0,
 	VCC_SPACE,
@@ -174,6 +176,8 @@ int parseExLineSpec(const QString &text, qsizetype &ix, int curLine, int totalLi
 	if( text[ix] == QChar('.') ) {
 		base = curLine;
 		++ix;
+	} else if( text[ix] == QChar('+') || text[ix] == QChar('-') ) {
+		base = curLine;	//	'.' 省略の相対指定（:+2 / :- / :1;+2）
 	} else if( text[ix] == QChar('$') ) {
 		base = totalLines;
 		++ix;
@@ -230,22 +234,32 @@ bool exCmdMatch(const QString &cmd, const char *shortName, const char *fullName)
 void ViEngine::setEnabled(bool enabled)
 {
 	m_enabled = enabled;
+	m_changeUndoOpen = false;
 	resetPending();
 	m_mode = enabled ? ViMode::Normal : ViMode::Insert;
 }
 
 void ViEngine::setMode(ViMode m, TextEdit *edit)
 {
+	if( m == ViMode::Normal && m_changeUndoOpen && edit ) {
+		edit->document()->undoMgr().closeBlock();
+		m_changeUndoOpen = false;
+	}
+	const ViMode prevMode = m_mode;
 	m_mode = m;
 	resetPending();
 	if( edit ) {
 		if( m_mode == ViMode::Normal ) {
 			TextCursor c = edit->textCursor();
-			c.clearSelection();
+			if( prevMode == ViMode::Visual || prevMode == ViMode::VisualLine )
+				c.setPosition(m_visualCursor);
+			else
+				c.clearSelection();
 			edit->setTextCursor(c);
 			clampCursorInNormal(edit);
 		} else if( m_mode == ViMode::Visual || m_mode == ViMode::VisualLine ) {
 			m_visualAnchor = edit->textCursor().position();
+			m_visualCursor = m_visualAnchor;
 			updateVisualSelection(edit);
 		}
 		notifyMode(edit);
@@ -306,7 +320,7 @@ void ViEngine::updateVisualSelection(TextEdit *edit)
 	TextDocument *doc = edit->document();
 	const ViewLineMgr &mgr = doc->lineMgr();
 	TextCursor c = edit->textCursor();
-	const TextDocument::pos_t cur = c.position();
+	const TextDocument::pos_t cur = m_visualCursor;
 	if( m_mode == ViMode::VisualLine ) {
 		const int l1 = mgr.lineAtPos(qMin(m_visualAnchor, cur));
 		const int l2 = mgr.lineAtPos(qMax(m_visualAnchor, cur));
@@ -335,7 +349,9 @@ bool ViEngine::computeMotionTarget(
 {
 	TextDocument *doc = edit->document();
 	const ViewLineMgr &mgr = doc->lineMgr();
-	const TextDocument::pos_t pos = edit->textCursor().position();
+	const TextDocument::pos_t pos = (m_mode == ViMode::Visual || m_mode == ViMode::VisualLine)
+		? m_visualCursor
+		: edit->textCursor().position();
 	const int curLine = mgr.lineAtPos(pos);
 	const int nLines = mgr.lineCount();
 	outPos = pos;
@@ -553,8 +569,10 @@ bool ViEngine::applyOperatorRange(
 			return true;
 		}
 		if( op == QChar('c') ) {
-			//	cc: 選択行の内容を消して空行にし Insert モードへ
+			//	cc: 選択行の内容を消して空行にし Insert モードへ（1 Undo ブロックにまとめる）
 			const TextDocument::pos_t endNoNl = mgr.lineEndPos(l2);
+			doc->undoMgr().openBlock();
+			m_changeUndoOpen = true;
 			edit->applyPreviewEdit(static_cast<int>(start), static_cast<int>(endNoNl), QString());
 			setMode(ViMode::Insert, edit);
 			return true;
@@ -601,6 +619,8 @@ bool ViEngine::applyOperatorRange(
 		return true;
 	}
 	if( op == QChar('c') ) {
+		doc->undoMgr().openBlock();
+		m_changeUndoOpen = true;
 		edit->applyPreviewEdit(static_cast<int>(p1), static_cast<int>(p2), QString());
 		setMode(ViMode::Insert, edit);
 		return true;
@@ -630,6 +650,7 @@ bool ViEngine::doPut(TextEdit *edit, bool before, int count)
 		if( before ) {
 			const TextDocument::pos_t insPos = mgr.lineStartPos(ln);
 			edit->applyPreviewEdit(static_cast<int>(insPos), static_cast<int>(insPos), rep);
+			doc->undoMgr().setFlag(kUndoFlagLinewise);
 			TextCursor c = edit->textCursor();
 			c.setPosition(firstNonBlankPos(*doc, ln));
 			edit->setTextCursor(c);
@@ -639,6 +660,7 @@ bool ViEngine::doPut(TextEdit *edit, bool before, int count)
 			if( toIns.endsWith(QChar('\n')) ) toIns.chop(1);
 			toIns.prepend(QChar('\n'));
 			edit->applyPreviewEdit(static_cast<int>(lineEnd), static_cast<int>(lineEnd), toIns);
+			doc->undoMgr().setFlag(kUndoFlagLinewise);
 			const int nextLn = qMin(ln + 1, doc->lineMgr().lineCount() - 1);
 			TextCursor c = edit->textCursor();
 			c.setPosition(firstNonBlankPos(*doc, nextLn));
@@ -715,11 +737,14 @@ bool ViEngine::search(TextEdit *edit, const QString &pattern, bool forward, int 
 		cur = static_cast<TextDocument::pos_t>(foundPos);
 	}
 
-	TextCursor c = edit->textCursor();
-	c.setPosition(cur);
-	edit->setTextCursor(c);
-	if( m_mode == ViMode::Visual || m_mode == ViMode::VisualLine )
+	if( m_mode == ViMode::Visual || m_mode == ViMode::VisualLine ) {
+		m_visualCursor = cur;
 		updateVisualSelection(edit);
+	} else {
+		TextCursor c = edit->textCursor();
+		c.setPosition(cur);
+		edit->setTextCursor(c);
+	}
 	if( m_cb.showStatus )
 		m_cb.showStatus(wrapped ? QStringLiteral("Search wrapped: %1").arg(pattern) : QStringLiteral("/%1").arg(pattern));
 	return true;
@@ -793,11 +818,14 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 			TextDocument::pos_t target = 0;
 			bool lw = false, inc = false;
 			if( computeMotionTarget(edit, QChar(key), true, effectiveCount(), false, QChar(), target, lw, inc) ) {
-				TextCursor c = edit->textCursor();
-				c.setPosition(target);
-				edit->setTextCursor(c);
-				if( m_mode == ViMode::Visual || m_mode == ViMode::VisualLine )
+				if( m_mode == ViMode::Visual || m_mode == ViMode::VisualLine ) {
+					m_visualCursor = target;
 					updateVisualSelection(edit);
+				} else {
+					TextCursor c = edit->textCursor();
+					c.setPosition(target);
+					edit->setTextCursor(c);
+				}
 				resetPending();
 				return true;
 			}
@@ -848,12 +876,13 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 				if( computeMotionTarget(edit, QChar(';'), false, cnt, !op.isNull(), op, target, lw, inc) ) {
 					if( !op.isNull() ) {
 						applyOperatorRange(edit, op, edit->textCursor().position(), target, lw, inc);
+					} else if( m_mode == ViMode::Visual || m_mode == ViMode::VisualLine ) {
+						m_visualCursor = target;
+						updateVisualSelection(edit);
 					} else {
 						TextCursor c = edit->textCursor();
 						c.setPosition(target);
 						edit->setTextCursor(c);
-						if( m_mode == ViMode::Visual || m_mode == ViMode::VisualLine )
-							updateVisualSelection(edit);
 					}
 				}
 			}
@@ -866,12 +895,13 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 				const TextDocument::pos_t target = firstNonBlankPos(*doc, targetLn);
 				if( !op.isNull() ) {
 					applyOperatorRange(edit, op, edit->textCursor().position(), target, true, false);
+				} else if( m_mode == ViMode::Visual || m_mode == ViMode::VisualLine ) {
+					m_visualCursor = target;
+					updateVisualSelection(edit);
 				} else {
 					TextCursor c = edit->textCursor();
 					c.setPosition(target);
 					edit->setTextCursor(c);
-					if( m_mode == ViMode::Visual || m_mode == ViMode::VisualLine )
-						updateVisualSelection(edit);
 				}
 			}
 			return true;
@@ -971,11 +1001,14 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 		bool lw = false, inc = false;
 		if( computeMotionTarget(edit, effCh, false, cnt, false, QChar(), target, lw, inc) ) {
 			resetPending();
-			TextCursor c = edit->textCursor();
-			c.setPosition(target);
-			edit->setTextCursor(c);
-			if( m_mode == ViMode::Visual || m_mode == ViMode::VisualLine )
+			if( m_mode == ViMode::Visual || m_mode == ViMode::VisualLine ) {
+				m_visualCursor = target;
 				updateVisualSelection(edit);
+			} else {
+				TextCursor c = edit->textCursor();
+				c.setPosition(target);
+				edit->setTextCursor(c);
+			}
 			return true;
 		}
 	}
@@ -1170,7 +1203,16 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 		return true;
 	case 'u':
 		resetPending();
-		for( int i = 0; i < cnt; ++i ) edit->undo();
+		for( int i = 0; i < cnt; ++i ) {
+			const bool wasLinewise = (doc->undoMgr().undoActionFlags() & kUndoFlagLinewise) != 0;
+			edit->undo();
+			if( wasLinewise ) {
+				const int ln = doc->lineMgr().lineAtPos(edit->textCursor().position());
+				TextCursor c = edit->textCursor();
+				c.setPosition(firstNonBlankPos(*doc, ln));
+				edit->setTextCursor(c);
+			}
+		}
 		clampCursorInNormal(edit);
 		return true;
 	default:
@@ -1329,7 +1371,7 @@ void ViEngine::executeExCommand(TextEdit *edit, const QString &cmdLine, const Ex
 		const int l2 = qBound(l1, rangeEnd - 1, totalLines - 1);
 		int count = 0;
 		doc->undoMgr().openBlock();
-		for( int ln = l2; ln >= l1; --ln ) {
+		for( int ln = l1; ln <= l2; ++ln ) {
 			const QString orig = lineTextWithoutNl(*doc, ln);
 			QString replaced;
 			if( global ) {

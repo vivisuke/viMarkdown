@@ -2442,10 +2442,11 @@ void MainWindow::open_cmdLine() {
 //	文書が無い状態で実行できる ex コマンド（:e, :pwd, :cd, :merge のみ。それ以外は illegal command）
 void MainWindow::do_exCmd_noDoc(const QString &text) {
 	int ix = 0;
+	while( ix < text.size() && (text[ix] == u' ' || text[ix] == u'\t') ) ++ix;
 	QString cmd, arg;
 	while( ix < text.size() && text[ix].isLetter() ) cmd += text[ix++];
 	if( ix < text.size() )
-		arg = text.mid(ix+1).trimmed();
+		arg = text.mid(ix).trimmed();
 	if( is_match(cmd, "pwd") ) {
 		do_output(QString("\ncurrent directory: %1\n").arg(QDir::currentPath()));
 	} else if( is_match(cmd, "cd") ) {
@@ -2481,10 +2482,15 @@ void MainWindow::do_exCmd(const QString &text, QTextCursor& cursor) {
 	if( doc->lastBlock().text().isEmpty() && totalLines > 1 ) --totalLines;
 	//int ix = 1;		//	skip ':'
 	int ix = 0;
+	auto skipSpaces = [&]() {
+		while( ix < text.size() && (text[ix] == u' ' || text[ix] == u'\t') ) ++ix;
+	};
+	skipSpaces();
 	gvi.m_nRange = 0;
 	gvi.m_rangeStart = 1;
 	if( ix < text.size() && text[ix] == '%' ) {
 	    ++ix;
+	    skipSpaces();
 	    gvi.m_nRange = 2;
 	    gvi.m_rangeStart = 1;
 	    gvi.m_rangeEnd   = totalLines;
@@ -2492,11 +2498,14 @@ void MainWindow::do_exCmd(const QString &text, QTextCursor& cursor) {
 		int currentLine = cursor.block().blockNumber() + 1;
 		int nr = 0;
 		for(;;) {
+			skipSpaces();
+			int startIx = ix;
 			++nr;
 			gvi.m_rangeEnd = parseLineSpec(text, ix, currentLine, totalLines, doc);
 			//##qDebug() << "line = " << gvi.m_rangeEnd;
-			if( ix == 0 ) {
-				gvi.m_rangeStart = gvi.m_rangeEnd = currentLine;
+			if( ix == startIx ) {
+				if( nr == 1 )
+					gvi.m_rangeStart = gvi.m_rangeEnd = currentLine;
 				break;	//	行番号無し
 			}
 			++gvi.m_nRange;
@@ -2504,6 +2513,7 @@ void MainWindow::do_exCmd(const QString &text, QTextCursor& cursor) {
 				statusBar()->showMessage(tr("Pattern not found / invalid range."), 5000);
 				return;
 			}
+			skipSpaces();
 			if( ix >= text.size() || text[ix] != ',' && text[ix] != ';' ) break;
 			if( text[ix] == ';' ) currentLine = gvi.m_rangeEnd;
 			++ix;
@@ -2512,6 +2522,7 @@ void MainWindow::do_exCmd(const QString &text, QTextCursor& cursor) {
 		if( nr == 1 )
 			gvi.m_rangeStart = gvi.m_rangeEnd;
 	}
+	skipSpaces();
 	if( ix >= text.size() || text[ix] == u'\n' ) {	//	:{range} Enter の場合
 		int targetBn = qBound(0, gvi.m_rangeEnd - 1, qMax(0, doc->blockCount() - 1));
 		QTextBlock block = doc->findBlockByNumber(targetBn);
@@ -2540,6 +2551,7 @@ void MainWindow::do_exCmd(const QString &text, QTextCursor& cursor) {
 	//do_exCmd(cmd, cursor, doc, docWidget);
 }
 void MainWindow::do_exCmd(const QString &text, int ix, /*QString cmd, QChar nch,*/ QTextCursor &cursor, QTextDocument*doc, DocWidget* docWidget) {
+	while( ix < text.size() && (text[ix] == u' ' || text[ix] == u'\t') ) ++ix;
 	QString cmd, arg;
 	while( ix < text.size() && text[ix].isLetter() ) cmd += text[ix++];
 	QChar nch = ix < text.size() ? text[ix] : u'\0';

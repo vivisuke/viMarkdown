@@ -56,6 +56,7 @@ private:
     void applyTableColors(const QColor &header, const QColor &zebra1, const QColor &zebra2);
     void applyEditorFont(const QString &family, int pointSize);
     void applyPreviewFont(const QString &family, int pointSize);
+    void applyOutputFontSize(int pointSize);
     bool openFile(const QString &filePath);
     void addToRecentFiles(const QString &fullPath);
     void onAboutToShow_RecentFiles();
@@ -79,6 +80,7 @@ private:
     int m_editorFontSize = 10;
     QString m_previewFontFamily;
     int m_previewFontSize = 10;
+    int m_outputFontSize = 10;
     bool m_viKeybind = false;
     QLineEdit *m_cmdLine = nullptr;
     QChar m_cmdPrefix;
