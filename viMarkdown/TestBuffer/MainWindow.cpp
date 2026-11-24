@@ -46,6 +46,9 @@ const QStringView KEY_EDITOR_FONT_FAMILY(u"editor/fontFamily");
 const QStringView KEY_EDITOR_FONT_SIZE(u"editor/fontSize");
 const QStringView KEY_PREVIEW_FONT_FAMILY(u"preview/fontFamily");
 const QStringView KEY_PREVIEW_FONT_SIZE(u"preview/fontSize");
+const QStringView KEY_TABLE_HEADER_COLOR(u"preview/tableHeaderColor");
+const QStringView KEY_TABLE_ZEBRA_COLOR1(u"preview/tableZebraColor1");
+const QStringView KEY_TABLE_ZEBRA_COLOR2(u"preview/tableZebraColor2");
 const QStringView KEY_WINDOW_GEOMETRY(u"window/geometry");
 const QStringView KEY_WINDOW_STATE(u"window/state");
 const char PROP_FILE_PATH[] = "filePath";
@@ -77,6 +80,12 @@ MainWindow::MainWindow(QWidget *parent)
         m_editorFontSize = qBound(3, settings.value(KEY_EDITOR_FONT_SIZE, 10).toInt(), 64);
         m_previewFontFamily = settings.value(KEY_PREVIEW_FONT_FAMILY).toString();
         m_previewFontSize = qBound(3, settings.value(KEY_PREVIEW_FONT_SIZE, 10).toInt(), 64);
+        QColor thc = settings.value(KEY_TABLE_HEADER_COLOR, m_tableHeaderColor).value<QColor>();
+        if (thc.isValid()) m_tableHeaderColor = thc;
+        QColor tz1 = settings.value(KEY_TABLE_ZEBRA_COLOR1, m_tableZebraColor1).value<QColor>();
+        if (tz1.isValid()) m_tableZebraColor1 = tz1;
+        QColor tz2 = settings.value(KEY_TABLE_ZEBRA_COLOR2, m_tableZebraColor2).value<QColor>();
+        if (tz2.isValid()) m_tableZebraColor2 = tz2;
     }
     m_tabWidget = new QTabWidget(this);
     m_tabWidget->setTabsClosable(true);
@@ -215,6 +224,7 @@ TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath
         pf.setPointSize(m_previewFontSize);
         preview->setFont(pf);
         preview->document()->setDefaultFont(pf);
+        preview->setTableColors(m_tableHeaderColor, m_tableZebraColor1, m_tableZebraColor2);
     }
     preview->setFontSizeChangeCallback([this](int delta) {
         const int newSize = qBound(3, m_previewFontSize + delta, 64);
@@ -442,6 +452,25 @@ void MainWindow::applyColors(const QColor &heading, const QColor &emphasis)
     }
 }
 
+void MainWindow::applyTableColors(const QColor &header, const QColor &zebra1, const QColor &zebra2)
+{
+    if (header.isValid()) m_tableHeaderColor = header;
+    if (zebra1.isValid()) m_tableZebraColor1 = zebra1;
+    if (zebra2.isValid()) m_tableZebraColor2 = zebra2;
+    if (!m_tabWidget)
+        return;
+    for (int i = 0; i < m_tabWidget->count(); ++i) {
+        auto *splitter = qobject_cast<QSplitter *>(m_tabWidget->widget(i));
+        auto *edit = splitter ? dynamic_cast<TextEdit *>(splitter->widget(0)) : nullptr;
+        auto *preview = splitter ? dynamic_cast<MarkdownPreview *>(splitter->widget(1)) : nullptr;
+        if (preview) {
+            preview->setTableColors(m_tableHeaderColor, m_tableZebraColor1, m_tableZebraColor2);
+            if (edit && edit->markdownHighlight())
+                preview->setMarkdown(edit->document());
+        }
+    }
+}
+
 void MainWindow::applyEditorFont(const QString &family, int pointSize)
 {
     if (!family.isEmpty())
@@ -496,6 +525,9 @@ void MainWindow::onSettings()
     const int origFontSize = m_editorFontSize;
     const QString origPreviewFontFamily = m_previewFontFamily;
     const int origPreviewFontSize = m_previewFontSize;
+    const QColor origTableHeader = m_tableHeaderColor;
+    const QColor origTableZebra1 = m_tableZebraColor1;
+    const QColor origTableZebra2 = m_tableZebraColor2;
 
     QDialog dlg(this);
     dlg.setWindowTitle(tr("Settings"));
@@ -580,6 +612,39 @@ void MainWindow::onSettings()
         applyPreviewFont(m_previewFontFamily, val);
     });
     previewForm->addRow(tr("Font Size:"), previewFontSizeSpin);
+
+    auto *tableHeaderColorBtn = new QPushButton(previewGroup);
+    setColorButtonStyle(tableHeaderColorBtn, m_tableHeaderColor);
+    connect(tableHeaderColorBtn, &QPushButton::clicked, &dlg, [this, &dlg, tableHeaderColorBtn]() {
+        QColor c = QColorDialog::getColor(m_tableHeaderColor, &dlg, tr("Select Table Header Color"));
+        if (c.isValid()) {
+            setColorButtonStyle(tableHeaderColorBtn, c);
+            applyTableColors(c, m_tableZebraColor1, m_tableZebraColor2);
+        }
+    });
+    previewForm->addRow(tr("Table Header Color:"), tableHeaderColorBtn);
+
+    auto *tableZebra1ColorBtn = new QPushButton(previewGroup);
+    setColorButtonStyle(tableZebra1ColorBtn, m_tableZebraColor1);
+    connect(tableZebra1ColorBtn, &QPushButton::clicked, &dlg, [this, &dlg, tableZebra1ColorBtn]() {
+        QColor c = QColorDialog::getColor(m_tableZebraColor1, &dlg, tr("Select Table Zebra Color 1"));
+        if (c.isValid()) {
+            setColorButtonStyle(tableZebra1ColorBtn, c);
+            applyTableColors(m_tableHeaderColor, c, m_tableZebraColor2);
+        }
+    });
+    previewForm->addRow(tr("Table Zebra Color 1:"), tableZebra1ColorBtn);
+
+    auto *tableZebra2ColorBtn = new QPushButton(previewGroup);
+    setColorButtonStyle(tableZebra2ColorBtn, m_tableZebraColor2);
+    connect(tableZebra2ColorBtn, &QPushButton::clicked, &dlg, [this, &dlg, tableZebra2ColorBtn]() {
+        QColor c = QColorDialog::getColor(m_tableZebraColor2, &dlg, tr("Select Table Zebra Color 2"));
+        if (c.isValid()) {
+            setColorButtonStyle(tableZebra2ColorBtn, c);
+            applyTableColors(m_tableHeaderColor, m_tableZebraColor1, c);
+        }
+    });
+    previewForm->addRow(tr("Table Zebra Color 2:"), tableZebra2ColorBtn);
     groupsRow->addWidget(previewGroup, 1);
 
     layout->addLayout(groupsRow);
@@ -602,11 +667,15 @@ void MainWindow::onSettings()
         settings.setValue(KEY_LINE_SPACING_PERCENT, m_lineSpacingPercent);
         settings.setValue(KEY_HEADING_COLOR, m_headingColor);
         settings.setValue(KEY_EMPHASIS_COLOR, m_emphasisColor);
+        settings.setValue(KEY_TABLE_HEADER_COLOR, m_tableHeaderColor);
+        settings.setValue(KEY_TABLE_ZEBRA_COLOR1, m_tableZebraColor1);
+        settings.setValue(KEY_TABLE_ZEBRA_COLOR2, m_tableZebraColor2);
     } else {
         applyEditorFont(origFontFamily, origFontSize);
         applyPreviewFont(origPreviewFontFamily, origPreviewFontSize);
         applyLineSpacing(origPercent);
         applyColors(origHeading, origEmphasis);
+        applyTableColors(origTableHeader, origTableZebra1, origTableZebra2);
     }
 }
 

@@ -59,7 +59,7 @@ bool isEscapablePunct(QChar ch)
 	switch( ch.unicode() ) {
 	case '\\': case '`': case '*': case '_': case '~':
 	case '^': case '[': case ']': case '(': case ')':
-	case '{': case '}': case '#': case '-': case '+': case '>':
+	case '{': case '}': case '#': case '-': case '+': case '<': case '>':
 		return true;
 	default:
 		return false;
@@ -643,6 +643,9 @@ struct ParseState {
 	bool hasImages = false;
 	qreal basePt = 10.0;
 	qreal maxImgWidth = 0.0;
+	QColor tableHeaderColor = QColor(0xE6, 0xF0, 0xFF);
+	QColor tableZebraColor1 = QColor(0xFF, 0xFF, 0xFF);
+	QColor tableZebraColor2 = QColor(0xFF, 0xFF, 0xE0);
 };
 
 //	HTML コメント（<!-- ... -->、複数行またぎ対応）を除去する。インラインコード内の `<!--` は保持する。
@@ -1179,36 +1182,81 @@ void insertStyledTable(
 	tableFmt.setBorder(1.0);
 	tableFmt.setBorderStyle(QTextFrameFormat::BorderStyle_Solid);
 	tableFmt.setBorderBrush(QColor(0xB8, 0xC4, 0xD0));
+	tableFmt.setBorderCollapse(true);
 	tableFmt.setCellPadding(5.0);
 	tableFmt.setCellSpacing(0.0);
 	tableFmt.setTopMargin(6.0);
 	tableFmt.setBottomMargin(6.0);
-	tableFmt.setHeaderRowCount(1);
 
 	QTextTable *table = cursor.insertTable(static_cast<int>(rows.size()), maxCols, tableFmt);
 	if( !table )
 		return;
 
 	static const QRegularExpression kNumberRe(QStringLiteral(R"(^[+-]?(\d+\.\d*|\d+|\.\d+)%?$)"));
-	static const QColor kHeaderBg(0xE6, 0xF0, 0xFF);
-	static const QColor kZebraBg1(0xFF, 0xFF, 0xFF);
-	static const QColor kZebraBg2(0xF5, 0xF8, 0xFC);
+	const QColor &headerBg = st.tableHeaderColor;
+	const QColor &zebraBg1 = st.tableZebraColor1;
+	const QColor &zebraBg2 = st.tableZebraColor2;
 
-	for( int r = 0; r < rows.size(); ++r ) {
+	const int nRows = static_cast<int>(rows.size());
+	auto cellTextAt = [&](int r, int c) -> QString {
+		return (r >= 0 && r < nRows && c >= 0 && c < rows[r].size()) ? rows[r][c] : QString();
+	};
+
+	QVector<QVector<bool>> consumed(nRows, QVector<bool>(maxCols, false));
+	for( int r = 0; r < nRows; ++r ) {
 		const int srcLine = (r < rowSrcLines.size()) ? rowSrcLines[r] : -1;
 		for( int c = 0; c < maxCols; ++c ) {
+			if( consumed[r][c] )
+				continue;
+
+			//	右方向の "<" セルで横結合スパンを算出
+			int colSpan = 1;
+			while( c + colSpan < maxCols
+				&& !consumed[r][c + colSpan]
+				&& cellTextAt(r, c + colSpan) == QStringLiteral("<") ) {
+				++colSpan;
+			}
+
+			//	下方向の "^" セル（2D 結合時は右隣に "<" または "^"）で縦結合スパンを算出
+			int rowSpan = 1;
+			while( r + rowSpan < nRows ) {
+				const int r2 = r + rowSpan;
+				if( consumed[r2][c] || cellTextAt(r2, c) != QStringLiteral("^") )
+					break;
+				bool rowOk = true;
+				for( int k = 1; k < colSpan; ++k ) {
+					const QString t = cellTextAt(r2, c + k);
+					if( consumed[r2][c + k] || (t != QStringLiteral("^") && t != QStringLiteral("<")) ) {
+						rowOk = false;
+						break;
+					}
+				}
+				if( !rowOk )
+					break;
+				++rowSpan;
+			}
+
+			for( int dr = 0; dr < rowSpan; ++dr ) {
+				for( int dc = 0; dc < colSpan; ++dc )
+					consumed[r + dr][c + dc] = true;
+			}
+			if( rowSpan > 1 || colSpan > 1 )
+				table->mergeCells(r, c, rowSpan, colSpan);
+
 			QTextTableCell cell = table->cellAt(r, c);
 			if( !cell.isValid() )
 				continue;
 
-			QTextTableCellFormat cellFmt;
-			cellFmt.setBackground(r == 0 ? kHeaderBg : ((r % 2) != 0 ? kZebraBg1 : kZebraBg2));
+			QTextTableCellFormat cellFmt = cell.format().toTableCellFormat();
+			cellFmt.setBackground(r == 0 ? headerBg : ((r % 2) != 0 ? zebraBg1 : zebraBg2));
+			if( rowSpan > 1 )
+				cellFmt.setVerticalAlignment(QTextCharFormat::AlignMiddle);
 			cell.setFormat(cellFmt);
 
-			const QString cellText = (c < rows[r].size()) ? rows[r][c] : QString();
+			const QString cellText = cellTextAt(r, c);
 			QTextCursor cellCur = cell.firstCursorPosition();
 			QTextBlockFormat bf;
-			if( r == 0 ) {
+			if( r == 0 || colSpan > 1 ) {
 				bf.setAlignment(Qt::AlignCenter);
 			} else if( !aligns.isEmpty() ) {
 				bf.setAlignment(c < aligns.size() ? aligns[c] : Qt::AlignLeft);
@@ -1222,12 +1270,12 @@ void insertStyledTable(
 			QTextCharFormat cf;
 			if( r == 0 )
 				cf.setFontWeight(QFont::Bold);
-			cellCur.setBlockCharFormat(cf);
+			cellCur.setCharFormat(cf);
 			insertInlineFormatted(cellCur, cellText, cf, st.basePt, st.maxImgWidth, &st.hasImages);
 
 			const int bn = cell.firstCursorPosition().block().blockNumber();
 			if( srcLine >= 0 ) {
-				if( c == 0 && srcLine < srcLineToBlock.size() )
+				if( srcLine < srcLineToBlock.size() && srcLineToBlock[srcLine] < 0 )
 					srcLineToBlock[srcLine] = bn;
 				if( blockToSrcLine.size() <= bn )
 					blockToSrcLine.resize(bn + 1, srcLine);
@@ -1244,6 +1292,13 @@ void insertStyledTable(
 	st.hasEmittedBlock = false;
 }
 
+void MarkdownPreview::setTableColors(const QColor &header, const QColor &zebra1, const QColor &zebra2)
+{
+	if( header.isValid() ) m_tableHeaderColor = header;
+	if( zebra1.isValid() ) m_tableZebraColor1 = zebra1;
+	if( zebra2.isValid() ) m_tableZebraColor2 = zebra2;
+}
+
 void MarkdownPreview::setMarkdown(const QString &markdown)
 {
 	const QSignalBlocker blocker(verticalScrollBar());
@@ -1257,6 +1312,9 @@ void MarkdownPreview::setMarkdown(const QString &markdown)
 	st.basePt = doc->defaultFont().pointSizeF() > 0.0 ? doc->defaultFont().pointSizeF() : 10.0;
 	const int maxWInt = qMax(0, viewport()->width() - 24);
 	st.maxImgWidth = static_cast<qreal>(maxWInt);
+	st.tableHeaderColor = m_tableHeaderColor;
+	st.tableZebraColor1 = m_tableZebraColor1;
+	st.tableZebraColor2 = m_tableZebraColor2;
 	const QStringList rawLines = markdown.split(QChar('\n'));
 	const int nLines = static_cast<int>(rawLines.size());
 	QStringList lines;
@@ -1375,6 +1433,9 @@ void MarkdownPreview::setMarkdown(TextDocument *srcDoc)
 	st.basePt = doc->defaultFont().pointSizeF() > 0.0 ? doc->defaultFont().pointSizeF() : 10.0;
 	const int maxWInt = qMax(0, viewport()->width() - 24);
 	st.maxImgWidth = static_cast<qreal>(maxWInt);
+	st.tableHeaderColor = m_tableHeaderColor;
+	st.tableZebraColor1 = m_tableZebraColor1;
+	st.tableZebraColor2 = m_tableZebraColor2;
 	ViewLineMgr &mgr = srcDoc->lineMgr();
 	const int nLines = mgr.lineCount();
 	QStringList lines;

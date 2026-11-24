@@ -48,6 +48,7 @@ private:
     void onSettings();
     void applyLineSpacing(int percent);
     void applyColors(const QColor &heading, const QColor &emphasis);
+    void applyTableColors(const QColor &header, const QColor &zebra1, const QColor &zebra2);
     void applyEditorFont(const QString &family, int pointSize);
     void applyPreviewFont(const QString &family, int pointSize);
     bool openFile(const QString &filePath);
@@ -66,6 +67,9 @@ private:
     int m_lineSpacingPercent = 0;
     QColor m_headingColor = QColor(0x80, 0x00, 0x00);
     QColor m_emphasisColor = QColor(0x00, 0x33, 0xAA);
+    QColor m_tableHeaderColor = QColor(0xE6, 0xF0, 0xFF);
+    QColor m_tableZebraColor1 = QColor(0xFF, 0xFF, 0xFF);
+    QColor m_tableZebraColor2 = QColor(0xFF, 0xFF, 0xE0);
     QString m_editorFontFamily;
     int m_editorFontSize = 10;
     QString m_previewFontFamily;
