@@ -1502,7 +1502,7 @@ void MainWindow::onPreviewCurPosChanged() {		//	MarkdownPreview でカーソル�
 void MainWindow::zoomIn() {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
-	if( docWidget->m_editor->hasFocus() )
+	if( docWidget->m_editor->hasFocus() || (docWidget->m_diffMode && docWidget->m_diffview->hasFocus()) )
 		onChangeEditorFontSize(1);
 	else
 		onChangePreviewFontSize(1);
@@ -1510,7 +1510,7 @@ void MainWindow::zoomIn() {
 void MainWindow::zoomOut() {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
-	if( docWidget->m_editor->hasFocus() )
+	if( docWidget->m_editor->hasFocus() || (docWidget->m_diffMode && docWidget->m_diffview->hasFocus()) )
 		onChangeEditorFontSize(-1);
 	else
 		onChangePreviewFontSize(-1);
@@ -3188,7 +3188,10 @@ void MainWindow::onAction_Cut() {
 void MainWindow::onAction_SelectAll() {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
-	docWidget->m_editor->selectAll();
+	MarkdownEditor *editor = docWidget->m_editor;
+	if( docWidget->m_diffMode && QApplication::focusWidget() == docWidget->m_diffview )
+		editor = docWidget->m_diffview;
+	editor->selectAll();
 }
 void MainWindow::onAction_Paste() {
 	DocWidget *docWidget = getCurDocWidget();
@@ -3400,7 +3403,10 @@ void MainWindow::onAction_ToggleFocus() {
 	} else
 		docWidget->m_editor->setFocus();
 	docWidget->m_editor->viewport()->update();
-	docWidget->m_preview->viewport()->update();
+	if( docWidget->m_diffMode )
+		docWidget->m_diffview->viewport()->update();
+	else
+		docWidget->m_preview->viewport()->update();
 }
 void MainWindow::onAction_SwitchToAltFile() {
 	//auto fullPath = m_altFullPath;

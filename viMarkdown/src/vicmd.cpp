@@ -2055,8 +2055,8 @@ bool parse_subst(const QString &text, int &ix, QString &pat, QString &after, boo
 				after += '\\';
 				break;
 			}
-			if (text[ix] == delim || text[ix] == '\\') {
-				after += text[ix++]; // デリミタやバックスラッシュのエスケープを解除
+			if (text[ix] == delim) {
+				after += text[ix++]; // デリミタのエスケープのみ解除（\\ は展開側で扱う）
 			} else {
 				after += '\\';
 				after += text[ix++];
@@ -2210,9 +2210,47 @@ void MainWindow::do_subst(const QString &text, int ix, QTextDocument* doc) {
 		statusBar()->showMessage(tr("Invalid regular expression."), 5000);
 		return;
 	}
-	QString qtAfter = after;
-	qtAfter.replace(QRegularExpression(R"((?<!\\)&)"), R"(\0)");
-	qtAfter.replace(R"(\&)", "&"); // エスケープされた \& は単なる & に戻す
+	auto expandSubstAfter = [&after](const QRegularExpressionMatch &match) -> QString {
+		QString res;
+		res.reserve(after.size());
+		for (int i = 0; i < after.size(); ++i) {
+			QChar c = after.at(i);
+			if (c == u'\\' && i + 1 < after.size()) {
+				QChar next = after.at(i + 1);
+				if (next == u'\\' || next == u'&') {
+					res.append(next);
+					++i;
+				} else if (next >= u'0' && next <= u'9') {
+					int idx = next.unicode() - '0';
+					if (idx <= match.lastCapturedIndex())
+						res.append(match.captured(idx));
+					++i;
+				} else {
+					res.append(c);
+					res.append(next);
+					++i;
+				}
+			} else if (c == u'&') {
+				res.append(match.captured(0));
+			} else if (c == u'$' && i + 1 < after.size()) {
+				QChar next = after.at(i + 1);
+				if (next == u'&') {
+					res.append(match.captured(0));
+					++i;
+				} else if (next >= u'0' && next <= u'9') {
+					int idx = next.unicode() - '0';
+					if (idx <= match.lastCapturedIndex())
+						res.append(match.captured(idx));
+					++i;
+				} else {
+					res.append(c);
+				}
+			} else {
+				res.append(c);
+			}
+		}
+		return res;
+	};
 	int rangeStart = gvi.m_rangeStart;
 	int rangeEnd = gvi.m_rangeEnd;
 	DocWidget *docWidget = getCurDocWidget();
@@ -2233,23 +2271,25 @@ void MainWindow::do_subst(const QString &text, int ix, QTextDocument* doc) {
 		QString lineText = block.text();
 		QString newLineText = lineText;
 		if (global) {
-			if (lineText.contains(rx)) {
-				newLineText.replace(rx, qtAfter);
+			QRegularExpressionMatchIterator it = rx.globalMatch(lineText);
+			if (it.hasNext()) {
+				QString out;
+				out.reserve(lineText.size());
+				int lastEnd = 0;
+				while (it.hasNext()) {
+					QRegularExpressionMatch match = it.next();
+					out.append(QStringView(lineText).mid(lastEnd, match.capturedStart(0) - lastEnd));
+					out.append(expandSubstAfter(match));
+					lastEnd = match.capturedEnd(0);
+				}
+				out.append(QStringView(lineText).mid(lastEnd));
+				newLineText = out;
 			}
 		} else {
 			// 行内の「最初」のマッチのみ置換
 			QRegularExpressionMatch match = rx.match(lineText);
 			if (match.hasMatch()) {
-				QString expandedAfter = qtAfter;
-				// \0, $0, $& をマッチした全体テキストに置換
-				expandedAfter.replace(QRegularExpression(R"((?:\\0|\$0|\$&))"), match.captured(0));
-				// 各キャプチャグループ（\1〜\9, $1〜$9）を展開
-				for (int i = 1; i <= match.lastCapturedIndex(); ++i) {
-					expandedAfter.replace(QString("\\%1").arg(i), match.captured(i));
-					expandedAfter.replace(QString("$%1").arg(i), match.captured(i));
-				}
-				// 最初のマッチ部分のみを置換
-				newLineText.replace(match.capturedStart(0), match.capturedLength(0), expandedAfter);
+				newLineText.replace(match.capturedStart(0), match.capturedLength(0), expandSubstAfter(match));
 			}
 		}
 		if (newLineText != lineText) {
