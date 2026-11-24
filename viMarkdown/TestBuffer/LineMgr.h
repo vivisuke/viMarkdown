@@ -28,6 +28,7 @@ public:
 		LT_QUOTE,
 		LT_CODE_FENCE,
 		LT_CODE_BLOCK,
+		LT_TABLE,
 	};
 
 	enum LineState : uint8_t {

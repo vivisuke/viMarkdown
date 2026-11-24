@@ -22,11 +22,17 @@ public:
 protected:
 	void paintEvent(QPaintEvent *event) override;
 	void mousePressEvent(QMouseEvent *event) override;
+	void mouseMoveEvent(QMouseEvent *event) override;
 	void wheelEvent(QWheelEvent *event) override;
+	void resizeEvent(QResizeEvent *event) override;
 
 private:
+	void updateImageSizes();
+
 	QVector<int> m_srcLineToBlock;
 	QVector<int> m_blockToSrcLine;
+	bool m_hasImages = false;
+	int m_lastImageMaxWidth = -1;
 	std::function<void(int)> m_onFontSizeChange;
 	std::function<void(int, bool)> m_onCheckboxToggled;
 };

@@ -2,18 +2,30 @@
 #include "TextDocument.h"
 
 #include <QAbstractTextDocumentLayout>
+#include <QDesktopServices>
+#include <QFileInfo>
 #include <QFont>
 #include <QFontDatabase>
+#include <QImage>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QRegularExpression>
+#include <QResizeEvent>
 #include <QScrollBar>
 #include <QSignalBlocker>
 #include <QTextBlock>
 #include <QTextBlockFormat>
 #include <QTextCharFormat>
 #include <QTextCursor>
+#include <QTextFragment>
+#include <QTextImageFormat>
 #include <QTextList>
 #include <QTextListFormat>
+#include <QTextTable>
+#include <QTextTableCell>
+#include <QTextTableCellFormat>
+#include <QTextTableFormat>
+#include <QUrl>
 #include <QWheelEvent>
 
 namespace {
@@ -42,6 +54,351 @@ QFont codeBlockFont(qreal basePt)
 	return f;
 }
 
+bool isEscapablePunct(QChar ch)
+{
+	switch( ch.unicode() ) {
+	case '\\': case '`': case '*': case '_': case '~':
+	case '^': case '[': case ']': case '(': case ')':
+	case '{': case '}': case '#': case '-': case '+': case '>':
+		return true;
+	default:
+		return false;
+	}
+}
+
+qsizetype findClosingDelim(const QString &text, qsizetype from, const QString &delim)
+{
+	const qsizetype dlen = delim.size();
+	const qsizetype len = text.size();
+	for( qsizetype pos = from; pos + dlen <= len; ++pos ) {
+		if( text[pos] == QChar('\\') ) {
+			++pos;
+			continue;
+		}
+		if( QStringView(text).mid(pos, dlen) == delim ) {
+			if( pos > from && text[pos - 1] != QChar(' ') )
+				return pos;
+		}
+	}
+	return -1;
+}
+
+//	インライン装飾（**太字** / *斜体* / ***太字斜体*** / ~~打消し~~ / `コード` / ![alt](src) / [text](url)）をパースして挿入
+void insertInlineFormatted(QTextCursor &cursor, const QString &text, const QTextCharFormat &baseFmt, qreal basePt, qreal maxImgWidth, bool *outHasImages = nullptr)
+{
+	const qsizetype len = text.size();
+	QString plainBuf;
+	auto flushPlain = [&]() {
+		if( !plainBuf.isEmpty() ) {
+			cursor.insertText(plainBuf, baseFmt);
+			plainBuf.clear();
+		}
+	};
+
+	qsizetype i = 0;
+	while( i < len ) {
+		const QChar ch = text[i];
+
+		//	バックスラッシュエスケープ
+		if( ch == QChar('\\') && i + 1 < len && isEscapablePunct(text[i + 1]) ) {
+			plainBuf.append(text[i + 1]);
+			i += 2;
+			continue;
+		}
+
+		//	インラインコード（`...` / ``...``）
+		if( ch == QChar('`') ) {
+			qsizetype tickCount = 0;
+			while( i + tickCount < len && text[i + tickCount] == QChar('`') )
+				++tickCount;
+			qsizetype closePos = -1;
+			for( qsizetype pos = i + tickCount; pos < len; ) {
+				if( text[pos] == QChar('`') ) {
+					qsizetype run = 0;
+					while( pos + run < len && text[pos + run] == QChar('`') )
+						++run;
+					if( run == tickCount ) {
+						closePos = pos;
+						break;
+					}
+					pos += run;
+				} else {
+					++pos;
+				}
+			}
+			if( closePos >= 0 ) {
+				flushPlain();
+				QString code = text.mid(i + tickCount, closePos - (i + tickCount));
+				if( code.size() >= 2 && code.front() == QChar(' ') && code.back() == QChar(' ') && !code.trimmed().isEmpty() )
+					code = code.mid(1, code.size() - 2);
+				QTextCharFormat cf = baseFmt;
+				const qreal pt = (baseFmt.fontPointSize() > 0.0) ? baseFmt.fontPointSize() : basePt;
+				cf.setFont(codeBlockFont(pt));
+				cf.setBackground(QColor(0xEA, 0xEC, 0xEF));
+				cursor.insertText(code, cf);
+				i = closePos + tickCount;
+				continue;
+			}
+			plainBuf.append(text.mid(i, tickCount));
+			i += tickCount;
+			continue;
+		}
+
+		//	画像（![alt](src)）
+		if( ch == QChar('!') && i + 1 < len && text[i + 1] == QChar('[') ) {
+			int depth = 1;
+			qsizetype closeBracket = -1;
+			for( qsizetype pos = i + 2; pos < len; ++pos ) {
+				if( text[pos] == QChar('\\') ) { ++pos; continue; }
+				if( text[pos] == QChar('[') ) ++depth;
+				else if( text[pos] == QChar(']') ) {
+					if( --depth == 0 ) { closeBracket = pos; break; }
+				}
+			}
+			if( closeBracket >= 0 && closeBracket + 1 < len && text[closeBracket + 1] == QChar('(') ) {
+				int pdepth = 1;
+				qsizetype closeParen = -1;
+				for( qsizetype pos = closeBracket + 2; pos < len; ++pos ) {
+					if( text[pos] == QChar('\\') ) { ++pos; continue; }
+					if( text[pos] == QChar('(') ) ++pdepth;
+					else if( text[pos] == QChar(')') ) {
+						if( --pdepth == 0 ) { closeParen = pos; break; }
+					}
+				}
+				if( closeParen >= 0 ) {
+					flushPlain();
+					const QString alt = text.mid(i + 2, closeBracket - (i + 2));
+					QString src = text.mid(closeBracket + 2, closeParen - (closeBracket + 2)).trimmed();
+					if( src.startsWith(QChar('<')) && src.endsWith(QChar('>')) && src.size() >= 2 )
+						src = src.mid(1, src.size() - 2);
+					QTextDocument *doc = cursor.document();
+					QUrl url(src);
+					if( url.isRelative() && doc && doc->baseUrl().isValid() )
+						url = doc->baseUrl().resolved(url);
+					const QString localPath = url.isLocalFile() ? url.toLocalFile() : src;
+					QImage img(localPath);
+					if( !img.isNull() && doc ) {
+						const QUrl resUrl = QUrl::fromLocalFile(QFileInfo(localPath).absoluteFilePath());
+						doc->addResource(QTextDocument::ImageResource, resUrl, img);
+						QTextImageFormat imgFmt;
+						imgFmt.setName(resUrl.toString());
+						if( maxImgWidth > 0.0 && img.width() > maxImgWidth ) {
+							imgFmt.setWidth(maxImgWidth);
+							imgFmt.setHeight(img.height() * maxImgWidth / img.width());
+						} else {
+							imgFmt.setWidth(img.width());
+							imgFmt.setHeight(img.height());
+						}
+						cursor.insertImage(imgFmt);
+						if( outHasImages )
+							*outHasImages = true;
+					} else {
+						QTextCharFormat cf = baseFmt;
+						cf.setForeground(QColor(0x88, 0x88, 0x88));
+						cursor.insertText(alt.isEmpty() ? src : QStringLiteral("[%1]").arg(alt), cf);
+					}
+					i = closeParen + 1;
+					continue;
+				}
+			}
+		}
+
+		//	リンク（[label](url)）
+		if( ch == QChar('[') ) {
+			int depth = 1;
+			qsizetype closeBracket = -1;
+			for( qsizetype pos = i + 1; pos < len; ++pos ) {
+				if( text[pos] == QChar('\\') ) { ++pos; continue; }
+				if( text[pos] == QChar('[') ) ++depth;
+				else if( text[pos] == QChar(']') ) {
+					if( --depth == 0 ) { closeBracket = pos; break; }
+				}
+			}
+			if( closeBracket >= 0 && closeBracket + 1 < len && text[closeBracket + 1] == QChar('(') ) {
+				int pdepth = 1;
+				qsizetype closeParen = -1;
+				for( qsizetype pos = closeBracket + 2; pos < len; ++pos ) {
+					if( text[pos] == QChar('\\') ) { ++pos; continue; }
+					if( text[pos] == QChar('(') ) ++pdepth;
+					else if( text[pos] == QChar(')') ) {
+						if( --pdepth == 0 ) { closeParen = pos; break; }
+					}
+				}
+				if( closeParen >= 0 ) {
+					flushPlain();
+					const QString label = text.mid(i + 1, closeBracket - (i + 1));
+					const QString url = text.mid(closeBracket + 2, closeParen - (closeBracket + 2)).trimmed();
+					QTextCharFormat cf = baseFmt;
+					cf.setAnchor(true);
+					cf.setAnchorHref(url);
+					cf.setForeground(QColor(0x00, 0x55, 0xCC));
+					cf.setFontUnderline(true);
+					insertInlineFormatted(cursor, label.isEmpty() ? url : label, cf, basePt, maxImgWidth, outHasImages);
+					i = closeParen + 1;
+					continue;
+				}
+			}
+		}
+
+		//	太字＋斜体（***...***）
+		if( ch == QChar('*') && i + 3 < len && text[i + 1] == QChar('*') && text[i + 2] == QChar('*') && text[i + 3] != QChar(' ') ) {
+			const qsizetype closePos = findClosingDelim(text, i + 3, QStringLiteral("***"));
+			if( closePos > i + 3 ) {
+				flushPlain();
+				QTextCharFormat cf = baseFmt;
+				cf.setFontWeight(QFont::Bold);
+				cf.setFontItalic(true);
+				insertInlineFormatted(cursor, text.mid(i + 3, closePos - (i + 3)), cf, basePt, maxImgWidth, outHasImages);
+				i = closePos + 3;
+				continue;
+			}
+		}
+
+		//	太字（**...**）
+		if( ch == QChar('*') && i + 2 < len && text[i + 1] == QChar('*') && text[i + 2] != QChar(' ') ) {
+			const qsizetype closePos = findClosingDelim(text, i + 2, QStringLiteral("**"));
+			if( closePos > i + 2 ) {
+				flushPlain();
+				QTextCharFormat cf = baseFmt;
+				cf.setFontWeight(QFont::Bold);
+				insertInlineFormatted(cursor, text.mid(i + 2, closePos - (i + 2)), cf, basePt, maxImgWidth, outHasImages);
+				i = closePos + 2;
+				continue;
+			}
+		}
+
+		//	打ち消し線（~~...~~）
+		if( ch == QChar('~') && i + 2 < len && text[i + 1] == QChar('~') && text[i + 2] != QChar(' ') ) {
+			const qsizetype closePos = findClosingDelim(text, i + 2, QStringLiteral("~~"));
+			if( closePos > i + 2 ) {
+				flushPlain();
+				QTextCharFormat cf = baseFmt;
+				cf.setFontStrikeOut(true);
+				insertInlineFormatted(cursor, text.mid(i + 2, closePos - (i + 2)), cf, basePt, maxImgWidth, outHasImages);
+				i = closePos + 2;
+				continue;
+			}
+		}
+
+		//	斜体（*...*）
+		if( ch == QChar('*') && i + 1 < len && text[i + 1] != QChar(' ') && text[i + 1] != QChar('*') ) {
+			qsizetype closePos = -1;
+			for( qsizetype pos = i + 1; pos < len; ++pos ) {
+				if( text[pos] == QChar('\\') ) { ++pos; continue; }
+				if( text[pos] == QChar('*') ) {
+					if( pos + 1 < len && text[pos + 1] == QChar('*') && text[pos - 1] != QChar('*') ) {
+						++pos;	//	内部の "**" をスキップ
+						continue;
+					}
+					if( text[pos - 1] != QChar(' ') ) {
+						closePos = pos;
+						break;
+					}
+				}
+			}
+			if( closePos > i + 1 ) {
+				flushPlain();
+				QTextCharFormat cf = baseFmt;
+				cf.setFontItalic(true);
+				insertInlineFormatted(cursor, text.mid(i + 1, closePos - (i + 1)), cf, basePt, maxImgWidth, outHasImages);
+				i = closePos + 1;
+				continue;
+			}
+		}
+
+		//	上付き文字（^{...} / ^2 / ^-3 / ^...^）
+		if( ch == QChar('^') && i + 1 < len ) {
+			if( text[i + 1] == QChar('{') ) {
+				int bdepth = 1;
+				qsizetype closeBrace = -1;
+				for( qsizetype pos = i + 2; pos < len; ++pos ) {
+					if( text[pos] == QChar('\\') ) { ++pos; continue; }
+					if( text[pos] == QChar('{') ) ++bdepth;
+					else if( text[pos] == QChar('}') ) {
+						if( --bdepth == 0 ) { closeBrace = pos; break; }
+					}
+				}
+				if( closeBrace > i + 2 ) {
+					flushPlain();
+					QTextCharFormat cf = baseFmt;
+					cf.setVerticalAlignment(QTextCharFormat::AlignSuperScript);
+					insertInlineFormatted(cursor, text.mid(i + 2, closeBrace - (i + 2)), cf, basePt, maxImgWidth, outHasImages);
+					i = closeBrace + 1;
+					continue;
+				}
+			}
+			qsizetype numStart = i + 1;
+			if( (text[numStart] == QChar('-') || text[numStart] == QChar('+')) && numStart + 1 < len && text[numStart + 1].isDigit() )
+				++numStart;
+			if( numStart < len && text[numStart].isDigit() ) {
+				qsizetype numEnd = numStart;
+				while( numEnd < len && text[numEnd].isDigit() )
+					++numEnd;
+				flushPlain();
+				QTextCharFormat cf = baseFmt;
+				cf.setVerticalAlignment(QTextCharFormat::AlignSuperScript);
+				cursor.insertText(text.mid(i + 1, numEnd - (i + 1)), cf);
+				i = numEnd;
+				continue;
+			}
+			if( !text[i + 1].isSpace() && text[i + 1] != QChar('^') ) {
+				qsizetype closePos = -1;
+				for( qsizetype pos = i + 1; pos < len; ++pos ) {
+					if( text[pos].isSpace() ) break;
+					if( text[pos] == QChar('\\') ) { ++pos; continue; }
+					if( text[pos] == QChar('^') ) { closePos = pos; break; }
+				}
+				if( closePos > i + 1 ) {
+					flushPlain();
+					QTextCharFormat cf = baseFmt;
+					cf.setVerticalAlignment(QTextCharFormat::AlignSuperScript);
+					insertInlineFormatted(cursor, text.mid(i + 1, closePos - (i + 1)), cf, basePt, maxImgWidth, outHasImages);
+					i = closePos + 1;
+					continue;
+				}
+			}
+		}
+
+		//	下付き文字（_{...} / _2）
+		if( ch == QChar('_') && i + 1 < len ) {
+			if( text[i + 1] == QChar('{') ) {
+				int bdepth = 1;
+				qsizetype closeBrace = -1;
+				for( qsizetype pos = i + 2; pos < len; ++pos ) {
+					if( text[pos] == QChar('\\') ) { ++pos; continue; }
+					if( text[pos] == QChar('{') ) ++bdepth;
+					else if( text[pos] == QChar('}') ) {
+						if( --bdepth == 0 ) { closeBrace = pos; break; }
+					}
+				}
+				if( closeBrace > i + 2 ) {
+					flushPlain();
+					QTextCharFormat cf = baseFmt;
+					cf.setVerticalAlignment(QTextCharFormat::AlignSubScript);
+					insertInlineFormatted(cursor, text.mid(i + 2, closeBrace - (i + 2)), cf, basePt, maxImgWidth, outHasImages);
+					i = closeBrace + 1;
+					continue;
+				}
+			}
+			if( i > 0 && !text[i - 1].isSpace() && text[i + 1].isDigit() ) {
+				qsizetype numEnd = i + 1;
+				while( numEnd < len && text[numEnd].isDigit() )
+					++numEnd;
+				flushPlain();
+				QTextCharFormat cf = baseFmt;
+				cf.setVerticalAlignment(QTextCharFormat::AlignSubScript);
+				cursor.insertText(text.mid(i + 1, numEnd - (i + 1)), cf);
+				i = numEnd;
+				continue;
+			}
+		}
+
+		plainBuf.append(ch);
+		++i;
+	}
+	flushPlain();
+}
+
 //	コードフェンス行（先頭 0〜3 個の空白 + "```"）を判定
 bool isCodeFence(const QString &line)
 {
@@ -49,6 +406,136 @@ bool isCodeFence(const QString &line)
 	while( i < line.size() && i < 3 && line[i] == QChar(' ') )
 		++i;
 	return QStringView(line).mid(i).startsWith(u"```");
+}
+
+//	CSV フェンス開始行（先頭 0〜3 個の空白 + "```csv"、大文字小文字不問）を判定
+bool isCsvFence(const QString &line)
+{
+	qsizetype i = 0;
+	while( i < line.size() && i < 3 && line[i] == QChar(' ') )
+		++i;
+	const QStringView rest = QStringView(line).mid(i);
+	if( !rest.startsWith(u"```") )
+		return false;
+	const QStringView lang = rest.mid(3).trimmed();
+	return lang.compare(u"csv", Qt::CaseInsensitive) == 0;
+}
+
+//	GFM テーブルの1行をセル配列に分解（\| はエスケープされたリテラル '|' として扱う）
+bool parseGfmTableRow(const QString &line, QStringList &outCells)
+{
+	outCells.clear();
+	const QString trimmed = line.trimmed();
+	if( trimmed.isEmpty() )
+		return false;
+	bool hasUnescapedPipe = false;
+	for( qsizetype i = 0; i < trimmed.size(); ++i ) {
+		if( trimmed[i] == QChar('\\') ) { ++i; continue; }
+		if( trimmed[i] == QChar('|') ) { hasUnescapedPipe = true; break; }
+	}
+	if( !hasUnescapedPipe )
+		return false;
+
+	qsizetype start = 0;
+	qsizetype end = trimmed.size();
+	if( start < end && trimmed[start] == QChar('|') )
+		++start;
+	if( end > start && trimmed[end - 1] == QChar('|') ) {
+		//	末尾の '|' がエスケープされていない場合のみ除去
+		qsizetype bs = 0;
+		for( qsizetype k = end - 2; k >= start && trimmed[k] == QChar('\\'); --k )
+			++bs;
+		if( (bs % 2) == 0 )
+			--end;
+	}
+
+	QString cell;
+	for( qsizetype i = start; i < end; ++i ) {
+		if( trimmed[i] == QChar('\\') && i + 1 < end && trimmed[i + 1] == QChar('|') ) {
+			cell.append(QChar('|'));
+			++i;
+		} else if( trimmed[i] == QChar('|') ) {
+			outCells.append(cell.trimmed());
+			cell.clear();
+		} else {
+			cell.append(trimmed[i]);
+		}
+	}
+	outCells.append(cell.trimmed());
+	return !outCells.isEmpty();
+}
+
+//	GFM テーブルの区切り行（| --- | :---: | ---: |）を判定し、列ごとの配置を返す
+bool parseGfmTableSeparator(const QString &line, QVector<Qt::Alignment> &outAligns)
+{
+	outAligns.clear();
+	QStringList cells;
+	if( !parseGfmTableRow(line, cells) )
+		return false;
+	for( const QString &c : cells ) {
+		if( c.isEmpty() )
+			return false;
+		qsizetype s = 0;
+		qsizetype e = c.size();
+		const bool leftColon = (c[s] == QChar(':'));
+		if( leftColon ) ++s;
+		const bool rightColon = (e > s && c[e - 1] == QChar(':'));
+		if( rightColon ) --e;
+		if( e <= s )
+			return false;
+		for( qsizetype k = s; k < e; ++k ) {
+			if( c[k] != QChar('-') )
+				return false;
+		}
+		if( leftColon && rightColon )
+			outAligns.append(Qt::AlignCenter);
+		else if( rightColon )
+			outAligns.append(Qt::AlignRight);
+		else
+			outAligns.append(Qt::AlignLeft);
+	}
+	return !outAligns.isEmpty();
+}
+
+//	RFC 4180 風 CSV 1行パース（ダブルクォート・"" エスケープ・複数行セル対応）。行が完了したら true
+bool parseCsvLine(const QString &line, bool &inQuotes, QStringList &curFields, QString &curField)
+{
+	if( !inQuotes ) {
+		curFields.clear();
+		curField.clear();
+	}
+	const qsizetype len = line.size();
+	for( qsizetype i = 0; i < len; ++i ) {
+		const QChar ch = line[i];
+		if( inQuotes ) {
+			if( ch == QChar('"') ) {
+				if( i + 1 < len && line[i + 1] == QChar('"') ) {
+					curField.append(QChar('"'));
+					++i;
+				} else {
+					inQuotes = false;
+				}
+			} else {
+				curField.append(ch);
+			}
+		} else {
+			if( ch == QChar('"') && curField.trimmed().isEmpty() ) {
+				curField.clear();
+				inQuotes = true;
+			} else if( ch == QChar(',') ) {
+				curFields.append(curField.trimmed());
+				curField.clear();
+			} else {
+				curField.append(ch);
+			}
+		}
+	}
+	if( inQuotes ) {
+		curField.append(QChar('\n'));
+		return false;
+	}
+	curFields.append(curField.trimmed());
+	return true;
 }
 //	見出し行（#〜###### + 空白または行末）を判定し、レベル [1..6] と見出し本文を返す
 int parseHeading(const QString &line, QString &outText)
@@ -150,9 +637,77 @@ struct ParseState {
 	bool inQuote = false;
 	bool inCodeBlock = false;
 	bool codeHasLines = false;
+	bool inHtmlComment = false;
 	bool hasEmittedBlock = false;
+	bool lastLineEmitted = false;
+	bool hasImages = false;
 	qreal basePt = 10.0;
+	qreal maxImgWidth = 0.0;
 };
+
+//	HTML コメント（<!-- ... -->、複数行またぎ対応）を除去する。インラインコード内の `<!--` は保持する。
+QString stripHtmlComments(const QString &line, bool &inComment, bool &outCommentOnly)
+{
+	outCommentOnly = false;
+	const qsizetype len = line.size();
+	QString out;
+	out.reserve(len);
+	bool hadComment = false;
+	qsizetype i = 0;
+
+	while( i < len ) {
+		if( inComment ) {
+			hadComment = true;
+			const qsizetype endPos = line.indexOf(QStringLiteral("-->"), i);
+			if( endPos < 0 ) {
+				outCommentOnly = out.trimmed().isEmpty();
+				return out;
+			}
+			inComment = false;
+			i = endPos + 3;
+			continue;
+		}
+		if( line[i] == QChar('`') ) {
+			qsizetype ticks = 0;
+			while( i + ticks < len && line[i + ticks] == QChar('`') )
+				++ticks;
+			qsizetype closePos = -1;
+			for( qsizetype pos = i + ticks; pos < len; ) {
+				if( line[pos] == QChar('`') ) {
+					qsizetype run = 0;
+					while( pos + run < len && line[pos + run] == QChar('`') )
+						++run;
+					if( run == ticks ) {
+						closePos = pos + ticks;
+						break;
+					}
+					pos += run;
+				} else {
+					++pos;
+				}
+			}
+			const qsizetype spanEnd = (closePos >= 0) ? closePos : (i + ticks);
+			out.append(QStringView(line).mid(i, spanEnd - i));
+			i = spanEnd;
+			continue;
+		}
+		if( i + 4 <= len && QStringView(line).mid(i, 4) == u"<!--" ) {
+			hadComment = true;
+			const qsizetype endPos = line.indexOf(QStringLiteral("-->"), i + 4);
+			if( endPos < 0 ) {
+				inComment = true;
+				break;
+			}
+			i = endPos + 3;
+			continue;
+		}
+		out.append(line[i]);
+		++i;
+	}
+	if( hadComment && out.trimmed().isEmpty() )
+		outCommentOnly = true;
+	return out;
+}
 
 void finishBlockMarginIfNeeded(QTextCursor &cursor, int expectedState)
 {
@@ -165,7 +720,7 @@ void finishBlockMarginIfNeeded(QTextCursor &cursor, int expectedState)
 	}
 }
 
-LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &line, ParseState &st, int srcLine = -1)
+LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &rawLine, ParseState &st, int srcLine = -1)
 {
 	static const qreal kHeadingScale[7] = { 1.0, 2.2, 1.8, 1.5, 1.3, 1.1, 1.0 };
 	static const QTextListFormat::Style kListStyles[3] = {
@@ -176,6 +731,8 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &line, P
 	static const QTextBlockFormat bodyBlockFmt;
 	static const QTextCharFormat bodyCharFmt;
 
+	st.lastLineEmitted = false;
+
 	auto finishQuoteIfNeeded = [&]() {
 		if( !st.inQuote ) return;
 		st.inQuote = false;
@@ -185,9 +742,10 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &line, P
 		if( st.hasEmittedBlock )
 			cursor.insertBlock();
 		st.hasEmittedBlock = true;
+		st.lastLineEmitted = true;
 	};
 
-	if( isCodeFence(line) ) {
+	if( !st.inHtmlComment && isCodeFence(rawLine) ) {
 		finishQuoteIfNeeded();
 		st.activeListIndent = 0;
 		if( !st.inCodeBlock ) {
@@ -216,10 +774,15 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &line, P
 		cursor.setBlockFormat(bf);
 		cursor.setBlockCharFormat(cf);
 		cursor.block().setUserState(kBlockCode);
-		cursor.insertText(line, cf);
+		cursor.insertText(rawLine, cf);
 		st.codeHasLines = true;
 		return LineMgr::LT_CODE_BLOCK;
 	}
+
+	bool commentOnly = false;
+	const QString line = stripHtmlComments(rawLine, st.inHtmlComment, commentOnly);
+	if( commentOnly )
+		return LineMgr::LT_BODY;
 
 	QString parsedText;
 	if( const int level = parseHeading(line, parsedText); level > 0 ) {
@@ -239,7 +802,7 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &line, P
 		cf.setFontPointSize(st.basePt * kHeadingScale[level]);
 		cursor.setBlockFormat(bf);
 		cursor.block().setUserState(kBlockNormal);
-		cursor.insertText(parsedText, cf);
+		insertInlineFormatted(cursor, parsedText, cf, st.basePt, st.maxImgWidth, &st.hasImages);
 		return LineMgr::LT_HEADING;
 	}
 
@@ -263,7 +826,7 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &line, P
 		bf.setMarker(checked ? QTextBlockFormat::MarkerType::Checked : QTextBlockFormat::MarkerType::Unchecked);
 		cursor.setBlockFormat(bf);
 		cursor.block().setUserState(srcLine >= 0 ? (kBlockCheckboxBase + srcLine) : kBlockNormal);
-		cursor.insertText(parsedText, bodyCharFmt);
+		insertInlineFormatted(cursor, parsedText, bodyCharFmt, st.basePt, st.maxImgWidth, &st.hasImages);
 		return LineMgr::LT_CHECKBOX;
 	}
 
@@ -287,7 +850,7 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &line, P
 			cursor.setBlockFormat(bf);
 		}
 		cursor.block().setUserState(kBlockNormal);
-		cursor.insertText(parsedText, bodyCharFmt);
+		insertInlineFormatted(cursor, parsedText, bodyCharFmt, st.basePt, st.maxImgWidth, &st.hasImages);
 		return LineMgr::LT_LIST;
 	}
 
@@ -304,7 +867,7 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &line, P
 		cursor.setBlockFormat(bf);
 		cursor.setBlockCharFormat(bodyCharFmt);
 		cursor.block().setUserState(kBlockQuote);
-		cursor.insertText(parsedText, bodyCharFmt);
+		insertInlineFormatted(cursor, parsedText, bodyCharFmt, st.basePt, st.maxImgWidth, &st.hasImages);
 		st.inQuote = true;
 		return LineMgr::LT_QUOTE;
 	}
@@ -331,12 +894,12 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &line, P
 		QTextBlockFormat bf;
 		bf.setIndent(st.activeListIndent);
 		cursor.setBlockFormat(bf);
-		cursor.insertText(line.mid(textStart), bodyCharFmt);
+		insertInlineFormatted(cursor, line.mid(textStart), bodyCharFmt, st.basePt, st.maxImgWidth, &st.hasImages);
 		return LineMgr::LT_BODY;
 	}
 
 	cursor.setBlockFormat(bodyBlockFmt);
-	cursor.insertText(line, bodyCharFmt);
+	insertInlineFormatted(cursor, line, bodyCharFmt, st.basePt, st.maxImgWidth, &st.hasImages);
 	return LineMgr::LT_BODY;
 }
 }
@@ -344,6 +907,15 @@ LineMgr::LineType parseAndAppendLine(QTextCursor &cursor, const QString &line, P
 MarkdownPreview::MarkdownPreview(QWidget *parent)
 	: QTextEdit(parent)
 {
+	setReadOnly(true);
+	viewport()->setMouseTracking(true);
+}
+
+void MarkdownPreview::mouseMoveEvent(QMouseEvent *event)
+{
+	const QString href = anchorAt(event->pos());
+	viewport()->setCursor(href.isEmpty() ? Qt::IBeamCursor : Qt::PointingHandCursor);
+	QTextEdit::mouseMoveEvent(event);
 }
 
 void MarkdownPreview::mousePressEvent(QMouseEvent *event)
@@ -366,6 +938,15 @@ void MarkdownPreview::mousePressEvent(QMouseEvent *event)
 				return;
 			}
 		}
+		const QString href = anchorAt(event->pos());
+		if( !href.isEmpty() ) {
+			QUrl url(href);
+			if( url.isRelative() && document() && document()->baseUrl().isValid() )
+				url = document()->baseUrl().resolved(url);
+			QDesktopServices::openUrl(url);
+			event->accept();
+			return;
+		}
 	}
 	QTextEdit::mousePressEvent(event);
 }
@@ -380,6 +961,58 @@ void MarkdownPreview::wheelEvent(QWheelEvent *event)
 		return;
 	}
 	QTextEdit::wheelEvent(event);
+}
+
+void MarkdownPreview::resizeEvent(QResizeEvent *event)
+{
+	QTextEdit::resizeEvent(event);
+	updateImageSizes();
+}
+
+void MarkdownPreview::updateImageSizes()
+{
+	if( !m_hasImages )
+		return;
+	QTextDocument *doc = document();
+	if( !doc )
+		return;
+	const int maxWInt = qMax(0, viewport()->width() - 24);
+	if( maxWInt <= 0 || maxWInt == m_lastImageMaxWidth )
+		return;
+	m_lastImageMaxWidth = maxWInt;
+	const qreal maxW = static_cast<qreal>(maxWInt);
+
+	const QSignalBlocker blocker(verticalScrollBar());
+	QTextCursor cur(doc);
+	bool began = false;
+	for( QTextBlock b = doc->begin(); b.isValid(); b = b.next() ) {
+		for( QTextBlock::iterator it = b.begin(); !it.atEnd(); ++it ) {
+			const QTextFragment frag = it.fragment();
+			if( !frag.isValid() || !frag.charFormat().isImageFormat() )
+				continue;
+			QTextImageFormat imgFmt = frag.charFormat().toImageFormat();
+			const QImage img = doc->resource(QTextDocument::ImageResource, QUrl(imgFmt.name())).value<QImage>();
+			if( img.isNull() || img.width() <= 0 )
+				continue;
+			const qreal targetW = (img.width() > maxW) ? maxW : static_cast<qreal>(img.width());
+			const qreal targetH = img.height() * targetW / img.width();
+			if( qAbs(imgFmt.width() - targetW) > 0.5 || qAbs(imgFmt.height() - targetH) > 0.5 ) {
+				if( !began ) {
+					cur.beginEditBlock();
+					began = true;
+				}
+				imgFmt.setWidth(targetW);
+				imgFmt.setHeight(targetH);
+				cur.setPosition(frag.position());
+				cur.setPosition(frag.position() + frag.length(), QTextCursor::KeepAnchor);
+				cur.setCharFormat(imgFmt);
+			}
+		}
+	}
+	if( began ) {
+		cur.endEditBlock();
+		doc->setModified(false);
+	}
 }
 
 void MarkdownPreview::paintEvent(QPaintEvent *event)
@@ -514,6 +1147,103 @@ bool MarkdownPreview::topSourceLine(int &outLine, qreal &outFrac) const
 	return true;
 }
 
+void insertStyledTable(
+	QTextCursor &cursor,
+	const QList<QStringList> &rows,
+	const QVector<int> &rowSrcLines,
+	const QVector<Qt::Alignment> &aligns,
+	ParseState &st,
+	QVector<int> &srcLineToBlock,
+	QVector<int> &blockToSrcLine)
+{
+	if( rows.isEmpty() )
+		return;
+	int maxCols = 0;
+	for( const QStringList &r : rows )
+		maxCols = qMax(maxCols, static_cast<int>(r.size()));
+	if( maxCols <= 0 )
+		return;
+
+	if( st.inQuote ) {
+		st.inQuote = false;
+		finishBlockMarginIfNeeded(cursor, kBlockQuote);
+	}
+	st.activeListIndent = 0;
+	if( QTextList *curList = cursor.currentList() ) {
+		if( st.hasEmittedBlock )
+			cursor.insertBlock();
+		curList->remove(cursor.block());
+	}
+
+	QTextTableFormat tableFmt;
+	tableFmt.setBorder(1.0);
+	tableFmt.setBorderStyle(QTextFrameFormat::BorderStyle_Solid);
+	tableFmt.setBorderBrush(QColor(0xB8, 0xC4, 0xD0));
+	tableFmt.setCellPadding(5.0);
+	tableFmt.setCellSpacing(0.0);
+	tableFmt.setTopMargin(6.0);
+	tableFmt.setBottomMargin(6.0);
+	tableFmt.setHeaderRowCount(1);
+
+	QTextTable *table = cursor.insertTable(static_cast<int>(rows.size()), maxCols, tableFmt);
+	if( !table )
+		return;
+
+	static const QRegularExpression kNumberRe(QStringLiteral(R"(^[+-]?(\d+\.\d*|\d+|\.\d+)%?$)"));
+	static const QColor kHeaderBg(0xE6, 0xF0, 0xFF);
+	static const QColor kZebraBg1(0xFF, 0xFF, 0xFF);
+	static const QColor kZebraBg2(0xF5, 0xF8, 0xFC);
+
+	for( int r = 0; r < rows.size(); ++r ) {
+		const int srcLine = (r < rowSrcLines.size()) ? rowSrcLines[r] : -1;
+		for( int c = 0; c < maxCols; ++c ) {
+			QTextTableCell cell = table->cellAt(r, c);
+			if( !cell.isValid() )
+				continue;
+
+			QTextTableCellFormat cellFmt;
+			cellFmt.setBackground(r == 0 ? kHeaderBg : ((r % 2) != 0 ? kZebraBg1 : kZebraBg2));
+			cell.setFormat(cellFmt);
+
+			const QString cellText = (c < rows[r].size()) ? rows[r][c] : QString();
+			QTextCursor cellCur = cell.firstCursorPosition();
+			QTextBlockFormat bf;
+			if( r == 0 ) {
+				bf.setAlignment(Qt::AlignCenter);
+			} else if( !aligns.isEmpty() ) {
+				bf.setAlignment(c < aligns.size() ? aligns[c] : Qt::AlignLeft);
+			} else if( kNumberRe.match(cellText).hasMatch() ) {
+				bf.setAlignment(Qt::AlignRight);
+			} else {
+				bf.setAlignment(Qt::AlignLeft);
+			}
+			cellCur.setBlockFormat(bf);
+
+			QTextCharFormat cf;
+			if( r == 0 )
+				cf.setFontWeight(QFont::Bold);
+			cellCur.setBlockCharFormat(cf);
+			insertInlineFormatted(cellCur, cellText, cf, st.basePt, st.maxImgWidth, &st.hasImages);
+
+			const int bn = cell.firstCursorPosition().block().blockNumber();
+			if( srcLine >= 0 ) {
+				if( c == 0 && srcLine < srcLineToBlock.size() )
+					srcLineToBlock[srcLine] = bn;
+				if( blockToSrcLine.size() <= bn )
+					blockToSrcLine.resize(bn + 1, srcLine);
+				blockToSrcLine[bn] = srcLine;
+			}
+		}
+	}
+
+	//	テーブル直後の空ブロックへカーソルを移動（次のブロックで余分な空行が出ないよう hasEmittedBlock をリセット）
+	cursor.setPosition(table->lastPosition());
+	cursor.movePosition(QTextCursor::NextCharacter);
+	cursor.setBlockFormat(QTextBlockFormat());
+	cursor.setBlockCharFormat(QTextCharFormat());
+	st.hasEmittedBlock = false;
+}
+
 void MarkdownPreview::setMarkdown(const QString &markdown)
 {
 	const QSignalBlocker blocker(verticalScrollBar());
@@ -525,21 +1255,88 @@ void MarkdownPreview::setMarkdown(const QString &markdown)
 
 	ParseState st;
 	st.basePt = doc->defaultFont().pointSizeF() > 0.0 ? doc->defaultFont().pointSizeF() : 10.0;
-	const QStringList lines = markdown.split(QChar('\n'));
-	m_srcLineToBlock.fill(-1, lines.size());
+	const int maxWInt = qMax(0, viewport()->width() - 24);
+	st.maxImgWidth = static_cast<qreal>(maxWInt);
+	const QStringList rawLines = markdown.split(QChar('\n'));
+	const int nLines = static_cast<int>(rawLines.size());
+	QStringList lines;
+	lines.reserve(nLines);
+	for( int i = 0; i < nLines; ++i ) {
+		QString s = rawLines[i];
+		if( s.endsWith(QChar('\r')) ) s.chop(1);
+		lines.append(s);
+	}
+	m_srcLineToBlock.fill(-1, nLines);
 	m_blockToSrcLine.clear();
-	for( qsizetype idx = 0; idx < lines.size(); ++idx ) {
-		QString line = lines[idx];
-		if( line.endsWith(QChar('\r')) )
-			line.chop(1);
 
-		const LineMgr::LineType type = parseAndAppendLine(cursor, line, st, static_cast<int>(idx));
-		if( type != LineMgr::LT_CODE_FENCE ) {
+	for( int ln = 0; ln < nLines; ++ln ) {
+		const QString &line = lines[ln];
+		if( !st.inCodeBlock && !st.inHtmlComment && isCsvFence(line) ) {
+			QList<QStringList> rows;
+			QVector<int> rowSrcLines;
+			bool inQuotes = false;
+			bool csvInComment = false;
+			QStringList curFields;
+			QString curField;
+			int rowStartLine = ln + 1;
+			while( ++ln < nLines && !isCodeFence(lines[ln]) ) {
+				bool commentOnly = false;
+				const QString cleaned = inQuotes ? lines[ln] : stripHtmlComments(lines[ln], csvInComment, commentOnly);
+				if( !inQuotes && (commentOnly || cleaned.trimmed().isEmpty()) ) {
+					rowStartLine = ln + 1;
+					continue;
+				}
+				if( !inQuotes )
+					rowStartLine = ln;
+				if( parseCsvLine(cleaned, inQuotes, curFields, curField) ) {
+					rows.append(curFields);
+					rowSrcLines.append(rowStartLine);
+				}
+			}
+			if( inQuotes && !curFields.isEmpty() ) {
+				curFields.append(curField.trimmed());
+				rows.append(curFields);
+				rowSrcLines.append(rowStartLine);
+			}
+			insertStyledTable(cursor, rows, rowSrcLines, {}, st, m_srcLineToBlock, m_blockToSrcLine);
+			continue;
+		}
+		if( !st.inCodeBlock && !st.inHtmlComment && ln + 1 < nLines ) {
+			QStringList headerCells;
+			QVector<Qt::Alignment> aligns;
+			if( parseGfmTableRow(line, headerCells) && parseGfmTableSeparator(lines[ln + 1], aligns) ) {
+				QList<QStringList> rows;
+				QVector<int> rowSrcLines;
+				rows.append(headerCells);
+				rowSrcLines.append(ln);
+				ln += 1;	//	区切り行を消費
+				bool tblComment = false;
+				while( ln + 1 < nLines ) {
+					bool commentOnly = false;
+					const QString cleaned = stripHtmlComments(lines[ln + 1], tblComment, commentOnly);
+					if( commentOnly ) {
+						++ln;
+						continue;
+					}
+					QStringList rowCells;
+					if( !parseGfmTableRow(cleaned, rowCells) )
+						break;
+					++ln;
+					rows.append(rowCells);
+					rowSrcLines.append(ln);
+				}
+				insertStyledTable(cursor, rows, rowSrcLines, aligns, st, m_srcLineToBlock, m_blockToSrcLine);
+				continue;
+			}
+		}
+
+		parseAndAppendLine(cursor, line, st, ln);
+		if( st.lastLineEmitted ) {
 			const int bn = cursor.block().blockNumber();
-			m_srcLineToBlock[idx] = bn;
+			m_srcLineToBlock[ln] = bn;
 			if( m_blockToSrcLine.size() <= bn )
-				m_blockToSrcLine.resize(bn + 1, static_cast<int>(idx));
-			m_blockToSrcLine[bn] = static_cast<int>(idx);
+				m_blockToSrcLine.resize(bn + 1, ln);
+			m_blockToSrcLine[bn] = ln;
 		}
 	}
 	if( st.inQuote )
@@ -548,6 +1345,8 @@ void MarkdownPreview::setMarkdown(const QString &markdown)
 		finishBlockMarginIfNeeded(cursor, kBlockCode);
 
 	cursor.endEditBlock();
+	m_hasImages = st.hasImages;
+	m_lastImageMaxWidth = maxWInt;
 	doc->setModified(false);
 	moveCursor(QTextCursor::Start);
 }
@@ -557,6 +1356,8 @@ void MarkdownPreview::setMarkdown(TextDocument *srcDoc)
 	if( !srcDoc ) {
 		m_srcLineToBlock.clear();
 		m_blockToSrcLine.clear();
+		m_hasImages = false;
+		m_lastImageMaxWidth = -1;
 		clear();
 		return;
 	}
@@ -572,18 +1373,93 @@ void MarkdownPreview::setMarkdown(TextDocument *srcDoc)
 
 	ParseState st;
 	st.basePt = doc->defaultFont().pointSizeF() > 0.0 ? doc->defaultFont().pointSizeF() : 10.0;
+	const int maxWInt = qMax(0, viewport()->width() - 24);
+	st.maxImgWidth = static_cast<qreal>(maxWInt);
 	ViewLineMgr &mgr = srcDoc->lineMgr();
 	const int nLines = mgr.lineCount();
-	m_srcLineToBlock.fill(-1, nLines);
-	m_blockToSrcLine.clear();
+	QStringList lines;
+	lines.reserve(nLines);
 	for( int ln = 0; ln < nLines; ++ln ) {
 		QString line = srcDoc->findBlockByNumber(ln).text();
 		if( line.endsWith(QChar('\n')) ) line.chop(1);
 		if( line.endsWith(QChar('\r')) ) line.chop(1);
+		lines.append(line);
+	}
+	m_srcLineToBlock.fill(-1, nLines);
+	m_blockToSrcLine.clear();
+
+	for( int ln = 0; ln < nLines; ++ln ) {
+		const QString &line = lines[ln];
+		if( !st.inCodeBlock && !st.inHtmlComment && isCsvFence(line) ) {
+			mgr.setLineType(ln, LineMgr::LT_CODE_FENCE);
+			QList<QStringList> rows;
+			QVector<int> rowSrcLines;
+			bool inQuotes = false;
+			bool csvInComment = false;
+			QStringList curFields;
+			QString curField;
+			int rowStartLine = ln + 1;
+			while( ++ln < nLines && !isCodeFence(lines[ln]) ) {
+				mgr.setLineType(ln, LineMgr::LT_TABLE);
+				bool commentOnly = false;
+				const QString cleaned = inQuotes ? lines[ln] : stripHtmlComments(lines[ln], csvInComment, commentOnly);
+				if( !inQuotes && (commentOnly || cleaned.trimmed().isEmpty()) ) {
+					rowStartLine = ln + 1;
+					continue;
+				}
+				if( !inQuotes )
+					rowStartLine = ln;
+				if( parseCsvLine(cleaned, inQuotes, curFields, curField) ) {
+					rows.append(curFields);
+					rowSrcLines.append(rowStartLine);
+				}
+			}
+			if( ln < nLines && isCodeFence(lines[ln]) )
+				mgr.setLineType(ln, LineMgr::LT_CODE_FENCE);
+			if( inQuotes && !curFields.isEmpty() ) {
+				curFields.append(curField.trimmed());
+				rows.append(curFields);
+				rowSrcLines.append(rowStartLine);
+			}
+			insertStyledTable(cursor, rows, rowSrcLines, {}, st, m_srcLineToBlock, m_blockToSrcLine);
+			continue;
+		}
+		if( !st.inCodeBlock && !st.inHtmlComment && ln + 1 < nLines ) {
+			QStringList headerCells;
+			QVector<Qt::Alignment> aligns;
+			if( parseGfmTableRow(line, headerCells) && parseGfmTableSeparator(lines[ln + 1], aligns) ) {
+				QList<QStringList> rows;
+				QVector<int> rowSrcLines;
+				mgr.setLineType(ln, LineMgr::LT_TABLE);
+				mgr.setLineType(ln + 1, LineMgr::LT_TABLE);
+				rows.append(headerCells);
+				rowSrcLines.append(ln);
+				ln += 1;	//	区切り行を消費
+				bool tblComment = false;
+				while( ln + 1 < nLines ) {
+					bool commentOnly = false;
+					const QString cleaned = stripHtmlComments(lines[ln + 1], tblComment, commentOnly);
+					if( commentOnly ) {
+						++ln;
+						mgr.setLineType(ln, LineMgr::LT_TABLE);
+						continue;
+					}
+					QStringList rowCells;
+					if( !parseGfmTableRow(cleaned, rowCells) )
+						break;
+					++ln;
+					mgr.setLineType(ln, LineMgr::LT_TABLE);
+					rows.append(rowCells);
+					rowSrcLines.append(ln);
+				}
+				insertStyledTable(cursor, rows, rowSrcLines, aligns, st, m_srcLineToBlock, m_blockToSrcLine);
+				continue;
+			}
+		}
 
 		const LineMgr::LineType type = parseAndAppendLine(cursor, line, st, ln);
 		mgr.setLineType(ln, type);
-		if( type != LineMgr::LT_CODE_FENCE ) {
+		if( st.lastLineEmitted ) {
 			const int bn = cursor.block().blockNumber();
 			m_srcLineToBlock[ln] = bn;
 			if( m_blockToSrcLine.size() <= bn )
@@ -597,6 +1473,8 @@ void MarkdownPreview::setMarkdown(TextDocument *srcDoc)
 		finishBlockMarginIfNeeded(cursor, kBlockCode);
 
 	cursor.endEditBlock();
+	m_hasImages = st.hasImages;
+	m_lastImageMaxWidth = maxWInt;
 	doc->setModified(false);
 	if( QScrollBar *sb = verticalScrollBar() )
 		sb->setValue(qMin(prevScroll, sb->maximum()));
