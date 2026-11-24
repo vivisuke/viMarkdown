@@ -32,6 +32,7 @@
 #include <QUrl>
 #include <QVBoxLayout>
 #include <memory>
+#include "ver.h"
 #include "GapBufferTest.h"
 #include "LineMgrTest.h"
 #include "ViewLineMgrTest.h"
@@ -254,6 +255,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->action_TestVi, &QAction::triggered, this, [this]() {
         do_test_vi(this);
     });
+	connect(ui->action_AboutViMarkdown, &QAction::triggered, this, &MainWindow::onAction_About);
 }
 
 TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath)
@@ -1237,7 +1239,18 @@ void MainWindow::onOutlineItemClicked(QTreeWidgetItem *item, int column)
     }
     edit->setFocus();
 }
-
+void MainWindow::onAction_About() {
+	QMessageBox::about(this, 
+		"About viMarkdown", // タイトルバー
+		
+		"<p><big><b>viMarkdown</b></big> " + VER_STR + "</p>"
+		"<p>The efficient visual Markdown editor"
+		"<br>Copyright (C) 2025, 2026 by N.Tsuda"
+		"<br>Powered by C++, <a href=\"https://www.qt.io/\">Qt6</a>, "
+		"<a href=\"https://github.com/cubicdaiya/dtl\">dtl</a>, "
+		"and <a href=\"https://github.com//lunasvg\">LunaSVG</a></p>"
+	);
+}
 MainWindow::~MainWindow()
 {
     delete ui;

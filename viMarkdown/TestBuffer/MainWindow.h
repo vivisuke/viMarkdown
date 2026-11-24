@@ -65,6 +65,8 @@ private:
     void removeOutlineForTab(QWidget *tabWidget);
     void onOutlineItemClicked(QTreeWidgetItem *item, int column);
 
+    void	onAction_About();
+
     Ui::MainWindowClass *ui;
     QTabWidget *m_tabWidget = nullptr;
     QDockWidget *m_outlineDock = nullptr;

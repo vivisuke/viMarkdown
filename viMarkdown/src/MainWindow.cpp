@@ -3757,8 +3757,6 @@ void MainWindow::onAction_UserAuth() {
 	save_settings();		//	設定を全て保存
 }
 void MainWindow::onAction_About() {
-	//##qDebug() << "MainWindow::onAction_About()";
-
 	QMessageBox::about(this, 
 		"About viMarkdown", // タイトルバー
 		
