@@ -2123,16 +2123,11 @@ void MainWindow::do_global(const QString &text, int ix, QTextCursor& cursor, QTe
 	bool found_end = false;
 	for (; i < text.length(); ++i) {	// 4. パターン（pat）の抽出
 		QChar c = text.at(i);
-		// エスケープ処理（セパレータ自体がエスケープされている場合の考慮）
+		// エスケープ処理（\\ や \<sep> を 2 文字ペアで消費し、\\ の直後のセパレータ誤判定を防ぐ）
 		if (c == '\\' && i + 1 < text.length()) {
-			QChar next = text.at(i + 1);
-			if (next == sep) {
-				pat.append(c);     // '\' を追加
-				pat.append(next);  // セパレータ文字を追加（これで2つ目のセパレータ判定をスルーします）
-				i++;               // 次の文字（セパレータ）を処理済みにする
-			} else {
-				pat.append(c);
-			}
+			pat.append(c);
+			pat.append(text.at(i + 1));
+			i++;
 		} else if (c == sep) {
 			found_end = true;
 			break; // 2つ目のセパレータが見つかったのでループを抜ける
@@ -2724,7 +2719,8 @@ void MainWindow::close_cmdLine() {
 	gvi.m_currentMode = ViMode::Normal;
 	//gvi.m_cmdlineMode = false;
 	gvi.m_pendingCommand.clear();
-	gvi.m_prevFocusWidget->setFocus();
+	if( gvi.m_prevFocusWidget != nullptr )
+		gvi.m_prevFocusWidget->setFocus();
 #ifdef Q_OS_WIN
 	HWND hwnd;
 	if( qobject_cast<MarkdownEditor*>(gvi.m_prevFocusWidget) != nullptr
