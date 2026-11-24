@@ -686,6 +686,7 @@ bool ViEngine::search(TextEdit *edit, const QString &pattern, bool forward, int 
 		return false;
 	m_lastSearchPat = pattern;
 	m_lastSearchForward = forward;
+	edit->setSearchHighlight(pattern);
 
 	QRegularExpression re(pattern);
 	if( !re.isValid() )
@@ -754,7 +755,10 @@ bool ViEngine::searchNext(TextEdit *edit, bool sameDir, int count)
 {
 	if( m_lastSearchPat.isEmpty() )
 		return false;
-	return search(edit, m_lastSearchPat, sameDir ? m_lastSearchForward : !m_lastSearchForward, count);
+	const bool origDir = m_lastSearchForward;
+	const bool ok = search(edit, m_lastSearchPat, sameDir ? origDir : !origDir, count);
+	m_lastSearchForward = origDir;
+	return ok;
 }
 
 bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
@@ -1287,6 +1291,10 @@ void ViEngine::executeExCommand(TextEdit *edit, const QString &cmdLine, const Ex
 	}
 	const QString arg = text.mid(ix).trimmed();
 
+	if( exCmdMatch(cmd, "noh", "nohlsearch") ) {
+		if( edit ) edit->clearSearchHighlight();
+		return;
+	}
 	if( exCmdMatch(cmd, "q", "quit") ) {
 		if( cb.closeTab ) cb.closeTab(bang);
 		return;

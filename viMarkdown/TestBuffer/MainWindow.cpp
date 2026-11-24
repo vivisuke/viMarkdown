@@ -45,6 +45,7 @@ const QStringView KEY_RECENT_FILES(u"recentFilePaths");
 const QStringView KEY_LINE_SPACING_PERCENT(u"editor/lineSpacingPercent");
 const QStringView KEY_HEADING_COLOR(u"editor/headingColor");
 const QStringView KEY_EMPHASIS_COLOR(u"editor/emphasisColor");
+const QStringView KEY_SEARCH_MATCH_COLOR(u"editor/searchMatchColor");
 const QStringView KEY_EDITOR_FONT_FAMILY(u"editor/fontFamily");
 const QStringView KEY_EDITOR_FONT_SIZE(u"editor/fontSize");
 const QStringView KEY_PREVIEW_FONT_FAMILY(u"preview/fontFamily");
@@ -81,6 +82,8 @@ MainWindow::MainWindow(QWidget *parent)
         if (hc.isValid()) m_headingColor = hc;
         QColor ec = settings.value(KEY_EMPHASIS_COLOR, m_emphasisColor).value<QColor>();
         if (ec.isValid()) m_emphasisColor = ec;
+        QColor smc = settings.value(KEY_SEARCH_MATCH_COLOR, m_searchMatchColor).value<QColor>();
+        if (smc.isValid()) m_searchMatchColor = smc;
         m_editorFontFamily = settings.value(KEY_EDITOR_FONT_FAMILY).toString();
         m_editorFontSize = qBound(3, settings.value(KEY_EDITOR_FONT_SIZE, 10).toInt(), 64);
         m_previewFontFamily = settings.value(KEY_PREVIEW_FONT_FAMILY).toString();
@@ -274,6 +277,7 @@ TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath
     edit->setLineSpacing(qRound(edit->fontMetrics().height() * m_lineSpacingPercent / 100.0));
     edit->setHeadingColor(m_headingColor);
     edit->setEmphasisColor(m_emphasisColor);
+    edit->setSearchMatchColor(m_searchMatchColor);
     edit->setViEnabled(m_viKeybind);
     edit->viEngine()->setCallbacks({
         [this](const QString &msg) { statusBar()->showMessage(msg, 5000); },
@@ -553,10 +557,11 @@ void MainWindow::applyLineSpacing(int percent)
     }
 }
 
-void MainWindow::applyColors(const QColor &heading, const QColor &emphasis)
+void MainWindow::applyColors(const QColor &heading, const QColor &emphasis, const QColor &searchMatch)
 {
     if (heading.isValid()) m_headingColor = heading;
     if (emphasis.isValid()) m_emphasisColor = emphasis;
+    if (searchMatch.isValid()) m_searchMatchColor = searchMatch;
     if (!m_tabWidget)
         return;
     for (int i = 0; i < m_tabWidget->count(); ++i) {
@@ -565,6 +570,7 @@ void MainWindow::applyColors(const QColor &heading, const QColor &emphasis)
         if (edit) {
             edit->setHeadingColor(m_headingColor);
             edit->setEmphasisColor(m_emphasisColor);
+            edit->setSearchMatchColor(m_searchMatchColor);
         }
     }
 }
@@ -648,6 +654,7 @@ void MainWindow::onSettings()
     const int origPercent = m_lineSpacingPercent;
     const QColor origHeading = m_headingColor;
     const QColor origEmphasis = m_emphasisColor;
+    const QColor origSearchMatch = m_searchMatchColor;
     const QString origFontFamily = m_editorFontFamily;
     const int origFontSize = m_editorFontSize;
     const QString origPreviewFontFamily = m_previewFontFamily;
@@ -704,7 +711,7 @@ void MainWindow::onSettings()
         QColor c = QColorDialog::getColor(m_headingColor, &dlg, tr("Select Heading Color"));
         if (c.isValid()) {
             setColorButtonStyle(headingColorBtn, c);
-            applyColors(c, m_emphasisColor);
+            applyColors(c, m_emphasisColor, m_searchMatchColor);
         }
     });
     editorForm->addRow(tr("Heading Color:"), headingColorBtn);
@@ -715,10 +722,21 @@ void MainWindow::onSettings()
         QColor c = QColorDialog::getColor(m_emphasisColor, &dlg, tr("Select Emphasis Color"));
         if (c.isValid()) {
             setColorButtonStyle(emphasisColorBtn, c);
-            applyColors(m_headingColor, c);
+            applyColors(m_headingColor, c, m_searchMatchColor);
         }
     });
     editorForm->addRow(tr("Emphasis Color:"), emphasisColorBtn);
+
+    auto *searchMatchColorBtn = new QPushButton(editorGroup);
+    setColorButtonStyle(searchMatchColorBtn, m_searchMatchColor);
+    connect(searchMatchColorBtn, &QPushButton::clicked, &dlg, [this, &dlg, searchMatchColorBtn]() {
+        QColor c = QColorDialog::getColor(m_searchMatchColor, &dlg, tr("Select Search Match Color"));
+        if (c.isValid()) {
+            setColorButtonStyle(searchMatchColorBtn, c);
+            applyColors(m_headingColor, m_emphasisColor, c);
+        }
+    });
+    editorForm->addRow(tr("Search Match Color:"), searchMatchColorBtn);
     groupsRow->addWidget(editorGroup, 1);
 
     auto *previewGroup = new QGroupBox(tr("Preview"), &dlg);
@@ -808,6 +826,7 @@ void MainWindow::onSettings()
         settings.setValue(KEY_LINE_SPACING_PERCENT, m_lineSpacingPercent);
         settings.setValue(KEY_HEADING_COLOR, m_headingColor);
         settings.setValue(KEY_EMPHASIS_COLOR, m_emphasisColor);
+        settings.setValue(KEY_SEARCH_MATCH_COLOR, m_searchMatchColor);
         settings.setValue(KEY_TABLE_HEADER_COLOR, m_tableHeaderColor);
         settings.setValue(KEY_TABLE_ZEBRA_COLOR1, m_tableZebraColor1);
         settings.setValue(KEY_TABLE_ZEBRA_COLOR2, m_tableZebraColor2);
@@ -817,7 +836,7 @@ void MainWindow::onSettings()
         applyPreviewFont(origPreviewFontFamily, origPreviewFontSize);
         applyOutputFontSize(origOutputFontSize);
         applyLineSpacing(origPercent);
-        applyColors(origHeading, origEmphasis);
+        applyColors(origHeading, origEmphasis, origSearchMatch);
         applyTableColors(origTableHeader, origTableZebra1, origTableZebra2);
     }
 }

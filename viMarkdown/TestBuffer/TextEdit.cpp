@@ -225,6 +225,35 @@ void TextEdit::setSelectionColor(const QColor &color)
 	viewport()->update();
 }
 
+void TextEdit::setSearchMatchColor(const QColor &color)
+{
+	if( !color.isValid() || m_searchMatchColor == color ) return;
+	m_searchMatchColor = color;
+	viewport()->update();
+}
+
+void TextEdit::setSearchHighlight(const QString &pattern)
+{
+	m_searchHighlightPat = pattern;
+	if( pattern.isEmpty() ) {
+		m_searchHighlightRe = QRegularExpression();
+	} else {
+		QRegularExpression re(pattern);
+		if( !re.isValid() )
+			re = QRegularExpression(QRegularExpression::escape(pattern));
+		m_searchHighlightRe = re;
+	}
+	viewport()->update();
+}
+
+void TextEdit::clearSearchHighlight()
+{
+	if( m_searchHighlightPat.isEmpty() ) return;
+	m_searchHighlightPat.clear();
+	m_searchHighlightRe = QRegularExpression();
+	viewport()->update();
+}
+
 void TextEdit::setTabWidth(int width)
 {
 	m_doc.lineMgr().setTabWidth(width);
@@ -970,7 +999,7 @@ void TextEdit::lineNumberAreaPaintEvent(QPaintEvent *event)
 		}
 		if( viewLine != mgr.lineToViewLine(ln) ) continue;	//	折り返しの継続行には番号を付けない
 		QString num = QString::number(ln + 1);
-		painter.drawText(right - fm.horizontalAdvance(num), i * lh + fm.ascent() + 2, num);
+		painter.drawText(right - fm.horizontalAdvance(num), i * lh + fm.ascent() + 4, num);
 	}
 }
 
@@ -1060,6 +1089,8 @@ void TextEdit::paintEvent(QPaintEvent *event)
 	const QColor defaultTextColor = palette().color(QPalette::Text);
 	int cachedLine = -1;
 	QVector<HighlightSpan> cachedSpans;
+	QVector<QPair<qsizetype, qsizetype>> cachedSearchMatches;
+	const bool hasSearchHL = !m_searchHighlightPat.isEmpty() && m_searchHighlightRe.isValid();
 
 	//	表示行の一部 [subOff, subOff + subText.size()) をスパン色で塗り分けながら描画する
 	auto drawColoredSegment = [&](int x, int yBaseline, const QString &subText, qsizetype segOffInLine) -> int {
@@ -1096,6 +1127,42 @@ void TextEdit::paintEvent(QPaintEvent *event)
 		ViewLineBlock vb = m_doc.findViewLineByNumber(viewLine);
 		TextDocument::pos_t linePos = vb.position();
 		const int y = i * lh;
+		const int ln = mgr.viewLineToLine(viewLine);
+		const qsizetype segOff = static_cast<qsizetype>(linePos - mgr.lineStartPos(ln));
+		if( ln != cachedLine ) {
+			cachedLine = ln;
+			cachedSpans.clear();
+			cachedSearchMatches.clear();
+			if( m_markdownHighlight || hasSearchHL ) {
+				QString logicalText = m_doc.findBlockByNumber(ln).text();
+				if( logicalText.endsWith(QChar('\n')) ) logicalText.chop(1);
+				if( m_markdownHighlight )
+					cachedSpans = highlightMarkdownLine(logicalText, mgr.lineType(ln), m_headingColor, m_emphasisColor);
+				if( hasSearchHL && !logicalText.isEmpty() ) {
+					auto it = m_searchHighlightRe.globalMatch(logicalText);
+					while( it.hasNext() ) {
+						const QRegularExpressionMatch m = it.next();
+						if( m.capturedLength() > 0 )
+							cachedSearchMatches.push_back({m.capturedStart(), m.capturedLength()});
+					}
+				}
+			}
+		}
+		if( !cachedSearchMatches.isEmpty() ) {
+			const TextDocument::pos_t lineStart = mgr.lineStartPos(ln);
+			const TextDocument::pos_t visEnd = linePos + mgr.viewLineLength(viewLine);
+			for( const auto &m : cachedSearchMatches ) {
+				const TextDocument::pos_t ms = lineStart + m.first;
+				const TextDocument::pos_t me = ms + m.second;
+				if( me <= linePos || ms >= visEnd ) continue;
+				const TextDocument::pos_t s = ms > linePos ? ms : linePos;
+				const TextDocument::pos_t e = me < visEnd ? me : visEnd;
+				int xs = xOfPosInViewLine(viewLine, s);
+				int xe = xOfPosInViewLine(viewLine, e);
+				if( xe > xs )
+					painter.fillRect(xs, y, xe - xs, lh, m_searchMatchColor);
+			}
+		}
 		if( hasSel && linePos + vb.length() > selS && linePos < selE ) {
 			const TextDocument::pos_t visEnd = linePos + mgr.viewLineLength(viewLine);
 			const TextDocument::pos_t s = selS > linePos ? selS : linePos;
@@ -1110,33 +1177,21 @@ void TextEdit::paintEvent(QPaintEvent *event)
 		QString text = vb.text();
 		if( text.endsWith(QChar('\n')) ) text.chop(1);
 
-		const int ln = mgr.viewLineToLine(viewLine);
-		const qsizetype segOff = static_cast<qsizetype>(linePos - mgr.lineStartPos(ln));
-		if( m_markdownHighlight ) {
-			if( ln != cachedLine ) {
-				cachedLine = ln;
-				QString logicalText = m_doc.findBlockByNumber(ln).text();
-				if( logicalText.endsWith(QChar('\n')) ) logicalText.chop(1);
-				cachedSpans = highlightMarkdownLine(logicalText, mgr.lineType(ln), m_headingColor, m_emphasisColor);
-			}
-		} else {
-			cachedSpans.clear();
-		}
-
+		const int yBase = y + fm.ascent() + 4;
 		if( !m_preedit.isEmpty() && viewLine == mgr.viewLineAtPos(m_cursor.position()) ) {
 			int curOff = (int)(m_cursor.position() - linePos);
 			if( curOff < 0 ) curOff = 0;
 			if( curOff > text.size() ) curOff = (int)text.size();
 			QString before = text.left(curOff);
 			QString after = text.mid(curOff);
-			int xPre = drawColoredSegment(LEFT_MARGIN, y + fm.ascent(), before, segOff);
+			int xPre = drawColoredSegment(LEFT_MARGIN, yBase, before, segOff);
 			int wPre = fm.horizontalAdvance(m_preedit);
 			painter.setPen(defaultTextColor);
-			painter.drawText(xPre, y + fm.ascent(), m_preedit);
-			painter.drawLine(xPre, y + fm.ascent() + 1, xPre + wPre, y + fm.ascent() + 1);
-			drawColoredSegment(xPre + wPre, y + fm.ascent(), after, segOff + curOff);
+			painter.drawText(xPre, yBase, m_preedit);
+			painter.drawLine(xPre, yBase + 1, xPre + wPre, yBase + 1);
+			drawColoredSegment(xPre + wPre, yBase, after, segOff + curOff);
 		} else {
-			drawColoredSegment(LEFT_MARGIN, y + fm.ascent(), text, segOff);
+			drawColoredSegment(LEFT_MARGIN, yBase, text, segOff);
 		}
 	}
 	//	カーソル（フォーカス時は赤 2px 縦棒、非フォーカス時は黒 2px 幅 I ビーム）
@@ -1146,7 +1201,7 @@ void TextEdit::paintEvent(QPaintEvent *event)
 			int x = xOfPos(m_cursor.position());
 			if( !m_preedit.isEmpty() )
 				x += fm.horizontalAdvance(m_preedit.left(m_preeditCursor));
-			const int y0 = (cv - top) * lh;
+			const int y0 = (cv - top) * lh + 4;
 			const int caretH = fm.ascent() + 2;
 			if( hasFocus() ) {
 				if( m_caretVisible ) {

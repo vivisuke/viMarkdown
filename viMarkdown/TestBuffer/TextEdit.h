@@ -6,6 +6,7 @@
 
 #include <QAbstractScrollArea>
 #include <QColor>
+#include <QRegularExpression>
 #include <functional>
 
 //----------------------------------------------------------------------
@@ -55,6 +56,13 @@ public:
 
 	void setSelectionColor(const QColor &color);
 	QColor selectionColor() const { return m_selectionColor; }
+
+	void setSearchMatchColor(const QColor &color);
+	QColor searchMatchColor() const { return m_searchMatchColor; }
+
+	void setSearchHighlight(const QString &pattern);
+	void clearSearchHighlight();
+	QString searchHighlightPattern() const { return m_searchHighlightPat; }
 
 	//	タブ幅（半角文字数、デフォルト4）
 	void setTabWidth(int width);
@@ -130,6 +138,9 @@ private:
 	QColor m_headingColor = QColor(0x80, 0x00, 0x00);
 	QColor m_emphasisColor = QColor(0x00, 0x33, 0xAA);
 	QColor m_selectionColor = QColor(0xC8, 0xF0, 0xC8);
+	QColor m_searchMatchColor = QColor(0xFF, 0xF5, 0x9D);
+	QString m_searchHighlightPat;
+	QRegularExpression m_searchHighlightRe;
 	bool m_dragging = false;
 	bool m_wordDragging = false;
 	TextDocument::pos_t m_wordAnchorStart = 0;
