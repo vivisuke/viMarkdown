@@ -1548,7 +1548,17 @@ SPR# 状 P Open Close ver     Type  概要
 1534 ◎ C 11/26 11/26 03222│問題│newEditor()に#1390調査用スクロールqDebugが残存しnewTabWidget()のaddWidget重複もある（Claude）
 1535 ◎ C 11/26 11/26 03222│問題│onAction_List()/onAction_NumList()が連番マーカー長を3固定で削除し2桁以上で文字が残る（Gemini）
 1536 ◎ C 11/26 11/26 03222│問題│onAction_About(): https://github.com//lunasvg → スラッシュが 2 つ連続している（Gemini）
-1537 ● C 11/26            │問題│
-1538 ● C 11/26            │問題│
-1539 ● C 11/26            │問題│
-1540 ● C 11/26            │問題│
+1537 ◎ C 11/26 11/26 03222│問題│isPaddingLine()やpeerBlockForPhysicalLine()にbn>=0判定がなく無効ブロックで範囲外アクセス（Gemini）
+1538 ◎ C 11/26 11/26 03222│問題│findPosition()の罫線ブロック読み飛ばしループにblock.isValid()チェックが抜けている（Gemini）
+1539 ◎ C 11/26 11/26 03222│問題│indexOf()/countCharUntil()/findPosition()でBlockDataのnull確認とm_charFlags境界確認が不足（Gemini）
+1540 ◎ C 11/26 11/26 03222│問題│indexOf()でHTMLコメント終了タグ"-->"検出後にix+=3が抜けておりカーソル同期がずれる（Gemini）
+1541 ◎ C 11/26 11/26 03222│問題│check_svg_completer()で既存m_svgCompleterを破棄せず上書きnewしておりポップアップがリーク（Gemini）
+1542 ● C 11/26            │問題│
+1543 ● C 11/26            │問題│
+1544 ● C 11/26            │問題│
+1545 ● C 11/26            │問題│
+1546 ● C 11/26            │問題│
+1547 ● C 11/26            │問題│
+1548 ● C 11/26            │問題│
+1549 ● C 11/26            │問題│
+1550 ● C 11/26            │問題│

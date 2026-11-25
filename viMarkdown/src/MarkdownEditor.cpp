@@ -46,9 +46,10 @@ void removeAllDummyLines(QTextDocument *doc);
 int visualLineCount(const QTextBlock &block, MarkdownEditor* editor);
 
 bool isPaddingLine(MarkdownEditor* editor, const QTextBlock &block) {
+    if( !block.isValid() ) return false;
     const auto &flgs = editor->diffFlags();
     int bn = block.blockNumber();
-    return bn < flgs.size() && flgs[bn] == PADDING_LINE;
+    return bn >= 0 && bn < (int)flgs.size() && flgs[bn] == PADDING_LINE;
 }
 //	対応ブロックを物理行番号で引く共通ヘルパー。
 QTextBlock peerBlockForPhysicalLine(const QTextBlock &src, MarkdownEditor *self, MarkdownEditor *peer, bool *pSelfDummy) {
@@ -60,27 +61,27 @@ QTextBlock peerBlockForPhysicalLine(const QTextBlock &src, MarkdownEditor *self,
 	const auto &flgs2 = peer->diffFlags();
 	auto isDummy1 = [&](const QTextBlock &b) {
 		int bn = b.blockNumber();
-		return bn < (int)vbn1.size() && vbn1[bn] < 0;
+		return bn >= 0 && bn < (int)vbn1.size() && vbn1[bn] < 0;
 	};
 	auto isDummy2 = [&](const QTextBlock &b) {
 		int bn = b.blockNumber();
-		return bn < (int)vbn2.size() && vbn2[bn] < 0;
+		return bn >= 0 && bn < (int)vbn2.size() && vbn2[bn] < 0;
 	};
 	auto isPadding1 = [&](const QTextBlock &b) {
 		int bn = b.blockNumber();
-		return bn < (int)flgs1.size() && flgs1[bn] == PADDING_LINE;
+		return bn >= 0 && bn < (int)flgs1.size() && flgs1[bn] == PADDING_LINE;
 	};
 	auto isPadding2 = [&](const QTextBlock &b) {
 		int bn = b.blockNumber();
-		return bn < (int)flgs2.size() && flgs2[bn] == PADDING_LINE;
+		return bn >= 0 && bn < (int)flgs2.size() && flgs2[bn] == PADDING_LINE;
 	};
 	auto isModified1 = [&](const QTextBlock &b) {
 		int bn = b.blockNumber();
-		return bn < (int)flgs1.size() && flgs1[bn] == MODIFIED_LINE;
+		return bn >= 0 && bn < (int)flgs1.size() && flgs1[bn] == MODIFIED_LINE;
 	};
 	auto isModified2 = [&](const QTextBlock &b) {
 		int bn = b.blockNumber();
-		return bn < (int)flgs2.size() && flgs2[bn] == MODIFIED_LINE;
+		return bn >= 0 && bn < (int)flgs2.size() && flgs2[bn] == MODIFIED_LINE;
 	};
 	//	src がパディング行の場合：直前の非パディング行を起点にする
 	QTextBlock anchor = src;
@@ -2257,12 +2258,13 @@ int indexOf(bool &inComment, const QString& buf, int ix, QChar ch, bool isNextBl
 				return -1;
 			}
 			inComment = false;
+			ix += 3;
 		} else if( QStringView(buf).mid(ix).startsWith(u"<!--") ) {
 			inComment = true;
 			ix += 4;
 		} else {
 			//if( !(buf[ix] == u'*' || buf[ix] == u'_' || buf[ix] == u'~') )
-			if( data->m_charFlags[ix] < PCF_NOT_VISIBLE && buf[ix] == ch )
+			if( data != nullptr && ix < data->m_charFlags.size() && data->m_charFlags[ix] < PCF_NOT_VISIBLE && buf[ix] == ch )
 			{
 				return ix;
 			}
@@ -2366,7 +2368,7 @@ int MarkdownEditor::findPosition(const PosContext &context) {
 		if( ch == QChar(U_KEISEN_BLOCK) ) {
 			if( blockType(block) == BT_KEISEN_BEGIN ) {
 				if( --nth == 0 ) break;
-				while( blockType(block) == BT_KEISEN_BEGIN || blockType(block) == BT_KEISEN_BLOCK )
+				while( block.isValid() && (blockType(block) == BT_KEISEN_BEGIN || blockType(block) == BT_KEISEN_BLOCK) )
 					block = block.next();
 			} else
 				block = block.next();
@@ -2380,7 +2382,7 @@ int MarkdownEditor::findPosition(const PosContext &context) {
 					ix = block.text().size();
 					break;
 				}
-				while( blockType(block) == BT_KEISEN_BEGIN || blockType(block) == BT_KEISEN_BLOCK )
+				while( block.isValid() && (blockType(block) == BT_KEISEN_BEGIN || blockType(block) == BT_KEISEN_BLOCK) )
 					block = block.next();
 			} else
 				block = block.next();
@@ -2475,7 +2477,7 @@ int MarkdownEditor::findPosition(const PosContext &context) {
 				//!(block.text().isEmpty() && isPrevEmptyBlock(block)) )
 				//!(block.text().isEmpty() && block.previous().isValid() && block.previous().text().isEmpty()) )	//	連続空行ではない
 			{
-				while( blockType(block) == BT_KEISEN_BLOCK /*&& block.next().isValid() && !block.next().text().startsWith("```")*/) {
+				while( block.isValid() && blockType(block) == BT_KEISEN_BLOCK /*&& block.next().isValid() && !block.next().text().startsWith("```")*/) {
 					block = block.next();
 				}
 				ix = buf.size();
@@ -2512,27 +2514,29 @@ int MarkdownEditor::findPosition(const PosContext &context) {
 			auto text = block.text();
 			int ix = 0;
 			if( blockType(block) == BT_LIST ) {		//	リスト行の場合のみ "- " 分をスキップ
-				while( text[ix] == ' ' ) ++ix;
-				ix += 2;		//	2 for "- "
+				while( ix < text.size() && text[ix] == ' ' ) ++ix;
+				ix = qMin(ix + 2, (int)text.size());		//	2 for "- "
 			}
 			const BlockData* data = getBlockData(block);
-			int offset = context.m_offset;
-			// 先頭に装飾記号がある場合（例: - **hoge**）のスキップ
-			while( ix < data->m_charFlags.size() && data->m_charFlags[ix] >= PCF_NOT_VISIBLE )
-				++ix;
-			while(offset > 0 && ix < data->m_charFlags.size() ) {
-				++ix;
-				--offset;
+			if( data != nullptr ) {
+				int offset = context.m_offset;
+				// 先頭に装飾記号がある場合（例: - **hoge**）のスキップ
 				while( ix < data->m_charFlags.size() && data->m_charFlags[ix] >= PCF_NOT_VISIBLE )
 					++ix;
-			}
-			//	[#1258] ちょうど強調の閉じマーカーを越えた位置は、マーカー直前（内側）に戻す
-			if( ix > 0 && ix <= data->m_charFlags.size() && data->m_charFlags[ix-1] == PCF_EMPHASIZED ) {
-				int rs = ix - 1;
-				while( rs > 0 && data->m_charFlags[rs-1] == PCF_EMPHASIZED )
-					--rs;
-				if( isClosingEmphMarkerRun(text, data->m_charFlags, rs, ix) )
-					ix = rs;
+				while(offset > 0 && ix < data->m_charFlags.size() ) {
+					++ix;
+					--offset;
+					while( ix < data->m_charFlags.size() && data->m_charFlags[ix] >= PCF_NOT_VISIBLE )
+						++ix;
+				}
+				//	[#1258] ちょうど強調の閉じマーカーを越えた位置は、マーカー直前（内側）に戻す
+				if( ix > 0 && ix <= data->m_charFlags.size() && data->m_charFlags[ix-1] == PCF_EMPHASIZED ) {
+					int rs = ix - 1;
+					while( rs > 0 && data->m_charFlags[rs-1] == PCF_EMPHASIZED )
+						--rs;
+					if( isClosingEmphMarkerRun(text, data->m_charFlags, rs, ix) )
+						ix = rs;
+				}
 			}
 			return block.position() + ix;
 		}
@@ -2544,7 +2548,7 @@ int MarkdownEditor::findPosition(const PosContext &context) {
 			//if( ch == STX && data->m_charFlags[ix] != PCF_CELL_SEPARATOR && data->m_charFlags[ix] != PCF_VISIBLE )
 			//	++pos;
 			//else
-			if( ch == ETX && ix > 0 && data->m_charFlags[ix-1] != PCF_CELL_SEPARATOR && data->m_charFlags[ix-1] != PCF_VISIBLE ) {
+			if( data != nullptr && ch == ETX && ix > 0 && ix <= data->m_charFlags.size() && data->m_charFlags[ix-1] != PCF_CELL_SEPARATOR && data->m_charFlags[ix-1] != PCF_VISIBLE ) {
 				--pos;
 				--ix;
 				while( ix > 0 && data->m_charFlags[ix-1] == PCF_EMPHASIZED ) {
@@ -3545,6 +3549,11 @@ void MarkdownEditor::check_svg_completer() {	//	SVGブロック補完
 //</svg>
 //```
 //)";
+		if( m_svgCompleter != nullptr ) {
+			m_svgCompleter->close();
+			m_svgCompleter->deleteLater();
+			m_svgCompleter = nullptr;
+		}
 		m_svgCompleter = new SvgCompleter(this, blockType(block.previous()) == BT_SVG_BEGIN);
 		connect(m_svgCompleter, &SvgCompleter::enter_pressed, this, &MarkdownEditor::svg_enter_pressed);
 		connect(m_svgCompleter, &SvgCompleter::esc_pressed, this, &MarkdownEditor::svg_esc_pressed);
@@ -4056,8 +4065,8 @@ void MarkdownEditor::lnAreaPaintEvent(QPaintEvent *event) {
 				{
 					painter.drawText(0, top, m_lnAreaWidget->width(), lineHeight,
 								 Qt::AlignLeft, isDiffView ? "≪" : "≫");
-				} else if( hasDiff(this, block) && !isPaddingLine(this, block.previous()) &&
-							(!block.previous().isValid() || !hasDiff(this, block.previous())) )
+				} else if( hasDiff(this, block) &&
+							(!block.previous().isValid() || (!isPaddingLine(this, block.previous()) && !hasDiff(this, block.previous()))) )
 				{
 					painter.drawText(0, top, m_lnAreaWidget->width(), lineHeight,
 								 Qt::AlignLeft, isDiffView ? "≪" : "≫");
@@ -4842,7 +4851,7 @@ int MarkdownEditor::countCharUntil(QTextBlock block, int pos, QChar ch) const
 								ix = closeIX + 1;
 								continue;
 							}
-							if( ix < buf.size() && ((data->m_charFlags[ix] == PCF_VISIBLE &&
+							if( data != nullptr && ix < buf.size() && ix < data->m_charFlags.size() && ((data->m_charFlags[ix] == PCF_VISIBLE &&
 								(buf[ix] == ch || (ch == QChar(0x00a0) && QStringView(buf).mid(ix).startsWith(u"&nbsp;")))) ||
 								(ch == QChar(CODE_IMAGE) && data->m_charFlags[ix] == PCF_IMAGE_BEGIN)) )
 								++count;
