@@ -73,6 +73,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindowClass())
 {
     ui->setupUi(this);
+    setFocusPolicy(Qt::StrongFocus);
     ui->plainTextEdit->setFocusPolicy(Qt::ClickFocus);
     {
         QSettings settings;
@@ -111,6 +112,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_outlineDock = new QDockWidget(tr("OutlineBar"), this);
     m_outlineDock->setObjectName(QStringLiteral("outlineBar"));
     m_outlineTree = new QTreeWidget(m_outlineDock);
+    m_outlineTree->setFocusPolicy(Qt::ClickFocus);
     m_outlineTree->setHeaderHidden(true);
     m_outlineTree->setIndentation(14);
     m_outlineDock->setWidget(m_outlineTree);
@@ -296,6 +298,7 @@ TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath
         [this]() { return m_tabWidget ? saveTab(m_tabWidget->currentIndex()) : false; }
     });
     auto *preview = new MarkdownPreview(splitter);
+    preview->setPlaceholderText(tr("You can also make simple edits (insert/delete text) here."));
     {
         QFont pf = preview->font();
         if (!m_previewFontFamily.isEmpty())
@@ -473,6 +476,7 @@ void MainWindow::onCurrentTabChanged(int index)
     if (index < 0) {
         setWindowTitle(QStringLiteral("TestBuffer"));
         updateUndoRedoEnabled();
+        setFocus();
         return;
     }
     setWindowTitle(m_tabWidget->tabText(index) + QStringLiteral(" - TestBuffer"));
@@ -1171,6 +1175,8 @@ void MainWindow::onViCmdLineReturn()
     TextEdit *edit = currentTextEdit();
     if (edit)
         edit->setFocus();
+    else
+        setFocus();
 
     if (raw.isEmpty()) return;
     const QChar pref = raw[0];
@@ -1180,9 +1186,9 @@ void MainWindow::onViCmdLineReturn()
         m_exHist.push_front(raw);
         while (m_exHist.size() > 50) m_exHist.pop_back();
     }
-    if (!edit) return;
 
     if (pref == QChar('/') || pref == QChar('?')) {
+        if (!edit) return;
         if (!body.isEmpty()) {
             if (wasIncSearch) {
                 TextCursor c = edit->textCursor();
@@ -1201,7 +1207,10 @@ void MainWindow::onViCmdLineReturn()
         return m_tabWidget ? saveTab(m_tabWidget->currentIndex(), path) : false;
     };
     cb.closeTab = [this](bool force) {
-        if (!m_tabWidget) return;
+        if (!m_tabWidget || m_tabWidget->count() == 0) {
+            close();
+            return;
+        }
         const int ix = m_tabWidget->currentIndex();
         if (force) closeTabForce(ix);
         else onTabCloseRequested(ix);
@@ -1210,7 +1219,28 @@ void MainWindow::onViCmdLineReturn()
         if (path.isEmpty()) onOpen();
         else openFile(path);
     };
-    edit->viEngine()->executeExCommand(edit, body, cb);
+    cb.newTab = [this]() {
+        onNewTab();
+    };
+    if (edit) {
+        edit->viEngine()->executeExCommand(edit, body, cb);
+    } else {
+        ViEngine tempEngine;
+        tempEngine.executeExCommand(nullptr, body, cb);
+    }
+}
+
+void MainWindow::keyPressEvent(QKeyEvent *event)
+{
+    if (!currentTextEdit() && (!m_cmdLine || !m_cmdLine->isVisible())) {
+        if (event->text() == QStringLiteral(":")
+            && !(event->modifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier))) {
+            openViCmdLine(QChar(':'));
+            event->accept();
+            return;
+        }
+    }
+    QMainWindow::keyPressEvent(event);
 }
 
 bool MainWindow::eventFilter(QObject *obj, QEvent *event)
@@ -1222,6 +1252,8 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
             cancelViIncSearch();
             if (TextEdit *edit = currentTextEdit())
                 edit->setFocus();
+            else
+                setFocus();
             return true;
         }
         if (ke->key() == Qt::Key_Backspace && m_cmdLine->text().size() <= 1) {
@@ -1229,6 +1261,8 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
             cancelViIncSearch();
             if (TextEdit *edit = currentTextEdit())
                 edit->setFocus();
+            else
+                setFocus();
             return true;
         }
         if (ke->key() == Qt::Key_Up && !m_exHist.isEmpty()) {

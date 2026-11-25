@@ -1222,6 +1222,10 @@ void TextEdit::paintEvent(QPaintEvent *event)
 	};
 
 	painter.fillRect(viewport()->rect(), palette().base());
+	if( m_doc.characterCount() == 0 && m_preedit.isEmpty() ) {
+		painter.setPen(QColor(0x99, 0x99, 0x99));
+		painter.drawText(LEFT_MARGIN, fm.ascent() + 4, tr("Enter Markdown here..."));
+	}
 	for( int i = 0; i < rows; ++i ) {
 		int viewLine = top + i;
 		if( viewLine >= mgr.viewLineCount() ) break;

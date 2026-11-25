@@ -1485,16 +1485,28 @@ void ViEngine::executeExCommand(TextEdit *edit, const QString &cmdLine, const Ex
 		return;
 	}
 	if( exCmdMatch(cmd, "w", "write") ) {
+		if( !edit || !doc ) {
+			if( cb.showStatus ) cb.showStatus(QStringLiteral("No open document"));
+			return;
+		}
 		if( cb.saveFile ) cb.saveFile(arg);
 		return;
 	}
 	if( cmd == QStringLiteral("wq") || exCmdMatch(cmd, "x", "xit") ) {
+		if( !edit || !doc ) {
+			if( cb.showStatus ) cb.showStatus(QStringLiteral("No open document"));
+			return;
+		}
 		if( cb.saveFile && cb.saveFile(arg) && cb.closeTab )
 			cb.closeTab(false);
 		return;
 	}
 	if( exCmdMatch(cmd, "e", "edit") ) {
 		if( cb.openFile ) cb.openFile(arg);
+		return;
+	}
+	if( cmd == QStringLiteral("new") || cmd == QStringLiteral("enew") ) {
+		if( cb.newTab ) cb.newTab();
 		return;
 	}
 	if( cmd == QStringLiteral("pwd") ) {
@@ -1521,7 +1533,10 @@ void ViEngine::executeExCommand(TextEdit *edit, const QString &cmdLine, const Ex
 		return;
 	}
 
-	if( !edit || !doc ) return;
+	if( !edit || !doc ) {
+		if( cb.showStatus ) cb.showStatus(QStringLiteral("No open document"));
+		return;
+	}
 
 	//	:{range}d / :{range}y
 	if( exCmdMatch(cmd, "d", "delete") || exCmdMatch(cmd, "y", "yank") ) {

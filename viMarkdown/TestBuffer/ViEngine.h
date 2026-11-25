@@ -57,6 +57,7 @@ public:
 		std::function<bool(const QString &)> saveFile;		//	引数空なら上書き保存
 		std::function<void(bool)> closeTab;					//	force
 		std::function<void(const QString &)> openFile;		//	引数空ならダイアログ
+		std::function<void()> newTab;
 	};
 	void executeExCommand(TextEdit *edit, const QString &cmdLine, const ExCallbacks &cb);
 
