@@ -1557,8 +1557,18 @@ SPR# 状 P Open Close ver     Type  概要
 1543 ◎ C 11/26 11/26 03222│問題│drawTextCursor()で行末のParagraphSeparatorを判定せずブロックカーソル幅が不正になる（Gemini）
 1544 ◎ C 11/26 11/26 03222│問題│lnAreaPaintEvent()の折り畳み線描画でstartBlock/endBlockのisValid()チェックが抜けている（Gemini）
 1545 ◎ C 11/26 11/26 03222│問題│keyPressEvent()にベンチマーク計測とqDebug出力が残存しておりキー入力のたびに実行される（Gemini）
-1546 ● C 11/26            │問題│
-1547 ● C 11/26            │問題│
-1548 ● C 11/26            │問題│
-1549 ● C 11/26            │問題│
-1550 ● C 11/26            │問題│
+1546 ◎ C 11/26 11/26 03222│問題│do_keisen_block()で一時QStringをQStringViewで受けておりダングリング参照(UB)になる（Gemini）
+1547 ◎ C 11/26 11/26 03222│問題│createMimeDataFromSelection()で基底のQMimeData*を解放せず上書きnewしてメモリリーク（Gemini）
+1548 ◎ C 11/26 11/26 03222│問題│insertInlineMD()の関数内static QTextDocumentがQApplication破棄後に解放され終了時クラッシュ（Gemini）
+1549 ◎ C 11/26 11/26 03222│問題│moveToPrevWord()で先頭空白走査後にpos==0でもcharacterAt(pos-1)を呼び負インデックス参照（Gemini）
+1550 ◎ C 11/26 11/26 03222│問題│do_SVG()のQImage生成にwidth/height上限クランプがなく巨大SVGでOOM・%指定も小数切捨て（Gemini）
+1551 ◎ C 11/26 11/26 03222│問題│MarkdownPreview.cppの#include <qpainter.h>が小文字のためLinux/macOSでビルドエラーになる（Gemini）
+1552 ● C 11/26            │問題│
+1553 ● C 11/26            │問題│
+1554 ● C 11/26            │問題│
+1555 ● C 11/26            │問題│
+1556 ● C 11/26            │問題│
+1557 ● C 11/26            │問題│
+1558 ● C 11/26            │問題│
+1559 ● C 11/26            │問題│
+1560 ● C 11/26            │問題│

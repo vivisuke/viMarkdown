@@ -11,7 +11,7 @@
 #include <QHash>
 #include <QSvgRenderer>
 #include <QXmlStreamReader>
-#include <qpainter.h>
+#include <QPainter>
 #include <QStatusBar>
 #include <QElapsedTimer>
 #include <QMimeData>
@@ -87,7 +87,7 @@ extern CharType getCharType(QChar ch);
 extern void drawTextCursor(QWidget *viewport, QPainter& p, QTextCursor cursor, QRect rect, QFontMetrics fontMetrics, bool hasFocus, bool);
 
 void insertInlineMD(QTextCursor& cursor, const QString text, bool inTable = false) {
-	static QTextDocument tempDoc;
+	QTextDocument tempDoc;
 	QString mdText = text;
 	if( inTable && (mdText.startsWith("- ") || mdText.startsWith("+ ") || mdText.startsWith("* ")) )
 		mdText.prepend('\\');		//	セル先頭行のリストマーカーが setMarkdown() に消費されないようにする（v0.3 #1423）
@@ -138,13 +138,10 @@ MarkdownPreview::MarkdownPreview(const MainWindow *mainWindow, DocWidget *docWid
 }
 QMimeData *MarkdownPreview::createMimeDataFromSelection() const
 {
-    // まず通常の MIME データ（HTML 形式などを含む）を生成
-    QMimeData *mimeData = QTextEdit::createMimeDataFromSelection();
     // 純粋な選択文字列を取得（段落区切り文字 U+2029 があれば通常の改行に置換）
     QString plainText = textCursor().selectedText();
     plainText.replace(QChar::ParagraphSeparator, '\n');
-    // クリップボードのプレーンテキストを純粋な選択文字列で上書き！
-    mimeData = new QMimeData();
+    QMimeData *mimeData = new QMimeData();
     mimeData->setText(plainText);
     return mimeData;
 }
@@ -570,9 +567,9 @@ void MarkdownPreview::moveToPrevWord(QTextCursor& cursor, bool shift) {
 	while (pos > 0 && getCharType(doc->characterAt(pos - 1)) == startType) {
 		pos--;
 	}
-	if( startType == Type_Space ) {
-		CharType startType = getCharType(doc->characterAt(pos - 1));
-		while (pos > 0 && getCharType(doc->characterAt(pos - 1)) == startType) {
+	if( pos > 0 && startType == Type_Space ) {
+		CharType wordType = getCharType(doc->characterAt(pos - 1));
+		while (pos > 0 && getCharType(doc->characterAt(pos - 1)) == wordType) {
 			pos--;
 		}
 	}
@@ -1347,7 +1344,8 @@ void MarkdownPreview::do_keisen_block(int bn0, int nBlocks, QTextBlock& srcBlock
 	BlockData *data = getBlockData(srcBlock);
 	data->m_charFlags.fill(PCF_KEISEN);
 	srcBlock.setUserData(data);
-	QStringView buf = srcBlock.text().mid(QString("```keisen").size());
+	const QString srcText = srcBlock.text();
+	QStringView buf = QStringView(srcText).mid(QStringLiteral("```keisen").size());
 	QColor bgcolor = g.m_keisenBlockColor;
 	QColor color("black");
 	for(;;) {
@@ -1539,7 +1537,7 @@ void MarkdownPreview::do_SVG(int bn0, int nBlocks, QTextBlock& srcBlock, QTextCu
 			if (reader.attributes().hasAttribute("width")) {
 				auto txt = reader.attributes().value("width");
 				if( !txt.isEmpty() && txt[txt.size() - 1] == u'%' )
-					wd = txt.left(txt.size() - 1).toInt() / 100.0;
+					wd = txt.left(txt.size() - 1).toDouble() / 100.0;
 				else {
 					if( txt.endsWith(u"px", Qt::CaseInsensitive) ) txt.chop(2);
 					width = qRound(txt.toDouble());
@@ -1550,7 +1548,7 @@ void MarkdownPreview::do_SVG(int bn0, int nBlocks, QTextBlock& srcBlock, QTextCu
 				//height = reader.attributes().value("height").toInt();
 				auto txt = reader.attributes().value("height");
 				if( !txt.isEmpty() && txt[txt.size() - 1] == u'%' )
-					ht = txt.left(txt.size() - 1).toInt() / 100.0;
+					ht = txt.left(txt.size() - 1).toDouble() / 100.0;
 				else {
 					if( txt.endsWith(u"px", Qt::CaseInsensitive) ) txt.chop(2);
 					height = qRound(txt.toDouble());
@@ -1573,8 +1571,8 @@ void MarkdownPreview::do_SVG(int bn0, int nBlocks, QTextBlock& srcBlock, QTextCu
 					}
 				}
 			}
-			width = qRound(width * wd);
-			height = qRound(height * ht);
+			width = qBound(1, qRound(width * wd), 4096);
+			height = qBound(1, qRound(height * ht), 4096);
 			break;
 		}
 	}
