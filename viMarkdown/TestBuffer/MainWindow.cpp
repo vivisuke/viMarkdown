@@ -222,6 +222,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_cmdLine->hide();
     m_cmdLine->installEventFilter(this);
     statusBar()->addPermanentWidget(m_cmdLine, 1);
+    connect(m_cmdLine, &QLineEdit::textChanged, this, &MainWindow::onViCmdLineTextChanged);
     connect(m_cmdLine, &QLineEdit::returnPressed, this, &MainWindow::onViCmdLineReturn);
 
     connect(ui->action_ViKeybind, &QAction::toggled, this, [this](bool checked) {
@@ -1045,6 +1046,15 @@ void MainWindow::openViCmdLine(QChar prefix)
     if (!m_cmdLine) return;
     m_cmdPrefix = prefix;
     m_exHistIdx = -1;
+    m_incSearchActive = false;
+    if (prefix == QChar('/') || prefix == QChar('?')) {
+        if (TextEdit *edit = currentTextEdit()) {
+            m_incSearchActive = true;
+            m_incSearchOrigPos = static_cast<int>(edit->textCursor().position());
+            m_incSearchOrigScroll = edit->verticalScrollBar()->value();
+            m_incSearchOrigHighlight = edit->searchHighlightPattern();
+        }
+    }
     statusBar()->clearMessage();
     m_cmdLine->setText(QString(prefix));
     m_cmdLine->show();
@@ -1052,10 +1062,53 @@ void MainWindow::openViCmdLine(QChar prefix)
     m_cmdLine->setCursorPosition(1);
 }
 
+void MainWindow::onViCmdLineTextChanged(const QString &raw)
+{
+    if (!m_incSearchActive || !m_cmdLine || !m_cmdLine->isVisible())
+        return;
+    TextEdit *edit = currentTextEdit();
+    if (!edit || raw.isEmpty())
+        return;
+    const QChar pref = raw[0];
+    if (pref != QChar('/') && pref != QChar('?'))
+        return;
+    const QString pat = raw.mid(1);
+    if (pat.isEmpty()) {
+        TextCursor c = edit->textCursor();
+        c.setPosition(m_incSearchOrigPos);
+        edit->setTextCursor(c);
+        edit->verticalScrollBar()->setValue(m_incSearchOrigScroll);
+        edit->setSearchHighlight(m_incSearchOrigHighlight);
+        return;
+    }
+    if (!edit->viEngine()->previewSearch(edit, pat, pref == QChar('/'), m_incSearchOrigPos)) {
+        TextCursor c = edit->textCursor();
+        c.setPosition(m_incSearchOrigPos);
+        edit->setTextCursor(c);
+        edit->verticalScrollBar()->setValue(m_incSearchOrigScroll);
+    }
+}
+
+void MainWindow::cancelViIncSearch()
+{
+    if (!m_incSearchActive)
+        return;
+    m_incSearchActive = false;
+    if (TextEdit *edit = currentTextEdit()) {
+        TextCursor c = edit->textCursor();
+        c.setPosition(m_incSearchOrigPos);
+        edit->setTextCursor(c);
+        edit->verticalScrollBar()->setValue(m_incSearchOrigScroll);
+        edit->setSearchHighlight(m_incSearchOrigHighlight);
+    }
+}
+
 void MainWindow::onViCmdLineReturn()
 {
     if (!m_cmdLine) return;
     QString raw = m_cmdLine->text();
+    const bool wasIncSearch = m_incSearchActive;
+    m_incSearchActive = false;
     m_cmdLine->hide();
     TextEdit *edit = currentTextEdit();
     if (edit)
@@ -1072,8 +1125,14 @@ void MainWindow::onViCmdLineReturn()
     if (!edit) return;
 
     if (pref == QChar('/') || pref == QChar('?')) {
-        if (!body.isEmpty())
+        if (!body.isEmpty()) {
+            if (wasIncSearch) {
+                TextCursor c = edit->textCursor();
+                c.setPosition(m_incSearchOrigPos);
+                edit->setTextCursor(c);
+            }
             edit->viEngine()->search(edit, body, pref == QChar('/'));
+        }
         return;
     }
 
@@ -1102,12 +1161,14 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
         auto *ke = static_cast<QKeyEvent *>(event);
         if (ke->key() == Qt::Key_Escape) {
             m_cmdLine->hide();
+            cancelViIncSearch();
             if (TextEdit *edit = currentTextEdit())
                 edit->setFocus();
             return true;
         }
         if (ke->key() == Qt::Key_Backspace && m_cmdLine->text().size() <= 1) {
             m_cmdLine->hide();
+            cancelViIncSearch();
             if (TextEdit *edit = currentTextEdit())
                 edit->setFocus();
             return true;

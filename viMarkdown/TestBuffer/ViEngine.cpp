@@ -378,7 +378,8 @@ bool ViEngine::computeMotionTarget(
 		outPos = qMax(lineStart, pos - count);
 		return true;
 	}
-	case 'l': {
+	case 'l':
+	case ' ': {
 		const TextDocument::pos_t lineEnd = mgr.lineEndPos(curLine);
 		const TextDocument::pos_t limit = forOperator ? lineEnd : qMax(mgr.lineStartPos(curLine), lineEnd - 1);
 		outPos = qMin(limit, pos + count);
@@ -778,6 +779,61 @@ bool ViEngine::search(TextEdit *edit, const QString &pattern, bool forward, int 
 	}
 	if( m_cb.showStatus )
 		m_cb.showStatus(wrapped ? QStringLiteral("Search wrapped: %1").arg(pattern) : QStringLiteral("/%1").arg(pattern));
+	return true;
+}
+
+bool ViEngine::previewSearch(TextEdit *edit, const QString &pattern, bool forward, TextDocument::pos_t fromPos)
+{
+	if( !edit || pattern.isEmpty() )
+		return false;
+	edit->setSearchHighlight(pattern);
+
+	QRegularExpression re(pattern);
+	if( !re.isValid() )
+		re = QRegularExpression(QRegularExpression::escape(pattern));
+
+	TextDocument *doc = edit->document();
+	const QString fullText = doc->toPlainText();
+	if( fullText.isEmpty() )
+		return false;
+
+	const TextDocument::pos_t cur = qBound(static_cast<TextDocument::pos_t>(0), fromPos, doc->characterCount());
+	qsizetype foundPos = -1;
+	if( forward ) {
+		const qsizetype start = qMin(static_cast<qsizetype>(cur) + 1, fullText.size());
+		QRegularExpressionMatch m = re.match(fullText, start);
+		if( m.hasMatch() ) {
+			foundPos = m.capturedStart();
+		} else {
+			m = re.match(fullText, 0);
+			if( m.hasMatch() )
+				foundPos = m.capturedStart();
+		}
+	} else {
+		auto it = re.globalMatch(fullText);
+		qsizetype lastBefore = -1;
+		qsizetype lastAny = -1;
+		while( it.hasNext() ) {
+			const qsizetype p = it.next().capturedStart();
+			if( p < cur ) lastBefore = p;
+			lastAny = p;
+		}
+		foundPos = (lastBefore >= 0) ? lastBefore : lastAny;
+	}
+	if( foundPos < 0 )
+		return false;
+
+	const TextDocument::pos_t target = static_cast<TextDocument::pos_t>(foundPos);
+	if( doc->lineMgr().unfoldContaining(doc->lineMgr().lineAtPos(target)) )
+		edit->refreshAfterFold();
+	if( m_mode == ViMode::Visual || m_mode == ViMode::VisualLine ) {
+		m_visualCursor = target;
+		updateVisualSelection(edit);
+	} else {
+		TextCursor c = edit->textCursor();
+		c.setPosition(target);
+		edit->setTextCursor(c);
+	}
 	return true;
 }
 

@@ -47,6 +47,7 @@ public:
 
 	//	検索（'/' / '?' コマンドライン確定時・'*' / '#' / 'n' / 'N'）
 	bool search(TextEdit *edit, const QString &pattern, bool forward, int count = 1);
+	bool previewSearch(TextEdit *edit, const QString &pattern, bool forward, TextDocument::pos_t fromPos);
 	bool searchNext(TextEdit *edit, bool sameDir, int count = 1);
 
 	//	ex コマンド実行（':' 以降の文字列）

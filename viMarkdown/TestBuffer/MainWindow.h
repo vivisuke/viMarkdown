@@ -40,7 +40,9 @@ private:
     bool maybeSaveTab(int index);
     void closeTabForce(int index);
     void openViCmdLine(QChar prefix);
+    void onViCmdLineTextChanged(const QString &text);
     void onViCmdLineReturn();
+    void cancelViIncSearch();
     void onCurrentTabChanged(int index);
     void onTabCloseRequested(int index);
     void onNewTab();
@@ -87,6 +89,10 @@ private:
     bool m_viKeybind = false;
     QLineEdit *m_cmdLine = nullptr;
     QChar m_cmdPrefix;
+    bool m_incSearchActive = false;
+    int m_incSearchOrigPos = 0;
+    int m_incSearchOrigScroll = 0;
+    QString m_incSearchOrigHighlight;
     QStringList m_exHist;
     int m_exHistIdx = -1;
     QString m_lastDir;
