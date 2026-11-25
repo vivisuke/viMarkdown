@@ -1436,7 +1436,7 @@ void MainWindow::onAction_About() {
 		"<br>Copyright (C) 2025, 2026 by N.Tsuda"
 		"<br>Powered by C++, <a href=\"https://www.qt.io/\">Qt6</a>, "
 		"<a href=\"https://github.com/cubicdaiya/dtl\">dtl</a>, "
-		"and <a href=\"https://github.com//lunasvg\">LunaSVG</a></p>"
+		"and <a href=\"https://github.com/sammycage/lunasvg\">LunaSVG</a></p>"
 	);
 }
 MainWindow::~MainWindow()

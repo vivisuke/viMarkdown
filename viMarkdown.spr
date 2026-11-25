@@ -1547,7 +1547,7 @@ SPR# 状 P Open Close ver     Type  概要
 1533 ◎ C 11/26 11/26 03222│問題│m_searchHist等の履歴に上限がなくdo_search()のコンボ更新にもQSignalBlockerが抜けている（Claude）
 1534 ◎ C 11/26 11/26 03222│問題│newEditor()に#1390調査用スクロールqDebugが残存しnewTabWidget()のaddWidget重複もある（Claude）
 1535 ◎ C 11/26 11/26 03222│問題│onAction_List()/onAction_NumList()が連番マーカー長を3固定で削除し2桁以上で文字が残る（Gemini）
-1536 ● C 11/26            │問題│
+1536 ◎ C 11/26 11/26 03222│問題│onAction_About(): https://github.com//lunasvg → スラッシュが 2 つ連続している（Gemini）
 1537 ● C 11/26            │問題│
 1538 ● C 11/26            │問題│
 1539 ● C 11/26            │問題│
