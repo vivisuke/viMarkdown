@@ -62,6 +62,8 @@ private:
     bool openFile(const QString &filePath);
     void addToRecentFiles(const QString &fullPath);
     void onAboutToShow_RecentFiles();
+    void onAboutToShow_FavoriteFiles();
+    void onAction_AddThisFavorite();
     QTreeWidgetItem *findOutlineTopItem(QWidget *tabWidget) const;
     void updateOutlineForTab(QWidget *tabWidget);
     void removeOutlineForTab(QWidget *tabWidget);

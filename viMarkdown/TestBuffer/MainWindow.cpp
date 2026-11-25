@@ -42,6 +42,7 @@
 namespace {
 const int N_RECENT_FILES = 10 + 26;
 const QStringView KEY_RECENT_FILES(u"recentFilePaths");
+const QStringView KEY_FAVORITE_FILES(u"favoriteFilePaths");
 const QStringView KEY_LINE_SPACING_PERCENT(u"editor/lineSpacingPercent");
 const QStringView KEY_HEADING_COLOR(u"editor/headingColor");
 const QStringView KEY_EMPHASIS_COLOR(u"editor/emphasisColor");
@@ -239,6 +240,8 @@ MainWindow::MainWindow(QWidget *parent)
         statusBar()->showMessage(m_viKeybind ? tr("vi keybind: ON (-- NORMAL --)") : tr("vi keybind: OFF"), 3000);
     });
     connect(ui->menu_RecentFiles, &QMenu::aboutToShow, this, &MainWindow::onAboutToShow_RecentFiles);
+    connect(ui->menu_FavoriteFiles, &QMenu::aboutToShow, this, &MainWindow::onAboutToShow_FavoriteFiles);
+    connect(ui->action_AddThisFavorite, &QAction::triggered, this, &MainWindow::onAction_AddThisFavorite);
     connect(ui->action_gap_buffer, &QAction::triggered, this, [this]() {
         do_test_gapBuffer(this);
     });
@@ -1028,6 +1031,60 @@ void MainWindow::onAboutToShow_RecentFiles()
             }
         });
     }
+}
+
+void MainWindow::onAboutToShow_FavoriteFiles()
+{
+    QList<QAction *> actions = ui->menu_FavoriteFiles->actions();
+    for (int i = 2; i < actions.size(); ++i) {
+        QAction *act = actions.at(i);
+        ui->menu_FavoriteFiles->removeAction(act);
+        delete act;
+    }
+    QWidget *curTab = m_tabWidget ? m_tabWidget->currentWidget() : nullptr;
+    const QString curPath = curTab ? curTab->property(PROP_FILE_PATH).toString() : QString();
+    ui->action_AddThisFavorite->setEnabled(!curPath.isEmpty());
+
+    QSettings settings;
+    QStringList favoriteFilePaths = settings.value(KEY_FAVORITE_FILES).toStringList();
+    int k = 0;
+    QString key;
+    for (const QString &fullPathRaw : favoriteFilePaths) {
+        if (++k <= 10)
+            key = QString::number(k % 10);
+        else
+            key = QChar(u'A' + k - 11);
+        QString fullPath = QDir::cleanPath(fullPathRaw);
+        QAction *act = ui->menu_FavoriteFiles->addAction("&" + key + " " + fullPath);
+        connect(act, &QAction::triggered, this, [this, fullPath, fullPathRaw]() {
+            QSettings settings;
+            QStringList favs = settings.value(KEY_FAVORITE_FILES).toStringList();
+            favs.removeAll(fullPath);
+            favs.removeAll(fullPathRaw);
+            if (openFile(fullPath))
+                favs.push_front(fullPath);
+            settings.setValue(KEY_FAVORITE_FILES, favs);
+        });
+    }
+}
+
+void MainWindow::onAction_AddThisFavorite()
+{
+    QWidget *curTab = m_tabWidget ? m_tabWidget->currentWidget() : nullptr;
+    if (!curTab) return;
+    const QString fullPath = QDir::cleanPath(curTab->property(PROP_FILE_PATH).toString());
+    if (fullPath.isEmpty()) return;
+
+    QSettings settings;
+    QStringList favoriteFilePaths = settings.value(KEY_FAVORITE_FILES).toStringList();
+    int ix;
+    while ((ix = favoriteFilePaths.indexOf(fullPath)) >= 0)
+        favoriteFilePaths.removeAt(ix);
+    favoriteFilePaths.push_front(fullPath);
+    while (favoriteFilePaths.size() > N_RECENT_FILES)
+        favoriteFilePaths.pop_back();
+    settings.setValue(KEY_FAVORITE_FILES, favoriteFilePaths);
+    statusBar()->showMessage(tr("Added to favorites: %1").arg(fullPath), 3000);
 }
 
 void MainWindow::do_output(const QString& txt)
