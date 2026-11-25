@@ -1542,9 +1542,9 @@ SPR# 状 P Open Close ver     Type  概要
 1528 ◎ C 11/26 11/26 03222│問題│closeEvent()でsearch/replaceの置換履歴が保存されておらず再起動時に消えてしまう（Claude）
 1529 ◎ C 11/26 11/26 03222│問題│onAction_SaveAll()が未変更タブも全保存してしまい更新時刻変更や無題タブのダイアログが出る（Claude）
 1530 ◎ C 11/26 11/26 03222│問題│isNumListBlock()が1桁限定かつisNumber()使用で10.以上の連番判定や全角数字で誤動作する（Claude）
-1531 ● C 11/26            │問題│
-1532 ● C 11/26            │問題│
-1533 ● C 11/26            │問題│
+1531 ◎ C 11/26 11/26 03222│問題│tabIndexOf()やdiffPeerTabIndexOf()のパス比較が不統一で表記違いの同一ファイルが二重に開ける（Claude）
+1532 ◎ C 11/26 11/26 03222│問題│dropEvent()で非ローカルURLやディレクトリを除外せずdo_open()へ渡してしまいエラーになる（Claude）
+1533 ◎ C 11/26 11/26 03222│問題│m_searchHist等の履歴に上限がなくdo_search()のコンボ更新にもQSignalBlockerが抜けている（Claude）
 1534 ● C 11/26            │問題│
 1535 ● C 11/26            │問題│
 1536 ● C 11/26            │問題│

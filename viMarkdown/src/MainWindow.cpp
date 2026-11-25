@@ -664,6 +664,7 @@ void MainWindow::onAction_Grep() {
 			g.m_lastSearchedPat = searchText;
 			m_searchHist.push_front(searchText);
 			m_searchHist.removeDuplicates();	//	重複削除
+			while( m_searchHist.size() > 20 ) m_searchHist.pop_back();
 			{
 				QSignalBlocker blocker(m_searchCB);
 				m_searchCB->clear();
@@ -672,6 +673,7 @@ void MainWindow::onAction_Grep() {
 			}
 			m_grepDirHist.push_front(dirPath);
 			m_grepDirHist.removeDuplicates();	//	重複削除
+			while( m_grepDirHist.size() > 20 ) m_grepDirHist.pop_back();
 			m_nMatchLines = m_nGrepFiles = 0;
 			do_grep(searchText, dirPath, dlg.isGrepSubDir());
 		    do_output(QString(tr("\nGrepped '%1' in *.md under '%2'.\n")).arg(searchText).arg(dirPath));
@@ -715,6 +717,7 @@ void MainWindow::do_replace_next(const QString srcText, const QString dstText) {
 			mdEditor->setTextCursor(cursor);
 			m_replaceHist.push_front(dstText);
 			m_replaceHist.removeDuplicates();	//	重複削除
+			while( m_replaceHist.size() > 20 ) m_replaceHist.pop_back();
 		}
 	}
 	do_search(srcText, false);
@@ -829,9 +832,13 @@ bool MainWindow::do_search(const QString srcText, bool backward) {
 	mdEditor->setFocus();
 	m_searchHist.push_front(srcText);
 	m_searchHist.removeDuplicates();	//	重複削除
-	m_searchCB->clear();
-    m_searchCB->addItems(m_searchHist);
-    m_searchCB->setCurrentText(srcText);
+	while( m_searchHist.size() > 20 ) m_searchHist.pop_back();
+	{
+		QSignalBlocker blocker(m_searchCB);
+		m_searchCB->clear();
+		m_searchCB->addItems(m_searchHist);
+		m_searchCB->setCurrentText(srcText);
+	}
     return found;
 }
 bool MainWindow::do_find(bool backward) {
@@ -1807,7 +1814,11 @@ void MainWindow::dropEvent(QDropEvent *event)
 	const QList<QUrl> urls = event->mimeData()->urls();    // ドロップされたデータのURLリストを取得
 	//if (urls.isEmpty()) return;
 	for(const QUrl &url : urls ) {
+		if( !url.isLocalFile() )
+			continue;
 		QString fullPath = url.toLocalFile();
+		if( fullPath.isEmpty() || QFileInfo(fullPath).isDir() )
+			continue;
 		//##qDebug() << "dropped fullPath = " << fullPath;
 		if( isImageFile(fullPath) ) {
 			//
@@ -2150,6 +2161,16 @@ void MainWindow::onAction_Open() {
 		do_open("", fullPath);
 	}
 }
+static bool sameFilePath(const QString &a, const QString &b) {
+	if( a.isEmpty() || b.isEmpty() ) return false;
+	const QString na = QDir::cleanPath(QFileInfo(a).absoluteFilePath());
+	const QString nb = QDir::cleanPath(QFileInfo(b).absoluteFilePath());
+#ifdef Q_OS_WIN
+	return na.compare(nb, Qt::CaseInsensitive) == 0;
+#else
+	return na == nb;
+#endif
+}
 int MainWindow::tabIndexOf(const QString& title, const QString& fullPath) {
 	for(int ix = 0; ix < ui->tabWidget->count(); ++ix) {
 		DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(ix);
@@ -2157,7 +2178,7 @@ int MainWindow::tabIndexOf(const QString& title, const QString& fullPath) {
 			if( docWidget->m_title == title )
 				return ix;
 		} else {
-			if( docWidget->m_fullPath == fullPath )
+			if( sameFilePath(docWidget->m_fullPath, fullPath) )
 				return ix;
 		}
 	}
@@ -2168,7 +2189,7 @@ int MainWindow::diffPeerTabIndexOf(const QString& fullPath) {
 	if( fullPath.isEmpty() ) return -1;
 	for(int ix = 0; ix < ui->tabWidget->count(); ++ix) {
 		DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(ix);
-		if( docWidget->m_diffMode && docWidget->m_diffPeerFullPath == fullPath )
+		if( docWidget->m_diffMode && sameFilePath(docWidget->m_diffPeerFullPath, fullPath) )
 			return ix;
 	}
 	return -1;
@@ -2487,8 +2508,7 @@ bool MainWindow::do_save(const QString& fullPath, int ix) {
 	DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(ix);
 	if( docWidget == nullptr ) return false;
 	QString absTarget = QDir::cleanPath(QFileInfo(fullPath).absoluteFilePath());
-	bool isSameFile = !docWidget->m_fullPath.isEmpty()
-		&& absTarget.compare(QDir::cleanPath(QFileInfo(docWidget->m_fullPath).absoluteFilePath()), Qt::CaseInsensitive) == 0;
+	bool isSameFile = sameFilePath(docWidget->m_fullPath, fullPath);
 	docWidget->m_saving = true;
 	if( isSameFile )
 		m_watcher->removePath(fullPath);		//	一旦ウォッチリストから外す
