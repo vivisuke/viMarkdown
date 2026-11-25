@@ -1553,10 +1553,10 @@ SPR# 状 P Open Close ver     Type  概要
 1539 ◎ C 11/26 11/26 03222│問題│indexOf()/countCharUntil()/findPosition()でBlockDataのnull確認とm_charFlags境界確認が不足（Gemini）
 1540 ◎ C 11/26 11/26 03222│問題│indexOf()でHTMLコメント終了タグ"-->"検出後にix+=3が抜けておりカーソル同期がずれる（Gemini）
 1541 ◎ C 11/26 11/26 03222│問題│check_svg_completer()で既存m_svgCompleterを破棄せず上書きnewしておりポップアップがリーク（Gemini）
-1542 ● C 11/26            │問題│
-1543 ● C 11/26            │問題│
-1544 ● C 11/26            │問題│
-1545 ● C 11/26            │問題│
+1542 ◎ C 11/26 11/26 03222│問題│onContentsChanged()でbpos負値未ガードかつm_lastCurBlockText未更新で罫線保護が誤動作（Gemini）
+1543 ◎ C 11/26 11/26 03222│問題│drawTextCursor()で行末のParagraphSeparatorを判定せずブロックカーソル幅が不正になる（Gemini）
+1544 ◎ C 11/26 11/26 03222│問題│lnAreaPaintEvent()の折り畳み線描画でstartBlock/endBlockのisValid()チェックが抜けている（Gemini）
+1545 ◎ C 11/26 11/26 03222│問題│keyPressEvent()にベンチマーク計測とqDebug出力が残存しておりキー入力のたびに実行される（Gemini）
 1546 ● C 11/26            │問題│
 1547 ● C 11/26            │問題│
 1548 ● C 11/26            │問題│

@@ -1222,10 +1222,6 @@ static int listMarkerBSLength(const QTextCursor &cursor) {
 	return 0;
 }
 void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
-	qDebug() << "Focus Widget:" << QApplication::focusWidget();
-	auto key = e->key();
-	auto mf = (e->modifiers() & Qt::ControlModifier) != 0;
-	qDebug() << "key = " << key;
 	QTextCursor cursor = this->textCursor();
 	if (e->matches(QKeySequence::Cut)) {
 		if( cursor.hasSelection() ) {
@@ -1532,13 +1528,7 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 			if( ovLen > 0 )
 				cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, ovLen);
 		}
-		qDebug() << "doc->isUndoRedoEnabled() = " << document()->isUndoRedoEnabled();
-		QElapsedTimer timer;
-	    timer.start();
 		do_insertText(cursor, txt);
-	    qint64 elapsedMs = timer.elapsed();
-	    qDebug() << "[Benchmark] do_insertText():" << elapsedMs << "ms (" 
-	             << timer.nsecsElapsed() / 1000.0 << "μs)";
 		return;
 	}
 	MarkdownBaseEdit::keyPressEvent(e);	// 通常キーは通常通りの処理
@@ -3309,10 +3299,10 @@ void MarkdownEditor::onContentsChanged(int position, int charsRemoved, int chars
 	//##qDebug() << "pos = " << position << ", removed = " << charsRemoved << ", added = " << charsAdded;
 	QTextCursor cursor = this->textCursor();
 	int k = !s_inUndoRedo ? findKeisen(cursor) : -1;
-	if( k >= 0 ) {		//	現カーソルの右側に罫線文字がある場合
+	int bpos = position - cursor.block().position();	//	ブロック先頭からの編集位置
+	if( k >= 0 && bpos >= 0 ) {		//	現カーソルの右側に罫線文字がある場合
 		const QString &text = cursor.block().text();		//	編集後ブロックテキスト
 		int cpos = cursor.position();
-		int bpos = position - cursor.block().position();	//	ブロック先頭からの編集位置
 		//int bpos = cursor.positionInBlock();				//	ブロック先頭からの現カーソル位置
 		const QString strAdded = text.mid(bpos, charsAdded);
 		const QString strRemoved = m_lastCurBlockText.mid(bpos, charsRemoved);
@@ -3352,6 +3342,7 @@ void MarkdownEditor::onContentsChanged(int position, int charsRemoved, int chars
 	//rehighlight();
 	updateSearchHighlight(position, charsRemoved, charsAdded);	//	[#1062] 全文再ハイライトではなく、編集された部分のみ更新する
 	//syncEditorCursorFromPreview();
+	m_lastCurBlockText = this->textCursor().block().text();
 	m_processing = false;
 }
 //	[#1062] 検索ハイライトの増分更新：編集された部分の周辺だけを再走査し、ExtraSelection を部分更新する
@@ -3700,7 +3691,7 @@ void drawTextCursor(QWidget *viewport, QPainter& p, QTextCursor cursor, QRect re
 		rect.setHeight(ht - ht/2);
 		//QTextCursor cursor = textCursor();
 		QChar ch = cursor.document()->characterAt(cursor.position());
-		if (ch.isNull() || ch < ' ') ch = 'W'; 
+		if (ch.isNull() || ch < ' ' || ch == QChar::ParagraphSeparator || ch == QChar::LineSeparator) ch = 'W';
 		rect.setWidth(fontMetrics.horizontalAdvance(ch));
 	} else
 		rect.setWidth(3);
@@ -4088,13 +4079,15 @@ void MarkdownEditor::lnAreaPaintEvent(QPaintEvent *event) {
 		int offset = contentOffset().y();
 		//int offset = verticalScrollBar()->value();
 		QTextBlock startBlock = document()->findBlockByNumber(m_foldBlockNumber1);
-		QRectF startRect = blockBoundingGeometry(startBlock);
-        int y1 = (int)startRect.bottom();
 		QTextBlock endBlock = document()->findBlockByNumber(m_foldBlockNumber2);
-        QRectF lastRect = blockBoundingGeometry(endBlock);
-        int y2 = (int)lastRect.bottom();
-		painter.drawLine(x, y1 + offset, x, y2 + offset);
-		painter.drawLine(x, y2 + offset, x+charWidth, y2 + offset);
+		if( startBlock.isValid() && endBlock.isValid() ) {
+			QRectF startRect = blockBoundingGeometry(startBlock);
+			int y1 = (int)startRect.bottom();
+			QRectF lastRect = blockBoundingGeometry(endBlock);
+			int y2 = (int)lastRect.bottom();
+			painter.drawLine(x, y1 + offset, x, y2 + offset);
+			painter.drawLine(x, y2 + offset, x+charWidth, y2 + offset);
+		}
 	}
 	if( !isReadOnly() ) {
 		//	行カーソル描画
