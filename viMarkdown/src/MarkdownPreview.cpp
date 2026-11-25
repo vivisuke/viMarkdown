@@ -596,7 +596,7 @@ QString anchorToFullPath(const QString &anchor) {
 		if( fullPath.indexOf(re) == 0 )
 			fullPath = fullPath.mid(strlen("/"));
 	}
-	if( !anchor.endsWith(".md", Qt::CaseInsensitive) && !QFile::exists(anchor) )
+	if( !fullPath.endsWith(".md", Qt::CaseInsensitive) && !QFile::exists(fullPath) )
 		fullPath += ".md";
 	fullPath = QDir::cleanPath(QDir::current().absoluteFilePath(fullPath));
 	return fullPath;
@@ -976,7 +976,7 @@ void MarkdownPreview::insertMarkdown(QTextDocument *doc, int bn0, int nBlocks, /
 					do_body(srcBlock0, cursor);
 					m_bodyList.push_back(prev);
 				}
-				if( do_underlineHeading(cursor, buf) )
+				if( do_underlineHeading(cursor, buf, bn0) )
 					continue;		//	アンダーライン見出しだった場合
 			}
 			if( m_bodyList.isEmpty() ) {
@@ -1096,7 +1096,7 @@ void MarkdownPreview::do_table(int bn0, int nBlocks, QTextBlock& srcBlock, QText
 	int max_clmn = m_tableTokens.size();
 	bool inComment = false;
 	while( m_ix < nBlocks ) {
-		assert(srcBlock.blockNumber() == m_ix);
+		assert(srcBlock.blockNumber() == bn0 + m_ix);
 		assert( srcBlock.isValid() );
 		BlockData *data = getBlockData(srcBlock, true);
 		if( inComment ) {
@@ -1206,7 +1206,7 @@ void MarkdownPreview::do_table(int bn0, int nBlocks, QTextBlock& srcBlock, QText
 #endif
 	--m_ix;
 }
-bool MarkdownPreview::do_underlineHeading(QTextCursor& cursor, QString buf) {
+bool MarkdownPreview::do_underlineHeading(QTextCursor& cursor, QString buf, int bn0) {
 	if( m_bodyList.isEmpty() || m_bodyList.back() == "" ) return false;
 	int h = 3;
 	if( buf[0] == u'=' ) {
@@ -1217,7 +1217,7 @@ bool MarkdownPreview::do_underlineHeading(QTextCursor& cursor, QString buf) {
 	}
 	buf = m_bodyList.back();
 	m_bodyList.pop_back();
-	do_heading_sub(cursor, buf, h, m_ix-1);
+	do_heading_sub(cursor, buf, h, bn0 + m_ix - 1);
 	return true;
 }
 int h_font_size[] = {12, 26*4, 22*4, 18, 16, 14, 12};		//	body, h1, h2, h3 ... h6
@@ -1235,7 +1235,7 @@ void MarkdownPreview::do_heading(QTextBlock& srcBlock, QTextCursor& cursor, QStr
 	updateCharFlags(data, srcBlock.text(), m_nSpaces + i, srcBlock.text().size(), true);	//	見出し本文中の強調マーカー等にもフラグを設定
 	srcBlock.setUserData(data);
 	setBlockType(srcBlock, BT_HEADING);
-	do_heading_sub(cursor, buf.mid(i), h, m_ix);
+	do_heading_sub(cursor, buf.mid(i), h, srcBlock.blockNumber());
 	m_listNum = 0;		//	連番リセット
 }
 void MarkdownPreview::do_heading_sub(QTextCursor& cursor, QString buf, int h, int ln) {
@@ -1285,8 +1285,9 @@ void MarkdownPreview::do_heading_sub(QTextCursor& cursor, QString buf, int h, in
 	auto itr9 = m_docWidget->m_prvHeadingBlocks.end();
 	auto it = std::lower_bound(itr0, itr9, hbnum);
 	m_docWidget->m_prvHeadingBlocks.insert(it, hbnum);
+	static const QRegularExpression reLeadingSpaces("^ +");
 	QString text = block.text();
-	m_headingList.push_back(QChar(u'0'+h) + text.remove("^ +"));
+	m_headingList.push_back(QChar(u'0'+h) + text.remove(reLeadingSpaces));
 	//m_docWidget->m_srcHeadingBlocks.push_back(ln);
 	{
 		auto itr0 = m_docWidget->m_srcHeadingBlocks.begin() + 1;
@@ -1323,7 +1324,7 @@ void MarkdownPreview::do_CSV(int bn0, int nBlocks, QTextBlock& srcBlock, QTextCu
 			srcBlock.setUserData(data);
 		}
 	}
-	if( srcBlock.isValid() && srcBlock.blockNumber() == m_ix && srcBlock.text().startsWith("```") ) {
+	if( srcBlock.isValid() && srcBlock.blockNumber() == bn0 + m_ix && srcBlock.text().startsWith("```") ) {
 		setBlockType(srcBlock, BT_CSV_BLOCK);
 		BlockData *data = getBlockData(srcBlock);
 		data->m_charFlags.fill(PCF_CSV);
@@ -1636,7 +1637,7 @@ void MarkdownPreview::do_code(int bn0, int nBlocks, QTextBlock srcBlock, QTextCu
 		buf += srcBlock.text();
 		lst += srcBlock.text();
 	}
-	if( srcBlock.isValid() && srcBlock.blockNumber() == m_ix && srcBlock.text().startsWith("```") ) {
+	if( srcBlock.isValid() && srcBlock.blockNumber() == bn0 + m_ix && srcBlock.text().startsWith("```") ) {
 		setBlockType(srcBlock, BT_CODE_BLOCK_END);
 		BlockData *data = getBlockData(srcBlock);
 		data->m_charFlags.fill(PCF_CODE);
@@ -1741,15 +1742,18 @@ void MarkdownPreview::do_quote(int bn0, int nBlocks, QTextBlock &srcBlock, QText
 	// 行間（LineHeight）を少し広げることで、上下の「詰まり感」を軽減
 	//blockFormat.setLineHeight(120, QTextBlockFormat::ProportionalHeight);
 	cursor.beginEditBlock();
+	const int startPos = cursor.position();
 	// テキストを挿入（この時点で自動的にブロックが作られる）
-	cursor.insertText(buf+"\n");
-	// 挿入したテキストの範囲を選択
-	cursor.setPosition(cursor.position() - buf.length(), QTextCursor::KeepAnchor);
+	cursor.insertText(buf + "\n");
+	const int endPos = cursor.position();
+	// 挿入したテキストの範囲（末尾の改行直前まで）を選択
+	cursor.setPosition(startPos);
+	cursor.setPosition(endPos - 1, QTextCursor::KeepAnchor);
 	// ブロックフォーマット（背景色とマージン）を一括適用
 	cursor.setBlockFormat(blockFormat);
 	cursor.clearSelection();
-	// 元のフォーマットに戻して次の行へ
-	cursor.movePosition(QTextCursor::End);
+	// 挿入直後の新しい行へ移動して通常フォーマットに戻す
+	cursor.setPosition(endPos);
 	cursor.setBlockFormat(QTextBlockFormat()); // 次の行は通常のフォーマットに戻す
 	cursor.endEditBlock();
 #else	//	QTextFrameFormat 使用版 → 余分な空行が生成されてしまう
@@ -1867,20 +1871,20 @@ void MarkdownPreview::do_checkbox(int bn0, int nBlocks, QTextBlock srcBlock, QTe
 	}
 #endif
 	int nSpaces = m_nSpaces;
-	//if( m_nSpaces > 0 )
-	//	buf = QString(m_nSpaces, QChar(u' ')) + buf;
 	int pos = cursor.position();
 	int n_item = 1;
-	auto match = re_checkbox.match(buf);
+	auto match = re_checkbox.match(srcBlock.text());
 	QTextBlockFormat blockFormat;
 	for(;;) {
 		if( match.capturedLength() == srcBlock.text().size() )
 			buf += ZWSP;	//	ゼロ幅空白文字
 		updateCharFlags(srcBlock);
 		BlockData* data = getBlockData(srcBlock);
-		for(int i = 0; i < match.capturedLength() && i < data->m_charFlags.size(); ++i)
-			data->m_charFlags[i] = PCF_LIST_MARK;
-		srcBlock.setUserData(data);
+		if( data != nullptr ) {
+			for(int i = 0; i < match.capturedLength() && i < data->m_charFlags.size(); ++i)
+				data->m_charFlags[i] = PCF_LIST_MARK;
+			srcBlock.setUserData(data);
+		}
 		setBlockType(srcBlock, BT_CHECKBOX);
 #if 0
 		cursor.insertMarkdown(buf);
@@ -1924,7 +1928,7 @@ void MarkdownPreview::do_checkbox(int bn0, int nBlocks, QTextBlock srcBlock, QTe
 		helper.deleteChar(); 
 	}
 	QTextBlock srcBlock2 = document()->findBlock(pos);
-	for(int i = 0; i < n_item; ++i) {
+	for(int i = 0; i < n_item && srcBlock2.isValid(); ++i) {
 		srcBlock2.setUserState(BT_CHECKBOX);
 		srcBlock2 = srcBlock2.next();
 	}
@@ -1961,9 +1965,11 @@ void MarkdownPreview::do_list(int bn0, int nBlocks, QTextBlock srcBlock, QTextCu
 			buf.replace(re_tailspc, "&nbsp;");
 #endif
 		BlockData* data = getBlockData(srcBlock);
-		for(int i = 0; i < mch.capturedLength(); ++i)
-			data->m_charFlags[i] = PCF_LIST_MARK;
-		srcBlock.setUserData(data);
+		if( data != nullptr ) {
+			for(int i = 0; i < mch.capturedLength() && i < data->m_charFlags.size(); ++i)
+				data->m_charFlags[i] = PCF_LIST_MARK;
+			srcBlock.setUserData(data);
+		}
 		updateCharFlags(srcBlock);
 		setBlockType(srcBlock, BT_LIST);
 		//printCharFlags(srcBlock);
@@ -2048,7 +2054,7 @@ void MarkdownPreview::do_list(int bn0, int nBlocks, QTextBlock srcBlock, QTextCu
 	}
 	//if( is_checkbox ) {
 		QTextBlock srcBlock2 = document()->findBlock(pos);
-		for(int i = 0; i < n_item; ++i) {
+		for(int i = 0; i < n_item && srcBlock2.isValid(); ++i) {
 			//setBlockType(srcBlock, ln++);
 			srcBlock2.setUserState(BT_LIST);
 			srcBlock2 = srcBlock2.next();
@@ -2420,12 +2426,11 @@ PosContext MarkdownPreview::contextAt(int pos, bool forSelection)	//	pos 位置�
 		}
 	} else if( pc.m_anchorChar == QChar(U_KEISEN_BLOCK) ) {		//	罫線ブロックの場合
 		while( block.isValid() ) {
-			if( blockType(block) == U_KEISEN_BLOCK ) {
-				while( blockType(block) == U_KEISEN_BLOCK ) {
+			if( blockType(block) == BT_KEISEN_BLOCK ) {
+				while( block.isValid() && blockType(block) == BT_KEISEN_BLOCK ) {
 					block = block.next();
-					if( !block.isValid() ) break;
 				}
-				if( block.position() > pos )
+				if( !block.isValid() || block.position() > pos )
 					break;
 				++count;
 			} else

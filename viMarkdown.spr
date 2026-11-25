@@ -1563,12 +1563,12 @@ SPR# 状 P Open Close ver     Type  概要
 1549 ◎ C 11/26 11/26 03222│問題│moveToPrevWord()で先頭空白走査後にpos==0でもcharacterAt(pos-1)を呼び負インデックス参照（Gemini）
 1550 ◎ C 11/26 11/26 03222│問題│do_SVG()のQImage生成にwidth/height上限クランプがなく巨大SVGでOOM・%指定も小数切捨て（Gemini）
 1551 ◎ C 11/26 11/26 03222│問題│MarkdownPreview.cppの#include <qpainter.h>が小文字のためLinux/macOSでビルドエラーになる（Gemini）
-1552 ● C 11/26            │問題│
-1553 ● C 11/26            │問題│
-1554 ● C 11/26            │問題│
-1555 ● C 11/26            │問題│
-1556 ● C 11/26            │問題│
-1557 ● C 11/26            │問題│
-1558 ● C 11/26            │問題│
+1552 ◎ C 11/26 11/26 03222│問題│do_heading_sub()のtext.remove("^ +")が正規表現になっておらず見出し先頭空白を消せていない（Gemini）
+1553 ◎ C 11/26 11/26 03222│問題│insertMarkdown()配下でbn0オフセットが抜けており増分更新時に行番号ズレやassert落ちが起きる（Gemini）
+1554 ◎ C 11/26 11/26 03222│問題│contextAt()でblockType()をBT_KEISEN_BLOCKでなくU_KEISEN_BLOCKと比較しており常に偽になる（Gemini）
+1555 ◎ C 11/26 11/26 03222│問題│do_checkbox()の1行目で先行空白分だけm_charFlagsの設定位置がずれインデント時に同期が狂う（Gemini）
+1556 ◎ C 11/26 11/26 03222│問題│do_list()/do_checkbox()でsrcBlock2.isValid()チェックとm_charFlags境界チェックが抜けている（Gemini）
+1557 ◎ C 11/26 11/26 03222│問題│anchorToFullPath()でfile://除去前のanchorでQFile::exists()判定しており不要な.mdが付く（Gemini）
+1558 ◎ C 11/26 11/26 03222│問題│do_quote()で選択範囲が改行分1文字ずれ、さらにmovePosition(End)で文書末尾へ飛んでしまう（Gemini）
 1559 ● C 11/26            │問題│
 1560 ● C 11/26            │問題│
