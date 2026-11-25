@@ -6,6 +6,7 @@
 #include <QChar>
 #include <QString>
 #include <QStringList>
+#include <QVector>
 #include <functional>
 
 class QKeyEvent;
@@ -44,6 +45,7 @@ public:
 
 	//	キーイベントを処理したら true（TextEdit 側の通常処理をスキップ）
 	bool handleKeyPress(TextEdit *edit, QKeyEvent *event);
+	void recordImeCommit(const QString &text);
 
 	//	検索（'/' / '?' コマンドライン確定時・'*' / '#' / 'n' / 'N'）
 	bool search(TextEdit *edit, const QString &pattern, bool forward, int count = 1);
@@ -62,7 +64,17 @@ public:
 	void executeExCommand(TextEdit *edit, const QString &cmdLine, const ExCallbacks &cb);
 
 private:
+	struct RecordedKey {
+		int key = 0;
+		Qt::KeyboardModifiers modifiers = Qt::NoModifier;
+		QString text;
+		bool isImeCommit = false;
+	};
+
 	void resetPending();
+	void commitLastEdit();
+	void discardCurrentCmd();
+	void replayDot(TextEdit *edit, int repeatTimes);
 	void clampCursorInNormal(TextEdit *edit);
 	int effectiveCount() const;
 	bool computeMotionTarget(TextEdit *edit, QChar key, bool ctrl, int count,
@@ -88,5 +100,9 @@ private:
 	bool m_yankLinewise = false;
 	QString m_lastSearchPat;
 	bool m_lastSearchForward = true;
+	QVector<RecordedKey> m_curCmdKeys;
+	QVector<RecordedKey> m_lastEditKeys;
+	bool m_recordingInsert = false;
+	bool m_replayingDot = false;
 	Callbacks m_cb;
 };

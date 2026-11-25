@@ -1032,62 +1032,9 @@ void MainWindow::resizeEvent(QResizeEvent *event)
 void MainWindow::closeEvent(QCloseEvent *event) {
 	for(int ix = 0; ix < ui->tabWidget->count(); ++ix) {
 		DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(ix);
-		if( docWidget->isModified() ) {
-			ui->tabWidget->setCurrentIndex(ix);
-			QString mess = QString(tr("The document '%1' has been modified.\nDo you want to save your changes ?")).arg(docWidget->m_title);
-			QMessageBox::StandardButton reply = QMessageBox::question(this,
-								  tr("Confirm save"),
-								  mess,
-								  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel); // ボタンの種類
-
-			if (reply == QMessageBox::Yes) {
-				onAction_Save();
-			} else if (reply == QMessageBox::Cancel) {
-				event->ignore();
-				return;
-			}
-		}
-		if( docWidget->m_diffMode && docWidget->m_diffview->document()->isModified() ) {
-			ui->tabWidget->setCurrentIndex(ix);
-			QString path = docWidget->m_diffPeerFullPath;
-			QString name = path.isEmpty() ? docWidget->m_diffPeerTitle : path;
-			QString mess = QString(tr("The document '%1' has been modified.\nDo you want to save your changes ?")).arg(name);
-			QMessageBox::StandardButton reply = QMessageBox::question(this,
-								  tr("Confirm save"),
-								  mess,
-								  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
-			if (reply == QMessageBox::Yes) {
-				if( path.isEmpty() ) {
-					path = QFileDialog::getSaveFileName(
-								this,
-								"Save File",
-								QString(),
-								"markdown (*.md)",
-								nullptr,
-								QFileDialog::DontUseNativeDialog
-							);
-					if( path.isEmpty() ) { event->ignore(); return; }
-					if( QFileInfo(path).suffix().isEmpty() ) path += ".md";
-					docWidget->m_diffPeerFullPath = path;
-				}
-				docWidget->m_diffview->removeAllDummyLines();
-				QFile file(path);
-				if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-					QTextStream out(&file);
-					out.setEncoding(docWidget->m_encoding);
-					out.setGenerateByteOrderMark(docWidget->m_withBOM);
-					out << docWidget->m_diffview->toPlainText();
-					file.close();
-					docWidget->m_diffview->document()->setModified(false);
-				} else {
-					QMessageBox::warning(this, tr("Error"), tr("Cannot write file:\n%1").arg(path));
-					event->ignore();
-					return;
-				}
-			} else if (reply == QMessageBox::Cancel) {
-				event->ignore();
-				return;
-			}
+		if( !confirmAndSave(docWidget) ) {
+			event->ignore();
+			return;
 		}
 	}
 	QSettings settings;
@@ -2557,41 +2504,46 @@ void MainWindow::onAction_Close() {
 	//##qDebug() << "MainWindow::onAction_Close()";
 	do_close();
 }
-void MainWindow::do_close(bool forced) {
-	DocWidget *docWidget = getCurDocWidget();
-	if (docWidget == nullptr) return;
-	QString tmp = tr("The document has been modified.\n'%1' \nDo you want to save your changes?");
-	if( !forced && docWidget->isModified() ) {
-		QString path = docWidget->m_fullPath.isEmpty() ? docWidget->m_title : docWidget->m_fullPath;
+bool MainWindow::confirmAndSave(DocWidget *docWidget) {
+	if( docWidget == nullptr ) return true;
+	const int ix = ui->tabWidget->indexOf(docWidget);
+	if( docWidget->isModified() ) {
+		if( ix >= 0 )
+			ui->tabWidget->setCurrentIndex(ix);
+		QString name = docWidget->m_fullPath.isEmpty() ? docWidget->m_title : docWidget->m_fullPath;
+		QString mess = QString(tr("The document '%1' has been modified.\nDo you want to save your changes ?")).arg(name);
 		QMessageBox::StandardButton reply = QMessageBox::question(this,
-								  tr("Confirm save"),				 // タイトル
-								  QString(tmp).arg(path), // 本文
-								  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel); // ボタンの種類
+							  tr("Confirm save"),
+							  mess,
+							  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
 		if (reply == QMessageBox::Yes) {
-			onAction_Save();
+			if( !do_save(false, ix) )
+				return false;
 		} else if (reply == QMessageBox::Cancel) {
-			return;
+			return false;
 		}
 	}
-	if( !forced && docWidget->m_diffMode && docWidget->m_diffview->document()->isModified() ) {
-		qDebug() << "diffview is modified.";
+	if( docWidget->m_diffMode && docWidget->m_diffview != nullptr && docWidget->m_diffview->document()->isModified() ) {
+		if( ix >= 0 )
+			ui->tabWidget->setCurrentIndex(ix);
 		QString path = docWidget->m_diffPeerFullPath;
+		QString name = path.isEmpty() ? docWidget->m_diffPeerTitle : path;
+		QString mess = QString(tr("The document '%1' has been modified.\nDo you want to save your changes ?")).arg(name);
 		QMessageBox::StandardButton reply = QMessageBox::question(this,
-								  tr("Confirm save"),				 // タイトル
-								  QString(tmp).arg(path), // 本文
-								  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel); // ボタンの種類
+							  tr("Confirm save"),
+							  mess,
+							  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
 		if (reply == QMessageBox::Yes) {
-			//	save docWidget->m_diffview-
-			if( path.isEmpty() ) {		//	保存先が無い場合はファイル選択ダイアログ
+			if( path.isEmpty() ) {
 				path = QFileDialog::getSaveFileName(
 							this,
 							"Save File",
 							QString(),
-							"markdown (*.md)"
-							,nullptr
-							,QFileDialog::DontUseNativeDialog
+							"markdown (*.md)",
+							nullptr,
+							QFileDialog::DontUseNativeDialog
 						);
-				if( path.isEmpty() ) return;	//	キャンセルしたら閉じない
+				if( path.isEmpty() ) return false;
 				if( QFileInfo(path).suffix().isEmpty() ) path += ".md";
 				docWidget->m_diffPeerFullPath = path;
 			}
@@ -2606,12 +2558,19 @@ void MainWindow::do_close(bool forced) {
 				docWidget->m_diffview->document()->setModified(false);
 			} else {
 				QMessageBox::warning(this, tr("Error"), tr("Cannot write file:\n%1").arg(path));
-				return;		//	保存できなかったら閉じない
+				return false;
 			}
 		} else if (reply == QMessageBox::Cancel) {
-			return;
+			return false;
 		}
 	}
+	return true;
+}
+void MainWindow::do_close(bool forced) {
+	DocWidget *docWidget = getCurDocWidget();
+	if (docWidget == nullptr) return;
+	if( !forced && !confirmAndSave(docWidget) )
+		return;
 	int ix = ui->tabWidget->currentIndex();
 	if (ix >= 0)
 		ui->tabWidget->removeTab(ix);

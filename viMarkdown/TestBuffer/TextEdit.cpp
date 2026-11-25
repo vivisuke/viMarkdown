@@ -1728,6 +1728,7 @@ void TextEdit::inputMethodEvent(QInputMethodEvent *event)
 	}
 	if( !event->commitString().isEmpty() ) {
 		m_cursor.insertText(event->commitString());
+		m_vi.recordImeCommit(event->commitString());
 		textChanged = true;
 	}
 	m_preedit = event->preeditString();

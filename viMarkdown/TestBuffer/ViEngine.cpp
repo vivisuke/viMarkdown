@@ -235,6 +235,8 @@ void ViEngine::setEnabled(bool enabled)
 {
 	m_enabled = enabled;
 	m_changeUndoOpen = false;
+	m_recordingInsert = false;
+	m_curCmdKeys.clear();
 	resetPending();
 	m_mode = enabled ? ViMode::Normal : ViMode::Insert;
 }
@@ -247,6 +249,8 @@ void ViEngine::setMode(ViMode m, TextEdit *edit)
 	}
 	const ViMode prevMode = m_mode;
 	m_mode = m;
+	if( !m_replayingDot && (m == ViMode::Insert || m == ViMode::Replace) && !m_curCmdKeys.isEmpty() )
+		m_recordingInsert = true;
 	resetPending();
 	if( edit ) {
 		if( m_mode == ViMode::Normal ) {
@@ -284,6 +288,51 @@ void ViEngine::resetPending()
 	m_repeatCount = 0;
 	m_operator = QChar();
 	m_prefix = QChar();
+}
+
+void ViEngine::commitLastEdit()
+{
+	if( !m_replayingDot && !m_curCmdKeys.isEmpty() ) {
+		m_lastEditKeys = m_curCmdKeys;
+		m_curCmdKeys.clear();
+	}
+}
+
+void ViEngine::discardCurrentCmd()
+{
+	if( !m_replayingDot && !m_recordingInsert )
+		m_curCmdKeys.clear();
+}
+
+void ViEngine::recordImeCommit(const QString &text)
+{
+	if( !m_replayingDot && m_recordingInsert && !text.isEmpty() )
+		m_curCmdKeys.push_back({0, Qt::NoModifier, text, true});
+}
+
+void ViEngine::replayDot(TextEdit *edit, int repeatTimes)
+{
+	if( !edit || m_lastEditKeys.isEmpty() || m_replayingDot )
+		return;
+	const QVector<RecordedKey> keys = m_lastEditKeys;
+	m_replayingDot = true;
+	TextDocument *doc = edit->document();
+	doc->undoMgr().openBlock();
+	for( int r = 0; r < repeatTimes; ++r ) {
+		for( const RecordedKey &rk : keys ) {
+			if( rk.isImeCommit ) {
+				TextCursor c = edit->textCursor();
+				c.insertText(rk.text);
+				edit->setTextCursor(c);
+			} else {
+				QKeyEvent ev(QEvent::KeyPress, rk.key, rk.modifiers, rk.text);
+				edit->replayKeyEvent(&ev);
+			}
+		}
+	}
+	doc->undoMgr().closeBlock();
+	m_replayingDot = false;
+	edit->notifyTextChanged();
 }
 
 int ViEngine::effectiveCount() const
@@ -576,6 +625,7 @@ bool ViEngine::applyOperatorRange(
 			c.clearSelection();
 			c.setPosition(firstNonBlankPos(*doc, l1));
 			edit->setTextCursor(c);
+			commitLastEdit();
 			return true;
 		}
 
@@ -595,6 +645,7 @@ bool ViEngine::applyOperatorRange(
 			edit->setTextCursor(c);
 			if( m_cb.showStatus )
 				m_cb.showStatus(QStringLiteral("%1 line(s) yanked").arg(l2 - l1 + 1));
+			discardCurrentCmd();
 			return true;
 		}
 		if( op == QChar('c') ) {
@@ -618,6 +669,7 @@ bool ViEngine::applyOperatorRange(
 			c.setPosition(firstNonBlankPos(*doc, targetLn));
 			edit->setTextCursor(c);
 			clampCursorInNormal(edit);
+			commitLastEdit();
 			return true;
 		}
 		return false;
@@ -640,11 +692,13 @@ bool ViEngine::applyOperatorRange(
 		c.clearSelection();
 		c.setPosition(p1);
 		edit->setTextCursor(c);
+		discardCurrentCmd();
 		return true;
 	}
 	if( op == QChar('d') ) {
 		edit->applyPreviewEdit(static_cast<int>(p1), static_cast<int>(p2), QString());
 		clampCursorInNormal(edit);
+		commitLastEdit();
 		return true;
 	}
 	if( op == QChar('c') ) {
@@ -861,6 +915,12 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 	//	Insert / Replace モード
 	if( m_mode == ViMode::Insert || m_mode == ViMode::Replace ) {
 		if( key == Qt::Key_Escape || (ctrl && key == Qt::Key_BracketLeft) ) {
+			if( !m_replayingDot && m_recordingInsert ) {
+				m_curCmdKeys.push_back({Qt::Key_Escape, Qt::NoModifier, QString(), false});
+				m_lastEditKeys = m_curCmdKeys;
+				m_recordingInsert = false;
+				m_curCmdKeys.clear();
+			}
 			const bool wasInsert = (m_mode == ViMode::Insert);
 			TextCursor c = edit->textCursor();
 			const int ln = edit->document()->lineMgr().lineAtPos(c.position());
@@ -869,6 +929,10 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 			edit->setTextCursor(c);
 			setMode(ViMode::Normal, edit);
 			return true;
+		}
+		if( !m_replayingDot && m_recordingInsert
+			&& key != Qt::Key_Shift && key != Qt::Key_Control && key != Qt::Key_Alt && key != Qt::Key_Meta ) {
+			m_curCmdKeys.push_back({key, event->modifiers(), txt, false});
 		}
 		if( m_mode == ViMode::Replace && !ctrl && !alt && !txt.isEmpty() && ch >= QChar(0x20) && ch != QChar(0x7f) ) {
 			TextDocument *doc = edit->document();
@@ -885,6 +949,7 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 	//	Normal / Visual / VisualLine モード
 	if( key == Qt::Key_Escape || (ctrl && key == Qt::Key_BracketLeft) ) {
 		resetPending();
+		discardCurrentCmd();
 		if( m_mode != ViMode::Normal )
 			setMode(ViMode::Normal, edit);
 		else
@@ -900,6 +965,7 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 	if( ctrl && !alt ) {
 		if( key == Qt::Key_R ) {
 			resetPending();
+			discardCurrentCmd();
 			edit->redo();
 			clampCursorInNormal(edit);
 			return true;
@@ -917,6 +983,7 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 					edit->setTextCursor(c);
 				}
 				resetPending();
+				discardCurrentCmd();
 				return true;
 			}
 		}
@@ -934,6 +1001,12 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 	else if( key == Qt::Key_Return || key == Qt::Key_Enter ) effCh = QChar('+');
 	else if( key == Qt::Key_Backspace ) effCh = QChar('h');
 	else if( key == Qt::Key_Delete ) effCh = QChar('x');
+
+	//	Normal モードでのキーシーケンス記録（'.' 自体は記録しない）
+	if( !m_replayingDot && m_mode == ViMode::Normal
+		&& !(effCh == QChar('.') && m_prefix.isNull() && m_operator.isNull()) ) {
+		m_curCmdKeys.push_back({key, event->modifiers(), txt, false});
+	}
 
 	//	プレフィックス待ち（r / f / F / t / T / g / Z）
 	if( !m_prefix.isNull() ) {
@@ -953,8 +1026,11 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 					TextCursor c = edit->textCursor();
 					c.setPosition(pos + cnt - 1);
 					edit->setTextCursor(c);
+					commitLastEdit();
+					return true;
 				}
 			}
+			discardCurrentCmd();
 			return true;
 		}
 		if( pref == QChar('f') || pref == QChar('F') || pref == QChar('t') || pref == QChar('T') ) {
@@ -976,6 +1052,7 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 					}
 				}
 			}
+			discardCurrentCmd();
 			return true;
 		}
 		if( pref == QChar('g') ) {
@@ -994,6 +1071,7 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 					edit->setTextCursor(c);
 				}
 			}
+			discardCurrentCmd();
 			return true;
 		}
 		if( pref == QChar('[') || pref == QChar(']') ) {
@@ -1025,6 +1103,7 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 					}
 				}
 			}
+			discardCurrentCmd();
 			return true;
 		}
 		if( pref == QChar('z') ) {
@@ -1083,6 +1162,7 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 					edit->refreshAfterFold();
 				}
 			}
+			discardCurrentCmd();
 			return true;
 		}
 		if( pref == QChar('Z') ) {
@@ -1093,8 +1173,10 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 				if( m_cb.requestQuit )
 					m_cb.requestQuit(true);
 			}
+			discardCurrentCmd();
 			return true;
 		}
+		discardCurrentCmd();
 		return true;
 	}
 
@@ -1168,6 +1250,7 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 			return true;
 		}
 		resetPending();
+		discardCurrentCmd();
 		return true;
 	}
 
@@ -1183,6 +1266,7 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 		doc->lineMgr().toggleFold(curLine);
 		edit->refreshAfterFold();
 		resetPending();
+		discardCurrentCmd();
 		return true;
 	}
 	{
@@ -1190,6 +1274,7 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 		bool lw = false, inc = false;
 		if( computeMotionTarget(edit, effCh, false, cnt, false, QChar(), target, lw, inc) ) {
 			resetPending();
+			discardCurrentCmd();
 			if( m_mode == ViMode::Visual || m_mode == ViMode::VisualLine ) {
 				m_visualCursor = target;
 				updateVisualSelection(edit);
@@ -1205,17 +1290,20 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 	//	コマンドライン・検索起動
 	if( effCh == QChar(':') || effCh == QChar('/') || effCh == QChar('?') ) {
 		resetPending();
+		discardCurrentCmd();
 		if( m_cb.openCmdLine )
 			m_cb.openCmdLine(effCh);
 		return true;
 	}
 	if( effCh == QChar('n') || effCh == QChar('N') ) {
 		resetPending();
+		discardCurrentCmd();
 		searchNext(edit, effCh == QChar('n'), cnt);
 		return true;
 	}
 	if( effCh == QChar('*') || effCh == QChar('#') ) {
 		resetPending();
+		discardCurrentCmd();
 		const TextDocument::pos_t total = doc->characterCount();
 		if( pos < total ) {
 			const ViCharClass cls = viCharClass(doc->characterAt(pos));
@@ -1238,6 +1326,13 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 	}
 
 	switch( effCh.unicode() ) {
+	case '.': {
+		const int repeatTimes = effectiveCount();
+		resetPending();
+		discardCurrentCmd();
+		replayDot(edit, repeatTimes);
+		return true;
+	}
 	case 'i':
 		setMode(ViMode::Insert, edit);
 		return true;
@@ -1282,9 +1377,11 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 		setMode(ViMode::Replace, edit);
 		return true;
 	case 'v':
+		discardCurrentCmd();
 		setMode(ViMode::Visual, edit);
 		return true;
 	case 'V':
+		discardCurrentCmd();
 		setMode(ViMode::VisualLine, edit);
 		return true;
 	case 'd':
@@ -1363,6 +1460,9 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 			}
 			edit->applyPreviewEdit(static_cast<int>(pos), static_cast<int>(end), toggled);
 			clampCursorInNormal(edit);
+			commitLastEdit();
+		} else {
+			discardCurrentCmd();
 		}
 		return true;
 	}
@@ -1383,15 +1483,20 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 			c.setPosition(nlPos);
 			edit->setTextCursor(c);
 		}
+		commitLastEdit();
 		return true;
 	}
 	case 'p':
 	case 'P':
 		resetPending();
-		doPut(edit, effCh == QChar('P'), cnt);
+		if( doPut(edit, effCh == QChar('P'), cnt) )
+			commitLastEdit();
+		else
+			discardCurrentCmd();
 		return true;
 	case 'u':
 		resetPending();
+		discardCurrentCmd();
 		for( int i = 0; i < cnt; ++i ) {
 			const bool wasLinewise = (doc->undoMgr().undoActionFlags() & kUndoFlagLinewise) != 0;
 			edit->undo();
@@ -1404,8 +1509,16 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 		}
 		clampCursorInNormal(edit);
 		return true;
+	case 'U':
+		resetPending();
+		discardCurrentCmd();
+		for( int i = 0; i < cnt; ++i )
+			edit->redo();
+		clampCursorInNormal(edit);
+		return true;
 	default:
 		resetPending();
+		discardCurrentCmd();
 		return true;
 	}
 }

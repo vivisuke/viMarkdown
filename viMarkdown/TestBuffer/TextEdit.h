@@ -91,6 +91,7 @@ public:
 	void applyPreviewEdit(int srcStart, int srcEnd, const QString &text);
 	void notifyTextChanged();
 	void refreshAfterFold();
+	void replayKeyEvent(QKeyEvent *event) { keyPressEvent(event); }
 	ViEngine *viEngine() { return &m_vi; }
 	const ViEngine *viEngine() const { return &m_vi; }
 	void setViEnabled(bool enabled);

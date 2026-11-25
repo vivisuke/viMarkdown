@@ -349,6 +349,7 @@ protected:
     void	close_empty_doc();
     bool	do_save(bool fDialog = false, int ix = -1);
     bool	do_save(const QString& fullPath, int ix = -1);
+    bool	confirmAndSave(DocWidget *docWidget);
     int		treeItemToTabIndex(QTreeWidgetItem *current);
     void	addToRecentFiles(const QString& fullPath);
     void	insertSearchComboBox();
