@@ -27,6 +27,7 @@
 #include <QTextTable>
 #include <QShortcut>
 #include <QFile>
+#include <QSaveFile>
 #include <QStringDecoder>
 #include <QTextStream>
 #include <QGuiApplication>
@@ -2386,9 +2387,10 @@ bool MainWindow::do_save(bool fDialog, int ix) {
 	DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(ix);
 	if( docWidget == nullptr ) return false;
 	QString fullPath = docWidget->m_fullPath;
-	if( fDialog || fullPath.isEmpty() ) {		//	強制ダイアログ || フルパスを持っていない場合
-		QString oldFullPath = fullPath;
-		QString oldTitle = docWidget->m_title;
+	const bool isSaveAsOrNew = (fDialog || fullPath.isEmpty());
+	QString oldFullPath = fullPath;
+	QString oldTitle = docWidget->m_title;
+	if( isSaveAsOrNew ) {		//	強制ダイアログ || フルパスを持っていない場合
 		QString path = QDir::currentPath();	  // カレントディレクトリ
 		QString title = docWidget->getTitle();
 		if( !title.isEmpty() )
@@ -2396,14 +2398,30 @@ bool MainWindow::do_save(bool fDialog, int ix) {
 		fullPath = QFileDialog::getSaveFileName(
 						this,				   // 親ウィジェット（メインウィンドウがあれば this）
 						"Save File",		 // ダイアログのタイトル
-						title,
+						path,
 						"markdown (*.md)"  // ファイルフィルタ
 						,nullptr // 選択されたフィルタを保存する変数（不要なら nullptr）
 		                ,QFileDialog::DontUseNativeDialog
 					);
 		if( fullPath.isEmpty() ) return false;
 		QFileInfo fi(fullPath);
-	    if (fi.suffix().isEmpty()) fullPath += ".md";
+		if (fi.suffix().isEmpty()) {
+			fullPath += ".md";
+			if( QFileInfo::exists(fullPath) ) {
+				auto reply = QMessageBox::question(
+					this,
+					tr("Confirm overwrite"),
+					tr("'%1' already exists.\nDo you want to overwrite it?").arg(fullPath),
+					QMessageBox::Yes | QMessageBox::No,
+					QMessageBox::No);
+				if( reply != QMessageBox::Yes )
+					return false;
+			}
+		}
+	}
+	if( !do_save(fullPath, ix) )
+		return false;
+	if( isSaveAsOrNew ) {
 		docWidget->m_fullPath = fullPath;
 		QFileInfo fileInfo(fullPath);
 		QString title2 = fileInfo.fileName();
@@ -2418,8 +2436,12 @@ bool MainWindow::do_save(bool fDialog, int ix) {
 		}
 		if( !oldFullPath.isEmpty() && oldFullPath != fullPath )		//	ファイル名変更
 			m_watcher->removePath(oldFullPath);
+		if( oldFullPath.isEmpty() || oldFullPath != fullPath )
+			m_watcher->addPath(fullPath);
+		docWidget->setModified(false);
+		docWidget->m_hasSaved = true;
 	}
-	return do_save(fullPath, ix);
+	return true;
 }
 int parseMdFile(const QString fullPath, DayInfo &di);
 
@@ -2436,7 +2458,7 @@ bool MainWindow::do_save(const QString& fullPath, int ix) {
 	if( isSameFile )
 		m_watcher->removePath(fullPath);		//	一旦ウォッチリストから外す
 	bool saved = false;
-	QFile file(fullPath);
+	QSaveFile file(fullPath);
 	if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
 		QTextStream out(&file);
 		out.setEncoding(docWidget->m_encoding); 
@@ -2453,15 +2475,20 @@ bool MainWindow::do_save(const QString& fullPath, int ix) {
 			out << lines.join(u'\n');
 		} else
 			out << mdEditor->toPlainText();
-		file.close();
-		saved = true;
-		addToRecentFiles(absTarget);
-		if( isSameFile ) {
-			docWidget->setModified(false);		//	保存済み
-			ui->tabWidget->setTabText(ix, docWidget->m_title);
-			docWidget->m_hasSaved = true;		//	保存済み for 自動更新
+		out.flush();
+		if (file.commit()) {
+			saved = true;
+			addToRecentFiles(absTarget);
+			if( isSameFile ) {
+				docWidget->setModified(false);		//	保存済み
+				ui->tabWidget->setTabText(ix, docWidget->m_title);
+				docWidget->m_hasSaved = true;		//	保存済み for 自動更新
+			}
+			statusBar()->showMessage(tr("Saved: %1").arg(fullPath), 5000);
+		} else {
+			QMessageBox::warning(this, tr("Error"), tr("Cannot write file:\n%1").arg(fullPath));
+			statusBar()->showMessage(tr("Cannot write file: %1").arg(fullPath), 5000);
 		}
-		statusBar()->showMessage(tr("Saved: %1").arg(fullPath), 5000);
 	} else {
 		QMessageBox::warning(this, tr("Error"), tr("Cannot write file:\n%1").arg(fullPath));
 		statusBar()->showMessage(tr("Cannot write file: %1").arg(fullPath), 5000);
