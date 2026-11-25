@@ -37,6 +37,8 @@
     <addaction name="action_Save"/>
     <addaction name="action_Close"/>
     <addaction name="menu_RecentFiles"/>
+    <addaction name="separator"/>
+    <addaction name="action_Exit"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -192,6 +194,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+W</string>
+   </property>
+  </action>
+  <action name="action_Exit">
+   <property name="text">
+    <string>E&amp;xit</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+F4</string>
    </property>
   </action>
   <action name="action_Undo">

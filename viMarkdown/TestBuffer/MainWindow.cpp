@@ -145,6 +145,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->action_Open, &QAction::triggered, this, &MainWindow::onOpen);
     connect(ui->action_Save, &QAction::triggered, this, &MainWindow::onSave);
     connect(ui->action_Close, &QAction::triggered, this, &MainWindow::onClose);
+    connect(ui->action_Exit, &QAction::triggered, this, &QWidget::close);
     connect(ui->action_Undo, &QAction::triggered, this, &MainWindow::onUndo);
     connect(ui->action_Redo, &QAction::triggered, this, &MainWindow::onRedo);
     connect(ui->action_Cut, &QAction::triggered, this, [this]() {
