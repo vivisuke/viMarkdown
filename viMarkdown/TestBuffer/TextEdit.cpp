@@ -17,8 +17,34 @@
 #include <QTimer>
 #include <QWheelEvent>
 
+#ifdef Q_OS_WIN
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#include <imm.h>
+#pragma comment(lib, "imm32.lib")
+#endif
+
 namespace {
 const int LEFT_MARGIN = 2;
+
+void forceImeOff(QWidget *w)
+{
+#ifdef Q_OS_WIN
+	HWND hwnd = w ? reinterpret_cast<HWND>(w->effectiveWinId()) : nullptr;
+	if( !hwnd )
+		hwnd = GetFocus();
+	if( !hwnd )
+		return;
+	if( HIMC himc = ImmGetContext(hwnd) ) {
+		ImmSetOpenStatus(himc, FALSE);
+		ImmReleaseContext(hwnd, himc);
+	}
+#else
+	Q_UNUSED(w);
+#endif
+}
 
 enum WordCharClass {
 	WCC_NEWLINE = 0,
@@ -1345,6 +1371,10 @@ void TextEdit::paintEvent(QPaintEvent *event)
 
 void TextEdit::keyPressEvent(QKeyEvent *event)
 {
+	if( event->key() == Qt::Key_Escape
+		|| (m_vi.isEnabled() && (event->modifiers() & Qt::ControlModifier) && event->key() == Qt::Key_BracketLeft) ) {
+		forceImeOff(this);
+	}
 	if( m_vi.handleKeyPress(this, event) ) {
 		event->accept();
 		return;

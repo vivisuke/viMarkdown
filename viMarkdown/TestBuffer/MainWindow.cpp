@@ -32,6 +32,14 @@
 #include <QUrl>
 #include <QVBoxLayout>
 #include <memory>
+#ifdef Q_OS_WIN
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#include <imm.h>
+#pragma comment(lib, "imm32.lib")
+#endif
 #include "ver.h"
 #include "GapBufferTest.h"
 #include "LineMgrTest.h"
@@ -1248,6 +1256,14 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
     if (obj == m_cmdLine && event->type() == QEvent::KeyPress) {
         auto *ke = static_cast<QKeyEvent *>(event);
         if (ke->key() == Qt::Key_Escape) {
+#ifdef Q_OS_WIN
+            if (HWND hwnd = reinterpret_cast<HWND>(effectiveWinId())) {
+                if (HIMC himc = ImmGetContext(hwnd)) {
+                    ImmSetOpenStatus(himc, FALSE);
+                    ImmReleaseContext(hwnd, himc);
+                }
+            }
+#endif
             m_cmdLine->hide();
             cancelViIncSearch();
             if (TextEdit *edit = currentTextEdit())
