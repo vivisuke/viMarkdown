@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include <QDateTime>
 #include <QStringConverter>
 #include <QFrame>
 #include <QWidget>
@@ -188,6 +189,8 @@ public:
 	bool	m_diffMode = false;		//	diff 表示中か？
 	bool	m_saving = false;
 	bool	m_hasSaved = false;		//	保存直後
+	QDateTime	m_lastFileMtime;	//	最後に読込・保存した時点のファイル更新時刻
+	qint64		m_lastFileSize = -1;//	最後に読込・保存した時点のファイルサイズ
 	bool	m_withBOM = true;		//	BOM付き
 	bool	m_readOnly = false;
 	bool	m_opening = false;

@@ -1047,6 +1047,7 @@ void MainWindow::closeEvent(QCloseEvent *event) {
     //    history << m_searchCB->itemText(i);
     //}
     settings.setValue("search/history", m_searchHist);
+    settings.setValue("search/replace", m_replaceHist);
     settings.setValue("search/grepDir", m_grepDirHist);
 	settings.beginGroup("MainWindow");
 	settings.setValue("geometry", saveGeometry()); // 位置・サイズ
@@ -1136,25 +1137,49 @@ void MainWindow::printDocLocHist() const {
 #endif
 }
 void MainWindow::onFileChanged(const QString& fullPath) {
-	statusBar()->showMessage("file changed: " + fullPath, 3000);
+	if( m_reloadingPaths.contains(fullPath) ) return;
+	m_reloadingPaths.append(fullPath);
+	struct ReloadGuard {
+		QStringList &list;
+		QString path;
+		~ReloadGuard() { list.removeAll(path); }
+	} reloadGuard{m_reloadingPaths, fullPath};
+
+	//	VSCode / Vim 等の削除→リネーム保存で watcher から外れた場合に再登録する
+	if( QFileInfo::exists(fullPath) && !m_watcher->files().contains(fullPath) )
+		m_watcher->addPath(fullPath);
+
 	int tix = tabIndexOf("", fullPath);
 	if( tix < 0 ) return;
 	DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(tix);
+	if( docWidget == nullptr || docWidget->m_saving ) return;
+
+	QFileInfo fi(fullPath);
+	if( fi.exists() && docWidget->m_lastFileSize >= 0
+		&& fi.lastModified() == docWidget->m_lastFileMtime
+		&& fi.size() == docWidget->m_lastFileSize ) {
+		return;		//	自己保存または内容変化なし
+	}
+
+	statusBar()->showMessage("file changed: " + fullPath, 3000);
 	if( docWidget->isModified() ) {
 		QMessageBox msgBox(this);
 		msgBox.setWindowTitle(tr("External Change Detected"));
 		msgBox.setText(tr("The file for the unsaved document has been modified externally."));
 		msgBox.setInformativeText(tr("Do you want to reload it?"));
-		//msgBox.setWindowTitle("外部変更の検知");
-		//msgBox.setText("未保存文書のファイルが外部で変更されました。");
-		//msgBox.setInformativeText("最新の状態を読み込みますか？");
 
-		// ボタンの設定 (Yes, No, Ignore を配置)
+		// ボタンの設定 (Yes, No を配置)
 		msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
 		msgBox.setDefaultButton(QMessageBox::Yes);
 
 		int ret = msgBox.exec();
-		if( ret == QMessageBox::No ) return;
+		if( ret == QMessageBox::No ) {
+			if( fi.exists() ) {
+				docWidget->m_lastFileMtime = fi.lastModified();
+				docWidget->m_lastFileSize = fi.size();
+			}
+			return;
+		}
 	}
 	do_load(fullPath);
 }
@@ -2210,11 +2235,9 @@ void MainWindow::do_load(const QString& fullPath) {
 	int tix = tabIndexOf("", fullPath);
 	if( tix < 0 ) return;
 	DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(tix);
-	if( docWidget->m_saving ) return;		//	保存中はリロードしない
-	if( docWidget->m_hasSaved ) {
-		docWidget->m_hasSaved = false;		//	保存直後もリロードしない
-		return;
-	}
+	if( docWidget == nullptr || docWidget->m_saving ) return;		//	保存中はリロードしない
+	if( QFileInfo::exists(fullPath) && !m_watcher->files().contains(fullPath) )
+		m_watcher->addPath(fullPath);
 	QString content;
 	bool withBOM = false;
 	QStringConverter::Encoding encoding = QStringConverter::Utf8;
@@ -2222,6 +2245,9 @@ void MainWindow::do_load(const QString& fullPath) {
 		QMessageBox::warning(this, tr("Error"), tr("Cannot open file:\n%1").arg(fullPath));
 		return;
 	}
+	QFileInfo loadedFi(fullPath);
+	docWidget->m_lastFileMtime = loadedFi.lastModified();
+	docWidget->m_lastFileSize = loadedFi.size();
 	docWidget->m_withBOM = withBOM;
 	docWidget->m_encoding = encoding;
 	docWidget->m_editor->setDummyInserted(false);
@@ -2356,6 +2382,10 @@ void MainWindow::do_open_sub(const QString& title, const QString& fullPath, cons
 
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget != nullptr ) {
+		if( exists ) {
+			docWidget->m_lastFileMtime = fileInfo.lastModified();
+			docWidget->m_lastFileSize = fileInfo.size();
+		}
 		docWidget->m_editor->jumpToHeading(name);
 		docWidget->m_editor->rehighlight();
 		docWidget->m_editor->document()->setModified(false);
@@ -2377,7 +2407,9 @@ void MainWindow::onAction_SaveAs() {
 }
 void MainWindow::onAction_SaveAll() {
 	for(int ix = 0; ix < ui->tabWidget->count(); ++ix) {
-		do_save(false, ix);
+		DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(ix);
+		if( docWidget != nullptr && docWidget->isModified() )
+			do_save(false, ix);
 	}
 }
 bool MainWindow::do_save(bool fDialog, int ix) {
@@ -2438,6 +2470,9 @@ bool MainWindow::do_save(bool fDialog, int ix) {
 			m_watcher->removePath(oldFullPath);
 		if( oldFullPath.isEmpty() || oldFullPath != fullPath )
 			m_watcher->addPath(fullPath);
+		QFileInfo savedFi(fullPath);
+		docWidget->m_lastFileMtime = savedFi.lastModified();
+		docWidget->m_lastFileSize = savedFi.size();
 		docWidget->setModified(false);
 		docWidget->m_hasSaved = true;
 	}
@@ -2480,6 +2515,9 @@ bool MainWindow::do_save(const QString& fullPath, int ix) {
 			saved = true;
 			addToRecentFiles(absTarget);
 			if( isSameFile ) {
+				QFileInfo savedFi(fullPath);
+				docWidget->m_lastFileMtime = savedFi.lastModified();
+				docWidget->m_lastFileSize = savedFi.size();
 				docWidget->setModified(false);		//	保存済み
 				ui->tabWidget->setTabText(ix, docWidget->m_title);
 				docWidget->m_hasSaved = true;		//	保存済み for 自動更新
@@ -2816,13 +2854,15 @@ int isListBlock(const QTextBlock& block) {		//	空白+ "- " で始まるか？ r
 	if( !txt.mid(i).startsWith("- ") ) return 0;
 	return i + 2;
 }
-int isNumListBlock(const QTextBlock& block) {		//	空白+ "数字. " で始まるか？ return 0 for not NumList, 1以上 for 文字数
+int isNumListBlock(const QTextBlock& block) {		//	空白+ "数字+. " で始まるか？ return 0 for not NumList, 1以上 for 文字数
 	const QString txt = block.text();
 	int i = 0;
 	while( i < txt.size() && txt[i] == ' ' ) ++i;
-	if( i >= txt.size() || !txt[i].isNumber() ) return 0;
-	if( !txt.mid(i+1).startsWith(". ") ) return 0;
-	return i + 3;
+	int j = i;
+	while( j < txt.size() && txt[j] >= QChar('0') && txt[j] <= QChar('9') ) ++j;
+	if( j == i ) return 0;
+	if( !txt.mid(j).startsWith(". ") ) return 0;
+	return j + 2;
 }
 //	選択範囲（またはカーソル行）に対応する実在ブロック範囲 [startBlock, endBlock] を求める。
 //	diff 表示中にダミー行が混在している場合は、始点・終点を実在行へ寄せた上でダミー行を除去してから返す。
