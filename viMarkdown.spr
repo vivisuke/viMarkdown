@@ -1545,7 +1545,7 @@ SPR# 状 P Open Close ver     Type  概要
 1531 ◎ C 11/26 11/26 03222│問題│tabIndexOf()やdiffPeerTabIndexOf()のパス比較が不統一で表記違いの同一ファイルが二重に開ける（Claude）
 1532 ◎ C 11/26 11/26 03222│問題│dropEvent()で非ローカルURLやディレクトリを除外せずdo_open()へ渡してしまいエラーになる（Claude）
 1533 ◎ C 11/26 11/26 03222│問題│m_searchHist等の履歴に上限がなくdo_search()のコンボ更新にもQSignalBlockerが抜けている（Claude）
-1534 ● C 11/26            │問題│
+1534 ◎ C 11/26 11/26 03222│問題│newEditor()に#1390調査用スクロールqDebugが残存しnewTabWidget()のaddWidget重複もある（Claude）
 1535 ● C 11/26            │問題│
 1536 ● C 11/26            │問題│
 1537 ● C 11/26            │問題│

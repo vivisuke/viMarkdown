@@ -1247,14 +1247,11 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
     //QFileInfo fi(fullPath);
 	auto* titleLabel = new QLabel(fi.fileName(), headerWidget);
     titleLabel->setStyleSheet("font-weight: bold; color: #333;");
-    headerLayout->addWidget(titleLabel);
-	//if( m_diffviewLabel == nullptr ) {
-		docWidget->m_diffviewLabel = new QLabel("", headerWidget);
-	    docWidget->m_diffviewLabel->setStyleSheet("font-weight: bold; color: #333;");
-	//}
-    QWidget *dummySpacer = new QWidget(this);
+	docWidget->m_diffviewLabel = new QLabel("", headerWidget);
+    docWidget->m_diffviewLabel->setStyleSheet("font-weight: bold; color: #333;");
+    QWidget *dummySpacer = new QWidget(headerWidget);
 	dummySpacer->setFixedWidth(MINMAP_WIDTH+OPEN_DST_WIDTH);
-	QPushButton *pb = new QPushButton("Open...");
+	QPushButton *pb = new QPushButton("Open...", headerWidget);
 	pb->setFixedWidth(OPEN_DST_WIDTH);
 	connect(pb, &QAbstractButton::clicked, this, &MainWindow::diffview_open);
     headerLayout->addWidget(titleLabel);
@@ -1280,7 +1277,6 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	editor->document()->setUndoRedoEnabled(false);
 	diffview->document()->setUndoRedoEnabled(false);
 	preview->document()->setUndoRedoEnabled(false);
-	qDebug() << "doc->isUndoRedoEnabled() = " << editor->document()->isUndoRedoEnabled();
 	return docWidget;
 }
 MarkdownEditor *MainWindow::newEditor(DocWidget *docWidget, QSplitter *splitter, bool readOnly) {
@@ -1302,12 +1298,6 @@ MarkdownEditor *MainWindow::newEditor(DocWidget *docWidget, QSplitter *splitter,
 	connect(mdEditor, &MarkdownEditor::canUndoRedoChanged, this, &MainWindow::updateUndoRedoEnabled);
 	//connect(mdEditor, &MarkdownPreview::textChanged, this, &MainWindow::onMDTextChanged);
 	connect(mdEditor->document(), &QTextDocument::modificationChanged, this, &MainWindow::onModificationChanged);
-	connect(mdEditor->verticalScrollBar(), &QScrollBar::valueChanged, this, [](int value) {
-		qDebug().noquote() << QString("valueChanged(%1)").arg(value);	//	v0.3 #1390 調査用
-		if( value == 1 ) {
-			qDebug() << "value == 1";
-		}
-	});
 	mdEditor->setPlaceholderText(g.m_japanese ? R"(
 ここにMarkdownを入力
 マークダウン書式は Output を見てね
