@@ -183,7 +183,7 @@ public:
 			|| (u >= 0xFFE0 && u <= 0xFFE6);	//	全角記号
 	}
 
-	//	見出し折り畳み
+	//	折り畳み（見出し・コードブロック・リスト・チェックボックス・連番リスト）
 	int headingLevel(int line) const {
 		if( line < 0 || line >= lineCount() || lineType(line) != LT_HEADING )
 			return 0;
@@ -195,25 +195,70 @@ public:
 		while( i < len && (*this)[s + i] == QChar('#') && h < 6 ) { ++i; ++h; }
 		return h;
 	}
-	bool isFoldable(int line) const {
-		const int lvl = headingLevel(line);
-		if( lvl == 0 ) return false;
-		if( line + 1 >= lineCount() ) return false;
-		if( line + 1 == lineCount() - 1 && lineLength(line + 1) == 0 ) return false;
-		const int lvl2 = headingLevel(line + 1);
-		return lvl2 == 0 || lvl2 > lvl;
+	int leadingIndent(int line) const {
+		if( line < 0 || line >= lineCount() ) return 0;
+		const pos_t s = lineStartPos(line);
+		const pos_t len = lineLength(line);
+		int col = 0;
+		for( pos_t i = 0; i < len; ++i ) {
+			const QChar ch = (*this)[s + i];
+			if( ch == QChar(' ') ) ++col;
+			else if( ch == QChar('\t') ) col += m_tabWidth - (col % m_tabWidth);
+			else break;
+		}
+		return col;
+	}
+	bool isBlankLine(int line) const {
+		if( line < 0 || line >= lineCount() ) return true;
+		const pos_t s = lineStartPos(line);
+		const pos_t len = lineLength(line);
+		for( pos_t i = 0; i < len; ++i ) {
+			const QChar ch = (*this)[s + i];
+			if( ch != QChar(' ') && ch != QChar('\t') ) return false;
+		}
+		return true;
 	}
 	int foldableEndLine(int line) const {
-		const int lvl = headingLevel(line);
-		if( lvl == 0 ) return -1;
-		int last = line;
 		const int n = lineCount();
-		for( int ln = line + 1; ln < n; ++ln ) {
-			const int l2 = headingLevel(ln);
-			if( l2 != 0 && l2 <= lvl ) break;
-			last = ln;
+		if( line < 0 || line + 1 >= n ) return -1;
+		const LineType lt = lineType(line);
+		if( lt == LT_HEADING ) {
+			const int lvl = headingLevel(line);
+			if( lvl == 0 ) return -1;
+			if( line + 1 == n - 1 && lineLength(line + 1) == 0 ) return -1;
+			int last = line;
+			for( int ln = line + 1; ln < n; ++ln ) {
+				const int l2 = headingLevel(ln);
+				if( l2 != 0 && l2 <= lvl ) break;
+				last = ln;
+			}
+			return (last > line) ? last : -1;
 		}
-		return (last > line) ? last : -1;
+		if( lt == LT_CODE_FENCE ) {
+			if( lineType(line + 1) != LT_CODE_BLOCK ) return -1;
+			int ln = line + 1;
+			while( ln < n && lineType(ln) == LT_CODE_BLOCK ) ++ln;
+			int last = (ln < n && lineType(ln) == LT_CODE_FENCE) ? ln : (ln - 1);
+			return (last > line) ? last : -1;
+		}
+		if( lt == LT_LIST || lt == LT_NUM_LIST || lt == LT_CHECKBOX ) {
+			const int baseIndent = leadingIndent(line);
+			int last = line;
+			for( int ln = line + 1; ln < n; ++ln ) {
+				if( lineType(ln) == LT_HEADING ) break;
+				if( isBlankLine(ln) ) continue;
+				if( leadingIndent(ln) > baseIndent ) {
+					last = ln;
+				} else {
+					break;
+				}
+			}
+			return (last > line) ? last : -1;
+		}
+		return -1;
+	}
+	bool isFoldable(int line) const {
+		return foldableEndLine(line) > line;
 	}
 	bool isFolded(int line) const {
 		return line >= 0 && line < (int)m_vinfo.size() && m_vinfo[line].folded;
@@ -287,21 +332,17 @@ private:
 	}
 	void rebuildVisibility() {
 		const int n = lineCount();
-		int hideUntilLevel = 0;		//	0 なら非表示中でない
+		int hideUntilLine = -1;
 		for( int ln = 0; ln < n; ++ln ) {
-			const int lvl = headingLevel(ln);
-			if( hideUntilLevel > 0 ) {
-				if( lvl > 0 && lvl <= hideUntilLevel ) {
-					hideUntilLevel = 0;
-				} else {
-					m_vinfo[ln].hidden = true;
-					continue;
-				}
+			if( ln <= hideUntilLine ) {
+				m_vinfo[ln].hidden = true;
+				continue;
 			}
 			m_vinfo[ln].hidden = false;
 			if( m_vinfo[ln].folded ) {
-				if( lvl > 0 && isFoldable(ln) )
-					hideUntilLevel = lvl;
+				const int endLn = foldableEndLine(ln);
+				if( endLn > ln )
+					hideUntilLine = endLn;
 				else
 					m_vinfo[ln].folded = false;
 			}

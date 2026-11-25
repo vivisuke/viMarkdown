@@ -977,10 +977,10 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 				ViewLineMgr &mgr = doc->lineMgr();
 				const int curLn = mgr.lineAtPos(edit->textCursor().position());
 				auto findTargetHeading = [&]() -> int {
-					if( mgr.headingLevel(curLn) > 0 && (mgr.isFoldable(curLn) || mgr.isFolded(curLn)) )
+					if( mgr.isFoldable(curLn) || mgr.isFolded(curLn) )
 						return curLn;
 					for( int k = curLn - 1; k >= 0; --k ) {
-						if( mgr.headingLevel(k) > 0 && mgr.isFoldable(k) )
+						if( mgr.foldableEndLine(k) >= curLn )
 							return k;
 					}
 					return -1;
