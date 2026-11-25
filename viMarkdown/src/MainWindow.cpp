@@ -3073,10 +3073,11 @@ void MainWindow::onAction_List() {
 			}
 		} else {
 			if( !isListBlock(currentBlock) ) {
-				int n = isNumListBlock(currentBlock);	//	空白+ "数字. "
+				int n = isNumListBlock(currentBlock);	//	空白+ "数字+. "
 				if( n > 0 ) {
-					cursor.setPosition(currentBlock.position() + n - 3);		//	3 for "数字. ".length()
-					cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, 3);
+					int sp = leadingSpacesCount(currentBlock);
+					cursor.setPosition(currentBlock.position() + sp);		//	行頭インデント空白を保持
+					cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, n - sp);
 				} else {
 					int sp = leadingSpacesCount(currentBlock);
 					cursor.setPosition(currentBlock.position() + sp);		//	行頭インデント空白の後ろへ挿入
@@ -3121,8 +3122,9 @@ void MainWindow::onAction_NumList() {
 		if( remove_list ) {
 			int n = isNumListBlock(currentBlock);
 			if( n != 0 ) {
-				cursor.setPosition(currentBlock.position() + n - 3);		//	行頭インデント空白を保持
-				cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, 3);
+				int sp = leadingSpacesCount(currentBlock);
+				cursor.setPosition(currentBlock.position() + sp);		//	行頭インデント空白を保持
+				cursor.movePosition(QTextCursor::NextCharacter, QTextCursor::KeepAnchor, n - sp);
 				mdEditor->do_deleteText(cursor);
 				//cursor.removeSelectedText();
 			}
