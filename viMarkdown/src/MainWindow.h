@@ -341,7 +341,7 @@ protected:
     void	updateThinThickCheck();
     void	updateSearchOptions();
     void	updatePreview();
-    void	updateOutlineTree();
+    void	updateOutlineTree(DocWidget *target = nullptr);
     void	insertInline(const QString&);
     QTreeWidgetItem* findTopLevelItemByFullPath(const QString& title, const QString fullPath);
     void	removeTopLevelItem(DocWidget*);

@@ -19,6 +19,7 @@
 #include <QPrinter>
 #include <QPrintDialog>
 #include <QPointer>
+#include <QScopedValueRollback>
 #include <QSignalBlocker>
 #include <QDesktopServices>
 #include <QLineEdit>
@@ -810,11 +811,13 @@ bool MainWindow::do_search(const QString srcText, bool backward) {
 			cursor = mdEditor->textCursor();
 			g.m_matchedPosition = cursor.anchor();
 			QTextBlock matchedBlock = cursor.block();
-			while( !matchedBlock.isVisible() ) {
+			QTextBlock prevB;
+			for( int guard = 0; guard < 64 && !matchedBlock.isVisible(); ++guard ) {
 				QTextBlock b = matchedBlock;
 				while( (b = b.previous()).isValid() && !b.isVisible() )
 					;
-				if( !b.isValid() ) break;
+				if( !b.isValid() || b == prevB ) break;
+				prevB = b;
 				do_unfold(b);
 				if( b.next().isValid() && !b.next().isVisible() ) break;
 			}
@@ -2247,6 +2250,9 @@ void MainWindow::close_empty_doc() {
 				ui->tabWidget->removeTab(ix);		//	空の無名ドキュメントを削除
 				--ix;
 				removeTopLevelItem(docWidget);
+				if( gvi.m_prevFocusWidget != nullptr && (gvi.m_prevFocusWidget == docWidget || docWidget->isAncestorOf(gvi.m_prevFocusWidget)) )
+					gvi.m_prevFocusWidget = nullptr;
+				docWidget->deleteLater();
 			}
 		}
 	}
@@ -2575,6 +2581,13 @@ void MainWindow::do_close(bool forced) {
 	if (ix >= 0)
 		ui->tabWidget->removeTab(ix);
 	removeTopLevelItem(docWidget);
+	if( !docWidget->m_fullPath.isEmpty() )
+		m_watcher->removePath(docWidget->m_fullPath);
+	if( !docWidget->m_diffPeerFullPath.isEmpty() )
+		m_watcher->removePath(docWidget->m_diffPeerFullPath);
+	if( gvi.m_prevFocusWidget != nullptr && (gvi.m_prevFocusWidget == docWidget || docWidget->isAncestorOf(gvi.m_prevFocusWidget)) )
+		gvi.m_prevFocusWidget = nullptr;
+	docWidget->deleteLater();
 	DocWidget *curDocWidget = getCurDocWidget();
 	if( curDocWidget != nullptr )
 		curDocWidget->m_editor->setFocus();	//	アクティブになったタブのエディタにフォーカスを移す（#1276）
@@ -3507,8 +3520,8 @@ void expandAllChildren(QTreeWidgetItem *item) {
 		expandAllChildren(child);  // 子に対して再帰呼び出し
 	}
 }
-void MainWindow::updateOutlineTree() {
-	DocWidget *docWidget = getCurDocWidget();
+void MainWindow::updateOutlineTree(DocWidget *target) {
+	DocWidget *docWidget = (target != nullptr) ? target : getCurDocWidget();
 	if( docWidget == nullptr ) return;
 	if( docWidget->m_docType != DocType::Markdown ) return;
 	//	現文書に対応するトップレベルアイテムへのポインタ取得
@@ -3519,18 +3532,19 @@ void MainWindow::updateOutlineTree() {
 	parents[0] = item0;
 	const QStringList &lst = docWidget->m_preview->getHeadings();
 	const vector<int>& hLineNum = docWidget->getSrcHeadingsBlocks();
-	for(int i = 0; i != lst.size() && i < hLineNum.size()-1; ++i) {
-		QTreeWidgetItem *item2 = new QTreeWidgetItem();
-		//bool ok;
-		//int val = lst[i].toInt(&ok, 10);
+	static const QRegularExpression reHeadingPrefix("^ *[■●○◎★☆]\\s*");
+	const int n = qMin<int>(lst.size(), static_cast<int>(hLineNum.size()) - 1);
+	for(int i = 0; i < n; ++i) {
+		if( lst[i].isEmpty() ) continue;
 		int val = lst[i][0].unicode() - '0';
+		if( val < 1 || val > 6 ) continue;
+		QTreeWidgetItem *item2 = new QTreeWidgetItem();
 		item2->setIcon(0, QIcon(":/MainWindow/images/small_square_48.png"));
-		item2->setText(0, lst[i].mid(1));	//	lst[i][0] は見出しレベル（'1'-'6'）
-		QString txt = lst[i].mid(1).remove(QRegularExpression("^ *[■●○◎★☆]\\s*"));
+		QString txt = lst[i].mid(1).remove(reHeadingPrefix);
 		item2->setText(0, txt);
 		item2->setData(0, Qt::UserRole, hLineNum[i+1]);
 		int k = val - 1;
-		while( parents[k] == nullptr ) --k;
+		while( k > 0 && parents[k] == nullptr ) --k;
 		parents[k]->addChild(item2);
 		parents[val] = item2;
 		while( ++val < 10 ) parents[val] = nullptr;
@@ -3552,8 +3566,17 @@ void MainWindow::onModificationChanged(bool b) {
 	ui->tabWidget->setTabText(ui->tabWidget->indexOf(docWidget), title);
 }
 void MainWindow::onDiffPeerModificationChanged(bool b) {
-	DocWidget *docWidget = getCurDocWidget();
-	if (docWidget == nullptr) return;
+	QTextDocument *doc = qobject_cast<QTextDocument*>(sender());
+	DocWidget *docWidget = nullptr;
+	if( doc != nullptr ) {
+		for( int i = 0; i < ui->tabWidget->count(); ++i ) {
+			DocWidget *w = static_cast<DocWidget*>(ui->tabWidget->widget(i));
+			if( w != nullptr && w->m_diffview != nullptr && w->m_diffview->document() == doc ) { docWidget = w; break; }
+		}
+	} else {
+		docWidget = getCurDocWidget();
+	}
+	if (docWidget == nullptr || docWidget->m_diffviewLabel == nullptr) return;
 	QString title = docWidget->m_diffPeerTitle;
 	if( b ) title += " *";
 	docWidget->m_diffviewLabel->setText(title);
@@ -3588,8 +3611,19 @@ void MainWindow::onMDTextChanged() {
 	//qDebug() << "MainWindow::onMDTextChanged()";
 
 	if( m_ignore_changed ) return;
-	m_ignore_changed = true;
-	DocWidget *docWidget = getCurDocWidget();
+	QScopedValueRollback<bool> guard(m_ignore_changed, true);
+
+	MarkdownEditor *senderEd = qobject_cast<MarkdownEditor*>(sender());
+	DocWidget *docWidget = nullptr;
+	if( senderEd != nullptr ) {
+		for( int i = 0; i < ui->tabWidget->count(); ++i ) {
+			DocWidget *w = static_cast<DocWidget*>(ui->tabWidget->widget(i));
+			if( w != nullptr && w->m_editor == senderEd ) { docWidget = w; break; }
+		}
+	} else {
+		docWidget = getCurDocWidget();
+	}
+	if( docWidget == nullptr || docWidget->m_editor == nullptr ) return;
 	//qDebug() << "docWidget = " << docWidget;
 	MarkdownEditor *mdEditor = docWidget->m_editor;
 	//m_plainText = mdEditor->toPlainText();
@@ -3632,8 +3666,9 @@ void MainWindow::onMDTextChanged() {
 		block = block.next();
 	}
 #endif
-	updatePreview();
-	updateOutlineTree();
+	if( docWidget == getCurDocWidget() )
+		updatePreview();
+	updateOutlineTree(docWidget);
 #if 0
 	if( !m_opening_file ) {
 		DocWidget *docWidget = getCurDocWidget();
@@ -3642,8 +3677,7 @@ void MainWindow::onMDTextChanged() {
 		ui->tabWidget->setTabText(ui->tabWidget->currentIndex(), docWidget->m_title + " *");
 	}
 #endif
-	m_ignore_changed = false;
-	if( docWidget->m_diffMode && !m_doing_diff) {
+	if( docWidget->m_diffMode && !m_doing_diff && docWidget == getCurDocWidget() ) {
 		m_diffTimer->start(1000); 
 	}
 }
