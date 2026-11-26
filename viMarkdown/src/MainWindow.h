@@ -6,6 +6,7 @@
 #include <QTimer>
 #include <QDate>
 #include <QDateTime>
+#include <QPointer>
 //#include "ui_MainWindow.h"
 //#include "markdowntohtmlconvertor.h"
 #include "dtl/dtl.hpp"
@@ -226,7 +227,7 @@ struct ViStatus {
     QStringList	m_exhist;				//	ex コマンド履歴、先頭が最新コマンド
     MarkdownEditor	*m_editor = nullptr;		//	フォーカスを持っているマークダウンエディタ
     //MarkdownPreview	*m_preview = nullptr;	//	フォーカスを持っているマークダウンプレビュー
-    QWidget	*m_prevFocusWidget = nullptr;	//	:/? 押下時点でフォーカスを持っていた Widget
+    QPointer<QWidget>	m_prevFocusWidget;	//	:/? 押下時点でフォーカスを持っていた Widget
 };
 #if 0
 enum class TodoStatus {

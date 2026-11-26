@@ -184,7 +184,7 @@ void MainWindow::do_cdy_moved(QTextCursor& cursor) {
         }
 	}
 #endif
-	if( /*gvi.m_isEditCommand &&*/ !gvi.m_redoing)
+	if( !gvi.m_redoing && gvi.m_operator != u'y' )
 		gvi.m_lastEditCommand = gvi.m_operator + gvi.m_lastMoveCommand;
 	if( gvi.m_operator == 'c' ) {		//	c<move>
 		if( cursor.hasSelection() ) {
@@ -362,6 +362,8 @@ void MainWindow::do_vi_insert(QChar cmd, QTextCursor& cursor, int rcnt) {
 		//gvi.m_joinEditBlock = true;
 		break;
 	case 'C':		//	カーソル位置から行末まで削除して挿入モードへ遷移
+		if( gvi.m_editor != nullptr )
+			gvi.m_editor->openUndoBlock();
 		cursor.beginEditBlock();
 		//g.m_editBlockOpen = true;
 		if( rcnt > 1 ) {
@@ -556,7 +558,9 @@ int heading_level(QTextBlock block) {
 bool is_folded(QTextBlock block);
 bool is_foldable(QTextBlock block);
 void do_fold(QTextBlock block /*, QTextDocument *doc*/) {	//	block は見出し行
+	if( !block.isValid() ) return;
 	int lvl = heading_level(block);
+	if( lvl == 0 ) return;
 	setBlockFolded(block, true);	//	折り畳み状態フラグON
 	QTextDocument *doc = (QTextDocument*)block.document();
 	while( (block = block.next()).isValid() ) {
@@ -669,6 +673,7 @@ void MainWindow::do_prefix_cmd(QChar cmd, QTextCursor& cursor, int rcnt, DocWidg
 			break;
 		case 'c':		//	zc
 			if( docWidget->m_diffMode ) break;
+			if( !block.isValid() || !is_foldable(block) ) break;
 			do_fold(block);
 			docWidget->m_editor->clearFoldLine();
 			onMDTextChanged();
@@ -871,8 +876,9 @@ bool MainWindow::do_vi_operator(QChar cmd, QTextCursor& cursor, int rcnt, DocWid
 		        }
 		    } else {
 		        cursor.movePosition(QTextCursor::NextBlock, QTextCursor::KeepAnchor, rcnt);
-		        while( !cursor.block().isVisible() )
-			        cursor.movePosition(QTextCursor::NextBlock, QTextCursor::KeepAnchor);
+		        while( !cursor.block().isVisible() && cursor.movePosition(QTextCursor::NextBlock, QTextCursor::KeepAnchor) ) {}
+		        if( !cursor.block().isVisible() )
+			        cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
 		    }
 #else
 			cursor.movePosition(QTextCursor::StartOfBlock);
@@ -941,10 +947,10 @@ bool MainWindow::do_vi_operator(QChar cmd, QTextCursor& cursor, int rcnt, DocWid
 			break;
 #endif
 		case '>': {	//	>>
-			int pos = cursor.position();
+			int startBn = cursor.blockNumber();
 			gvi.m_editor->openUndoBlock();
 			cursor.beginEditBlock();
-			for(int i = 0; i < gvi.m_opCount; ++i) {
+			for(int i = 0; i < rcnt; ++i) {
 				onAction_Indent();
 				block = block.next();
 				if( !block.isValid() ) break;
@@ -959,16 +965,17 @@ bool MainWindow::do_vi_operator(QChar cmd, QTextCursor& cursor, int rcnt, DocWid
 			cursor.endEditBlock();
 			gvi.m_editor->closeUndoBlock();
 			gvi.m_editor->setActionFlag(UndoAction::FLAG_SHIFT);
-			cursor.setPosition(pos);
+			QTextBlock sb = doc->findBlockByNumber(startBn);
+			if( sb.isValid() ) cursor.setPosition(sb.position());
 			hat(cursor);
 			gvi.m_isEditCommand = true;
 			break;
 		}
 		case '<': {	//	<<
-			int pos = cursor.position();
+			int startBn = cursor.blockNumber();
 			gvi.m_editor->openUndoBlock();
 			cursor.beginEditBlock();
-			for(int i = 0; i < gvi.m_opCount; ++i) {
+			for(int i = 0; i < rcnt; ++i) {
 				onAction_UnIndent();
 				block = block.next();
 				if( !block.isValid() ) break;
@@ -983,7 +990,8 @@ bool MainWindow::do_vi_operator(QChar cmd, QTextCursor& cursor, int rcnt, DocWid
 			cursor.endEditBlock();
 			gvi.m_editor->closeUndoBlock();
 			gvi.m_editor->setActionFlag(UndoAction::FLAG_SHIFT);
-			cursor.setPosition(pos);
+			QTextBlock sb = doc->findBlockByNumber(startBn);
+			if( sb.isValid() ) cursor.setPosition(sb.position());
 			hat(cursor);
 			gvi.m_isEditCommand = true;
 			break;
@@ -1314,8 +1322,8 @@ doneW:
 		}
 		if( !block.text().isEmpty() ) {
 			cursor.setPosition(block.position() + block.text().size() - 1, moveMode);
-			if( gvi.m_operator == u'y' )
-				cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor);	//	y$ の場合：行末文字も含める（#1274）
+			if( gvi.m_operator == u'y' || gvi.m_operator == u'd' || gvi.m_operator == u'c' )
+				cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor);	//	y$/d$/c$ の場合：行末文字も含める（#1274）
 		}
 		break;
 	case '-':
@@ -1509,7 +1517,7 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 		gvi.m_prefix = cmd;
 		completed = false;
 	} else if( gvi.m_operator != ' ' && gvi.m_operator == cmd ) {		//	cc dd yy << >>
-		completed = do_vi_operator(cmd, cursor, gvi.m_opCount, docWidget);		//	op cmd
+		completed = do_vi_operator(cmd, cursor, rcnt * gvi.m_opCount, docWidget);		//	op cmd
 	} else if( cmd == 'c' || cmd == 'd' || cmd == 'y' || cmd == '<' || cmd == '>' ) {
 		completed = do_cdy(cmd, cursor);
 		//gvi.m_operator = cmd;
@@ -1573,13 +1581,17 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 		case 'p':
 			if( !gvi.m_yankBuffer.isEmpty() ) {
 #if 1
+				gvi.m_isEditCommand = true;
 				int insertPos = -1;
+				bool undoOpened = false;
 				if( gvi.m_linewiseYanked ) {
 					// 次のブロックへ移動を試みる
 					if( !cursor.movePosition(QTextCursor::NextBlock) ) {
 						// 【EOF行の場合】NextBlock が失敗するので、末尾に改行を足して新しい行を作る
 						cursor.movePosition(QTextCursor::EndOfBlock);
 						if( gvi.m_editor != nullptr ) {
+							gvi.m_editor->openUndoBlock();
+							undoOpened = true;
 							gvi.m_editor->do_insertText(cursor, "\n");
 						} else {
 							cursor.insertText("\n");
@@ -1591,7 +1603,8 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 						insertPos = cursor.position();
 					}
 				} else {
-					cursor.movePosition(QTextCursor::Right);
+					if( !cursor.atBlockEnd() )
+						cursor.movePosition(QTextCursor::Right);
 					insertPos = cursor.position();
 				}
 				// テキスト挿入
@@ -1599,6 +1612,8 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 					gvi.m_editor->do_insertText(cursor, gvi.m_yankBuffer.repeated(rcnt));
 				else
 					cursor.insertText(gvi.m_yankBuffer.repeated(rcnt));
+				if( undoOpened )
+					gvi.m_editor->closeUndoBlock();
 				// ペースト後のカーソル位置調整
 				if( gvi.m_linewiseYanked ) {    // 行単位ペースト
 					cursor.setPosition(insertPos);
@@ -1627,6 +1642,7 @@ void MainWindow::do_viCmd(QChar cmd, QTextCursor& cursor) {
 			break;
 		case 'P':
 			if( !gvi.m_yankBuffer.isEmpty() ) {
+				gvi.m_isEditCommand = true;
 				if( gvi.m_linewiseYanked ) {
 					cursor.movePosition(QTextCursor::StartOfBlock);
 					//do_openline(cursor, true);
@@ -1814,15 +1830,15 @@ void MainWindow::do_viCmd_completed(QTextCursor& cursor, QChar cmd) {	//	vicmd �
 		if( gvi.m_editor != nullptr )
 			gvi.m_editor->savePrefferedX(cursor);
 	}
-	if( gvi.m_redoing && gvi.m_currentMode == ViMode::Insert && !gvi.m_insertedText.isEmpty() ) {
-		auto text = gvi.m_insertedText;
-		if( gvi.m_repeatCount > 1 )
-			text = gvi.m_insertedText.repeated(gvi.m_repeatCount);
-		gvi.m_editor->do_insertText(cursor, text);
+	if( gvi.m_redoing && gvi.m_currentMode == ViMode::Insert ) {
+		if( !gvi.m_insertedText.isEmpty() ) {
+			auto text = gvi.m_insertedText;
+			if( gvi.m_repeatCount > 1 )
+				text = gvi.m_insertedText.repeated(gvi.m_repeatCount);
+			gvi.m_editor->do_insertText(cursor, text);
+		}
 		if( cursor.position() > cursor.block().position() )		//	[#1280] exitInsertMode と同様、ブロック先頭では左移動しない
 			cursor.movePosition(QTextCursor::Left);
-		//cursor.insertText(gvi.m_insertedText.repeated(gvi.m_repeatCount));
-		//gvi.m_viCmdMode = true;
 		gvi.m_currentMode = ViMode::Normal;
 	}
 	gvi.m_opCount = 1;
@@ -2311,7 +2327,7 @@ void MainWindow::do_subst(const QString &text, int ix, QTextDocument* doc) {
 	if (undoOpened)
 		gvi.m_editor->closeUndoBlock();
 	cursor.endEditBlock();
-	if (lastReplacedLine > 0) {
+	if (lastReplacedLine > 0 && gvi.m_editor != nullptr) {
 	    QTextBlock block = doc->findBlockByNumber(lastReplacedLine - 1);
 	    if (block.isValid()) {
 	        QTextCursor c(doc);
@@ -2723,32 +2739,36 @@ void MainWindow::on_cmdLine_escape() {
 	close_cmdLine();
 }
 void MainWindow::on_cmdLine_up() {	//	コマンドライン履歴
-	//##qDebug() << "MainWindow::on_cmdLine_up()";
-	//##if( m_cmdLine->text().isEmpty() ) return;
-	QChar ch = m_prefixLabel->text()[0];
+	const QString pref = m_prefixLabel->text();
+	if( pref.isEmpty() ) return;
+	QChar ch = pref[0];
 	if( ch == ':' ) {
 		if( gvi.m_exhist_ix + 1 < gvi.m_exhist.size() ) {
-			if( gvi.m_exhist_ix == 0 ) gvi.m_exhist[0] = m_cmdLine->text();
 			m_cmdLine->setText(gvi.m_exhist[++gvi.m_exhist_ix]);
 		}
 	} else if( ch == '/' || ch == '?' ) {
 		if( gvi.m_searchhist_ix + 1 < m_searchHist.size() ) {
-			if( gvi.m_searchhist_ix == 0 ) m_searchHist[0] = m_cmdLine->text();
-			m_cmdLine->setText(/*ch +*/ m_searchHist[++gvi.m_searchhist_ix]);
+			m_cmdLine->setText(m_searchHist[++gvi.m_searchhist_ix]);
 		}
 	}
 }
 void MainWindow::on_cmdLine_down() {
-	//##qDebug() << "MainWindow::on_cmdLine_down()";
-	//##if( m_cmdLine->text().isEmpty() ) return;
-	QChar ch = m_prefixLabel->text()[0];
+	const QString pref = m_prefixLabel->text();
+	if( pref.isEmpty() ) return;
+	QChar ch = pref[0];
 	if( ch == ':' ) {
 		if( gvi.m_exhist_ix > 0 ) {
 			m_cmdLine->setText(gvi.m_exhist[--gvi.m_exhist_ix]);
+		} else if( gvi.m_exhist_ix == 0 ) {
+			gvi.m_exhist_ix = -1;
+			m_cmdLine->clear();
 		}
 	} else if( ch == '/' || ch == '?' ) {
 		if( gvi.m_searchhist_ix > 0 ) {
-			m_cmdLine->setText(/*ch +*/ m_searchHist[--gvi.m_searchhist_ix]);
+			m_cmdLine->setText(m_searchHist[--gvi.m_searchhist_ix]);
+		} else if( gvi.m_searchhist_ix == 0 ) {
+			gvi.m_searchhist_ix = -1;
+			m_cmdLine->clear();
 		}
 	}
 }

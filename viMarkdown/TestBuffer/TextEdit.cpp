@@ -1222,7 +1222,7 @@ void TextEdit::paintEvent(QPaintEvent *event)
 	//	表示行の一部 [subOff, subOff + subText.size()) をスパン色で塗り分けながら描画する
 	auto drawColoredSegment = [&](int x, int yBaseline, const QString &subText, qsizetype segOffInLine) -> int {
 		if( subText.isEmpty() ) return x;
-		if( cachedSpans.isEmpty() ) {
+		if( cachedSpans.isEmpty() && !subText.contains(QChar(0x3000)) ) {
 			painter.setPen(defaultTextColor);
 			return drawLineText(painter, x, yBaseline, subText, fm, tabPx);
 		}
@@ -1235,10 +1235,22 @@ void TextEdit::paintEvent(QPaintEvent *event)
 		};
 		qsizetype pos = 0;
 		const qsizetype n = subText.size();
+		const QColor wsColor(100, 160, 220, 0xc0);
 		while( pos < n ) {
+			if( subText[pos] == QChar(0x3000) ) {
+				const int zw = fm.horizontalAdvance(QChar(0x3000));
+				const int boxH = fm.ascent();
+				const int boxY = yBaseline - boxH + 1;
+				painter.setPen(wsColor);
+				painter.setBrush(Qt::NoBrush);
+				painter.drawRect(x + 1, boxY + 1, qMax(4, zw - 3), qMax(4, boxH - 2));
+				x += zw;
+				++pos;
+				continue;
+			}
 			QColor col = colorAt(segOffInLine + pos);
 			qsizetype end = pos + 1;
-			while( end < n && colorAt(segOffInLine + end) == col )
+			while( end < n && subText[end] != QChar(0x3000) && colorAt(segOffInLine + end) == col )
 				++end;
 			painter.setPen(col);
 			x = drawLineText(painter, x, yBaseline, subText.mid(pos, end - pos), fm, tabPx);
@@ -1306,9 +1318,26 @@ void TextEdit::paintEvent(QPaintEvent *event)
 				painter.fillRect(xs, y, xe - xs, lh, m_selectionColor);
 		}
 		QString text = vb.text();
-		if( text.endsWith(QChar('\n')) ) text.chop(1);
+		const bool hasNewline = text.endsWith(QChar('\n'));
+		if( hasNewline ) text.chop(1);
 
 		const int yBase = y + fm.ascent() + 4;
+		auto drawReturnMark = [&](int xLeft) -> int {
+			const int w = qMax(12, fm.horizontalAdvance(QChar(u'□')));
+			const int h = fm.ascent() + 2;
+			const int yTop = y + 4;
+			const int xStart = xLeft + 3;
+			const int xRight = xLeft + w - 3;
+			const int yStart = yTop + 2;
+			const int yMid = yTop + (h * 3) / 4;
+			const int head = qMax(2, h / 6);
+			painter.setPen(QColor(100, 160, 220, 0xc0));
+			painter.drawLine(xRight, yStart, xRight, yMid);
+			painter.drawLine(xStart, yMid, xRight, yMid);
+			painter.drawLine(xStart, yMid, xStart + head, yMid - head);
+			painter.drawLine(xStart, yMid, xStart + head, yMid + head);
+			return xLeft + w;
+		};
 		if( !m_preedit.isEmpty() && viewLine == mgr.viewLineAtPos(m_cursor.position()) ) {
 			int curOff = (int)(m_cursor.position() - linePos);
 			if( curOff < 0 ) curOff = 0;
@@ -1320,17 +1349,31 @@ void TextEdit::paintEvent(QPaintEvent *event)
 			painter.setPen(defaultTextColor);
 			painter.drawText(xPre, yBase, m_preedit);
 			painter.drawLine(xPre, yBase + 1, xPre + wPre, yBase + 1);
-			drawColoredSegment(xPre + wPre, yBase, after, segOff + curOff);
+			int xEnd = drawColoredSegment(xPre + wPre, yBase, after, segOff + curOff);
+			if( hasNewline ) {
+				drawReturnMark(xEnd + 1);
+			} else if( viewLine == mgr.viewLineCount() - 1 ) {
+				painter.setPen(QColor(100, 160, 220, 0xc0));
+				painter.drawText(xEnd + 2, yBase, QStringLiteral("EOF"));
+			}
 		} else {
 			int xEnd = drawColoredSegment(LEFT_MARGIN, yBase, text, segOff);
+			if( hasNewline )
+				xEnd = drawReturnMark(xEnd + 1);
 			if( m_markdownHighlight && mgr.isFolded(ln)
 				&& viewLine == mgr.lineToViewLine(ln) + mgr.viewLineCountIn(ln) - 1 ) {
 				const int hiddenCnt = mgr.foldedHiddenCount(ln);
 				if( hiddenCnt > 0 ) {
 					painter.setPen(Qt::blue);
-					painter.drawText(xEnd + fm.horizontalAdvance(QChar(' ')) * 2, yBase,
-						QStringLiteral("[+%1 lines]").arg(hiddenCnt));
+					const QString foldTag = QStringLiteral("[+%1 lines]").arg(hiddenCnt);
+					const int xTag = xEnd + fm.horizontalAdvance(QChar(' ')) * 2;
+					painter.drawText(xTag, yBase, foldTag);
+					xEnd = xTag + fm.horizontalAdvance(foldTag);
 				}
+			}
+			if( !hasNewline && viewLine == mgr.viewLineCount() - 1 && m_doc.characterCount() > 0 ) {
+				painter.setPen(QColor(100, 160, 220, 0xc0));
+				painter.drawText(xEnd + 2, yBase, QStringLiteral("EOF"));
 			}
 		}
 	}
