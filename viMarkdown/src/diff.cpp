@@ -15,6 +15,7 @@
 #include <QTimer>
 #include <QPushButton>
 #include <QClipboard>
+#include <QStringDecoder>
 #include <vector>
 #include <utility>
 #include <assert.h>
@@ -33,7 +34,7 @@ CharType getCharType(QChar ch);
 bool isDummyLine(MarkdownEditor* editor, const QTextBlock &block) {
     const auto &vbn = editor->diffBlockNumbers();   // ← editor 自身の対応表を引く
     int bn = block.blockNumber();
-    return bn < vbn.size() && vbn[bn] < 0;
+    return bn >= 0 && bn < (int)vbn.size() && vbn[bn] < 0;
 }
 #else
 bool isDummyLine(MarkdownEditor* editor, const QTextBlock &block) {
@@ -59,8 +60,8 @@ int lineNumber(MarkdownEditor* editor, const QTextBlock &block) {
 int getDiff(MarkdownEditor*editor, const QTextBlock &block) {
     const auto &flgs = editor->diffFlags();
     int bn = block.blockNumber();
-    if( bn < flgs.size() )
-	    return editor->diffFlags()[block.blockNumber()];
+    if( bn >= 0 && bn < (int)flgs.size() )
+	    return flgs[bn];
     else
     	return 0;
     //return (block.userState() & 0x03);
@@ -71,10 +72,12 @@ bool hasDiff(MarkdownEditor*editor, const QTextBlock &block) {
 
 // ダミー行をセットする場合
 void setDummyLine(MarkdownEditor* editor, QTextBlock block) {
+    int bn = block.blockNumber();
+    if( bn < 0 ) return;
     auto &vbn = editor->diffBlockNumbers();
-    if( vbn.size() < block.blockNumber() + 1 )
-    	vbn.resize(block.blockNumber() + 1);
-    vbn[block.blockNumber()] = DUMMY_LINE_NUM;
+    if( (int)vbn.size() < bn + 1 )
+    	vbn.resize(bn + 1);
+    vbn[bn] = DUMMY_LINE_NUM;
     //block.setUserState(0);
 }
 
@@ -123,7 +126,8 @@ int visualLineCount(const QTextBlock &block, MarkdownEditor* editor) {
 	int vc = layout == nullptr ? 0 : layout->lineCount();
 	if( vc == 0 ) {
 #if 1
-		vc = block.document()->documentLayout()->blockBoundingRect(block).height() / editor->fontMetrics().lineSpacing();
+		int ls = qMax(1, editor->fontMetrics().lineSpacing());
+		vc = block.document()->documentLayout()->blockBoundingRect(block).height() / ls;
 #else
 		qreal width = block.document()->textWidth();
         if (width <= 0) {
@@ -402,8 +406,38 @@ std::vector<QString> extractLinesFromDocument(const QTextDocument *doc) {
         lines.push_back(block.text() /*+u'\n'*/);
     }
     //lines.back() += QChar(0xffff);
-    lines.back() += QString("\n")+ QChar(0xffff);		//	改行＋EOF
+    if (!lines.empty())
+        lines.back() += QString("\n")+ QChar(0xffff);		//	改行＋EOF
     return lines;
+}
+static bool readDiffPeerFile(const QString &fullPath, QString &content, QStringConverter::Encoding &encoding, bool &withBOM) {
+	QFile file(fullPath);
+	if (!file.open(QIODevice::ReadOnly))
+		return false;
+	QByteArray raw = file.readAll();
+	file.close();
+	withBOM = false;
+	auto bomEnc = QStringConverter::encodingForData(raw);
+	if (bomEnc.has_value()) {
+		encoding = bomEnc.value();
+		withBOM = true;
+		QStringDecoder dec(encoding);
+		content = dec(raw);
+	} else {
+		QStringDecoder utf8Dec(QStringConverter::Utf8);
+		QString decoded = utf8Dec(raw);
+		if (!utf8Dec.hasError()) {
+			encoding = QStringConverter::Utf8;
+			content = decoded;
+		} else {
+			encoding = QStringConverter::System;
+			QStringDecoder sysDec(encoding);
+			content = sysDec(raw);
+		}
+	}
+	content.replace("\r\n", "\n");
+	content.replace('\r', '\n');
+	return true;
 }
 bool MainWindow::confirmSaveDiffPeer(DocWidget *docWidget) {
 	if( docWidget == nullptr || docWidget->m_diffview == nullptr )
@@ -439,8 +473,8 @@ bool MainWindow::confirmSaveDiffPeer(DocWidget *docWidget) {
 			return false;
 		}
 		QTextStream out(&file);
-		out.setEncoding(docWidget->m_encoding);
-		out.setGenerateByteOrderMark(docWidget->m_withBOM);
+		out.setEncoding(docWidget->m_diffPeerEncoding);
+		out.setGenerateByteOrderMark(docWidget->m_diffPeerWithBOM);
 		MarkdownEditor *diffView = docWidget->m_diffview;
 		if( diffView->dummyInserted() ) {
 			QStringList lines;
@@ -474,16 +508,15 @@ void MainWindow::diffview_open() {		//	文書を選択して比較
 		"markdown file (*.md *.markdown);;text file(*.txt);;all(*.*)"	// フィルター
 	);
 	if( fullPath.isEmpty() ) return;
-	QFile file(fullPath);
-	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+	QString content;
+	QStringConverter::Encoding peerEnc = QStringConverter::Utf8;
+	bool peerBOM = false;
+	if (!readDiffPeerFile(fullPath, content, peerEnc, peerBOM)) {
 		QMessageBox::warning(this, tr("Error"), tr("Cannot open file:\n%1").arg(fullPath));
 		return;
 	}
-	QTextStream in(&file);
-	in.setAutoDetectUnicode(true); 
-    QString content = in.readAll();
-    //auto encoding = in.encoding();
-    file.close();
+    docWidget->m_diffPeerEncoding = peerEnc;
+    docWidget->m_diffPeerWithBOM = peerBOM;
     QFileInfo fi2(fullPath);
     docWidget->m_diffPeerFullPath = fullPath;
     docWidget->m_diffviewLabel->setText(docWidget->m_diffPeerTitle = fi2.fileName());
@@ -537,16 +570,15 @@ void MainWindow::do_diff(const QString &diffPeerFullPath) {
 	if( docWidget == nullptr ) return;
 	if( docWidget->m_diffMode && !confirmSaveDiffPeer(docWidget) )
 		return;
-	QFile file(diffPeerFullPath);
-	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+	QString content;
+	QStringConverter::Encoding peerEnc = QStringConverter::Utf8;
+	bool peerBOM = false;
+	if (!readDiffPeerFile(diffPeerFullPath, content, peerEnc, peerBOM)) {
 		QMessageBox::warning(this, tr("Error"), tr("Cannot open file:\n%1").arg(diffPeerFullPath));
 		return;
 	}
-	QTextStream in(&file);
-	in.setAutoDetectUnicode(true); 
-    QString content = in.readAll();
-    //auto encoding = in.encoding();
-    file.close();
+    docWidget->m_diffPeerEncoding = peerEnc;
+    docWidget->m_diffPeerWithBOM = peerBOM;
     QFileInfo fi2(diffPeerFullPath);
     docWidget->m_diffviewLabel->setText(docWidget->m_diffPeerTitle = fi2.fileName());
     docWidget->m_diffview->setDummyInserted(false);
@@ -1049,7 +1081,6 @@ void MainWindow::insertDummyLines(MarkdownEditor* editor, QTextCursor &cur, QTex
             editor->incNDummyLines();
             editor->diffBlockNumbers().push_back(DUMMY_LINE_NUM);
             editor->diffFlags().push_back(deleted ? DELETED_LINE : PADDING_LINE);
-            setDummyLine(editor, dummy);
             dummy = dummy.next();
         }
         block = dummy; // 押し出された元のテキストブロックを指すように更新
@@ -1060,7 +1091,6 @@ void MainWindow::insertDummyLines(MarkdownEditor* editor, QTextCursor &cur, QTex
             editor->incNDummyLines();
             editor->diffBlockNumbers().push_back(DUMMY_LINE_NUM);
             editor->diffFlags().push_back(deleted ? DELETED_LINE : PADDING_LINE);
-            setDummyLine(editor, dummy);
             dummy = dummy.next();
         }
         block = doc->end(); // 末尾のまま
@@ -1089,7 +1119,8 @@ void MainWindow::applyDeleteHunk(DocWidget* docWidget,
     QTextCursor &cur2, const std::vector<QString> &lines1) 
 {
 	//int endLn = diffLn + nAdd;
-    for (int ln = diffLn; ln < endLn; ++ln) {
+    for (int ln = diffLn; ln < endLn && block1.isValid(); ++ln) {
+        if (ln - 1 >= (int)lines1.size()) break;
         //if (ln - 1 < lines1.size())
         //    do_output(QString("- %1 0 '%2'\n").arg(ln).arg(lines1[ln - 1]));
 
@@ -1111,8 +1142,8 @@ void MainWindow::applyAddHunk(DocWidget* docWidget,
     QTextCursor &cur1, const std::vector<QString> &lines2) 
 {
 	//int endLn = diffLn + nDelete;
-    for (int ln = diffLn; ln < endLn; ++ln) {
-        if (ln - 1 >= lines2.size()) break;
+    for (int ln = diffLn; ln < endLn && block2.isValid(); ++ln) {
+        if (ln - 1 >= (int)lines2.size()) break;
         //do_output(QString("+ 0 %1 '%2'\n").arg(ln).arg(lines2[ln - 1]));
 
         setPhysicalLine(docWidget->m_diffview, block2, ++ln2, ADDED_LINE);
@@ -1148,7 +1179,7 @@ void MainWindow::applyModifyHunk(DocWidget* docWidget,
 
     // 左側の行属性設定と表示行数カウント
     int totalVc1 = 0;
-    for (int ln = diffLn1; ln < endLn1; ++ln) {
+    for (int ln = diffLn1; ln < endLn1 && block1.isValid(); ++ln) {
         setPhysicalLine(docWidget->m_editor, block1, ++ln1, MODIFIED_LINE);
         totalVc1 += qMax(1, visualLineCount(block1, docWidget->m_editor));
         block1 = block1.next();
@@ -1156,7 +1187,7 @@ void MainWindow::applyModifyHunk(DocWidget* docWidget,
 
     // 右側の行属性設定と表示行数カウント
     int totalVc2 = 0;
-    for (int ln = diffLn2; ln < endLn2; ++ln) {
+    for (int ln = diffLn2; ln < endLn2 && block2.isValid(); ++ln) {
         setPhysicalLine(docWidget->m_diffview, block2, ++ln2, MODIFIED_LINE);
         totalVc2 += qMax(1, visualLineCount(block2, docWidget->m_diffview));
         block2 = block2.next();
@@ -1200,12 +1231,10 @@ void MainWindow::applyDiffToDocuments(
         if (nDelete == 0 && nAdd == 0) return;
         if (nAdd == 0) {
             applyDeleteHunk(docWidget, diffLn1,
-            				endLn1,
-            				//nAdd,
+            				diffLn1 + nDelete,
             				ln1, block1, block2, cur2, lines1);
         } else if (nDelete == 0) {
-            applyAddHunk(docWidget, diffLn2, endLn2,
-            				//nDelete,
+            applyAddHunk(docWidget, diffLn2, diffLn2 + nAdd,
             				ln2, block1, block2, cur1, lines2);
         } else {
             applyModifyHunk(docWidget, diffLn1, endLn1,
@@ -1238,7 +1267,7 @@ void MainWindow::applyDiffToDocuments(
             break;
         }
     }
-    flush(doc1->blockCount() + 1, doc2->blockCount() + 1);
+    flush((int)lines1.size() + 1, (int)lines2.size() + 1);
 
     cur1.endEditBlock();
     cur2.endEditBlock();
@@ -1668,6 +1697,8 @@ void MainWindow::do_merge_file(const DiffFile &file, bool wrapRight) {
 	docWidget->m_diffview->document()->setModified(false);
 	docWidget->m_diffMode = true;
 	docWidget->m_diffPeerFullPath = fullPath;
+	docWidget->m_diffPeerEncoding = srcEncoding;
+	docWidget->m_diffPeerWithBOM = srcWithBOM;
 	docWidget->m_editor->setDiffMode(true);
 	docWidget->m_diffview->setDiffMode(true);
 	docWidget->m_editor->setHighlightDiff(true);

@@ -1581,14 +1581,14 @@ SPR# 状 P Open Close ver     Type  概要
 1567 ◎ C 11/26 11/26 03223│問題│viのCコマンドにopenUndoBlock()が抜けており削除と挿入が1回のUndoでまとめて戻らない（Gemini）
 1568 ◎ C 11/26 11/26 03223│問題│p/Pにm_isEditCommand設定や空行でのatBlockEnd判定、EOF行ペーストのUndoまとめが抜けている（Gemini）
 1569 ◎ C 11/26 11/26 03223│問題│i→Escの空挿入後にドットリピート(.)するとNormalモードに戻らずInsertモードに残留する（Gemini）
-1570 ● C 11/26            │問題│
-1571 ● C 11/26            │問題│
-1572 ● C 11/26            │問題│
-1573 ● C 11/26            │問題│
-1574 ● C 11/26            │問題│
-1575 ● C 11/26            │問題│
-1576 ● C 11/26            │問題│
-1577 ● C 11/26            │問題│
-1578 ● C 11/26            │問題│
+1570 ◎ C 11/26 11/26 03223│問題│do_global()経由のdo_exCmd()でm_inGlobal未判定のため:g実行時にコマンド履歴が大量破壊される（Gemini）
+1571 ◎ C 11/26 11/26 03223│問題│do_exCmd()の引数抽出が常にix+1から切るため空白無しの:e/pathや:cd..で先頭1文字が欠落する（Gemini）
+1572 ◎ C 11/26 11/26 03223│問題│do_subst()やdo_vi_search()等がg.m_ignoreCase設定を無視し大文字小文字区別が不統一になっている（Gemini）
+1573 ◎ C 11/26 11/26 03223│問題│diffモードの右ペインで/検索後にn/Nを押すと左ペイン固定のdo_find()が呼ばれフォーカスが飛ぶ（Gemini）
+1574 ◎ C 11/26 11/26 03223│問題│:p/:P/:nuコマンドがdiffモード時のダミー行を除外せずそのまま出力し物理行番号ともズレる（Gemini）
+1575 ◎ C 11/26 11/26 03223│問題│applyDiffToDocuments()末尾flush()がダミー行込み行数を渡し削除ハンクで範囲外クラッシュする（Gemini）
+1576 ◎ C 11/26 11/26 03223│問題│confirmSaveDiffPeer()が右ペインを左ペインの文字コード・BOMで保存しファイル形式を破壊する（Gemini）
+1577 ◎ C 11/26 11/26 03223│問題│isDummyLine()/getDiff()/setDummyLine()にbn>=0判定がなく無効ブロックで負インデックス参照する（Gemini）
+1578 ◎ C 11/26 11/26 03223│問題│extractLinesFromDocument()の空back()参照とvisualLineCount()のlineSpacing()ゼロ除算の恐れ（Gemini）
 1579 ● C 11/26            │問題│
 1580 ● C 11/26            │問題│

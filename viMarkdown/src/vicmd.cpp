@@ -644,8 +644,8 @@ void MainWindow::do_prefix_cmd(QChar cmd, QTextCursor& cursor, int rcnt, DocWidg
 		case 'b': {		// zb: カーソル行を画面最下行にする（カーソル位置はそのまま）
 			int blockNum = cursor.blockNumber();
 		    auto editor = gvi.m_editor;
-		    int visibleLines = editor->viewport()->height()
-		                     / editor->fontMetrics().height();
+		    int lineH = qMax(1, editor->fontMetrics().height());
+		    int visibleLines = editor->viewport()->height() / lineH;
 		    editor->verticalScrollBar()->setValue(qMax(0, blockNum - visibleLines + 1));
     		if( cmd.unicode() == u'-' ) hat(cursor);
 			break;
@@ -654,7 +654,8 @@ void MainWindow::do_prefix_cmd(QChar cmd, QTextCursor& cursor, int rcnt, DocWidg
 		case 'z': {		// zz: カーソル行を画面中央行にする（カーソル位置はそのまま）
 			auto editor = gvi.m_editor;
 		    int blockNum = cursor.blockNumber();
-		    int visibleLines = editor->viewport()->height() / editor->fontMetrics().height();
+		    int lineH = qMax(1, editor->fontMetrics().height());
+		    int visibleLines = editor->viewport()->height() / lineH;
 		    editor->verticalScrollBar()->setValue( qMax(0, blockNum - visibleLines / 2) );
     		if( cmd.unicode() == u'.' ) hat(cursor);
 			break;
@@ -1372,6 +1373,39 @@ doneW:
 	case 'n':
 	case 'N':
 		if( g.m_lastSearchedPat.isEmpty() ) return;
+		if( isEditor && docWidget->m_diffview != nullptr && targetEd == docWidget->m_diffview ) {
+			bool forward = (g.m_searchForward && cmd == 'n') || (!g.m_searchForward && cmd == 'N');
+			QTextDocument::FindFlags flags;
+			if( !forward ) flags |= QTextDocument::FindBackward;
+			if( !g.m_ignoreCase ) flags |= QTextDocument::FindCaseSensitively;
+			auto findInDoc = [&](int fromPos) -> QTextCursor {
+				if( g.m_regexp ) {
+					QRegularExpression::PatternOptions opts = g.m_ignoreCase
+						? QRegularExpression::CaseInsensitiveOption : QRegularExpression::NoPatternOption;
+					QRegularExpression rx(g.m_lastSearchedPat, opts);
+					return rx.isValid() ? doc->find(rx, fromPos, flags) : QTextCursor();
+				}
+				return doc->find(g.m_lastSearchedPat, fromPos, flags);
+			};
+			QTextCursor match;
+			if( forward ) {
+				int startPos = cursor.position() + 1;
+				if( startPos < doc->characterCount() )
+					match = findInDoc(startPos);
+				if( match.isNull() )
+					match = findInDoc(0);
+			} else {
+				match = findInDoc(cursor.position());
+				if( match.isNull() )
+					match = findInDoc(qMax(0, doc->characterCount() - 1));
+			}
+			if( !match.isNull() ) {
+				cursor.setPosition(match.anchor());
+			} else {
+				statusBar()->showMessage(tr("Pattern not found: %1").arg(g.m_lastSearchedPat), 5000);
+			}
+			break;
+		}
 		if( g.m_searchForward && cmd == 'n' || !g.m_searchForward && cmd == 'N' ) {
 			int pos0 = cursor.position();
 			cursor.movePosition(QTextCursor::Right);
@@ -1923,7 +1957,9 @@ int do_search_line(const QString &text, int &i, int currentLine, const QTextDocu
 	++i;
 	QTextBlock block = doc->findBlockByNumber(currentLine - 1);
 	if( !block.isValid() ) return -1;
-	QRegularExpression re(pat);
+	QRegularExpression::PatternOptions opts = g.m_ignoreCase
+		? QRegularExpression::CaseInsensitiveOption : QRegularExpression::NoPatternOption;
+	QRegularExpression re(pat, opts);
 	if( !re.isValid() ) return -1;
 	if( c == '/' ) {	//	順方向検索
 		if( !(block = block.next()).isValid() ) return -1;
@@ -2221,7 +2257,9 @@ void MainWindow::do_subst(const QString &text, int ix, QTextDocument* doc) {
 	//##qDebug() << "pat = " << pat;
 	//##qDebug() << "after = " << after;
 	//##qDebug() << "global = " << global;
-	QRegularExpression rx(pat);
+	QRegularExpression::PatternOptions opts = g.m_ignoreCase
+		? QRegularExpression::CaseInsensitiveOption : QRegularExpression::NoPatternOption;
+	QRegularExpression rx(pat, opts);
 	if (!rx.isValid()) {
 		statusBar()->showMessage(tr("Invalid regular expression."), 5000);
 		return;
@@ -2366,8 +2404,10 @@ void MainWindow::do_vi_search(const QString& text, QTextCursor& cursor, int rcnt
         statusBar()->showMessage(tr("No previous search pattern"), 5000);
         return;
     }
-    // 3. 正規表現オブジェクトの作成 (SmartcaseやIgnorecase相当として大文字小文字を区別しない設定)
-    QRegularExpression rx(pat, QRegularExpression::CaseInsensitiveOption);
+    // 3. 正規表現オブジェクトの作成 (g.m_ignoreCase 設定を反映)
+    QRegularExpression::PatternOptions opts = g.m_ignoreCase
+        ? QRegularExpression::CaseInsensitiveOption : QRegularExpression::NoPatternOption;
+    QRegularExpression rx(pat, opts);
     if (!rx.isValid()) {
         statusBar()->showMessage(tr("Invalid search pattern: %1").arg(rx.errorString()), 5000);
         return;
@@ -2606,8 +2646,9 @@ void MainWindow::do_exCmd(const QString &text, int ix, /*QString cmd, QChar nch,
 	QString cmd, arg;
 	while( ix < text.size() && text[ix].isLetter() ) cmd += text[ix++];
 	QChar nch = ix < text.size() ? text[ix] : u'\0';
-	if( ix < text.size() )
-		arg = text.mid(ix+1).trimmed();
+	int argIx = (nch == u'!') ? ix + 1 : ix;
+	if( argIx < text.size() )
+		arg = text.mid(argIx).trimmed();
 	//QChar nch;
 	//if( cmd.endsWith(u'!') ) {
 	//	nch = u'!';
@@ -2695,17 +2736,33 @@ void MainWindow::do_exCmd(const QString &text, int ix, /*QString cmd, QChar nch,
 			}
 		}
 	} else if( is_match(cmd, "p(rint") ) {
+		const bool isDiff = docWidget->m_diffMode && gvi.m_editor != nullptr && !gvi.m_editor->diffBlockNumbers().empty();
 		for(int ln = gvi.m_rangeStart; ln <= gvi.m_rangeEnd; ++ln) {
-			QTextBlock block = doc->findBlockByNumber(ln - 1);
+			int bn = ln - 1;
+			if( isDiff ) {
+				const auto &vbn = gvi.m_editor->diffBlockNumbers();
+				if( bn >= 0 && bn < (int)vbn.size() && vbn[bn] < 0 ) continue;
+			}
+			QTextBlock block = doc->findBlockByNumber(bn);
 			if( !block.isValid() ) break;
 			do_output(block.text() + "\n");
 		}
 	} else if( is_match(cmd, "P(RINT") || is_match(cmd, "nu(mber") ) {
+		const bool isDiff = docWidget->m_diffMode && gvi.m_editor != nullptr && !gvi.m_editor->diffBlockNumbers().empty();
 		do_output("\n\"" + docWidget->m_fullPath + "\"\n");
 		for(int ln = gvi.m_rangeStart; ln <= gvi.m_rangeEnd; ++ln) {
-			QTextBlock block = doc->findBlockByNumber(ln - 1);
+			int bn = ln - 1;
+			int dispLn = ln;
+			if( isDiff ) {
+				const auto &vbn = gvi.m_editor->diffBlockNumbers();
+				if( bn >= 0 && bn < (int)vbn.size() ) {
+					if( vbn[bn] < 0 ) continue;
+					dispLn = vbn[bn] + 1;
+				}
+			}
+			QTextBlock block = doc->findBlockByNumber(bn);
 			if( !block.isValid() ) break;
-			do_output(QString("%1:").arg(ln, 4) + block.text() + "\n");
+			do_output(QString("%1:").arg(dispLn, 4) + block.text() + "\n");
 		}
 	} else if( is_match(cmd, "s(ubstitute") ) {
 		do_subst(text, ix, doc);
@@ -2729,10 +2786,10 @@ void MainWindow::do_exCmd(const QString &text, int ix, /*QString cmd, QChar nch,
 	} else {
 		statusBar()->showMessage(tr("illegal command."), 5000);
 	}
-	gvi.m_exhist.push_front(text);
-	//if( gvi.m_exhist.isEmpty() ) gvi.m_exhist.resize(1);
-	//gvi.m_exhist[0] = text;
-	gvi.m_exhist_ix = -1;
+	if( !gvi.m_inGlobal ) {
+		gvi.m_exhist.push_front(text);
+		gvi.m_exhist_ix = -1;
+	}
 }
 void MainWindow::on_cmdLine_escape() {
 	//##qDebug() << "MainWindow::on_cmdLine_escape()";

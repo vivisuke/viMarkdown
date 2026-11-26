@@ -192,11 +192,13 @@ public:
 	QDateTime	m_lastFileMtime;	//	最後に読込・保存した時点のファイル更新時刻
 	qint64		m_lastFileSize = -1;//	最後に読込・保存した時点のファイルサイズ
 	bool	m_withBOM = true;		//	BOM付き
+	bool	m_diffPeerWithBOM = false;	//	diff 右ペイン BOM付き
 	bool	m_readOnly = false;
 	bool	m_opening = false;
 	bool	m_incrementalUpdating = false;
 	bool	m_isSyncingScroll = false;		// 再入防止フラグ
 	QStringConverter::Encoding m_encoding = QStringConverter::Utf8;
+	QStringConverter::Encoding m_diffPeerEncoding = QStringConverter::Utf8;
 	QString	m_title;				//	タブタイトル
 	QString	m_fullPath;
 	QString	m_diffPeerFullPath;		//	diff相手フルパス
