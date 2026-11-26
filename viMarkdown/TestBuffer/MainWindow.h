@@ -2,6 +2,7 @@
 
 #include <QtWidgets/QMainWindow>
 #include <QColor>
+#include <QPointer>
 #include "ui_MainWindow.h"
 
 QT_BEGIN_NAMESPACE
@@ -95,10 +96,12 @@ private:
     QLineEdit *m_cmdLine = nullptr;
     QChar m_cmdPrefix;
     bool m_incSearchActive = false;
+    QPointer<TextEdit> m_incSearchEdit;
     int m_incSearchOrigPos = 0;
     int m_incSearchOrigScroll = 0;
     QString m_incSearchOrigHighlight;
     QStringList m_exHist;
+    QStringList m_searchHist;
     int m_exHistIdx = -1;
     QString m_lastDir;
 };

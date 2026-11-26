@@ -20,10 +20,12 @@
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QSaveFile>
 #include <QScrollBar>
 #include <QSettings>
 #include <QSpinBox>
 #include <QSplitter>
+#include <QStringDecoder>
 #include <QTabWidget>
 #include <QTextCursor>
 #include <QTextEdit>
@@ -68,6 +70,46 @@ const QStringView KEY_VI_KEYBIND(u"editor/viKeybind");
 const QStringView KEY_WINDOW_GEOMETRY(u"window/geometry");
 const QStringView KEY_WINDOW_STATE(u"window/state");
 const char PROP_FILE_PATH[] = "filePath";
+const char PROP_ENCODING[] = "encoding";
+const char PROP_WITH_BOM[] = "withBOM";
+const char PROP_USE_CRLF[] = "useCRLF";
+
+bool readTextFileWithMeta(const QString &filePath, QString &content,
+                          QStringConverter::Encoding &encoding, bool &withBOM,
+                          bool &useCRLF, QString &errorMsg)
+{
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        errorMsg = file.errorString();
+        return false;
+    }
+    const QByteArray raw = file.readAll();
+    file.close();
+
+    withBOM = false;
+    const auto bomEnc = QStringConverter::encodingForData(raw);
+    if (bomEnc.has_value()) {
+        encoding = bomEnc.value();
+        withBOM = true;
+        QStringDecoder dec(encoding);
+        content = dec(raw);
+    } else {
+        QStringDecoder utf8Dec(QStringConverter::Utf8);
+        QString decoded = utf8Dec(raw);
+        if (!utf8Dec.hasError()) {
+            encoding = QStringConverter::Utf8;
+            content = decoded;
+        } else {
+            encoding = QStringConverter::System;
+            QStringDecoder sysDec(encoding);
+            content = sysDec(raw);
+        }
+    }
+    useCRLF = content.contains(QStringLiteral("\r\n"));
+    content.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+    content.replace(QChar('\r'), QChar('\n'));
+    return true;
+}
 
 void setColorButtonStyle(QPushButton *button, const QColor &color)
 {
@@ -162,14 +204,17 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->action_Redo, &QAction::triggered, this, &MainWindow::onRedo);
     connect(ui->action_Cut, &QAction::triggered, this, [this]() {
         if (QWidget *fw = QApplication::focusWidget()) {
+            if (auto *le = qobject_cast<QLineEdit *>(fw)) { le->cut(); return; }
             if (auto *prev = dynamic_cast<MarkdownPreview *>(fw)) { prev->cutToSource(); return; }
             if (auto *te = qobject_cast<QTextEdit *>(fw)) { te->cut(); return; }
+            if (qobject_cast<QPlainTextEdit *>(fw)) return;
         }
         if (TextEdit *edit = currentTextEdit())
             edit->cut();
     });
     connect(ui->action_Copy, &QAction::triggered, this, [this]() {
         if (QWidget *fw = QApplication::focusWidget()) {
+            if (auto *le = qobject_cast<QLineEdit *>(fw)) { le->copy(); return; }
             if (auto *te = qobject_cast<QTextEdit *>(fw)) { te->copy(); return; }
             if (auto *pte = qobject_cast<QPlainTextEdit *>(fw)) { pte->copy(); return; }
         }
@@ -178,14 +223,17 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(ui->action_Paste, &QAction::triggered, this, [this]() {
         if (QWidget *fw = QApplication::focusWidget()) {
+            if (auto *le = qobject_cast<QLineEdit *>(fw)) { le->paste(); return; }
             if (auto *prev = dynamic_cast<MarkdownPreview *>(fw)) { prev->pasteToSource(); return; }
             if (auto *te = qobject_cast<QTextEdit *>(fw)) { te->paste(); return; }
+            if (qobject_cast<QPlainTextEdit *>(fw)) return;
         }
         if (TextEdit *edit = currentTextEdit())
             edit->paste();
     });
     connect(ui->action_SelectAll, &QAction::triggered, this, [this]() {
         if (QWidget *fw = QApplication::focusWidget()) {
+            if (auto *le = qobject_cast<QLineEdit *>(fw)) { le->selectAll(); return; }
             if (auto *te = qobject_cast<QTextEdit *>(fw)) { te->selectAll(); return; }
             if (auto *pte = qobject_cast<QPlainTextEdit *>(fw)) { pte->selectAll(); return; }
         }
@@ -344,16 +392,19 @@ TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath
     });
     auto syncingCursor = std::make_shared<bool>(false);
     edit->setTextChangedCallback([this, splitter, edit, preview, syncingCursor]() {
-        const TextCursor tc = edit->textCursor();
-        const int curLine = edit->document()->lineMgr().lineAtPos(tc.position());
-        bool headingsChanged = true;
-        preview->updateMarkdown(edit->document(), curLine, &headingsChanged);
-        if (!*syncingCursor && edit->markdownHighlight()) {
-            *syncingCursor = true;
-            preview->setCursorFromSrcPos(
-                static_cast<int>(tc.position()),
-                tc.hasSelection() ? static_cast<int>(tc.anchor()) : -1);
-            *syncingCursor = false;
+        bool headingsChanged = false;
+        if (edit->markdownHighlight()) {
+            const TextCursor tc = edit->textCursor();
+            const int curLine = edit->document()->lineMgr().lineAtPos(tc.position());
+            headingsChanged = true;
+            preview->updateMarkdown(edit->document(), curLine, &headingsChanged);
+            if (!*syncingCursor) {
+                *syncingCursor = true;
+                preview->setCursorFromSrcPos(
+                    static_cast<int>(tc.position()),
+                    tc.hasSelection() ? static_cast<int>(tc.anchor()) : -1);
+                *syncingCursor = false;
+            }
         }
         if (headingsChanged)
             updateOutlineForTab(splitter);
@@ -428,7 +479,7 @@ TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath
             qreal frac = 0.0;
             if (preview->topSourceLine(srcLine, frac)) {
                 const ViewLineMgr &mgr = edit->document()->lineMgr();
-                const int clampedLine = qBound(0, srcLine, mgr.lineCount() - 1);
+                const int clampedLine = qBound(0, srcLine, qMax(0, mgr.lineCount() - 1));
                 const int firstVl = mgr.lineToViewLine(clampedLine);
                 const int nVl = mgr.viewLineCountIn(clampedLine);
                 const int targetVl = firstVl + qBound(0, static_cast<int>(frac * nVl), qMax(0, nVl - 1));
@@ -477,9 +528,14 @@ int MainWindow::findTabByFilePath(const QString &cleanPath) const
 {
     if (!m_tabWidget || cleanPath.isEmpty())
         return -1;
+#ifdef Q_OS_WIN
+    constexpr Qt::CaseSensitivity cs = Qt::CaseInsensitive;
+#else
+    constexpr Qt::CaseSensitivity cs = Qt::CaseSensitive;
+#endif
     for (int i = 0; i < m_tabWidget->count(); ++i) {
         QWidget *w = m_tabWidget->widget(i);
-        if (w && w->property(PROP_FILE_PATH).toString().compare(cleanPath, Qt::CaseInsensitive) == 0)
+        if (w && w->property(PROP_FILE_PATH).toString().compare(cleanPath, cs) == 0)
             return i;
     }
     return -1;
@@ -487,6 +543,10 @@ int MainWindow::findTabByFilePath(const QString &cleanPath) const
 
 void MainWindow::onCurrentTabChanged(int index)
 {
+    if (m_cmdLine && m_cmdLine->isVisible()) {
+        m_cmdLine->hide();
+        cancelViIncSearch();
+    }
     if (index < 0) {
         setWindowTitle(QStringLiteral("TestBuffer"));
         updateUndoRedoEnabled();
@@ -903,26 +963,73 @@ bool MainWindow::saveTab(int index, const QString &explicitPath)
         if (filePath.isEmpty())
             return false;
     }
-    if (isNewPath)
+    if (isNewPath) {
         filePath = QDir::cleanPath(QFileInfo(filePath).absoluteFilePath());
+        const int other = findTabByFilePath(filePath);
+        if (other >= 0 && other != index) {
+            QMessageBox::warning(this, tr("Save Error"),
+                tr("The file is already open in another tab:\n%1").arg(filePath));
+            return false;
+        }
+    }
 
-    QFile file(filePath);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+    const auto encoding = tab->property(PROP_ENCODING).isValid()
+        ? static_cast<QStringConverter::Encoding>(tab->property(PROP_ENCODING).toInt())
+        : QStringConverter::Utf8;
+    const bool withBOM = tab->property(PROP_WITH_BOM).isValid()
+        ? tab->property(PROP_WITH_BOM).toBool()
+        : false;
+#ifdef Q_OS_WIN
+    const bool defaultCRLF = true;
+#else
+    const bool defaultCRLF = false;
+#endif
+    const bool useCRLF = tab->property(PROP_USE_CRLF).isValid()
+        ? tab->property(PROP_USE_CRLF).toBool()
+        : defaultCRLF;
+
+    QString outText = edit->toPlainText();
+    if (useCRLF)
+        outText.replace(QChar('\n'), QStringLiteral("\r\n"));
+
+    QSaveFile file(filePath);
+    file.setDirectWriteFallback(true);
+    if (!file.open(QIODevice::WriteOnly)) {
         QMessageBox::warning(this, tr("Save Error"),
             tr("Could not save file:\n%1\n\n%2").arg(filePath, file.errorString()));
         return false;
     }
     QTextStream out(&file);
-    out << edit->toPlainText();
-    file.close();
+    out.setEncoding(encoding);
+    out.setGenerateByteOrderMark(withBOM);
+    out << outText;
+    out.flush();
+    if (out.status() != QTextStream::Ok || !file.commit()) {
+        QMessageBox::warning(this, tr("Save Error"),
+            tr("Could not save file:\n%1\n\n%2").arg(filePath, file.errorString()));
+        return false;
+    }
 
     if (isNewPath) {
         QFileInfo fi(filePath);
+        const bool isMarkdown = (fi.suffix().compare(QStringLiteral("md"), Qt::CaseInsensitive) == 0
+            || fi.suffix().compare(QStringLiteral("markdown"), Qt::CaseInsensitive) == 0);
         tab->setProperty(PROP_FILE_PATH, filePath);
         m_tabWidget->setTabText(index, fi.fileName());
         m_tabWidget->setTabToolTip(index, filePath);
         if (index == m_tabWidget->currentIndex())
             setWindowTitle(fi.fileName() + QStringLiteral(" - TestBuffer"));
+        edit->setMarkdownHighlight(isMarkdown);
+        if (auto *splitter = qobject_cast<QSplitter *>(tab)) {
+            if (auto *preview = dynamic_cast<MarkdownPreview *>(splitter->widget(1))) {
+                if (isMarkdown) {
+                    preview->document()->setBaseUrl(QUrl::fromLocalFile(fi.absolutePath() + QLatin1Char('/')));
+                    preview->setMarkdown(edit->document());
+                } else {
+                    preview->clear();
+                }
+            }
+        }
         updateOutlineForTab(tab);
         m_lastDir = fi.absolutePath();
         addToRecentFiles(filePath);
@@ -952,16 +1059,16 @@ bool MainWindow::openFile(const QString &filePath)
         return true;
     }
 
-    QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    QString text;
+    QStringConverter::Encoding encoding = QStringConverter::Utf8;
+    bool withBOM = false;
+    bool useCRLF = false;
+    QString errMsg;
+    if (!readTextFileWithMeta(filePath, text, encoding, withBOM, useCRLF, errMsg)) {
         QMessageBox::warning(this, tr("Open Error"),
-            tr("Could not open file:\n%1\n\n%2").arg(filePath, file.errorString()));
+            tr("Could not open file:\n%1\n\n%2").arg(filePath, errMsg));
         return false;
     }
-
-    QTextStream in(&file);
-    QString text = in.readAll();
-    file.close();
 
     const bool isMarkdown = (fi.suffix().compare(QStringLiteral("md"), Qt::CaseInsensitive) == 0
         || fi.suffix().compare(QStringLiteral("markdown"), Qt::CaseInsensitive) == 0);
@@ -984,6 +1091,11 @@ bool MainWindow::openFile(const QString &filePath)
         m_tabWidget->setTabToolTip(ix, cleanPath);
     } else {
         edit = addEditorTab(fi.fileName(), cleanPath);
+    }
+    if (QWidget *activeTab = m_tabWidget->currentWidget()) {
+        activeTab->setProperty(PROP_ENCODING, static_cast<int>(encoding));
+        activeTab->setProperty(PROP_WITH_BOM, withBOM);
+        activeTab->setProperty(PROP_USE_CRLF, useCRLF);
     }
 
     edit->setMarkdownHighlight(isMarkdown);
@@ -1123,9 +1235,11 @@ void MainWindow::openViCmdLine(QChar prefix)
     m_cmdPrefix = prefix;
     m_exHistIdx = -1;
     m_incSearchActive = false;
+    m_incSearchEdit.clear();
     if (prefix == QChar('/') || prefix == QChar('?')) {
         if (TextEdit *edit = currentTextEdit()) {
             m_incSearchActive = true;
+            m_incSearchEdit = edit;
             m_incSearchOrigPos = static_cast<int>(edit->textCursor().position());
             m_incSearchOrigScroll = edit->verticalScrollBar()->value();
             m_incSearchOrigHighlight = edit->searchHighlightPattern();
@@ -1142,7 +1256,7 @@ void MainWindow::onViCmdLineTextChanged(const QString &raw)
 {
     if (!m_incSearchActive || !m_cmdLine || !m_cmdLine->isVisible())
         return;
-    TextEdit *edit = currentTextEdit();
+    TextEdit *edit = m_incSearchEdit.data();
     if (!edit || raw.isEmpty())
         return;
     const QChar pref = raw[0];
@@ -1151,7 +1265,7 @@ void MainWindow::onViCmdLineTextChanged(const QString &raw)
     const QString pat = raw.mid(1);
     if (pat.isEmpty()) {
         TextCursor c = edit->textCursor();
-        c.setPosition(m_incSearchOrigPos);
+        c.setPosition(qBound(0, m_incSearchOrigPos, static_cast<int>(edit->document()->characterCount())));
         edit->setTextCursor(c);
         edit->verticalScrollBar()->setValue(m_incSearchOrigScroll);
         edit->setSearchHighlight(m_incSearchOrigHighlight);
@@ -1159,7 +1273,7 @@ void MainWindow::onViCmdLineTextChanged(const QString &raw)
     }
     if (!edit->viEngine()->previewSearch(edit, pat, pref == QChar('/'), m_incSearchOrigPos)) {
         TextCursor c = edit->textCursor();
-        c.setPosition(m_incSearchOrigPos);
+        c.setPosition(qBound(0, m_incSearchOrigPos, static_cast<int>(edit->document()->characterCount())));
         edit->setTextCursor(c);
         edit->verticalScrollBar()->setValue(m_incSearchOrigScroll);
     }
@@ -1170,13 +1284,14 @@ void MainWindow::cancelViIncSearch()
     if (!m_incSearchActive)
         return;
     m_incSearchActive = false;
-    if (TextEdit *edit = currentTextEdit()) {
+    if (TextEdit *edit = m_incSearchEdit.data()) {
         TextCursor c = edit->textCursor();
-        c.setPosition(m_incSearchOrigPos);
+        c.setPosition(qBound(0, m_incSearchOrigPos, static_cast<int>(edit->document()->characterCount())));
         edit->setTextCursor(c);
         edit->verticalScrollBar()->setValue(m_incSearchOrigScroll);
         edit->setSearchHighlight(m_incSearchOrigHighlight);
     }
+    m_incSearchEdit.clear();
 }
 
 void MainWindow::onViCmdLineReturn()
@@ -1184,7 +1299,9 @@ void MainWindow::onViCmdLineReturn()
     if (!m_cmdLine) return;
     QString raw = m_cmdLine->text();
     const bool wasIncSearch = m_incSearchActive;
+    TextEdit *incEdit = m_incSearchEdit.data();
     m_incSearchActive = false;
+    m_incSearchEdit.clear();
     m_cmdLine->hide();
     TextEdit *edit = currentTextEdit();
     if (edit)
@@ -1196,20 +1313,22 @@ void MainWindow::onViCmdLineReturn()
     const QChar pref = raw[0];
     const QString body = (pref == QChar(':') || pref == QChar('/') || pref == QChar('?')) ? raw.mid(1) : raw;
     if (!body.isEmpty()) {
-        m_exHist.removeAll(raw);
-        m_exHist.push_front(raw);
-        while (m_exHist.size() > 50) m_exHist.pop_back();
+        QStringList &hist = (pref == QChar('/') || pref == QChar('?')) ? m_searchHist : m_exHist;
+        hist.removeAll(raw);
+        hist.push_front(raw);
+        while (hist.size() > 50) hist.pop_back();
     }
 
     if (pref == QChar('/') || pref == QChar('?')) {
-        if (!edit) return;
+        TextEdit *target = incEdit ? incEdit : edit;
+        if (!target) return;
         if (!body.isEmpty()) {
             if (wasIncSearch) {
-                TextCursor c = edit->textCursor();
-                c.setPosition(m_incSearchOrigPos);
-                edit->setTextCursor(c);
+                TextCursor c = target->textCursor();
+                c.setPosition(qBound(0, m_incSearchOrigPos, static_cast<int>(target->document()->characterCount())));
+                target->setTextCursor(c);
             }
-            edit->viEngine()->search(edit, body, pref == QChar('/'));
+            target->viEngine()->search(target, body, pref == QChar('/'));
         }
         return;
     }
@@ -1278,7 +1397,19 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
                 setFocus();
             return true;
         }
-        if (ke->key() == Qt::Key_Backspace && m_cmdLine->text().size() <= 1) {
+        const bool willClearAll = m_cmdLine->hasSelectedText()
+            && m_cmdLine->selectionStart() == 0
+            && m_cmdLine->selectedText().size() >= m_cmdLine->text().size();
+        if ((ke->key() == Qt::Key_Backspace && (m_cmdLine->text().size() <= 1 || willClearAll))
+            || (ke->key() == Qt::Key_Delete && willClearAll)) {
+#ifdef Q_OS_WIN
+            if (HWND hwnd = reinterpret_cast<HWND>(effectiveWinId())) {
+                if (HIMC himc = ImmGetContext(hwnd)) {
+                    ImmSetOpenStatus(himc, FALSE);
+                    ImmReleaseContext(hwnd, himc);
+                }
+            }
+#endif
             m_cmdLine->hide();
             cancelViIncSearch();
             if (TextEdit *edit = currentTextEdit())
@@ -1287,15 +1418,16 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
                 setFocus();
             return true;
         }
-        if (ke->key() == Qt::Key_Up && !m_exHist.isEmpty()) {
-            m_exHistIdx = qMin(m_exHistIdx + 1, static_cast<int>(m_exHist.size()) - 1);
-            m_cmdLine->setText(m_exHist[m_exHistIdx]);
+        const QStringList &hist = (m_cmdPrefix == QChar('/') || m_cmdPrefix == QChar('?')) ? m_searchHist : m_exHist;
+        if (ke->key() == Qt::Key_Up && !hist.isEmpty()) {
+            m_exHistIdx = qMin(m_exHistIdx + 1, static_cast<int>(hist.size()) - 1);
+            m_cmdLine->setText(hist[m_exHistIdx]);
             return true;
         }
         if (ke->key() == Qt::Key_Down) {
             if (m_exHistIdx > 0) {
                 --m_exHistIdx;
-                m_cmdLine->setText(m_exHist[m_exHistIdx]);
+                m_cmdLine->setText(hist[m_exHistIdx]);
             } else {
                 m_exHistIdx = -1;
                 m_cmdLine->setText(QString(m_cmdPrefix));
@@ -1559,6 +1691,8 @@ void MainWindow::onAction_About() {
 }
 MainWindow::~MainWindow()
 {
+    if (m_tabWidget)
+        m_tabWidget->disconnect(this);
     delete ui;
 }
 

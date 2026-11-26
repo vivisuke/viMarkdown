@@ -78,7 +78,17 @@ SPR# 状 P Open  Close ver   Type  概要
 0074 ● B 11/25           │問題│プレビュー：リスト・チェックボックス・連番行 行末改行挿入時スマートリストが効かない
 0075 ◎ B 11/25 11/25 0001│問題│U で undo された編集操作を再実行されない
 0076 ◎ C 11/25 11/26 0001│ToDo│文字挿入・削除時：差分更新
-0077 ● C 11/25           │ToDo│
-0078 ● C 11/25           │ToDo│
-0079 ● C 11/25           │ToDo│
-0080 ● C 11/25           │ToDo│
+0077 ◎ C 11/27 11/27 0001│ToDo│TestBufferのsaveTab()がflush前closeや書込エラー未確認・非QSaveFileのため保存失敗でデータ消失する（ChatGPT）
+0078 ◎ C 11/27 11/27 0001│ToDo│TestBufferのsetTextChangedCallback()がmarkdownHighlight()未確認のため非MD編集時にプレビュー起動（Gemini）
+0079 ◎ C 11/27 11/27 0001│ToDo│TestBufferのCut/Copy/Paste等がm_cmdLine/OutputBarフォーカス時に裏のエディタ本文を誤編集する（Gemini）
+0080 ◎ C 11/27 11/27 0001│ToDo│TestBufferのインクリメンタル検索退避が単一メンバかつ履歴混在のためタブ切替やUpキーで誤動作する（Gemini）
+0081 ◎ C 11/27 11/27 0001│ToDo│TestBufferのsaveTab()/openFile()で初回.md保存後のbaseUrl未更新や文字コード・BOM保持が抜けている（Muse）
+0082 ● C 11/27           │ToDo│
+0083 ● C 11/27           │ToDo│
+0084 ● C 11/27           │ToDo│
+0085 ● C 11/27           │ToDo│
+0086 ● C 11/27           │ToDo│
+0087 ● C 11/27           │ToDo│
+0088 ● C 11/27           │ToDo│
+0089 ● C 11/27           │ToDo│
+0090 ● C 11/27           │ToDo│
