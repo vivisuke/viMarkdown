@@ -348,6 +348,8 @@ void MainWindow::save_settings() {
     settings.setValue(KEY_NUM_HIGH_FIRE, g.m_numOfHighFire);
     settings.setValue(KEY_EDITOR_FONT_SIZE, g.m_editorFontSize);
     settings.setValue(KEY_PREVIEW_FONT_SIZE, g.m_previewFontSize);
+    settings.setValue(KEY_ACTIVA_LINE_COLOR, g.m_activeLnColor);
+    settings.setValue(KEY_INACTIVA_LINE_COLOR, g.m_inactiveLnColor);
     settings.setValue(KEY_HEADINGS_COLOR, g.m_headingsColor);
     settings.setValue(KEY_BOLD_ITALIC_COLOR, g.m_boldItalicColor);
     settings.setValue(KEY_BOLD_COLOR, g.m_boldColor);
@@ -598,7 +600,6 @@ void MainWindow::do_grep(const QString &searchText, const QString &dirPath, bool
     while (it.hasNext()) {
         it.next();
         QFileInfo fileInfo = it.fileInfo();
-		qDebug() << fileInfo.filePath();
 		//if( fileInfo.isDir() ) {
         //	continue;
         //}
@@ -2607,43 +2608,8 @@ bool MainWindow::confirmAndSave(DocWidget *docWidget) {
 	if( docWidget->m_diffMode && docWidget->m_diffview != nullptr && docWidget->m_diffview->document()->isModified() ) {
 		if( ix >= 0 )
 			ui->tabWidget->setCurrentIndex(ix);
-		QString path = docWidget->m_diffPeerFullPath;
-		QString name = path.isEmpty() ? docWidget->m_diffPeerTitle : path;
-		QString mess = QString(tr("The document '%1' has been modified.\nDo you want to save your changes ?")).arg(name);
-		QMessageBox::StandardButton reply = QMessageBox::question(this,
-							  tr("Confirm save"),
-							  mess,
-							  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
-		if (reply == QMessageBox::Yes) {
-			if( path.isEmpty() ) {
-				path = QFileDialog::getSaveFileName(
-							this,
-							"Save File",
-							QString(),
-							"markdown (*.md)",
-							nullptr,
-							QFileDialog::DontUseNativeDialog
-						);
-				if( path.isEmpty() ) return false;
-				if( QFileInfo(path).suffix().isEmpty() ) path += ".md";
-				docWidget->m_diffPeerFullPath = path;
-			}
-			docWidget->m_diffview->removeAllDummyLines();
-			QFile file(path);
-			if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-				QTextStream out(&file);
-				out.setEncoding(docWidget->m_encoding);
-				out.setGenerateByteOrderMark(docWidget->m_withBOM);
-				out << docWidget->m_diffview->toPlainText();
-				file.close();
-				docWidget->m_diffview->document()->setModified(false);
-			} else {
-				QMessageBox::warning(this, tr("Error"), tr("Cannot write file:\n%1").arg(path));
-				return false;
-			}
-		} else if (reply == QMessageBox::Cancel) {
+		if( !confirmSaveDiffPeer(docWidget) )
 			return false;
-		}
 	}
 	return true;
 }
@@ -2998,6 +2964,8 @@ void MainWindow::onAction_Checkbox() {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
 	MarkdownEditor *mdEditor = docWidget->m_editor;
+	if( docWidget->m_diffMode && QApplication::focusWidget() == docWidget->m_diffview )
+		mdEditor = docWidget->m_diffview;
 	bool hadSelection = mdEditor->textCursor().hasSelection();
 	QTextBlock startBlock, endBlock;
 	if( !resolveLineBlockRange(docWidget, mdEditor, startBlock, endBlock) ) return;
@@ -3053,6 +3021,8 @@ void MainWindow::onAction_List() {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
 	MarkdownEditor *mdEditor = docWidget->m_editor;
+	if( docWidget->m_diffMode && QApplication::focusWidget() == docWidget->m_diffview )
+		mdEditor = docWidget->m_diffview;
 	bool hadSelection = mdEditor->textCursor().hasSelection();
 	QTextBlock startBlock, endBlock;
 	if( !resolveLineBlockRange(docWidget, mdEditor, startBlock, endBlock) ) return;
@@ -3108,6 +3078,8 @@ void MainWindow::onAction_NumList() {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
 	MarkdownEditor *mdEditor = docWidget->m_editor;
+	if( docWidget->m_diffMode && QApplication::focusWidget() == docWidget->m_diffview )
+		mdEditor = docWidget->m_diffview;
 	bool hadSelection = mdEditor->textCursor().hasSelection();
 	QTextBlock startBlock, endBlock;
 	if( !resolveLineBlockRange(docWidget, mdEditor, startBlock, endBlock) ) return;
@@ -3193,6 +3165,8 @@ void MainWindow::insertInline(const QString& delimiter) {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
 	MarkdownEditor *mdEditor = docWidget->m_editor;
+	if( docWidget->m_diffMode && QApplication::focusWidget() == docWidget->m_diffview )
+		mdEditor = docWidget->m_diffview;
 	QTextCursor cursor = mdEditor->textCursor();
 	if (cursor.hasSelection()) {
 		// 2. 複数行にまたがっているかチェック
@@ -3294,6 +3268,8 @@ void MainWindow::onAction_Heading() {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
 	MarkdownEditor *editor = docWidget->m_editor;
+	if( docWidget->m_diffMode && QApplication::focusWidget() == docWidget->m_diffview )
+		editor = docWidget->m_diffview;
 	QTextCursor cursor = editor->textCursor();
 	const QString buf = cursor.block().text();
 	cursor.movePosition(QTextCursor::StartOfBlock);
@@ -3314,7 +3290,7 @@ void MainWindow::onAction_Heading() {
 			//cursor.deleteChar();
 		}
 	}
-	docWidget->m_editor->setTextCursor(cursor);
+	editor->setTextCursor(cursor);
 }
 void MainWindow::onAction_Bold() {
 	insertInline("**");
@@ -3799,11 +3775,14 @@ void MainWindow::onMdEditCurPosChanged() {
 	}
 #endif
 }
-//	パスワードが正規パスワードと一致するか照合する
+//	パスワードの SHA-256 ハッシュを返す
+static QString hashAuthPassword(const QString& password) {
+	return QString::fromLatin1(QCryptographicHash::hash(password.toUtf8(), QCryptographicHash::Sha256).toHex());
+}
+//	パスワード（または保存済みハッシュ）が正規パスワードと一致するか照合する
 bool checkAuthPassword(const QString& password) {
 	static const QString PASSWORD_HASH = QStringLiteral("acf1983a74876e026faca476a03b7fc21dd85ce24aad212a1b7672602de9b776");		//	done: 正規パスワードのハッシュ
-	QString hash = QString::fromLatin1(QCryptographicHash::hash(password.toUtf8(), QCryptographicHash::Sha256).toHex());
-	return hash == PASSWORD_HASH;
+	return password == PASSWORD_HASH || hashAuthPassword(password) == PASSWORD_HASH;
 }
 
 void MainWindow::onAction_UserAuth() {
@@ -3814,16 +3793,13 @@ void MainWindow::onAction_UserAuth() {
 	if( dlg.exec() != QDialog::Accepted ) return;
 	if( g.m_userType == UT_COMMERCIAL ) {
 		//	商用ユーザの場合はパスワード照合
-		//static const QString PASSWORD_HASH = QStringLiteral("dea57880e02b5a6aca5c1eec6f09305010af19f0e5a534c7c467bd06cb6f3fcd");		//	undone: 正規パスワードのハッシュに置き換える（現在は試用文字列のもの）
-		//QString hash = QString::fromLatin1(QCryptographicHash::hash(dlg.password().toUtf8(), QCryptographicHash::Sha256).toHex());
-		//if( hash != PASSWORD_HASH )
 		if( !checkAuthPassword(dlg.password()) )
 		{
 			QMessageBox::warning(this, tr("User Authentication"), tr("Incorrect password."));
 			g.m_userType = prevUserType;		//	認証失敗時は種別を元に戻す
 			return;
 		}
-		g.m_authPassword = dlg.password();		//	認証成功時のみパスワードを保持
+		g.m_authPassword = hashAuthPassword(dlg.password());		//	認証成功時はハッシュ値のみ保持・保存
 		QMessageBox::information(this, tr("User Authentication"), tr("You have been authenticated as a legitimate user."));
 	}
 	save_settings();		//	設定を全て保存
