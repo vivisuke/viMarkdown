@@ -901,6 +901,37 @@ bool ViEngine::searchNext(TextEdit *edit, bool sameDir, int count)
 	return ok;
 }
 
+static QString smartListPrefix(const TextDocument &doc, int ln)
+{
+	const ViewLineMgr &mgr = doc.lineMgr();
+	const LineMgr::LineType lt = mgr.lineType(ln);
+	if( lt != LineMgr::LT_LIST && lt != LineMgr::LT_CHECKBOX && lt != LineMgr::LT_NUM_LIST )
+		return QString();
+	QString lineText = doc.findBlockByNumber(ln).text();
+	if( lineText.endsWith(QChar('\n')) ) lineText.chop(1);
+	if( lineText.endsWith(QChar('\r')) ) lineText.chop(1);
+	qsizetype i = 0;
+	while( i < lineText.size() && (lineText[i] == QChar(' ') || lineText[i] == QChar('\t')) )
+		++i;
+	if( lt == LineMgr::LT_NUM_LIST ) {
+		qsizetype d = i;
+		while( d < lineText.size() && lineText[d] >= QChar('0') && lineText[d] <= QChar('9') )
+			++d;
+		if( d > i && d + 2 <= lineText.size() && lineText[d] == QChar('.')
+			&& (lineText[d + 1] == QChar(' ') || lineText[d + 1] == QChar('\t')) ) {
+			return lineText.left(i) + QStringLiteral("1. ");
+		}
+		return QString();
+	}
+	const qsizetype markerLen = (lt == LineMgr::LT_CHECKBOX) ? 6 : 2;
+	if( i + markerLen <= lineText.size() ) {
+		return (lt == LineMgr::LT_CHECKBOX)
+			? (lineText.left(i + 2) + QStringLiteral("[ ] "))
+			: lineText.left(i + 2);
+	}
+	return QString();
+}
+
 bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 {
 	if( !m_enabled || !edit )
@@ -1360,15 +1391,17 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 	}
 	case 'o': {
 		const TextDocument::pos_t lineEnd = mgr.lineEndPos(curLine);
-		edit->applyPreviewEdit(static_cast<int>(lineEnd), static_cast<int>(lineEnd), QStringLiteral("\n"));
+		const QString prefix = edit->markdownHighlight() ? smartListPrefix(*doc, curLine) : QString();
+		edit->applyPreviewEdit(static_cast<int>(lineEnd), static_cast<int>(lineEnd), QStringLiteral("\n") + prefix);
 		setMode(ViMode::Insert, edit);
 		return true;
 	}
 	case 'O': {
 		const TextDocument::pos_t lineStart = mgr.lineStartPos(curLine);
-		edit->applyPreviewEdit(static_cast<int>(lineStart), static_cast<int>(lineStart), QStringLiteral("\n"));
+		const QString prefix = edit->markdownHighlight() ? smartListPrefix(*doc, curLine) : QString();
+		edit->applyPreviewEdit(static_cast<int>(lineStart), static_cast<int>(lineStart), prefix + QStringLiteral("\n"));
 		TextCursor c = edit->textCursor();
-		c.setPosition(lineStart);
+		c.setPosition(lineStart + static_cast<TextDocument::pos_t>(prefix.size()));
 		edit->setTextCursor(c);
 		setMode(ViMode::Insert, edit);
 		return true;
