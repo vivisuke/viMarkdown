@@ -405,6 +405,16 @@ MainWindow::MainWindow(QWidget *parent)
         const QString pat = m_searchRegExp ? QRegularExpression::escape(word) : word;
         runToolbarSearch(pat, true);
     });
+    QAction *actClearHL = searchMenu->addAction(tr("&Clear Search Highlight"));
+    actClearHL->setShortcut(QKeySequence(Qt::ALT | Qt::Key_F3));
+    connect(actClearHL, &QAction::triggered, this, [this]() {
+        if (TextEdit *edit = currentTextEdit())
+            edit->clearSearchHighlight();
+        if (m_searchCB) {
+            QSignalBlocker sb(m_searchCB);
+            m_searchCB->clearEditText();
+        }
+    });
     searchMenu->addSeparator();
     QAction *actReplace = searchMenu->addAction(tr("&Replace..."));
     actReplace->setShortcut(QKeySequence(Qt::Key_F4));
@@ -1257,6 +1267,7 @@ bool MainWindow::saveTab(int index, const QString &explicitPath)
                 if (isMarkdown) {
                     preview->document()->setBaseUrl(QUrl::fromLocalFile(fi.absolutePath() + QLatin1Char('/')));
                     preview->setMarkdown(edit->document());
+                    edit->updateSearchMarkers();
                 } else {
                     preview->clear();
                 }
@@ -1337,6 +1348,7 @@ bool MainWindow::openFile(const QString &filePath)
         if (isMarkdown) {
             preview->document()->setBaseUrl(QUrl::fromLocalFile(fi.absolutePath() + QLatin1Char('/')));
             preview->setMarkdown(edit->document());
+            edit->updateSearchMarkers();
             edit->viewport()->update();
         } else {
             preview->clear();

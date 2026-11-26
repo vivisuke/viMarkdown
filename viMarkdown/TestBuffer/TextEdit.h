@@ -62,6 +62,7 @@ public:
 
 	void setSearchHighlight(const QString &pattern, bool ignoreCase = false, bool useRegExp = true);
 	void clearSearchHighlight();
+	void updateSearchMarkers();
 	QString searchHighlightPattern() const { return m_searchHighlightPat; }
 	QString wordAtCursor() const;
 
@@ -130,7 +131,6 @@ private:
 	void selectLogicalLineRange(int anchorLine, int curLine);
 	void wordBoundsAt(TextDocument::pos_t pos, TextDocument::pos_t &outStart, TextDocument::pos_t &outEnd) const;
 	void updateScrollBars();
-	void updateSearchMarkers();
 	void updateWrapWidth();
 	void ensureCursorVisible();
 	void updateLineNumberAreaGeometry();

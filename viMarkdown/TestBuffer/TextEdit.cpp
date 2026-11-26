@@ -37,13 +37,18 @@ public:
 	explicit SearchMarkerScrollBar(QWidget *parent = nullptr)
 		: QScrollBar(Qt::Vertical, parent) {}
 
-	void setMarkers(QVector<int> viewLines, int totalViewLines) {
-		m_viewLines = std::move(viewLines);
+	void setMarkers(QVector<int> headingViewLines, const QColor &headingColor,
+	                QVector<int> searchViewLines, const QColor &searchColor, int totalViewLines) {
+		m_headingViewLines = std::move(headingViewLines);
+		m_headingColor = headingColor;
+		m_viewLines = std::move(searchViewLines);
+		m_searchColor = searchColor;
 		m_totalViewLines = totalViewLines;
 		update();
 	}
 	void clearMarkers() {
-		if( m_viewLines.isEmpty() ) return;
+		if( m_headingViewLines.isEmpty() && m_viewLines.isEmpty() ) return;
+		m_headingViewLines.clear();
 		m_viewLines.clear();
 		m_totalViewLines = 0;
 		update();
@@ -52,7 +57,7 @@ public:
 protected:
 	void paintEvent(QPaintEvent *event) override {
 		QScrollBar::paintEvent(event);
-		if( m_viewLines.isEmpty() || m_totalViewLines <= 0 )
+		if( (m_headingViewLines.isEmpty() && m_viewLines.isEmpty()) || m_totalViewLines <= 0 )
 			return;
 		QStyleOptionSlider opt;
 		initStyleOption(&opt);
@@ -60,20 +65,41 @@ protected:
 		if( groove.height() <= 0 || groove.width() <= 4 )
 			return;
 		QPainter p(this);
-		const QColor markerColor(0xE8, 0xB8, 0x00, 0xF0);	//	明るめゴールドイエロー
 		const int x = groove.left() + 2;
 		const int w = groove.width() - 4;
-		int lastY = -100;
-		for( int vl : m_viewLines ) {
-			const int y = groove.top() + static_cast<int>((static_cast<qint64>(vl) * groove.height()) / m_totalViewLines);
-			if( y <= lastY + 1 ) continue;
-			lastY = y;
-			p.fillRect(x, qBound(groove.top(), y, groove.bottom() - 2), w, 3, markerColor);
+		if( !m_headingViewLines.isEmpty() ) {
+			QColor hCol = m_headingColor.isValid() ? m_headingColor : QColor(0x80, 0x00, 0x00);
+			hCol.setAlpha(0xC0);
+			int lastY = -100;
+			for( int vl : m_headingViewLines ) {
+				const int y = groove.top() + static_cast<int>((static_cast<qint64>(vl) * groove.height()) / m_totalViewLines);
+				if( y <= lastY + 1 ) continue;
+				lastY = y;
+				p.fillRect(x, qBound(groove.top(), y, groove.bottom() - 1), w, 2, hCol);
+			}
+		}
+		if( !m_viewLines.isEmpty() ) {
+			QColor base = m_searchColor.isValid() ? m_searchColor : QColor(0xFF, 0xF5, 0x9D);
+			int h = 0, s = 0, v = 0, a = 255;
+			base.getHsv(&h, &s, &v, &a);
+			const QColor markerColor = (h >= 0)
+				? QColor::fromHsv(h, qMin(255, s + 130), qMax(0, v - 25), 0xF0)
+				: base.darker(130);
+			int lastY = -100;
+			for( int vl : m_viewLines ) {
+				const int y = groove.top() + static_cast<int>((static_cast<qint64>(vl) * groove.height()) / m_totalViewLines);
+				if( y <= lastY + 1 ) continue;
+				lastY = y;
+				p.fillRect(x, qBound(groove.top(), y, groove.bottom() - 2), w, 3, markerColor);
+			}
 		}
 	}
 
 private:
+	QVector<int> m_headingViewLines;
+	QColor m_headingColor = QColor(0x80, 0x00, 0x00);
 	QVector<int> m_viewLines;
+	QColor m_searchColor = QColor(0xFF, 0xF5, 0x9D);
 	int m_totalViewLines = 0;
 };
 
@@ -238,8 +264,7 @@ void TextEdit::setPlainText(const QString &text)
 	verticalScrollBar()->setValue(0);
 	updateWrapWidth();
 	updateScrollBars();
-	if( !m_searchHighlightPat.isEmpty() )
-		updateSearchMarkers();
+	updateSearchMarkers();
 	viewport()->update();
 	m_lineNumberArea->update();
 }
@@ -270,8 +295,7 @@ void TextEdit::setEditorFont(const QFont &f)
 	updateLineNumberAreaGeometry();
 	updateWrapWidth();
 	updateScrollBars();
-	if( !m_searchHighlightPat.isEmpty() )
-		updateSearchMarkers();
+	updateSearchMarkers();
 	viewport()->update();
 	m_lineNumberArea->update();
 }
@@ -280,6 +304,7 @@ void TextEdit::setMarkdownHighlight(bool enabled)
 {
 	if( m_markdownHighlight == enabled ) return;
 	m_markdownHighlight = enabled;
+	updateSearchMarkers();
 	viewport()->update();
 }
 
@@ -287,6 +312,7 @@ void TextEdit::setHeadingColor(const QColor &color)
 {
 	if( !color.isValid() || m_headingColor == color ) return;
 	m_headingColor = color;
+	updateSearchMarkers();
 	viewport()->update();
 }
 
@@ -308,6 +334,7 @@ void TextEdit::setSearchMatchColor(const QColor &color)
 {
 	if( !color.isValid() || m_searchMatchColor == color ) return;
 	m_searchMatchColor = color;
+	updateSearchMarkers();
 	viewport()->update();
 }
 
@@ -342,7 +369,8 @@ void TextEdit::updateSearchMarkers()
 {
 	auto *sb = dynamic_cast<SearchMarkerScrollBar *>(verticalScrollBar());
 	if( !sb ) return;
-	if( m_searchHighlightPat.isEmpty() || !m_searchHighlightRe.isValid() ) {
+	const bool hasSearch = !m_searchHighlightPat.isEmpty() && m_searchHighlightRe.isValid();
+	if( !m_markdownHighlight && !hasSearch ) {
 		sb->clearMarkers();
 		return;
 	}
@@ -352,17 +380,26 @@ void TextEdit::updateSearchMarkers()
 		sb->clearMarkers();
 		return;
 	}
+	QVector<int> headingVLines;
 	QVector<int> matchVLines;
 	const int nLines = mgr.lineCount();
 	for( int ln = 0; ln < nLines; ++ln ) {
 		if( mgr.isLineHidden(ln) ) continue;
-		QString text = m_doc.findBlockByNumber(ln).text();
-		if( text.endsWith(QChar('\n')) ) text.chop(1);
-		if( text.isEmpty() ) continue;
-		if( m_searchHighlightRe.match(text).hasMatch() )
-			matchVLines.push_back(mgr.lineToViewLine(ln));
+		const bool isH = m_markdownHighlight && mgr.lineType(ln) == LineMgr::LT_HEADING;
+		bool isM = false;
+		if( hasSearch ) {
+			QString text = m_doc.findBlockByNumber(ln).text();
+			if( text.endsWith(QChar('\n')) ) text.chop(1);
+			if( !text.isEmpty() && m_searchHighlightRe.match(text).hasMatch() )
+				isM = true;
+		}
+		if( isH || isM ) {
+			const int vl = mgr.lineToViewLine(ln);
+			if( isH ) headingVLines.push_back(vl);
+			if( isM ) matchVLines.push_back(vl);
+		}
 	}
-	sb->setMarkers(std::move(matchVLines), totalVLines);
+	sb->setMarkers(std::move(headingVLines), m_headingColor, std::move(matchVLines), m_searchMatchColor, totalVLines);
 }
 
 QString TextEdit::wordAtCursor() const
@@ -927,6 +964,7 @@ void TextEdit::notifyTextChanged()
 void TextEdit::refreshAfterFold()
 {
 	updateScrollBars();
+	updateSearchMarkers();
 	ensureCursorVisible();
 	viewport()->update();
 	m_lineNumberArea->update();
@@ -1079,7 +1117,7 @@ void TextEdit::afterChange(bool textChanged)
 {
 	if( textChanged && m_onTextChanged )
 		m_onTextChanged();
-	if( textChanged && !m_searchHighlightPat.isEmpty() )
+	if( textChanged )
 		updateSearchMarkers();
 	if( hasFocus() && m_blinkTimer ) {
 		m_caretVisible = true;
