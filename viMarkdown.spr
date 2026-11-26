@@ -1590,5 +1590,15 @@ SPR# 状 P Open Close ver     Type  概要
 1576 ◎ C 11/26 11/26 03223│問題│confirmSaveDiffPeer()が右ペインを左ペインの文字コード・BOMで保存しファイル形式を破壊する（Gemini）
 1577 ◎ C 11/26 11/26 03223│問題│isDummyLine()/getDiff()/setDummyLine()にbn>=0判定がなく無効ブロックで負インデックス参照する（Gemini）
 1578 ◎ C 11/26 11/26 03223│問題│extractLinesFromDocument()の空back()参照とvisualLineCount()のlineSpacing()ゼロ除算の恐れ（Gemini）
-1579 ● C 11/26            │問題│
-1580 ● C 11/26            │問題│
+1579 ◎ C 11/26            │問題│onAction_DiffMode(false)でsyncMinimapWithEditorのdisconnect()が漏れ多重接続リークする（Gemini）
+1580 ◎ C 11/26            │問題│既にdiffモード中にdo_diff(fullPath)を呼ぶとaction_DiffModeが変化せず差分が再計算されない（Gemini）
+1581 ◎ C 11/26            │問題│MiniMap::updateMap()でht<=0ガードやpixmap初期化が抜け余白描画もdrawRectで枠線色が残る（Gemini）
+1582 ◎ C 11/26            │問題│diffview_open()がdo_diff()を明示呼び出しせず同内容ファイル読込時に差分表示が未更新になる（Gemini）
+1583 ● C 11/26            │問題│
+1584 ● C 11/26            │問題│
+1585 ● C 11/26            │問題│
+1586 ● C 11/26            │問題│
+1587 ● C 11/26            │問題│
+1588 ● C 11/26            │問題│
+1589 ● C 11/26            │問題│
+1590 ● C 11/26            │問題│

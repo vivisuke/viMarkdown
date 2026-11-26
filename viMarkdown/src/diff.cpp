@@ -372,16 +372,19 @@ void MiniMap::updateMap(QTextDocument* doc1, MarkdownEditor* editor1, QTextDocum
 	m_mapDoc1 = doc1; m_mapEditor1 = editor1; m_mapDoc2 = doc2; m_mapEditor2 = editor2;	//	resizeEvent での再描画用に保持
 	auto ht = rect().height();
 	m_totalLines = qMax(visualLineCount(doc1, editor1), visualLineCount(doc2, editor2));	//	paintEvent・マウス逆換算用
+	if( ht <= 0 || m_totalLines <= 0 ) {
+		m_mapPixmap = QPixmap();
+		return;
+	}
 	m_mapPixmap = QPixmap(MINMAP_WIDTH, ht);
+	m_mapPixmap.fill(COLOR_DIFF_MINIMAP_DELETED);
 	QPainter p(&m_mapPixmap);
 	int x = 0;
 #if 1
 	updateMapSub(p, 0, doc1, editor1, m_totalLines, ht);
 	updateMapSub(p, MINMAP_WIDTH/2, doc2, editor2, m_totalLines, ht);
 	if( m_totalLines <= ht ) {	//	圧縮時は全面描画済みのため余白塗りは不要
-		p.setBrush(COLOR_DIFF_MINIMAP_DELETED);
-		//p.drawRect(0, doc1->blockCount(), MINMAP_WIDTH, ht - doc1->blockCount());
-		p.drawRect(0, m_totalLines, MINMAP_WIDTH, ht - m_totalLines);
+		p.fillRect(0, m_totalLines, MINMAP_WIDTH, ht - m_totalLines, COLOR_DIFF_MINIMAP_DELETED);
 	}
 #else
 	updateMapSub(p, 0, doc1, editor1);
@@ -528,6 +531,7 @@ void MainWindow::diffview_open() {		//	文書を選択して比較
 	docWidget->m_diffview->document()->setModified(false);
 	docWidget->m_diffview->initUndoMgr();
 	updateUndoRedoEnabled();
+	do_diff();
 }
 void MainWindow::onAction_DiffWithFile() {
 	//DocWidget *docWidget = getCurDocWidget();
@@ -603,8 +607,11 @@ void MainWindow::do_diff(const QString &diffPeerFullPath) {
 	//##docWidget->m_diffview->document()->adjustSize();
 	docWidget->updatePanes();
 	//docWidget->m_editor->updateLnAreaRaw();
-    ui->action_DiffMode->setChecked(true);
-    //do_diff();
+    if( ui->action_DiffMode->isChecked() ) {
+        do_diff();
+    } else {
+        ui->action_DiffMode->setChecked(true);
+    }
 }
 void DocWidget::setupDiffMode() {
 	this->m_diffMode = true;
@@ -618,17 +625,17 @@ void DocWidget::setupDiffMode() {
 	//this->m_editor->setLineWrapMode(QPlainTextEdit::NoWrap);
 	//##do_diff();
 	connect(this->m_editor->verticalScrollBar(), &QScrollBar::valueChanged,
-        this, &DocWidget::syncScrollFromLeft);
+        this, &DocWidget::syncScrollFromLeft, Qt::UniqueConnection);
     connect(this->m_diffview->verticalScrollBar(), &QScrollBar::valueChanged,
-        this, &DocWidget::syncScrollFromRight);
+        this, &DocWidget::syncScrollFromRight, Qt::UniqueConnection);
     this->m_diffview->verticalScrollBar()->setValue(this->m_diffview->verticalScrollBar()->value());
     int fvl = this->m_editor->verticalScrollBar()->value();
     int vl = this->m_editor->getVisibleLineCount();
     this->setMiniMapCurPos(fvl, vl);
     connect(this->m_editor->verticalScrollBar(), &QScrollBar::valueChanged,
-	        this, &DocWidget::syncMinimapWithEditor);
-    connect(bar1, &QScrollBar::valueChanged, bar2, &QScrollBar::setValue);
-	connect(bar2, &QScrollBar::valueChanged, bar1, &QScrollBar::setValue);
+	        this, &DocWidget::syncMinimapWithEditor, Qt::UniqueConnection);
+    connect(bar1, &QScrollBar::valueChanged, bar2, &QScrollBar::setValue, Qt::UniqueConnection);
+	connect(bar2, &QScrollBar::valueChanged, bar1, &QScrollBar::setValue, Qt::UniqueConnection);
 }
 void MainWindow::onAction_DiffMode(bool checked) {
 	DocWidget *docWidget = getCurDocWidget();
@@ -691,6 +698,8 @@ void MainWindow::onAction_DiffMode(bool checked) {
             docWidget, &DocWidget::syncScrollFromLeft);
 	    disconnect(docWidget->m_diffview->verticalScrollBar(), &QScrollBar::valueChanged,
             docWidget, &DocWidget::syncScrollFromRight);
+	    disconnect(docWidget->m_editor->verticalScrollBar(), &QScrollBar::valueChanged,
+            docWidget, &DocWidget::syncMinimapWithEditor);
         disconnect(bar1, &QScrollBar::valueChanged, bar2, &QScrollBar::setValue);
 		disconnect(bar2, &QScrollBar::valueChanged, bar1, &QScrollBar::setValue);
 	}
