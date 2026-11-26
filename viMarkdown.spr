@@ -1598,7 +1598,17 @@ SPR# 状 P Open Close ver     Type  概要
 1584 ◎ C 11/27 11/27 03223│問題│save_settings()でm_activeLnColorとm_inactiveLnColorの保存が抜けており再起動で設定が消える（Muse）
 1585 ◎ C 11/27 11/27 03223│問題│onAction_Checkbox/List/NumList等がdiff右ペインのフォーカスを見ず常に左ペインへ適用する（Muse）
 1586 ◎ C 11/27 11/27 03223│問題│認証パスワードが平文のままQSettingsへ保存されておりSHA-256ハッシュ照合の意味が失われている（Muse）
-1587 ● C 11/27            │問題│
-1588 ● C 11/27            │問題│
-1589 ● C 11/27            │問題│
+1587 ◎ C 11/27 11/27 03223│問題│MarkdownEditorの独自編集処理にisReadOnly()判定がなく読み取り専用文書でも編集できてしまう（ChatGPT）
+1588 ◎ C 11/27 11/27 03223│問題│blockType()にblock.isValid()とuserState()==-1の明示判定がなく無効ブロック時等の扱いが不統一（ChatGPT）
+1589 ◎ C 11/27 11/27 03223│問題│svg_esc_pressed()がSvgCompleterのイベント処理中に直接deleteしておりUse-After-Freeの恐れ（ChatGPT）
 1590 ● C 11/27            │問題│
+1591 ● C 11/27            │問題│
+1592 ● C 11/27            │問題│
+1593 ● C 11/27            │問題│
+1594 ● C 11/27            │問題│
+1595 ● C 11/27            │問題│
+1596 ● C 11/27            │問題│
+1597 ● C 11/27            │問題│
+1598 ● C 11/27            │問題│
+1599 ● C 11/27            │問題│
+1600 ● C 11/27            │問題│

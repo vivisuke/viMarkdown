@@ -164,7 +164,10 @@ extern QString splitName(QString& anchor);
 extern QString anchorToFullPath(const QString &anchor);
 
 uchar blockType(const QTextBlock &block) {
-	return block.userState() & BLOCK_FLAG_BITS;
+	if( !block.isValid() ) return BT_DEFAULT;
+	auto us = block.userState();
+	if( us == -1 ) return BT_DEFAULT;
+	return us & BLOCK_FLAG_BITS;
 }
 void setBlockType(QTextBlock block, uchar type) {
 	auto us = block.userState();
@@ -982,8 +985,8 @@ void MarkdownEditor::moveToEndOfWord(QTextCursor& cursor, bool shift) {
 }
 QString MarkdownEditor::autoIndentText(QTextCursor cursor, bool &removed) {
 	//static QRegularExpression re(R"(^\d[\.\)] )");
-	static QRegularExpression re(R"(^\d\. )");
-	static QRegularExpression re2(R"(^\d\) )");
+	static const QRegularExpression re(R"(^\d+\. )");
+	static const QRegularExpression re2(R"(^\d+\) )");
 	QString text = cursor.block().text();
 	int n = 0;
 	while( n < text.length() && text[n].isSpace() ) ++n;
@@ -1164,6 +1167,7 @@ void SvgCompleter::keyPressEvent(QKeyEvent *e) {
 	QTextEdit::keyPressEvent(e);	// 通常キーは通常通りの処理
 }
 void MarkdownEditor::svg_enter_pressed() {
+	if( m_svgCompleter == nullptr ) return;
 	QString txt = m_svgCompleter->completerText();
 	txt.replace("\\n", "\n");
 	int cix = txt.indexOf('|');
@@ -1178,8 +1182,12 @@ void MarkdownEditor::svg_enter_pressed() {
 	setTextCursor(cursor);
 }
 void MarkdownEditor::svg_esc_pressed() {
-	delete m_svgCompleter;
-	m_svgCompleter = nullptr;
+	if( m_svgCompleter != nullptr ) {
+		auto *p = m_svgCompleter;
+		m_svgCompleter = nullptr;
+		p->close();
+		p->deleteLater();
+	}
 }
 #if 1
 bool MarkdownEditor::event(QEvent *event) {
@@ -1224,7 +1232,7 @@ static int listMarkerBSLength(const QTextCursor &cursor) {
 void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 	QTextCursor cursor = this->textCursor();
 	if (e->matches(QKeySequence::Cut)) {
-		if( cursor.hasSelection() ) {
+		if( !isReadOnly() && cursor.hasSelection() ) {
 			if( m_diffMode ) {
 				m_docWidget->m_editor->removeAllDummyLines();
 				m_docWidget->m_diffview->removeAllDummyLines();
@@ -1235,6 +1243,10 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
         return;
     }
 	if (e->matches(QKeySequence::Paste)) {
+		if( isReadOnly() ) {
+			e->accept();
+			return;
+		}
 		if( m_diffMode && !cursor.hasSelection() && isDummyLine(this, cursor.block()) ) {
 			//	[#1266] ダミー行でのペーストは、直後の非ダミー行の先頭へリダイレクトする。
 			//	直後に非ダミー行が無い場合は、従来通りペーストしない。
@@ -1260,6 +1272,7 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 			emit do_viCmd(QChar(u'\n'), cursor);
 			setTextCursor(cursor);
 		} else {
+			if( isReadOnly() ) return;
 			if( m_diffMode ) {
 				m_docWidget->m_editor->removeAllDummyLines();
 				m_docWidget->m_diffview->removeAllDummyLines();
@@ -1283,6 +1296,7 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 		}
 		return;
 	} else if (e->key() == Qt::Key_Tab ) {
+		if( isReadOnly() ) return;
 		emit tab_pressed();
 		return;
 	} else if (e->key() == Qt::Key_Insert && e->modifiers() == Qt::NoModifier) {
@@ -1321,8 +1335,7 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 		//this->setAttribute(Qt::WA_InputMethodEnabled, false);		# 効かない
 		emit esc_pressed();
 		if( m_svgCompleter != nullptr ) {
-			delete m_svgCompleter;
-			m_svgCompleter = nullptr;
+			svg_esc_pressed();
 		} else {
 			QTextCursor cursor = this->textCursor();
 			if (cursor.hasSelection()) {
@@ -1332,6 +1345,7 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 		}
 		return;
 	} else if (e->key() == Qt::Key_Delete ) {
+		if( isReadOnly() ) return;
 		if( (e->modifiers() & Qt::ControlModifier) != 0) {
 			deleteWord();
 		} else {
@@ -1341,6 +1355,7 @@ void MarkdownEditor::keyPressEvent(QKeyEvent *e) {
 		}
 		return;
 	} else if (e->key() == Qt::Key_Backspace ) {
+		if( isReadOnly() ) return;
 		//if( m_diffMode ) {
 		//	m_docWidget->m_editor->removeAllDummyLines();
 		//	m_docWidget->m_diffview->removeAllDummyLines();
@@ -1550,6 +1565,7 @@ static bool isSelectionOnlyDummy(MarkdownEditor *ed, const QTextCursor &cursor) 
 	return true;
 }
 void MarkdownEditor::do_insertText(QTextCursor& cursor, const QString &txt) {
+	if( isReadOnly() ) return;
 	if( m_diffMode ) {
 		if( cursor.hasSelection() ) {
 			if( isSelectionOnlyDummy(this, cursor) ) return;
@@ -1635,6 +1651,7 @@ void MarkdownEditor::do_insertText(QTextCursor& cursor, const QString &txt) {
 	emit canUndoRedoChanged();
 }
 void MarkdownEditor::do_deleteText(QTextCursor &cursor) {
+	if( isReadOnly() ) return;
 	if( m_diffMode ) {
 		if( cursor.hasSelection() ) {
 			if( isSelectionOnlyDummy(this, cursor) ) return;

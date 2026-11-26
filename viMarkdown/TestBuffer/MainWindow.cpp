@@ -1456,8 +1456,8 @@ void MainWindow::onBenchmarkPushBack()
 
     const bool wasVi = edit->viEngine()->isEnabled();
     if (wasVi)
-        edit->setViEnabled(false);
 
+        edit->setViEnabled(false);
     //	文書末尾へ移動してから1文字ずつ挿入
     TextCursor cur = edit->textCursor();
     cur.setPosition(edit->document()->characterCount());
