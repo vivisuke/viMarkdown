@@ -84,7 +84,7 @@ SPR# 状 P Open  Close ver   Type  概要
 0080 ◎ C 11/27 11/27 0001│ToDo│TestBufferのインクリメンタル検索退避が単一メンバかつ履歴混在のためタブ切替やUpキーで誤動作する（Gemini）
 0081 ◎ C 11/27 11/27 0001│ToDo│TestBufferのsaveTab()/openFile()で初回.md保存後のbaseUrl未更新や文字コード・BOM保持が抜けている（Muse）
 0082 ◎ C 11/27 11/27 0001│ToDo│o O でスマートリストが効かない
-0083 ● C 11/27           │ToDo│
+0083 ◎ C 11/27 11/27 0001│ToDo│検索機能
 0084 ● C 11/27           │ToDo│
 0085 ● C 11/27           │ToDo│
 0086 ● C 11/27           │ToDo│

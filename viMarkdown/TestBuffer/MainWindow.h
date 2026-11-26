@@ -9,6 +9,8 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindowClass; };
 QT_END_NAMESPACE
 
+class QAction;
+class QComboBox;
 class QDockWidget;
 class QLineEdit;
 class QTabWidget;
@@ -94,9 +96,15 @@ private:
     int m_outputFontSize = 10;
     bool m_viKeybind = false;
     QLineEdit *m_cmdLine = nullptr;
+    QComboBox *m_searchCB = nullptr;
+    QAction *m_actIgnoreCase = nullptr;
+    QAction *m_actRegExp = nullptr;
+    bool m_searchIgnoreCase = true;
+    bool m_searchRegExp = true;
+    QStringList m_toolbarSearchHist;
     QChar m_cmdPrefix;
     bool m_incSearchActive = false;
-    QPointer<TextEdit> m_incSearchEdit;
+    QPointer<QWidget> m_incSearchEdit;
     int m_incSearchOrigPos = 0;
     int m_incSearchOrigScroll = 0;
     QString m_incSearchOrigHighlight;

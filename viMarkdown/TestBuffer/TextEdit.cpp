@@ -258,15 +258,18 @@ void TextEdit::setSearchMatchColor(const QColor &color)
 	viewport()->update();
 }
 
-void TextEdit::setSearchHighlight(const QString &pattern)
+void TextEdit::setSearchHighlight(const QString &pattern, bool ignoreCase, bool useRegExp)
 {
 	m_searchHighlightPat = pattern;
 	if( pattern.isEmpty() ) {
 		m_searchHighlightRe = QRegularExpression();
 	} else {
-		QRegularExpression re(pattern);
+		const QString eff = useRegExp ? pattern : QRegularExpression::escape(pattern);
+		const QRegularExpression::PatternOptions opts = ignoreCase
+			? QRegularExpression::CaseInsensitiveOption : QRegularExpression::NoPatternOption;
+		QRegularExpression re(eff, opts);
 		if( !re.isValid() )
-			re = QRegularExpression(QRegularExpression::escape(pattern));
+			re = QRegularExpression(QRegularExpression::escape(pattern), opts);
 		m_searchHighlightRe = re;
 	}
 	viewport()->update();
@@ -278,6 +281,18 @@ void TextEdit::clearSearchHighlight()
 	m_searchHighlightPat.clear();
 	m_searchHighlightRe = QRegularExpression();
 	viewport()->update();
+}
+
+QString TextEdit::wordAtCursor() const
+{
+	TextDocument::pos_t s = 0, e = 0;
+	wordBoundsAt(m_cursor.position(), s, e);
+	if( e <= s ) return QString();
+	QString res;
+	res.reserve(static_cast<qsizetype>(e - s));
+	for( TextDocument::pos_t i = s; i < e; ++i )
+		res.append(m_doc.characterAt(i));
+	return res;
 }
 
 void TextEdit::setTabWidth(int width)

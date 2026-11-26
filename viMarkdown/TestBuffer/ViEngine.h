@@ -48,6 +48,12 @@ public:
 	void recordImeCommit(const QString &text);
 
 	//	検索（'/' / '?' コマンドライン確定時・'*' / '#' / 'n' / 'N'）
+	void setSearchOptions(bool ignoreCase, bool useRegExp) {
+		m_searchIgnoreCase = ignoreCase;
+		m_searchRegExp = useRegExp;
+	}
+	bool searchIgnoreCase() const { return m_searchIgnoreCase; }
+	bool searchRegExp() const { return m_searchRegExp; }
 	bool search(TextEdit *edit, const QString &pattern, bool forward, int count = 1);
 	bool previewSearch(TextEdit *edit, const QString &pattern, bool forward, TextDocument::pos_t fromPos);
 	bool searchNext(TextEdit *edit, bool sameDir, int count = 1);
@@ -100,6 +106,8 @@ private:
 	bool m_yankLinewise = false;
 	QString m_lastSearchPat;
 	bool m_lastSearchForward = true;
+	bool m_searchIgnoreCase = true;
+	bool m_searchRegExp = true;
 	QVector<RecordedKey> m_curCmdKeys;
 	QVector<RecordedKey> m_lastEditKeys;
 	bool m_recordingInsert = false;

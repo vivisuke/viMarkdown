@@ -4,6 +4,7 @@
 #include <QApplication>
 #include <QCloseEvent>
 #include <QColorDialog>
+#include <QComboBox>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QDir>
@@ -16,13 +17,17 @@
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
+#include <QIcon>
 #include <QKeyEvent>
 #include <QLineEdit>
 #include <QMessageBox>
+#include <QPainter>
+#include <QPixmap>
 #include <QPushButton>
 #include <QSaveFile>
 #include <QScrollBar>
 #include <QSettings>
+#include <QShortcut>
 #include <QSpinBox>
 #include <QSplitter>
 #include <QStringDecoder>
@@ -67,6 +72,9 @@ const QStringView KEY_TABLE_HEADER_COLOR(u"preview/tableHeaderColor");
 const QStringView KEY_TABLE_ZEBRA_COLOR1(u"preview/tableZebraColor1");
 const QStringView KEY_TABLE_ZEBRA_COLOR2(u"preview/tableZebraColor2");
 const QStringView KEY_VI_KEYBIND(u"editor/viKeybind");
+const QStringView KEY_SEARCH_HISTORY(u"search/history");
+const QStringView KEY_SEARCH_IGNORE_CASE(u"search/ignoreCase");
+const QStringView KEY_SEARCH_REGEXP(u"search/regexp");
 const QStringView KEY_WINDOW_GEOMETRY(u"window/geometry");
 const QStringView KEY_WINDOW_STATE(u"window/state");
 const char PROP_FILE_PATH[] = "filePath";
@@ -149,6 +157,11 @@ MainWindow::MainWindow(QWidget *parent)
         QColor tz2 = settings.value(KEY_TABLE_ZEBRA_COLOR2, m_tableZebraColor2).value<QColor>();
         if (tz2.isValid()) m_tableZebraColor2 = tz2;
         m_viKeybind = settings.value(KEY_VI_KEYBIND, false).toBool();
+        m_searchIgnoreCase = settings.value(KEY_SEARCH_IGNORE_CASE, true).toBool();
+        m_searchRegExp = settings.value(KEY_SEARCH_REGEXP, true).toBool();
+        m_toolbarSearchHist = settings.value(KEY_SEARCH_HISTORY).toStringList();
+        while (m_toolbarSearchHist.size() > 20)
+            m_toolbarSearchHist.pop_back();
     }
     ui->action_ViKeybind->setChecked(m_viKeybind);
     applyOutputFontSize(m_outputFontSize);
@@ -182,6 +195,197 @@ MainWindow::MainWindow(QWidget *parent)
     //	メニューバーをメインツールバーに統合（viMarkdown と同じ方式）
     ui->mainToolBar->insertWidget(ui->action_Undo, ui->menuBar);
 #endif
+    auto makeIgnoreCaseIcon = []() -> QIcon {
+        QPixmap pm(48, 48);
+        pm.fill(Qt::transparent);
+        QPainter p(&pm);
+        p.setRenderHint(QPainter::Antialiasing, true);
+        p.setRenderHint(QPainter::TextAntialiasing, true);
+        QFont f = QApplication::font();
+        f.setPixelSize(24);
+        p.setFont(f);
+        p.setPen(QColor(0x20, 0x20, 0x20));
+        p.drawText(pm.rect(), Qt::AlignCenter, QStringLiteral("Aa"));
+        p.setPen(QPen(QColor(0x20, 0x20, 0x20), 2.5));
+        p.drawLine(8, 8, 40, 40);
+        return QIcon(pm);
+    };
+    auto makeRegExpIcon = []() -> QIcon {
+        QPixmap pm(48, 48);
+        pm.fill(Qt::transparent);
+        QPainter p(&pm);
+        p.setRenderHint(QPainter::TextAntialiasing, true);
+        QFont f = QApplication::font();
+        f.setPixelSize(18);
+        p.setFont(f);
+        p.setPen(QColor(0x20, 0x20, 0x20));
+        p.drawText(QRect(0, 3, 48, 22), Qt::AlignCenter, QStringLiteral("reg"));
+        p.drawText(QRect(0, 22, 48, 22), Qt::AlignCenter, QStringLiteral("exp"));
+        return QIcon(pm);
+    };
+    m_searchCB = new QComboBox(this);
+    m_searchCB->setEditable(true);
+    m_searchCB->setMaxCount(20);
+    m_searchCB->setMinimumWidth(160);
+    m_searchCB->setMaximumWidth(220);
+    m_searchCB->setFocusPolicy(Qt::ClickFocus);
+    m_searchCB->setInsertPolicy(QComboBox::NoInsert);
+    if (QLineEdit *le = m_searchCB->lineEdit()) {
+        le->setPlaceholderText(tr("search text"));
+        le->setClearButtonEnabled(true);
+        le->installEventFilter(this);
+    }
+    {
+        QSignalBlocker sb(m_searchCB);
+        m_searchCB->addItems(m_toolbarSearchHist);
+        m_searchCB->setCurrentIndex(-1);
+        m_searchCB->clearEditText();
+    }
+    m_actIgnoreCase = new QAction(makeIgnoreCaseIcon(), tr("Ignore Case"), this);
+    m_actIgnoreCase->setCheckable(true);
+    m_actIgnoreCase->setChecked(m_searchIgnoreCase);
+    m_actIgnoreCase->setToolTip(tr("Ignore Case (Aa)"));
+    m_actRegExp = new QAction(makeRegExpIcon(), tr("RegExp"), this);
+    m_actRegExp->setCheckable(true);
+    m_actRegExp->setChecked(m_searchRegExp);
+    m_actRegExp->setToolTip(tr("Regular Expression"));
+
+    //	Redo ボタンのすぐ右（AlignLeft の手前）に検索コンボ＋Aa＋regexp を配置
+    ui->mainToolBar->setStyleSheet(
+        "QToolButton:checked {"
+        "   background-color: rgba(0, 120, 215, 60);"
+        "   border: 1px solid #0078d7;"
+        "   border-radius: 2px;"
+        "   color: black;"
+        "}"
+        "QToolButton:hover {"
+        "   background-color: rgba(0, 120, 215, 30);"
+        "}");
+    ui->mainToolBar->insertWidget(ui->action_AlignLeft, m_searchCB);
+    ui->mainToolBar->insertAction(ui->action_AlignLeft, m_actIgnoreCase);
+    ui->mainToolBar->insertAction(ui->action_AlignLeft, m_actRegExp);
+    ui->mainToolBar->insertSeparator(ui->action_AlignLeft);
+    auto *searchEscShortcut = new QShortcut(QKeySequence(Qt::Key_Escape), m_searchCB);
+    searchEscShortcut->setContext(Qt::WidgetWithChildrenShortcut);
+    connect(searchEscShortcut, &QShortcut::activated, this, [this]() {
+        if (TextEdit *edit = currentTextEdit())
+            edit->setFocus();
+        else
+            setFocus();
+    });
+
+    auto applySearchOptsToAllTabs = [this]() {
+        if (!m_tabWidget) return;
+        for (int i = 0; i < m_tabWidget->count(); ++i) {
+            if (TextEdit *edit = textEditAt(i)) {
+                edit->viEngine()->setSearchOptions(m_searchIgnoreCase, m_searchRegExp);
+                const QString hl = edit->searchHighlightPattern();
+                if (!hl.isEmpty())
+                    edit->setSearchHighlight(hl, m_searchIgnoreCase, m_searchRegExp);
+            }
+        }
+    };
+    connect(m_actIgnoreCase, &QAction::toggled, this, [this, applySearchOptsToAllTabs](bool checked) {
+        m_searchIgnoreCase = checked;
+        QSettings settings;
+        settings.setValue(KEY_SEARCH_IGNORE_CASE, m_searchIgnoreCase);
+        applySearchOptsToAllTabs();
+    });
+    connect(m_actRegExp, &QAction::toggled, this, [this, applySearchOptsToAllTabs](bool checked) {
+        m_searchRegExp = checked;
+        QSettings settings;
+        settings.setValue(KEY_SEARCH_REGEXP, m_searchRegExp);
+        applySearchOptsToAllTabs();
+    });
+    auto runToolbarSearch = [this](const QString &pat, bool forward) {
+        TextEdit *edit = currentTextEdit();
+        if (!edit || pat.isEmpty()) return;
+        m_toolbarSearchHist.removeAll(pat);
+        m_toolbarSearchHist.push_front(pat);
+        while (m_toolbarSearchHist.size() > 20)
+            m_toolbarSearchHist.pop_back();
+        {
+            QSignalBlocker sb(m_searchCB);
+            m_searchCB->clear();
+            m_searchCB->addItems(m_toolbarSearchHist);
+            m_searchCB->setCurrentText(pat);
+        }
+        QSettings settings;
+        settings.setValue(KEY_SEARCH_HISTORY, m_toolbarSearchHist);
+        edit->viEngine()->setSearchOptions(m_searchIgnoreCase, m_searchRegExp);
+        edit->viEngine()->search(edit, pat, forward);
+        edit->setFocus();
+    };
+    if (QLineEdit *le = m_searchCB->lineEdit()) {
+        connect(le, &QLineEdit::returnPressed, this, [this, runToolbarSearch]() {
+            const QString pat = m_searchCB->currentText();
+            if (pat.isEmpty()) {
+                if (TextEdit *edit = currentTextEdit())
+                    edit->setFocus();
+                return;
+            }
+            const bool forward = (QApplication::keyboardModifiers() & Qt::ShiftModifier) == 0;
+            runToolbarSearch(pat, forward);
+        });
+    }
+    connect(m_searchCB, &QComboBox::textActivated, this, [runToolbarSearch](const QString &text) {
+        runToolbarSearch(text, true);
+    });
+    connect(m_searchCB, &QComboBox::editTextChanged, this, [this](const QString &text) {
+        if (text.isEmpty()) {
+            if (TextEdit *edit = currentTextEdit())
+                edit->clearSearchHighlight();
+        }
+    });
+    QMenu *searchMenu = new QMenu(tr("&Search"), this);
+    QAction *actFind = searchMenu->addAction(tr("&Find"));
+    actFind->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_F));
+    connect(actFind, &QAction::triggered, this, [this]() {
+        if (!m_searchCB) return;
+        if (TextEdit *edit = currentTextEdit()) {
+            const QString sel = edit->textCursor().selectedText();
+            if (!sel.isEmpty() && !sel.contains(QChar('\n')))
+                m_searchCB->setCurrentText(sel);
+        }
+        m_searchCB->setFocus();
+        if (QLineEdit *le = m_searchCB->lineEdit())
+            le->selectAll();
+    });
+    QAction *actFindNext = searchMenu->addAction(tr("Find&Next"));
+    actFindNext->setShortcut(QKeySequence(Qt::Key_F3));
+    connect(actFindNext, &QAction::triggered, this, [this, runToolbarSearch]() {
+        TextEdit *edit = currentTextEdit();
+        if (!edit) return;
+        const QString pat = m_searchCB ? m_searchCB->currentText() : QString();
+        if (!pat.isEmpty())
+            runToolbarSearch(pat, true);
+        else
+            edit->viEngine()->searchNext(edit, true);
+    });
+    QAction *actFindPrev = searchMenu->addAction(tr("Find&Prev"));
+    actFindPrev->setShortcut(QKeySequence(Qt::SHIFT | Qt::Key_F3));
+    connect(actFindPrev, &QAction::triggered, this, [this, runToolbarSearch]() {
+        TextEdit *edit = currentTextEdit();
+        if (!edit) return;
+        const QString pat = m_searchCB ? m_searchCB->currentText() : QString();
+        if (!pat.isEmpty())
+            runToolbarSearch(pat, false);
+        else
+            edit->viEngine()->searchNext(edit, false);
+    });
+    QAction *actFindWord = searchMenu->addAction(tr("Find&Word"));
+    actFindWord->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_F3));
+    connect(actFindWord, &QAction::triggered, this, [this, runToolbarSearch]() {
+        TextEdit *edit = currentTextEdit();
+        if (!edit) return;
+        QString word = edit->textCursor().hasSelection()
+            ? edit->textCursor().selectedText()
+            : edit->wordAtCursor();
+        if (word.isEmpty() || word.contains(QChar('\n'))) return;
+        const QString pat = m_searchRegExp ? QRegularExpression::escape(word) : word;
+        runToolbarSearch(pat, true);
+    });
+    ui->menuBar->insertMenu(viewMenu->menuAction(), searchMenu);
 
     TextEdit *initialEdit = addEditorTab(QStringLiteral("Untitled-%1").arg(++m_tabNumber));
     initialEdit->setFocus();
@@ -345,6 +549,7 @@ TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath
     edit->setEmphasisColor(m_emphasisColor);
     edit->setSearchMatchColor(m_searchMatchColor);
     edit->setViEnabled(m_viKeybind);
+    edit->viEngine()->setSearchOptions(m_searchIgnoreCase, m_searchRegExp);
     edit->viEngine()->setCallbacks({
         [this](const QString &msg) { statusBar()->showMessage(msg, 5000); },
         [this](QChar prefix) { openViCmdLine(prefix); },
@@ -1256,7 +1461,7 @@ void MainWindow::onViCmdLineTextChanged(const QString &raw)
 {
     if (!m_incSearchActive || !m_cmdLine || !m_cmdLine->isVisible())
         return;
-    TextEdit *edit = m_incSearchEdit.data();
+    TextEdit *edit = static_cast<TextEdit *>(m_incSearchEdit.data());
     if (!edit || raw.isEmpty())
         return;
     const QChar pref = raw[0];
@@ -1284,7 +1489,7 @@ void MainWindow::cancelViIncSearch()
     if (!m_incSearchActive)
         return;
     m_incSearchActive = false;
-    if (TextEdit *edit = m_incSearchEdit.data()) {
+    if (TextEdit *edit = static_cast<TextEdit *>(m_incSearchEdit.data())) {
         TextCursor c = edit->textCursor();
         c.setPosition(qBound(0, m_incSearchOrigPos, static_cast<int>(edit->document()->characterCount())));
         edit->setTextCursor(c);
@@ -1299,7 +1504,7 @@ void MainWindow::onViCmdLineReturn()
     if (!m_cmdLine) return;
     QString raw = m_cmdLine->text();
     const bool wasIncSearch = m_incSearchActive;
-    TextEdit *incEdit = m_incSearchEdit.data();
+    TextEdit *incEdit = static_cast<TextEdit *>(m_incSearchEdit.data());
     m_incSearchActive = false;
     m_incSearchEdit.clear();
     m_cmdLine->hide();
@@ -1329,6 +1534,18 @@ void MainWindow::onViCmdLineReturn()
                 target->setTextCursor(c);
             }
             target->viEngine()->search(target, body, pref == QChar('/'));
+            if (m_searchCB) {
+                m_toolbarSearchHist.removeAll(body);
+                m_toolbarSearchHist.push_front(body);
+                while (m_toolbarSearchHist.size() > 20)
+                    m_toolbarSearchHist.pop_back();
+                QSignalBlocker sb(m_searchCB);
+                m_searchCB->clear();
+                m_searchCB->addItems(m_toolbarSearchHist);
+                m_searchCB->setCurrentText(body);
+                QSettings settings;
+                settings.setValue(KEY_SEARCH_HISTORY, m_toolbarSearchHist);
+            }
         }
         return;
     }
@@ -1378,6 +1595,16 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 {
+    if (m_searchCB && obj == m_searchCB->lineEdit() && event->type() == QEvent::KeyPress) {
+        auto *ke = static_cast<QKeyEvent *>(event);
+        if (ke->key() == Qt::Key_Escape) {
+            if (TextEdit *edit = currentTextEdit())
+                edit->setFocus();
+            else
+                setFocus();
+            return true;
+        }
+    }
     if (obj == m_cmdLine && event->type() == QEvent::KeyPress) {
         auto *ke = static_cast<QKeyEvent *>(event);
         if (ke->key() == Qt::Key_Escape) {

@@ -60,9 +60,10 @@ public:
 	void setSearchMatchColor(const QColor &color);
 	QColor searchMatchColor() const { return m_searchMatchColor; }
 
-	void setSearchHighlight(const QString &pattern);
+	void setSearchHighlight(const QString &pattern, bool ignoreCase = false, bool useRegExp = true);
 	void clearSearchHighlight();
 	QString searchHighlightPattern() const { return m_searchHighlightPat; }
+	QString wordAtCursor() const;
 
 	//	タブ幅（半角文字数、デフォルト4）
 	void setTabWidth(int width);

@@ -769,11 +769,14 @@ bool ViEngine::search(TextEdit *edit, const QString &pattern, bool forward, int 
 		return false;
 	m_lastSearchPat = pattern;
 	m_lastSearchForward = forward;
-	edit->setSearchHighlight(pattern);
+	edit->setSearchHighlight(pattern, m_searchIgnoreCase, m_searchRegExp);
 
-	QRegularExpression re(pattern);
+	const QString eff = m_searchRegExp ? pattern : QRegularExpression::escape(pattern);
+	const QRegularExpression::PatternOptions opts = m_searchIgnoreCase
+		? QRegularExpression::CaseInsensitiveOption : QRegularExpression::NoPatternOption;
+	QRegularExpression re(eff, opts);
 	if( !re.isValid() )
-		re = QRegularExpression(QRegularExpression::escape(pattern));
+		re = QRegularExpression(QRegularExpression::escape(pattern), opts);
 
 	TextDocument *doc = edit->document();
 	const QString fullText = doc->toPlainText();
@@ -840,11 +843,14 @@ bool ViEngine::previewSearch(TextEdit *edit, const QString &pattern, bool forwar
 {
 	if( !edit || pattern.isEmpty() )
 		return false;
-	edit->setSearchHighlight(pattern);
+	edit->setSearchHighlight(pattern, m_searchIgnoreCase, m_searchRegExp);
 
-	QRegularExpression re(pattern);
+	const QString eff = m_searchRegExp ? pattern : QRegularExpression::escape(pattern);
+	const QRegularExpression::PatternOptions opts = m_searchIgnoreCase
+		? QRegularExpression::CaseInsensitiveOption : QRegularExpression::NoPatternOption;
+	QRegularExpression re(eff, opts);
 	if( !re.isValid() )
-		re = QRegularExpression(QRegularExpression::escape(pattern));
+		re = QRegularExpression(QRegularExpression::escape(pattern), opts);
 
 	TextDocument *doc = edit->document();
 	const QString fullText = doc->toPlainText();
