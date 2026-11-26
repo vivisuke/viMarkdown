@@ -130,6 +130,7 @@ private:
 	void selectLogicalLineRange(int anchorLine, int curLine);
 	void wordBoundsAt(TextDocument::pos_t pos, TextDocument::pos_t &outStart, TextDocument::pos_t &outEnd) const;
 	void updateScrollBars();
+	void updateSearchMarkers();
 	void updateWrapWidth();
 	void ensureCursorVisible();
 	void updateLineNumberAreaGeometry();

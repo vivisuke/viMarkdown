@@ -14,6 +14,8 @@
 #include <QRegularExpression>
 #include <QResizeEvent>
 #include <QScrollBar>
+#include <QStyle>
+#include <QStyleOptionSlider>
 #include <QTimer>
 #include <QWheelEvent>
 
@@ -28,6 +30,52 @@
 
 namespace {
 const int LEFT_MARGIN = 2;
+
+class SearchMarkerScrollBar : public QScrollBar
+{
+public:
+	explicit SearchMarkerScrollBar(QWidget *parent = nullptr)
+		: QScrollBar(Qt::Vertical, parent) {}
+
+	void setMarkers(QVector<int> viewLines, int totalViewLines) {
+		m_viewLines = std::move(viewLines);
+		m_totalViewLines = totalViewLines;
+		update();
+	}
+	void clearMarkers() {
+		if( m_viewLines.isEmpty() ) return;
+		m_viewLines.clear();
+		m_totalViewLines = 0;
+		update();
+	}
+
+protected:
+	void paintEvent(QPaintEvent *event) override {
+		QScrollBar::paintEvent(event);
+		if( m_viewLines.isEmpty() || m_totalViewLines <= 0 )
+			return;
+		QStyleOptionSlider opt;
+		initStyleOption(&opt);
+		const QRect groove = style()->subControlRect(QStyle::CC_ScrollBar, &opt, QStyle::SC_ScrollBarGroove, this);
+		if( groove.height() <= 0 || groove.width() <= 4 )
+			return;
+		QPainter p(this);
+		const QColor markerColor(0xE8, 0xB8, 0x00, 0xF0);	//	明るめゴールドイエロー
+		const int x = groove.left() + 2;
+		const int w = groove.width() - 4;
+		int lastY = -100;
+		for( int vl : m_viewLines ) {
+			const int y = groove.top() + static_cast<int>((static_cast<qint64>(vl) * groove.height()) / m_totalViewLines);
+			if( y <= lastY + 1 ) continue;
+			lastY = y;
+			p.fillRect(x, qBound(groove.top(), y, groove.bottom() - 2), w, 3, markerColor);
+		}
+	}
+
+private:
+	QVector<int> m_viewLines;
+	int m_totalViewLines = 0;
+};
 
 void forceImeOff(QWidget *w)
 {
@@ -167,6 +215,7 @@ TextEdit::TextEdit(QWidget *parent)
 	setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 	viewport()->setCursor(Qt::IBeamCursor);
+	setVerticalScrollBar(new SearchMarkerScrollBar(this));
 	m_lineNumberArea = new LineNumberArea(this);
 	setViewportMargins(lineNumberAreaWidth(), 0, 0, 0);
 	updateLineNumberAreaGeometry();
@@ -189,6 +238,8 @@ void TextEdit::setPlainText(const QString &text)
 	verticalScrollBar()->setValue(0);
 	updateWrapWidth();
 	updateScrollBars();
+	if( !m_searchHighlightPat.isEmpty() )
+		updateSearchMarkers();
 	viewport()->update();
 	m_lineNumberArea->update();
 }
@@ -219,6 +270,8 @@ void TextEdit::setEditorFont(const QFont &f)
 	updateLineNumberAreaGeometry();
 	updateWrapWidth();
 	updateScrollBars();
+	if( !m_searchHighlightPat.isEmpty() )
+		updateSearchMarkers();
 	viewport()->update();
 	m_lineNumberArea->update();
 }
@@ -272,6 +325,7 @@ void TextEdit::setSearchHighlight(const QString &pattern, bool ignoreCase, bool 
 			re = QRegularExpression(QRegularExpression::escape(pattern), opts);
 		m_searchHighlightRe = re;
 	}
+	updateSearchMarkers();
 	viewport()->update();
 }
 
@@ -280,7 +334,35 @@ void TextEdit::clearSearchHighlight()
 	if( m_searchHighlightPat.isEmpty() ) return;
 	m_searchHighlightPat.clear();
 	m_searchHighlightRe = QRegularExpression();
+	updateSearchMarkers();
 	viewport()->update();
+}
+
+void TextEdit::updateSearchMarkers()
+{
+	auto *sb = dynamic_cast<SearchMarkerScrollBar *>(verticalScrollBar());
+	if( !sb ) return;
+	if( m_searchHighlightPat.isEmpty() || !m_searchHighlightRe.isValid() ) {
+		sb->clearMarkers();
+		return;
+	}
+	const ViewLineMgr &mgr = m_doc.lineMgr();
+	const int totalVLines = mgr.viewLineCount();
+	if( totalVLines <= 0 ) {
+		sb->clearMarkers();
+		return;
+	}
+	QVector<int> matchVLines;
+	const int nLines = mgr.lineCount();
+	for( int ln = 0; ln < nLines; ++ln ) {
+		if( mgr.isLineHidden(ln) ) continue;
+		QString text = m_doc.findBlockByNumber(ln).text();
+		if( text.endsWith(QChar('\n')) ) text.chop(1);
+		if( text.isEmpty() ) continue;
+		if( m_searchHighlightRe.match(text).hasMatch() )
+			matchVLines.push_back(mgr.lineToViewLine(ln));
+	}
+	sb->setMarkers(std::move(matchVLines), totalVLines);
 }
 
 QString TextEdit::wordAtCursor() const
@@ -997,6 +1079,8 @@ void TextEdit::afterChange(bool textChanged)
 {
 	if( textChanged && m_onTextChanged )
 		m_onTextChanged();
+	if( textChanged && !m_searchHighlightPat.isEmpty() )
+		updateSearchMarkers();
 	if( hasFocus() && m_blinkTimer ) {
 		m_caretVisible = true;
 		m_blinkTimer->start();

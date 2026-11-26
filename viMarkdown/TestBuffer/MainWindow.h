@@ -57,6 +57,13 @@ private:
     void onRedo();
     void updateUndoRedoEnabled();
     void onSettings();
+    void onReplace();
+    bool findAndSelectMatch(const QString &src, bool forward);
+    void doReplaceNext(const QString &src, const QString &dst);
+    void doReplaceAll(const QString &src, const QString &dst);
+    void onGrep();
+    void doGrep(const QString &searchText, const QString &dirPath, const QString &filterText, bool subDir, bool clearOutput);
+    bool jumpToOutputLine(int blockNumber);
     void applyLineSpacing(int percent);
     void applyColors(const QColor &heading, const QColor &emphasis, const QColor &searchMatch);
     void applyTableColors(const QColor &header, const QColor &zebra1, const QColor &zebra2);
@@ -101,7 +108,12 @@ private:
     QAction *m_actRegExp = nullptr;
     bool m_searchIgnoreCase = true;
     bool m_searchRegExp = true;
+    bool m_grepSubDir = false;
+    bool m_grepClearOutput = true;
+    QString m_grepFilter = QStringLiteral("*.md");
     QStringList m_toolbarSearchHist;
+    QStringList m_replaceHist;
+    QStringList m_grepDirHist;
     QChar m_cmdPrefix;
     bool m_incSearchActive = false;
     QPointer<QWidget> m_incSearchEdit;

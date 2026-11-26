@@ -989,8 +989,14 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 		discardCurrentCmd();
 		if( m_mode != ViMode::Normal )
 			setMode(ViMode::Normal, edit);
-		else
+		else {
+			TextCursor c = edit->textCursor();
+			if( c.hasSelection() ) {
+				c.clearSelection();
+				edit->setTextCursor(c);
+			}
 			notifyMode(edit);
+		}
 		return true;
 	}
 
@@ -1024,6 +1030,15 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 				return true;
 			}
 		}
+		return false;
+	}
+
+	//	Shift + 矢印 / Home / End / PageUp / PageDown は TextEdit 標準の範囲選択へ委譲
+	if( (event->modifiers() & Qt::ShiftModifier) != 0 && !alt
+		&& (key == Qt::Key_Left || key == Qt::Key_Right || key == Qt::Key_Up || key == Qt::Key_Down
+			|| key == Qt::Key_Home || key == Qt::Key_End || key == Qt::Key_PageUp || key == Qt::Key_PageDown) ) {
+		resetPending();
+		discardCurrentCmd();
 		return false;
 	}
 
@@ -1341,17 +1356,32 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 	if( effCh == QChar('*') || effCh == QChar('#') ) {
 		resetPending();
 		discardCurrentCmd();
-		const TextDocument::pos_t total = doc->characterCount();
-		if( pos < total ) {
-			const ViCharClass cls = viCharClass(doc->characterAt(pos));
-			if( cls != VCC_SPACE && cls != VCC_NEWLINE ) {
-				TextDocument::pos_t s = pos, e = pos + 1;
-				while( s > 0 && viCharClass(doc->characterAt(s - 1)) == cls ) --s;
-				while( e < total && viCharClass(doc->characterAt(e)) == cls ) ++e;
-				QString word;
-				for( TextDocument::pos_t i = s; i < e; ++i ) word.append(doc->characterAt(i));
-				search(edit, QRegularExpression::escape(word), effCh == QChar('*'), cnt);
+		const TextCursor cur = edit->textCursor();
+		QString word;
+		if( cur.hasSelection() ) {
+			word = cur.selectedText();
+			const TextDocument::pos_t selStart = cur.selectionStart();
+			if( m_mode == ViMode::Visual || m_mode == ViMode::VisualLine )
+				setMode(ViMode::Normal, edit);
+			TextCursor c = edit->textCursor();
+			c.clearSelection();
+			c.setPosition(selStart);
+			edit->setTextCursor(c);
+		} else {
+			const TextDocument::pos_t total = doc->characterCount();
+			if( pos < total ) {
+				const ViCharClass cls = viCharClass(doc->characterAt(pos));
+				if( cls != VCC_SPACE && cls != VCC_NEWLINE ) {
+					TextDocument::pos_t s = pos, e = pos + 1;
+					while( s > 0 && viCharClass(doc->characterAt(s - 1)) == cls ) --s;
+					while( e < total && viCharClass(doc->characterAt(e)) == cls ) ++e;
+					for( TextDocument::pos_t i = s; i < e; ++i ) word.append(doc->characterAt(i));
+				}
 			}
+		}
+		if( !word.isEmpty() ) {
+			const QString pat = m_searchRegExp ? QRegularExpression::escape(word) : word;
+			search(edit, pat, effCh == QChar('*'), cnt);
 		}
 		return true;
 	}

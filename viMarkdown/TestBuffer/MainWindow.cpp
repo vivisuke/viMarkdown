@@ -2,12 +2,14 @@
 #include "MarkdownPreview.h"
 #include "TextEdit.h"
 #include <QApplication>
+#include <QCheckBox>
 #include <QCloseEvent>
 #include <QColorDialog>
 #include <QComboBox>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QDir>
+#include <QDirIterator>
 #include <QDockWidget>
 #include <QElapsedTimer>
 #include <QFile>
@@ -32,6 +34,7 @@
 #include <QSplitter>
 #include <QStringDecoder>
 #include <QTabWidget>
+#include <QTextBlock>
 #include <QTextCursor>
 #include <QTextEdit>
 #include <QTextStream>
@@ -73,8 +76,13 @@ const QStringView KEY_TABLE_ZEBRA_COLOR1(u"preview/tableZebraColor1");
 const QStringView KEY_TABLE_ZEBRA_COLOR2(u"preview/tableZebraColor2");
 const QStringView KEY_VI_KEYBIND(u"editor/viKeybind");
 const QStringView KEY_SEARCH_HISTORY(u"search/history");
+const QStringView KEY_REPLACE_HISTORY(u"search/replace");
 const QStringView KEY_SEARCH_IGNORE_CASE(u"search/ignoreCase");
 const QStringView KEY_SEARCH_REGEXP(u"search/regexp");
+const QStringView KEY_GREP_DIR_HISTORY(u"search/grepDir");
+const QStringView KEY_GREP_SUBDIR(u"search/grepSubdir");
+const QStringView KEY_GREP_CLEAR_OUTPUT(u"search/grepClearOutput");
+const QStringView KEY_GREP_FILTER(u"search/grepFilter");
 const QStringView KEY_WINDOW_GEOMETRY(u"window/geometry");
 const QStringView KEY_WINDOW_STATE(u"window/state");
 const char PROP_FILE_PATH[] = "filePath";
@@ -134,6 +142,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     setFocusPolicy(Qt::StrongFocus);
     ui->plainTextEdit->setFocusPolicy(Qt::ClickFocus);
+    ui->plainTextEdit->viewport()->installEventFilter(this);
     {
         QSettings settings;
         int pct = settings.value(KEY_LINE_SPACING_PERCENT, 0).toInt();
@@ -159,9 +168,20 @@ MainWindow::MainWindow(QWidget *parent)
         m_viKeybind = settings.value(KEY_VI_KEYBIND, false).toBool();
         m_searchIgnoreCase = settings.value(KEY_SEARCH_IGNORE_CASE, true).toBool();
         m_searchRegExp = settings.value(KEY_SEARCH_REGEXP, true).toBool();
+        m_grepSubDir = settings.value(KEY_GREP_SUBDIR, false).toBool();
+        m_grepClearOutput = settings.value(KEY_GREP_CLEAR_OUTPUT, true).toBool();
+        m_grepFilter = settings.value(KEY_GREP_FILTER, QStringLiteral("*.md")).toString();
+        if (m_grepFilter.trimmed().isEmpty())
+            m_grepFilter = QStringLiteral("*.md");
         m_toolbarSearchHist = settings.value(KEY_SEARCH_HISTORY).toStringList();
         while (m_toolbarSearchHist.size() > 20)
             m_toolbarSearchHist.pop_back();
+        m_replaceHist = settings.value(KEY_REPLACE_HISTORY).toStringList();
+        while (m_replaceHist.size() > 20)
+            m_replaceHist.pop_back();
+        m_grepDirHist = settings.value(KEY_GREP_DIR_HISTORY).toStringList();
+        while (m_grepDirHist.size() > 20)
+            m_grepDirHist.pop_back();
     }
     ui->action_ViKeybind->setChecked(m_viKeybind);
     applyOutputFontSize(m_outputFontSize);
@@ -385,6 +405,13 @@ MainWindow::MainWindow(QWidget *parent)
         const QString pat = m_searchRegExp ? QRegularExpression::escape(word) : word;
         runToolbarSearch(pat, true);
     });
+    searchMenu->addSeparator();
+    QAction *actReplace = searchMenu->addAction(tr("&Replace..."));
+    actReplace->setShortcut(QKeySequence(Qt::Key_F4));
+    connect(actReplace, &QAction::triggered, this, &MainWindow::onReplace);
+    QAction *actGrep = searchMenu->addAction(tr("&Grep..."));
+    actGrep->setShortcut(QKeySequence(Qt::SHIFT | Qt::Key_F4));
+    connect(actGrep, &QAction::triggered, this, &MainWindow::onGrep);
     ui->menuBar->insertMenu(viewMenu->menuAction(), searchMenu);
 
     TextEdit *initialEdit = addEditorTab(QStringLiteral("Untitled-%1").arg(++m_tabNumber));
@@ -1595,6 +1622,15 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 
 bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 {
+    if (ui && ui->plainTextEdit && obj == ui->plainTextEdit->viewport()
+        && event->type() == QEvent::MouseButtonDblClick) {
+        auto *me = static_cast<QMouseEvent *>(event);
+        if (me->button() == Qt::LeftButton) {
+            const QTextCursor tc = ui->plainTextEdit->cursorForPosition(me->pos());
+            if (jumpToOutputLine(tc.blockNumber()))
+                return true;
+        }
+    }
     if (m_searchCB && obj == m_searchCB->lineEdit() && event->type() == QEvent::KeyPress) {
         auto *ke = static_cast<QKeyEvent *>(event);
         if (ke->key() == Qt::Key_Escape) {
@@ -1915,6 +1951,627 @@ void MainWindow::onAction_About() {
 		"<a href=\"https://github.com/cubicdaiya/dtl\">dtl</a>, "
 		"and <a href=\"https://github.com/sammycage/lunasvg\">LunaSVG</a></p>"
 	);
+}
+
+namespace {
+QString expandReplaceText(const QString &dst, const QRegularExpressionMatch &match, bool useRegExp)
+{
+    if (!useRegExp)
+        return dst;
+    QString out;
+    out.reserve(dst.size());
+    for (qsizetype i = 0; i < dst.size(); ++i) {
+        const QChar c = dst[i];
+        if (c == QChar('\\') && i + 1 < dst.size()) {
+            const QChar nxt = dst[i + 1];
+            if (nxt == QChar('\\')) { out.append(QChar('\\')); ++i; }
+            else if (nxt == QChar('n')) { out.append(QChar('\n')); ++i; }
+            else if (nxt == QChar('t')) { out.append(QChar('\t')); ++i; }
+            else if (nxt == QChar('&')) { out.append(QChar('&')); ++i; }
+            else if (nxt >= QChar('0') && nxt <= QChar('9')) {
+                const int idx = nxt.unicode() - '0';
+                if (idx <= match.lastCapturedIndex())
+                    out.append(match.captured(idx));
+                ++i;
+            } else {
+                out.append(c);
+            }
+        } else if (c == QChar('&')) {
+            out.append(match.captured(0));
+        } else if (c == QChar('$') && i + 1 < dst.size()) {
+            const QChar nxt = dst[i + 1];
+            if (nxt == QChar('&')) { out.append(match.captured(0)); ++i; }
+            else if (nxt >= QChar('0') && nxt <= QChar('9')) {
+                const int idx = nxt.unicode() - '0';
+                if (idx <= match.lastCapturedIndex())
+                    out.append(match.captured(idx));
+                ++i;
+            } else {
+                out.append(c);
+            }
+        } else {
+            out.append(c);
+        }
+    }
+    return out;
+}
+}
+
+bool MainWindow::findAndSelectMatch(const QString &src, bool forward)
+{
+    TextEdit *edit = currentTextEdit();
+    if (!edit || src.isEmpty())
+        return false;
+
+    const QString eff = m_searchRegExp ? src : QRegularExpression::escape(src);
+    const auto opt = m_searchIgnoreCase ? QRegularExpression::CaseInsensitiveOption : QRegularExpression::NoPatternOption;
+    QRegularExpression re(eff, opt);
+    if (!re.isValid()) {
+        statusBar()->showMessage(tr("Invalid regular expression: %1").arg(re.errorString()), 5000);
+        return false;
+    }
+
+    m_toolbarSearchHist.removeAll(src);
+    m_toolbarSearchHist.push_front(src);
+    while (m_toolbarSearchHist.size() > 20)
+        m_toolbarSearchHist.pop_back();
+    if (m_searchCB) {
+        QSignalBlocker sb(m_searchCB);
+        m_searchCB->clear();
+        m_searchCB->addItems(m_toolbarSearchHist);
+        m_searchCB->setCurrentText(src);
+    }
+    {
+        QSettings settings;
+        settings.setValue(KEY_SEARCH_HISTORY, m_toolbarSearchHist);
+    }
+    edit->viEngine()->setSearchOptions(m_searchIgnoreCase, m_searchRegExp);
+    edit->setSearchHighlight(src, m_searchIgnoreCase, m_searchRegExp);
+
+    const QString fullText = edit->document()->toPlainText();
+    if (fullText.isEmpty()) {
+        statusBar()->showMessage(tr("Pattern not found: %1").arg(src), 5000);
+        return false;
+    }
+
+    const TextCursor cur = edit->textCursor();
+    qsizetype foundStart = -1;
+    qsizetype foundLen = 0;
+    if (forward) {
+        const qsizetype start = cur.hasSelection()
+            ? qMin(static_cast<qsizetype>(cur.selectionEnd()), fullText.size())
+            : qMin(static_cast<qsizetype>(cur.position()), fullText.size());
+        QRegularExpressionMatch m = re.match(fullText, start);
+        if (!m.hasMatch())
+            m = re.match(fullText, 0);
+        if (m.hasMatch()) {
+            foundStart = m.capturedStart();
+            foundLen = m.capturedLength();
+        }
+    } else {
+        const qsizetype limit = cur.hasSelection()
+            ? static_cast<qsizetype>(cur.selectionStart())
+            : static_cast<qsizetype>(cur.position());
+        auto it = re.globalMatch(fullText);
+        qsizetype lastBeforeStart = -1, lastBeforeLen = 0;
+        qsizetype lastAnyStart = -1, lastAnyLen = 0;
+        while (it.hasNext()) {
+            const QRegularExpressionMatch m = it.next();
+            if (m.capturedStart() < limit) {
+                lastBeforeStart = m.capturedStart();
+                lastBeforeLen = m.capturedLength();
+            }
+            lastAnyStart = m.capturedStart();
+            lastAnyLen = m.capturedLength();
+        }
+        if (lastBeforeStart >= 0) {
+            foundStart = lastBeforeStart;
+            foundLen = lastBeforeLen;
+        } else if (lastAnyStart >= 0) {
+            foundStart = lastAnyStart;
+            foundLen = lastAnyLen;
+        }
+    }
+
+    if (foundStart < 0) {
+        statusBar()->showMessage(tr("Pattern not found: %1").arg(src), 5000);
+        return false;
+    }
+
+    TextDocument *doc = edit->document();
+    if (doc->lineMgr().unfoldContaining(doc->lineMgr().lineAtPos(static_cast<TextDocument::pos_t>(foundStart))))
+        edit->refreshAfterFold();
+    TextCursor c(doc);
+    c.setPosition(static_cast<TextDocument::pos_t>(foundStart));
+    c.setPosition(static_cast<TextDocument::pos_t>(foundStart + foundLen), TextCursor::KeepAnchor);
+    edit->setTextCursor(c);
+    return true;
+}
+
+void MainWindow::doReplaceNext(const QString &src, const QString &dst)
+{
+    TextEdit *edit = currentTextEdit();
+    if (!edit || src.isEmpty())
+        return;
+
+    const QString eff = m_searchRegExp ? src : QRegularExpression::escape(src);
+    const auto opt = m_searchIgnoreCase ? QRegularExpression::CaseInsensitiveOption : QRegularExpression::NoPatternOption;
+    QRegularExpression re(eff, opt);
+    if (!re.isValid()) {
+        statusBar()->showMessage(tr("Invalid regular expression: %1").arg(re.errorString()), 5000);
+        return;
+    }
+
+    m_replaceHist.removeAll(dst);
+    m_replaceHist.push_front(dst);
+    while (m_replaceHist.size() > 20)
+        m_replaceHist.pop_back();
+    {
+        QSettings settings;
+        settings.setValue(KEY_REPLACE_HISTORY, m_replaceHist);
+    }
+
+    const TextCursor cur = edit->textCursor();
+    if (cur.hasSelection()) {
+        const QString sel = cur.selectedText();
+        const QRegularExpressionMatch m = re.match(sel);
+        if (m.hasMatch() && m.capturedStart() == 0 && m.capturedLength() == sel.size()) {
+            const QString rep = expandReplaceText(dst, m, m_searchRegExp);
+            edit->applyPreviewEdit(static_cast<int>(cur.selectionStart()), static_cast<int>(cur.selectionEnd()), rep);
+            findAndSelectMatch(src, true);
+            return;
+        }
+    }
+    findAndSelectMatch(src, true);
+}
+
+void MainWindow::doReplaceAll(const QString &src, const QString &dst)
+{
+    TextEdit *edit = currentTextEdit();
+    if (!edit || src.isEmpty())
+        return;
+
+    const QString eff = m_searchRegExp ? src : QRegularExpression::escape(src);
+    const auto opt = m_searchIgnoreCase ? QRegularExpression::CaseInsensitiveOption : QRegularExpression::NoPatternOption;
+    QRegularExpression re(eff, opt);
+    if (!re.isValid()) {
+        statusBar()->showMessage(tr("Invalid regular expression: %1").arg(re.errorString()), 5000);
+        return;
+    }
+
+    m_toolbarSearchHist.removeAll(src);
+    m_toolbarSearchHist.push_front(src);
+    while (m_toolbarSearchHist.size() > 20)
+        m_toolbarSearchHist.pop_back();
+    m_replaceHist.removeAll(dst);
+    m_replaceHist.push_front(dst);
+    while (m_replaceHist.size() > 20)
+        m_replaceHist.pop_back();
+    if (m_searchCB) {
+        QSignalBlocker sb(m_searchCB);
+        m_searchCB->clear();
+        m_searchCB->addItems(m_toolbarSearchHist);
+        m_searchCB->setCurrentText(src);
+    }
+    {
+        QSettings settings;
+        settings.setValue(KEY_SEARCH_HISTORY, m_toolbarSearchHist);
+        settings.setValue(KEY_REPLACE_HISTORY, m_replaceHist);
+    }
+
+    TextDocument *doc = edit->document();
+    const QString fullText = doc->toPlainText();
+    struct MatchItem {
+        qsizetype start;
+        qsizetype len;
+        QString rep;
+    };
+    QVector<MatchItem> matches;
+    auto it = re.globalMatch(fullText);
+    while (it.hasNext()) {
+        const QRegularExpressionMatch m = it.next();
+        if (m.capturedLength() == 0 && !matches.isEmpty() && matches.back().start == m.capturedStart())
+            continue;
+        matches.push_back({m.capturedStart(), m.capturedLength(), expandReplaceText(dst, m, m_searchRegExp)});
+    }
+    if (matches.isEmpty()) {
+        statusBar()->showMessage(tr("Pattern not found: %1").arg(src), 5000);
+        return;
+    }
+
+    doc->undoMgr().openBlock();
+    for (qsizetype i = matches.size() - 1; i >= 0; --i) {
+        const auto &mi = matches[i];
+        if (mi.len > 0)
+            doc->erase(static_cast<TextDocument::pos_t>(mi.start), static_cast<TextDocument::pos_t>(mi.start + mi.len));
+        if (!mi.rep.isEmpty())
+            doc->insert(static_cast<TextDocument::pos_t>(mi.start), mi.rep);
+    }
+    doc->undoMgr().closeBlock();
+
+    TextCursor c(doc);
+    const auto &first = matches.first();
+    c.setPosition(static_cast<TextDocument::pos_t>(first.start + first.rep.size()));
+    edit->setTextCursor(c);
+    edit->notifyTextChanged();
+    edit->setSearchHighlight(src, m_searchIgnoreCase, m_searchRegExp);
+    statusBar()->showMessage(tr("%1 occurrence(s) replaced.").arg(matches.size()), 5000);
+}
+
+void MainWindow::onReplace()
+{
+    if (!currentTextEdit())
+        return;
+
+    QDialog dlg(this);
+    dlg.setWindowTitle(tr("Replace"));
+    dlg.setMinimumWidth(460);
+    auto *layout = new QVBoxLayout(&dlg);
+    auto *form = new QFormLayout();
+
+    auto *srcCombo = new QComboBox(&dlg);
+    srcCombo->setEditable(true);
+    srcCombo->setInsertPolicy(QComboBox::NoInsert);
+    srcCombo->addItems(m_toolbarSearchHist);
+    QString initSrc;
+    if (TextEdit *edit = currentTextEdit()) {
+        const QString sel = edit->textCursor().selectedText();
+        if (!sel.isEmpty() && !sel.contains(QChar('\n')))
+            initSrc = sel;
+    }
+    if (initSrc.isEmpty() && m_searchCB)
+        initSrc = m_searchCB->currentText();
+    if (!initSrc.isEmpty())
+        srcCombo->setCurrentText(initSrc);
+    if (QLineEdit *le = srcCombo->lineEdit())
+        le->selectAll();
+    form->addRow(tr("&Find what:"), srcCombo);
+
+    auto *dstCombo = new QComboBox(&dlg);
+    dstCombo->setEditable(true);
+    dstCombo->setInsertPolicy(QComboBox::NoInsert);
+    dstCombo->addItems(m_replaceHist);
+    if (!m_replaceHist.isEmpty())
+        dstCombo->setCurrentText(m_replaceHist.first());
+    form->addRow(tr("Re&place with:"), dstCombo);
+    layout->addLayout(form);
+
+    auto *optsRow = new QHBoxLayout();
+    auto *chkIgnoreCase = new QCheckBox(tr("&Ignore Case"), &dlg);
+    chkIgnoreCase->setChecked(m_searchIgnoreCase);
+    auto *chkRegExp = new QCheckBox(tr("&Regular Expression"), &dlg);
+    chkRegExp->setChecked(m_searchRegExp);
+    optsRow->addWidget(chkIgnoreCase);
+    optsRow->addWidget(chkRegExp);
+    optsRow->addStretch();
+    layout->addLayout(optsRow);
+
+    connect(chkIgnoreCase, &QCheckBox::toggled, &dlg, [this](bool checked) {
+        if (m_actIgnoreCase) m_actIgnoreCase->setChecked(checked);
+        else m_searchIgnoreCase = checked;
+    });
+    connect(chkRegExp, &QCheckBox::toggled, &dlg, [this](bool checked) {
+        if (m_actRegExp) m_actRegExp->setChecked(checked);
+        else m_searchRegExp = checked;
+    });
+
+    auto *btnRow1 = new QHBoxLayout();
+    auto *btnPrev = new QPushButton(tr("Find &Prev"), &dlg);
+    auto *btnNext = new QPushButton(tr("Find &Next"), &dlg);
+    auto *btnReplace = new QPushButton(tr("&Replace"), &dlg);
+    auto *btnReplaceAll = new QPushButton(tr("Replace &All"), &dlg);
+    btnNext->setDefault(true);
+    btnRow1->addWidget(btnPrev);
+    btnRow1->addWidget(btnNext);
+    btnRow1->addWidget(btnReplace);
+    btnRow1->addWidget(btnReplaceAll);
+    layout->addLayout(btnRow1);
+
+    auto *btnRow2 = new QHBoxLayout();
+    auto *btnUndo = new QPushButton(tr("&Undo"), &dlg);
+    auto *btnRedo = new QPushButton(tr("Re&do"), &dlg);
+    auto *btnClose = new QPushButton(tr("&Close"), &dlg);
+    btnRow2->addWidget(btnUndo);
+    btnRow2->addWidget(btnRedo);
+    btnRow2->addStretch();
+    btnRow2->addWidget(btnClose);
+    layout->addLayout(btnRow2);
+
+    auto refreshCombos = [this, srcCombo, dstCombo](const QString &src, const QString &dst) {
+        {
+            QSignalBlocker sb(srcCombo);
+            srcCombo->clear();
+            srcCombo->addItems(m_toolbarSearchHist);
+            srcCombo->setCurrentText(src);
+        }
+        {
+            QSignalBlocker sb(dstCombo);
+            dstCombo->clear();
+            dstCombo->addItems(m_replaceHist);
+            dstCombo->setCurrentText(dst);
+        }
+    };
+
+    connect(btnPrev, &QPushButton::clicked, &dlg, [this, srcCombo, dstCombo, refreshCombos]() {
+        const QString src = srcCombo->currentText();
+        if (src.isEmpty()) return;
+        findAndSelectMatch(src, false);
+        refreshCombos(src, dstCombo->currentText());
+    });
+    connect(btnNext, &QPushButton::clicked, &dlg, [this, srcCombo, dstCombo, refreshCombos]() {
+        const QString src = srcCombo->currentText();
+        if (src.isEmpty()) return;
+        findAndSelectMatch(src, true);
+        refreshCombos(src, dstCombo->currentText());
+    });
+    connect(btnReplace, &QPushButton::clicked, &dlg, [this, srcCombo, dstCombo, refreshCombos]() {
+        const QString src = srcCombo->currentText();
+        const QString dst = dstCombo->currentText();
+        if (src.isEmpty()) return;
+        doReplaceNext(src, dst);
+        refreshCombos(src, dst);
+    });
+    connect(btnReplaceAll, &QPushButton::clicked, &dlg, [this, srcCombo, dstCombo, refreshCombos]() {
+        const QString src = srcCombo->currentText();
+        const QString dst = dstCombo->currentText();
+        if (src.isEmpty()) return;
+        doReplaceAll(src, dst);
+        refreshCombos(src, dst);
+    });
+    connect(btnUndo, &QPushButton::clicked, &dlg, [this]() { onUndo(); });
+    connect(btnRedo, &QPushButton::clicked, &dlg, [this]() { onRedo(); });
+    connect(btnClose, &QPushButton::clicked, &dlg, &QDialog::reject);
+
+    auto *undoSc = new QShortcut(QKeySequence::Undo, &dlg);
+    connect(undoSc, &QShortcut::activated, &dlg, [this]() { onUndo(); });
+    auto *redoSc = new QShortcut(QKeySequence::Redo, &dlg);
+    connect(redoSc, &QShortcut::activated, &dlg, [this]() { onRedo(); });
+
+    srcCombo->setFocus();
+    dlg.exec();
+    if (TextEdit *edit = currentTextEdit())
+        edit->setFocus();
+}
+
+void MainWindow::onGrep()
+{
+    QDialog dlg(this);
+    dlg.setWindowTitle(tr("Grep"));
+    dlg.setMinimumWidth(520);
+    auto *layout = new QVBoxLayout(&dlg);
+    auto *form = new QFormLayout();
+
+    auto *patCombo = new QComboBox(&dlg);
+    patCombo->setEditable(true);
+    patCombo->setInsertPolicy(QComboBox::NoInsert);
+    patCombo->addItems(m_toolbarSearchHist);
+    QString initPat;
+    if (TextEdit *edit = currentTextEdit()) {
+        const QString sel = edit->textCursor().selectedText();
+        if (!sel.isEmpty() && !sel.contains(QChar('\n')))
+            initPat = sel;
+    }
+    if (initPat.isEmpty() && m_searchCB)
+        initPat = m_searchCB->currentText();
+    if (!initPat.isEmpty())
+        patCombo->setCurrentText(initPat);
+    if (QLineEdit *le = patCombo->lineEdit())
+        le->selectAll();
+    form->addRow(tr("&Find what:"), patCombo);
+
+    auto *dirRow = new QHBoxLayout();
+    auto *dirCombo = new QComboBox(&dlg);
+    dirCombo->setEditable(true);
+    dirCombo->setInsertPolicy(QComboBox::NoInsert);
+    dirCombo->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    dirCombo->addItems(m_grepDirHist);
+    QString initDir;
+    if (QWidget *curTab = m_tabWidget ? m_tabWidget->currentWidget() : nullptr) {
+        const QString fp = curTab->property(PROP_FILE_PATH).toString();
+        if (!fp.isEmpty())
+            initDir = QFileInfo(fp).absolutePath();
+    }
+    if (initDir.isEmpty())
+        initDir = !m_lastDir.isEmpty() ? m_lastDir : (!m_grepDirHist.isEmpty() ? m_grepDirHist.first() : QDir::currentPath());
+    dirCombo->setCurrentText(initDir);
+    auto *browseBtn = new QPushButton(tr("Browse..."), &dlg);
+    connect(browseBtn, &QPushButton::clicked, &dlg, [&dlg, dirCombo]() {
+        const QString chosen = QFileDialog::getExistingDirectory(&dlg, tr("Select Folder"), dirCombo->currentText());
+        if (!chosen.isEmpty())
+            dirCombo->setCurrentText(QDir::cleanPath(chosen));
+    });
+    dirRow->addWidget(dirCombo, 1);
+    dirRow->addWidget(browseBtn);
+    form->addRow(tr("&Folder:"), dirRow);
+
+    auto *filterEdit = new QLineEdit(m_grepFilter, &dlg);
+    filterEdit->setPlaceholderText(QStringLiteral("*.md"));
+    form->addRow(tr("File &Types:"), filterEdit);
+    layout->addLayout(form);
+
+    auto *optsRow1 = new QHBoxLayout();
+    auto *chkIgnoreCase = new QCheckBox(tr("&Ignore Case"), &dlg);
+    chkIgnoreCase->setChecked(m_searchIgnoreCase);
+    auto *chkRegExp = new QCheckBox(tr("&Regular Expression"), &dlg);
+    chkRegExp->setChecked(m_searchRegExp);
+    optsRow1->addWidget(chkIgnoreCase);
+    optsRow1->addWidget(chkRegExp);
+    optsRow1->addStretch();
+    layout->addLayout(optsRow1);
+
+    auto *optsRow2 = new QHBoxLayout();
+    auto *chkSubDir = new QCheckBox(tr("Include &Subdirectories"), &dlg);
+    chkSubDir->setChecked(m_grepSubDir);
+    auto *chkClearOut = new QCheckBox(tr("&Clear Output"), &dlg);
+    chkClearOut->setChecked(m_grepClearOutput);
+    optsRow2->addWidget(chkSubDir);
+    optsRow2->addWidget(chkClearOut);
+    optsRow2->addStretch();
+    layout->addLayout(optsRow2);
+
+    auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dlg);
+    if (QPushButton *okBtn = buttons->button(QDialogButtonBox::Ok))
+        okBtn->setText(tr("Grep"));
+    connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    connect(buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+    layout->addWidget(buttons);
+
+    patCombo->setFocus();
+    if (dlg.exec() != QDialog::Accepted)
+        return;
+
+    const QString searchText = patCombo->currentText();
+    const QString dirPath = QDir::cleanPath(dirCombo->currentText().trimmed());
+    QString filterText = filterEdit->text().trimmed();
+    if (filterText.isEmpty())
+        filterText = QStringLiteral("*.md");
+    if (searchText.isEmpty() || dirPath.isEmpty())
+        return;
+
+    if (m_actIgnoreCase)
+        m_actIgnoreCase->setChecked(chkIgnoreCase->isChecked());
+    else
+        m_searchIgnoreCase = chkIgnoreCase->isChecked();
+    if (m_actRegExp)
+        m_actRegExp->setChecked(chkRegExp->isChecked());
+    else
+        m_searchRegExp = chkRegExp->isChecked();
+    m_grepSubDir = chkSubDir->isChecked();
+    m_grepClearOutput = chkClearOut->isChecked();
+    m_grepFilter = filterText;
+
+    doGrep(searchText, dirPath, filterText, m_grepSubDir, m_grepClearOutput);
+}
+
+void MainWindow::doGrep(const QString &searchText, const QString &dirPath, const QString &filterText, bool subDir, bool clearOutput)
+{
+    const Qt::CaseSensitivity ic = m_searchIgnoreCase ? Qt::CaseInsensitive : Qt::CaseSensitive;
+    QRegularExpression re;
+    if (m_searchRegExp) {
+        const auto opt = m_searchIgnoreCase ? QRegularExpression::CaseInsensitiveOption : QRegularExpression::NoPatternOption;
+        re = QRegularExpression(searchText, opt);
+        if (!re.isValid()) {
+            const QString msg = tr("Invalid regular expression: %1").arg(re.errorString());
+            do_output(msg + QLatin1Char('\n'));
+            statusBar()->showMessage(msg, 5000);
+            return;
+        }
+    }
+
+    //	履歴・設定の保存（正規表現検証を通過してから更新）
+    m_toolbarSearchHist.removeAll(searchText);
+    m_toolbarSearchHist.push_front(searchText);
+    while (m_toolbarSearchHist.size() > 20)
+        m_toolbarSearchHist.pop_back();
+    if (m_searchCB) {
+        QSignalBlocker sb(m_searchCB);
+        m_searchCB->clear();
+        m_searchCB->addItems(m_toolbarSearchHist);
+        m_searchCB->setCurrentText(searchText);
+    }
+    m_grepDirHist.removeAll(dirPath);
+    m_grepDirHist.push_front(dirPath);
+    while (m_grepDirHist.size() > 20)
+        m_grepDirHist.pop_back();
+    {
+        QSettings settings;
+        settings.setValue(KEY_SEARCH_HISTORY, m_toolbarSearchHist);
+        settings.setValue(KEY_GREP_DIR_HISTORY, m_grepDirHist);
+        settings.setValue(KEY_GREP_SUBDIR, m_grepSubDir);
+        settings.setValue(KEY_GREP_CLEAR_OUTPUT, m_grepClearOutput);
+        settings.setValue(KEY_GREP_FILTER, m_grepFilter);
+    }
+
+    if (clearOutput)
+        ui->plainTextEdit->clear();
+    ui->outputBar->setVisible(true);
+
+    QStringList filters = filterText.split(QRegularExpression(QStringLiteral("[;\\s,]+")), Qt::SkipEmptyParts);
+    if (filters.isEmpty())
+        filters << QStringLiteral("*.md");
+
+    QString outBuf;
+    outBuf.reserve(8192);
+    outBuf += tr("Grepping '%1' in %2 under '%3' ...\n").arg(searchText, filters.join(QStringLiteral(", ")), dirPath);
+
+    QDirIterator::IteratorFlags flags = QDirIterator::NoIteratorFlags;
+    if (subDir)
+        flags |= QDirIterator::Subdirectories;
+
+    int matchedFiles = 0;
+    int matchedLines = 0;
+    QDirIterator it(dirPath, filters, QDir::Files | QDir::NoDotAndDotDot, flags);
+    while (it.hasNext()) {
+        it.next();
+        const QString absPath = QDir::cleanPath(it.fileInfo().absoluteFilePath());
+        QString content, errMsg;
+        QStringConverter::Encoding enc = QStringConverter::Utf8;
+        bool bom = false, crlf = false;
+        if (!readTextFileWithMeta(absPath, content, enc, bom, crlf, errMsg))
+            continue;
+        const QStringList lines = content.split(QChar('\n'));
+        bool headerPrinted = false;
+        for (int i = 0; i < lines.size(); ++i) {
+            const QString &line = lines[i];
+            const bool hit = m_searchRegExp ? re.match(line).hasMatch() : line.contains(searchText, ic);
+            if (hit) {
+                if (!headerPrinted) {
+                    headerPrinted = true;
+                    ++matchedFiles;
+                    outBuf += QStringLiteral("\n\"%1\"\n").arg(absPath);
+                }
+                outBuf += QStringLiteral("%1: %2\n").arg(i + 1, 4).arg(line);
+                ++matchedLines;
+            }
+        }
+    }
+    outBuf += tr("\n%1 line(s) matched in %2 file(s).\n").arg(matchedLines).arg(matchedFiles);
+    do_output(outBuf);
+    statusBar()->showMessage(tr("Grep: %1 line(s) in %2 file(s)").arg(matchedLines).arg(matchedFiles), 5000);
+}
+
+bool MainWindow::jumpToOutputLine(int blockNumber)
+{
+    if (!ui || !ui->plainTextEdit || blockNumber < 0)
+        return false;
+    QTextDocument *doc = ui->plainTextEdit->document();
+    const QTextBlock clicked = doc->findBlockByNumber(blockNumber);
+    if (!clicked.isValid())
+        return false;
+    static const QRegularExpression reHit(QStringLiteral(R"(^\s*(\d+):)"));
+    const QRegularExpressionMatch m = reHit.match(clicked.text());
+    if (!m.hasMatch())
+        return false;
+    const int targetLine = m.captured(1).toInt() - 1;
+    if (targetLine < 0)
+        return false;
+
+    QString filePath;
+    for (QTextBlock b = clicked.previous(); b.isValid(); b = b.previous()) {
+        const QString t = b.text().trimmed();
+        if (t.size() >= 2 && t.startsWith(QChar('"')) && t.endsWith(QChar('"'))) {
+            filePath = t.mid(1, t.size() - 2);
+            break;
+        }
+    }
+    if (filePath.isEmpty() || !QFileInfo::exists(filePath))
+        return false;
+    if (!openFile(filePath))
+        return false;
+    if (TextEdit *edit = currentTextEdit()) {
+        const ViewLineMgr &mgr = edit->document()->lineMgr();
+        const int clampedLn = qBound(0, targetLine, qMax(0, mgr.lineCount() - 1));
+        TextCursor cur(edit->document());
+        cur.setPosition(mgr.lineStartPos(clampedLn));
+        edit->setTextCursor(cur);
+        edit->verticalScrollBar()->setValue(mgr.lineToViewLine(clampedLn));
+        if (m_searchCB && !m_searchCB->currentText().isEmpty()) {
+            edit->viEngine()->setSearchOptions(m_searchIgnoreCase, m_searchRegExp);
+            edit->setSearchHighlight(m_searchCB->currentText(), m_searchIgnoreCase, m_searchRegExp);
+        }
+        edit->setFocus();
+    }
+    return true;
 }
 MainWindow::~MainWindow()
 {
