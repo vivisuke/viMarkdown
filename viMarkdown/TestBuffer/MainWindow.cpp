@@ -23,6 +23,7 @@
 #include <QHBoxLayout>
 #include <QIcon>
 #include <QKeyEvent>
+#include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPainter>
@@ -36,6 +37,7 @@
 #include <QSplitter>
 #include <QStandardPaths>
 #include <QStringDecoder>
+#include <QStyle>
 #include <QTabWidget>
 #include <QTextBlock>
 #include <QTextCharFormat>
@@ -87,6 +89,7 @@ const QStringView KEY_GREP_DIR_HISTORY(u"search/grepDir");
 const QStringView KEY_GREP_SUBDIR(u"search/grepSubdir");
 const QStringView KEY_GREP_CLEAR_OUTPUT(u"search/grepClearOutput");
 const QStringView KEY_GREP_FILTER(u"search/grepFilter");
+const QStringView KEY_DIRBAR_FILTER(u"dirBar/filter");
 const QStringView KEY_WINDOW_GEOMETRY(u"window/geometry");
 const QStringView KEY_WINDOW_STATE(u"window/state");
 const char PROP_FILE_PATH[] = "filePath";
@@ -259,6 +262,74 @@ MainWindow::MainWindow(QWidget *parent)
     addDockWidget(Qt::LeftDockWidgetArea, m_outlineDock);
     connect(m_outlineTree, &QTreeWidget::itemClicked, this, &MainWindow::onOutlineItemClicked);
 
+    m_dirDock = new QDockWidget(tr("DirectoryBar"), this);
+    m_dirDock->setObjectName(QStringLiteral("directoryBar"));
+    auto *dirContainer = new QWidget(m_dirDock);
+    auto *dirLayout = new QVBoxLayout(dirContainer);
+    dirLayout->setContentsMargins(2, 2, 2, 2);
+    dirLayout->setSpacing(2);
+
+    auto *dirHeaderRow = new QHBoxLayout();
+    dirHeaderRow->setContentsMargins(0, 0, 0, 0);
+    dirHeaderRow->setSpacing(2);
+    m_dirPathLabel = new QLabel(dirContainer);
+    m_dirPathLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
+    auto *dirUpBtn = new QPushButton(QStringLiteral(".."), dirContainer);
+    dirUpBtn->setFixedWidth(28);
+    dirUpBtn->setToolTip(tr("Parent Directory"));
+    dirUpBtn->setFocusPolicy(Qt::ClickFocus);
+    connect(dirUpBtn, &QPushButton::clicked, this, [this]() {
+        if (m_currentDirBarPath.isEmpty()) return;
+        QDir d(m_currentDirBarPath);
+        if (d.cdUp())
+            updateDirBar(d.absolutePath());
+    });
+    auto *dirBrowseBtn = new QPushButton(QStringLiteral("..."), dirContainer);
+    dirBrowseBtn->setFixedWidth(28);
+    dirBrowseBtn->setToolTip(tr("Select Folder"));
+    dirBrowseBtn->setFocusPolicy(Qt::ClickFocus);
+    connect(dirBrowseBtn, &QPushButton::clicked, this, [this]() {
+        const QString chosen = QFileDialog::getExistingDirectory(this, tr("Select Folder"), m_currentDirBarPath);
+        if (!chosen.isEmpty())
+            updateDirBar(chosen);
+    });
+    dirHeaderRow->addWidget(m_dirPathLabel, 1);
+    dirHeaderRow->addWidget(dirUpBtn);
+    dirHeaderRow->addWidget(dirBrowseBtn);
+    dirLayout->addLayout(dirHeaderRow);
+
+    m_dirFilterCB = new QComboBox(dirContainer);
+    m_dirFilterCB->setEditable(true);
+    m_dirFilterCB->setFocusPolicy(Qt::ClickFocus);
+    m_dirFilterCB->addItems({
+        QStringLiteral("*.md"),
+        QStringLiteral("*.md; *.txt"),
+        QStringLiteral("*.cpp; *.h"),
+        QStringLiteral("*.*")
+    });
+    {
+        QSettings settings;
+        const QString savedFilter = settings.value(KEY_DIRBAR_FILTER, QStringLiteral("*.md")).toString().trimmed();
+        m_dirFilterCB->setCurrentText(savedFilter.isEmpty() ? QStringLiteral("*.md") : savedFilter);
+    }
+    connect(m_dirFilterCB, &QComboBox::currentTextChanged, this, [this](const QString &f) {
+        QSettings settings;
+        settings.setValue(KEY_DIRBAR_FILTER, f.trimmed());
+        updateDirBar();
+    });
+    dirLayout->addWidget(m_dirFilterCB);
+
+    m_dirTree = new QTreeWidget(dirContainer);
+    m_dirTree->setFocusPolicy(Qt::ClickFocus);
+    m_dirTree->setHeaderHidden(true);
+    m_dirTree->setRootIsDecorated(false);
+    connect(m_dirTree, &QTreeWidget::itemDoubleClicked, this, &MainWindow::onDirItemDoubleClicked);
+    dirLayout->addWidget(m_dirTree, 1);
+
+    m_dirDock->setWidget(dirContainer);
+    addDockWidget(Qt::LeftDockWidgetArea, m_dirDock);
+    splitDockWidget(m_outlineDock, m_dirDock, Qt::Vertical);
+
     m_calendarDock = new QDockWidget(tr("CalendarBar"), this);
     m_calendarDock->setObjectName(QStringLiteral("calendarBar"));
     auto *cal = new DiaryCalendarWidget(m_calendarDock);
@@ -277,11 +348,14 @@ MainWindow::MainWindow(QWidget *parent)
     QMenu *viewMenu = new QMenu(tr("&View"), this);
     QAction *outlineAct = m_outlineDock->toggleViewAction();
     outlineAct->setText(tr("&OutlineBar"));
+    QAction *dirAct = m_dirDock->toggleViewAction();
+    dirAct->setText(tr("&DirectoryBar"));
     QAction *outputAct = ui->outputBar->toggleViewAction();
     outputAct->setText(tr("Outpu&tBar"));
     QAction *calAct = m_calendarDock->toggleViewAction();
     calAct->setText(tr("&CalendarBar"));
     viewMenu->addAction(outlineAct);
+    viewMenu->addAction(dirAct);
     viewMenu->addAction(outputAct);
     viewMenu->addAction(calAct);
     menuBar()->insertMenu(ui->menuTest->menuAction(), viewMenu);
@@ -644,6 +718,7 @@ MainWindow::MainWindow(QWidget *parent)
         const QDate today = QDate::currentDate();
         onCalendarPageChanged(today.year(), today.month());
     }
+    updateDirBar(QDir::currentPath());
 }
 
 TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath)
@@ -875,6 +950,11 @@ void MainWindow::onCurrentTabChanged(int index)
     }
     setWindowTitle(m_tabWidget->tabText(index) + QStringLiteral(" - TestBuffer"));
     updateUndoRedoEnabled();
+    if (QWidget *w = m_tabWidget->widget(index)) {
+        const QString fp = w->property(PROP_FILE_PATH).toString();
+        if (!fp.isEmpty())
+            updateDirBar(QFileInfo(fp).absolutePath());
+    }
     if (TextEdit *edit = currentTextEdit())
         edit->setFocus();
 }
@@ -1447,6 +1527,7 @@ bool MainWindow::openFile(const QString &filePath)
             .arg(edit->document()->lineMgr().lineCount()),
         5000);
     addToRecentFiles(cleanPath);
+    updateDirBar(fi.absolutePath());
     edit->setFocus();
     return true;
 }
@@ -2762,6 +2843,68 @@ void MainWindow::openDiaryDate(const QDate &date)
         onCalendarPageChanged(date.year(), date.month());
     }
     openFile(filePath);
+}
+
+void MainWindow::updateDirBar(const QString &dirPath)
+{
+    if (!m_dirTree) return;
+    if (!dirPath.isEmpty())
+        m_currentDirBarPath = QDir::cleanPath(dirPath);
+    if (m_currentDirBarPath.isEmpty())
+        m_currentDirBarPath = QDir::cleanPath(QDir::currentPath());
+
+    QDir dir(m_currentDirBarPath);
+    if (m_dirPathLabel) {
+        const QString displayName = dir.dirName().isEmpty() ? m_currentDirBarPath : dir.dirName();
+        m_dirPathLabel->setText(displayName);
+        m_dirPathLabel->setToolTip(m_currentDirBarPath);
+    }
+
+    m_dirTree->clear();
+    if (!dir.exists()) return;
+
+    const QIcon dirIcon = style()->standardIcon(QStyle::SP_DirIcon);
+    const QIcon fileIcon = style()->standardIcon(QStyle::SP_FileIcon);
+
+    //	サブディレクトリを先に表示
+    const QFileInfoList subDirs = dir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name | QDir::IgnoreCase);
+    for (const QFileInfo &fi : subDirs) {
+        auto *item = new QTreeWidgetItem(m_dirTree);
+        item->setIcon(0, dirIcon);
+        item->setText(0, fi.fileName());
+        item->setData(0, Qt::UserRole, QDir::cleanPath(fi.absoluteFilePath()));
+        item->setData(0, Qt::UserRole + 1, true);	//	isDir
+        item->setToolTip(0, QDir::cleanPath(fi.absoluteFilePath()));
+    }
+
+    //	フィルタに一致するファイルを表示
+    const QString filterText = m_dirFilterCB ? m_dirFilterCB->currentText().trimmed() : QStringLiteral("*.md");
+    QStringList filters = filterText.split(QRegularExpression(QStringLiteral("[;\\s,]+")), Qt::SkipEmptyParts);
+    if (filters.isEmpty())
+        filters << QStringLiteral("*.md");
+    const QFileInfoList files = dir.entryInfoList(filters, QDir::Files, QDir::Name | QDir::IgnoreCase);
+    for (const QFileInfo &fi : files) {
+        auto *item = new QTreeWidgetItem(m_dirTree);
+        item->setIcon(0, fileIcon);
+        item->setText(0, fi.fileName());
+        item->setData(0, Qt::UserRole, QDir::cleanPath(fi.absoluteFilePath()));
+        item->setData(0, Qt::UserRole + 1, false);	//	isDir
+        item->setToolTip(0, QDir::cleanPath(fi.absoluteFilePath()));
+    }
+}
+
+void MainWindow::onDirItemDoubleClicked(QTreeWidgetItem *item, int column)
+{
+    Q_UNUSED(column);
+    if (!item) return;
+    const QString path = item->data(0, Qt::UserRole).toString();
+    const bool isDir = item->data(0, Qt::UserRole + 1).toBool();
+    if (path.isEmpty()) return;
+    if (isDir) {
+        updateDirBar(path);
+    } else {
+        openFile(path);
+    }
 }
 
 MainWindow::~MainWindow()

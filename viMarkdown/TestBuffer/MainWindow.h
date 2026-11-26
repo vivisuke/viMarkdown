@@ -14,6 +14,7 @@ class QCalendarWidget;
 class QComboBox;
 class QDate;
 class QDockWidget;
+class QLabel;
 class QLineEdit;
 class QTabWidget;
 class QTreeWidget;
@@ -84,6 +85,8 @@ private:
     void onCalendarPageChanged(int year, int month);
     void openDiaryDate(const QDate &date);
     QString defaultDiaryBaseDir() const;
+    void updateDirBar(const QString &dirPath = QString());
+    void onDirItemDoubleClicked(QTreeWidgetItem *item, int column);
 
     void	onAction_About();
     void	onBenchmarkPushBack();
@@ -93,6 +96,11 @@ private:
     QTabWidget *m_tabWidget = nullptr;
     QDockWidget *m_outlineDock = nullptr;
     QTreeWidget *m_outlineTree = nullptr;
+    QDockWidget *m_dirDock = nullptr;
+    QLabel *m_dirPathLabel = nullptr;
+    QComboBox *m_dirFilterCB = nullptr;
+    QTreeWidget *m_dirTree = nullptr;
+    QString m_currentDirBarPath;
     QDockWidget *m_calendarDock = nullptr;
     QCalendarWidget *m_calendarWidget = nullptr;
     int m_tabNumber = 0;
