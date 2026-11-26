@@ -10,7 +10,9 @@ namespace Ui { class MainWindowClass; };
 QT_END_NAMESPACE
 
 class QAction;
+class QCalendarWidget;
 class QComboBox;
+class QDate;
 class QDockWidget;
 class QLineEdit;
 class QTabWidget;
@@ -79,6 +81,9 @@ private:
     void updateOutlineForTab(QWidget *tabWidget);
     void removeOutlineForTab(QWidget *tabWidget);
     void onOutlineItemClicked(QTreeWidgetItem *item, int column);
+    void onCalendarPageChanged(int year, int month);
+    void openDiaryDate(const QDate &date);
+    QString defaultDiaryBaseDir() const;
 
     void	onAction_About();
     void	onBenchmarkPushBack();
@@ -88,6 +93,8 @@ private:
     QTabWidget *m_tabWidget = nullptr;
     QDockWidget *m_outlineDock = nullptr;
     QTreeWidget *m_outlineTree = nullptr;
+    QDockWidget *m_calendarDock = nullptr;
+    QCalendarWidget *m_calendarWidget = nullptr;
     int m_tabNumber = 0;
     int m_lineSpacingPercent = 0;
     QColor m_headingColor = QColor(0x80, 0x00, 0x00);

@@ -2,10 +2,12 @@
 #include "MarkdownPreview.h"
 #include "TextEdit.h"
 #include <QApplication>
+#include <QCalendarWidget>
 #include <QCheckBox>
 #include <QCloseEvent>
 #include <QColorDialog>
 #include <QComboBox>
+#include <QDate>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QDir>
@@ -32,9 +34,11 @@
 #include <QShortcut>
 #include <QSpinBox>
 #include <QSplitter>
+#include <QStandardPaths>
 #include <QStringDecoder>
 #include <QTabWidget>
 #include <QTextBlock>
+#include <QTextCharFormat>
 #include <QTextCursor>
 #include <QTextEdit>
 #include <QTextStream>
@@ -133,6 +137,58 @@ void setColorButtonStyle(QPushButton *button, const QColor &color)
         "background-color: %1; border: 1px solid gray; min-width: 60px; height: 22px;"
     ).arg(color.name()));
 }
+
+struct DiaryDayInfo {
+    int totalTodo = 0;
+    int openTodo = 0;
+};
+
+class DiaryCalendarWidget : public QCalendarWidget
+{
+public:
+    explicit DiaryCalendarWidget(QWidget *parent = nullptr)
+        : QCalendarWidget(parent) {}
+
+    void clearDayInfo() {
+        m_dayInfo.clear();
+        updateCells();
+    }
+    void setDayInfo(const QDate &date, const DiaryDayInfo &di) {
+        m_dayInfo[date] = di;
+        updateCell(date);
+    }
+
+protected:
+    void paintCell(QPainter *painter, const QRect &rect, QDate date) const override {
+        auto it = m_dayInfo.constFind(date);
+        if (it == m_dayInfo.constEnd()) {
+            QCalendarWidget::paintCell(painter, rect, date);
+            return;
+        }
+        const DiaryDayInfo &di = it.value();
+        painter->save();
+        if (di.totalTodo > 0) {
+            if (di.openTodo == 0) {
+                painter->fillRect(rect, QColor(0xC0, 0xF0, 0xC0));	//	全ToDo完了（淡緑）
+            } else {
+                painter->fillRect(rect, QColor(0xF0, 0xC0, 0xC0));	//	未完ToDo有り（淡赤）
+                const int closedCount = di.totalTodo - di.openTodo;
+                const int fillH = rect.height() * closedCount / di.totalTodo;
+                if (fillH > 0) {
+                    painter->fillRect(QRect(rect.left(), rect.top() + rect.height() - fillH, rect.width(), fillH),
+                                      QColor(0xC0, 0xF0, 0xC0));
+                }
+            }
+        } else {
+            painter->fillRect(rect, QColor(0xC0, 0xC0, 0xF0));		//	Notesのみ（淡青）
+        }
+        painter->restore();
+        QCalendarWidget::paintCell(painter, rect, date);
+    }
+
+private:
+    QMap<QDate, DiaryDayInfo> m_dayInfo;
+};
 }
 
 MainWindow::MainWindow(QWidget *parent)
@@ -203,13 +259,31 @@ MainWindow::MainWindow(QWidget *parent)
     addDockWidget(Qt::LeftDockWidgetArea, m_outlineDock);
     connect(m_outlineTree, &QTreeWidget::itemClicked, this, &MainWindow::onOutlineItemClicked);
 
+    m_calendarDock = new QDockWidget(tr("CalendarBar"), this);
+    m_calendarDock->setObjectName(QStringLiteral("calendarBar"));
+    auto *cal = new DiaryCalendarWidget(m_calendarDock);
+    cal->setFocusPolicy(Qt::ClickFocus);
+    cal->setFirstDayOfWeek(Qt::Monday);
+    cal->setStyleSheet(QStringLiteral(
+        "QCalendarWidget QWidget#qt_calendar_navigationbar { background-color: #808080; }"
+    ));
+    m_calendarWidget = cal;
+    m_calendarDock->setWidget(m_calendarWidget);
+    addDockWidget(Qt::BottomDockWidgetArea, m_calendarDock);
+    splitDockWidget(ui->outputBar, m_calendarDock, Qt::Horizontal);
+    connect(m_calendarWidget, &QCalendarWidget::currentPageChanged, this, &MainWindow::onCalendarPageChanged);
+    connect(m_calendarWidget, &QCalendarWidget::clicked, this, &MainWindow::openDiaryDate);
+
     QMenu *viewMenu = new QMenu(tr("&View"), this);
     QAction *outlineAct = m_outlineDock->toggleViewAction();
     outlineAct->setText(tr("&OutlineBar"));
     QAction *outputAct = ui->outputBar->toggleViewAction();
     outputAct->setText(tr("Outpu&tBar"));
+    QAction *calAct = m_calendarDock->toggleViewAction();
+    calAct->setText(tr("&CalendarBar"));
     viewMenu->addAction(outlineAct);
     viewMenu->addAction(outputAct);
+    viewMenu->addAction(calAct);
     menuBar()->insertMenu(ui->menuTest->menuAction(), viewMenu);
 #if defined(Q_OS_WIN) || defined(Q_OS_LINUX)
     //	メニューバーをメインツールバーに統合（viMarkdown と同じ方式）
@@ -566,6 +640,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->action_BenchmarkPushBack, &QAction::triggered, this, &MainWindow::onBenchmarkPushBack);
     connect(ui->action_BenchmarkPushFront, &QAction::triggered, this, &MainWindow::onBenchmarkPushFront);
 	connect(ui->action_AboutViMarkdown, &QAction::triggered, this, &MainWindow::onAction_About);
+    {
+        const QDate today = QDate::currentDate();
+        onCalendarPageChanged(today.year(), today.month());
+    }
 }
 
 TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath)
@@ -1279,6 +1357,11 @@ bool MainWindow::saveTab(int index, const QString &explicitPath)
     }
 
     edit->onSaved();
+    if (m_calendarWidget) {
+        const QDate d = QDate::fromString(QFileInfo(filePath).baseName(), QStringLiteral("yyyyMMdd"));
+        if (d.isValid() && d.year() == m_calendarWidget->yearShown() && d.month() == m_calendarWidget->monthShown())
+            onCalendarPageChanged(d.year(), d.month());
+    }
     statusBar()->showMessage(tr("Saved: %1").arg(filePath), 5000);
     return true;
 }
@@ -2585,6 +2668,102 @@ bool MainWindow::jumpToOutputLine(int blockNumber)
     }
     return true;
 }
+QString MainWindow::defaultDiaryBaseDir() const
+{
+    QSettings settings;
+    QString dir = settings.value(QStringLiteral("defaultDir")).toString();
+    if (dir.isEmpty())
+        dir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    if (dir.isEmpty())
+        dir = QDir::homePath();
+    return QDir::cleanPath(dir);
+}
+
+void MainWindow::onCalendarPageChanged(int year, int month)
+{
+    auto *cal = dynamic_cast<DiaryCalendarWidget *>(m_calendarWidget);
+    if (!cal) return;
+    const QString dirPath = QStringLiteral("%1/diary/%2/%3")
+        .arg(defaultDiaryBaseDir())
+        .arg(year, 4, 10, QChar('0'))
+        .arg(month, 2, 10, QChar('0'));
+    QDir dir(dirPath);
+    if (!dir.exists()) return;
+
+    QTextCharFormat transparentFmt;
+    transparentFmt.setBackground(Qt::transparent);
+
+    const QFileInfoList files = dir.entryInfoList({QStringLiteral("*.md")}, QDir::Files);
+    for (const QFileInfo &fi : files) {
+        const QDate date = QDate::fromString(fi.baseName(), QStringLiteral("yyyyMMdd"));
+        if (!date.isValid()) continue;
+        QString content, errMsg;
+        QStringConverter::Encoding enc = QStringConverter::Utf8;
+        bool bom = false, crlf = false;
+        if (!readTextFileWithMeta(fi.absoluteFilePath(), content, enc, bom, crlf, errMsg))
+            continue;
+        int nUndone = 0, nDone = 0;
+        for (const QString &line : content.split(QChar('\n'))) {
+            const QString t = line.trimmed();
+            if (t.startsWith(QStringLiteral("- [ ] "))) ++nUndone;
+            else if (t.startsWith(QStringLiteral("- [x] "), Qt::CaseInsensitive)) ++nDone;
+        }
+        DiaryDayInfo di;
+        di.totalTodo = nUndone + nDone;
+        di.openTodo = nUndone;
+        cal->setDayInfo(date, di);
+        cal->setDateTextFormat(date, transparentFmt);
+    }
+}
+
+void MainWindow::openDiaryDate(const QDate &date)
+{
+    if (!date.isValid()) return;
+    const QString baseDir = defaultDiaryBaseDir();
+    const QString dirPath = QStringLiteral("%1/diary/%2/%3")
+        .arg(baseDir, date.toString(QStringLiteral("yyyy")), date.toString(QStringLiteral("MM")));
+    QDir diaryDir(dirPath);
+    if (!diaryDir.exists() && !diaryDir.mkpath(QStringLiteral("."))) {
+        statusBar()->showMessage(tr("Failed to create diary directory: %1").arg(dirPath), 5000);
+        return;
+    }
+    const QString filePath = QDir::cleanPath(
+        QStringLiteral("%1/%2.md").arg(dirPath, date.toString(QStringLiteral("yyyyMMdd"))));
+
+    if (!QFileInfo::exists(filePath)) {
+        const QString templatePath = baseDir + QStringLiteral("/diary/template.md");
+        QString content;
+        if (QFileInfo::exists(templatePath)) {
+            QString errMsg;
+            QStringConverter::Encoding enc = QStringConverter::Utf8;
+            bool bom = false, crlf = false;
+            readTextFileWithMeta(templatePath, content, enc, bom, crlf, errMsg);
+        }
+        if (content.isEmpty())
+            content = QStringLiteral("# {{yyyy-MM-dd}}\n\n## Todo\n- [ ] \n\n## Notes\n- \n\n");
+        static const QRegularExpression reDate(QStringLiteral(R"(\{\{(.+?)\}\})"));
+        QRegularExpressionMatch m;
+        while ((m = reDate.match(content)).hasMatch()) {
+            content.replace(m.capturedStart(0), m.capturedLength(0), date.toString(m.captured(1)));
+        }
+        QSaveFile f(filePath);
+        f.setDirectWriteFallback(true);
+        if (f.open(QIODevice::WriteOnly)) {
+            QTextStream out(&f);
+            out.setEncoding(QStringConverter::Utf8);
+            out.setGenerateByteOrderMark(false);
+#ifdef Q_OS_WIN
+            content.replace(QChar('\n'), QStringLiteral("\r\n"));
+#endif
+            out << content;
+            out.flush();
+            f.commit();
+        }
+        onCalendarPageChanged(date.year(), date.month());
+    }
+    openFile(filePath);
+}
+
 MainWindow::~MainWindow()
 {
     if (m_tabWidget)
