@@ -1601,14 +1601,24 @@ SPR# 状 P Open Close ver     Type  概要
 1587 ◎ C 11/27 11/27 03223│問題│MarkdownEditorの独自編集処理にisReadOnly()判定がなく読み取り専用文書でも編集できてしまう（ChatGPT）
 1588 ◎ C 11/27 11/27 03223│問題│blockType()にblock.isValid()とuserState()==-1の明示判定がなく無効ブロック時等の扱いが不統一（ChatGPT）
 1589 ◎ C 11/27 11/27 03223│問題│svg_esc_pressed()がSvgCompleterのイベント処理中に直接deleteしておりUse-After-Freeの恐れ（ChatGPT）
-1590 ● C 11/27            │問題│
-1591 ● C 11/27            │問題│
-1592 ● C 11/27            │問題│
-1593 ● C 11/27            │問題│
-1594 ● C 11/27            │問題│
-1595 ● C 11/27            │問題│
-1596 ● C 11/27            │問題│
-1597 ● C 11/27            │問題│
-1598 ● C 11/27            │問題│
-1599 ● C 11/27            │問題│
-1600 ● C 11/27            │問題│
+1590 ◎ C 11/27 11/27 03223│問題│do_save()がQIODevice::Text付きでUTF-16保存するためWindowsで0x0Aが変換されファイル破損する（Gemini）
+1591 ◎ C 11/27 11/27 03223│問題│NaviBack/Forwardで履歴参照がdo_open()後にダングリング化し範囲外や第3引数誤りもある（Gemini）
+1592 ◎ C 11/27 11/27 03223│問題│onRedoTriggered()がdo_redo()でなくQt標準のredo()を呼んでおりプレビュー側Redoが効かない（Gemini）
+1593 ◎ C 11/27 11/27 03223│問題│onFileChanged()でexec()後のdocWidget生ポインタUAFと未保存破棄の既定Yesボタン問題がある（Gemini）
+1594 ◎ C 11/27 11/27 03223│問題│onCurrentTabChanged()がm_processing中に早期returnしナビ移動時にUI・パス更新が漏れる（Gemini）
+1595 ◎ C 11/27 11/27 03223│問題│プレビュー経由編集が独自Undoを迂回し削除時の再入抑止漏れやリンク行のチェック誤書換も起きる（Claude）
+1596 ◎ C 11/27 11/27 03223│問題│checkAuthPassword()が保存値と入力照合を兼用しハッシュ文字列直打ちで認証が通ってしまう（Muse）
+1597 ◎ C 11/27 11/27 03223│問題│onAction_FindWord()が正規表現ON時に単語をエスケープせずC++等の検索が失敗・不一致になる（Claude）
+1598 ◎ C 11/27 11/27 03223│問題│Save As時に別タブで開いている保存先を未確認のため他タブのファイルを上書き競合させてしまう（ChatGPT）
+1599 ◎ C 11/27 11/27 03223│問題│nativeEvent()の非Vi時INSERT誤遷移・ImmGetContext未NULL確認やdiffTimer/タブ変更時の防御漏れ（Gemini）
+1600 ◎ C 11/27 11/27 03223│問題│readTextFile()がBOMなしUTF-8固定でhasError未確認のためShift-JIS文書が文字化け破損する（Claude）
+1601 ● C 11/27            │問題│
+1602 ● C 11/27            │問題│
+1603 ● C 11/27            │問題│
+1604 ● C 11/27            │問題│
+1605 ● C 11/27            │問題│
+1606 ● C 11/27            │問題│
+1607 ● C 11/27            │問題│
+1608 ● C 11/27            │問題│
+1609 ● C 11/27            │問題│
+1610 ● C 11/27            │問題│

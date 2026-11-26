@@ -153,17 +153,14 @@ MainWindow::MainWindow(QWidget *parent)
 	m_diffTimer = new QTimer(this);
     m_diffTimer->setSingleShot(true); // 1回だけ発火
     connect(m_diffTimer, &QTimer::timeout, this, [this]() {
-		//if( !m_doing_diff )
-		QCoreApplication::processEvents();
-		//	v0.3 #1390: do_diff() 後の遅延スクロール復元 (v2)。
-		//	do_diff() 内の即時復元 (v1) は setValue(0) まで正しく動くが、
-		//	その後、レイアウト確定時に Qt がスクロールを動かし直す。
-		//	イベントループを1周回してから保存値をもう一度戻す。
 		DocWidget *docWidget = getCurDocWidget();
-		QPointer<QScrollBar> vbar1 = docWidget ? docWidget->m_editor->verticalScrollBar() : nullptr;
-		QPointer<QScrollBar> vbar2 = docWidget ? docWidget->m_diffview->verticalScrollBar() : nullptr;
-		const int vscroll1 = (docWidget && docWidget->m_hasSavedDiffScroll) ? docWidget->m_savedDiffScroll1 : (vbar1 ? vbar1->value() : 0);
-		const int vscroll2 = (docWidget && docWidget->m_hasSavedDiffScroll) ? docWidget->m_savedDiffScroll2 : (vbar2 ? vbar2->value() : 0);
+		if( docWidget == nullptr || !docWidget->m_diffMode || m_doing_diff ) return;
+		//	v0.3 #1390: do_diff() 後の遅延スクロール復元 (v2)。
+		//	イベントループを1周回してから保存値をもう一度戻す。
+		QPointer<QScrollBar> vbar1 = docWidget->m_editor->verticalScrollBar();
+		QPointer<QScrollBar> vbar2 = docWidget->m_diffview->verticalScrollBar();
+		const int vscroll1 = docWidget->m_hasSavedDiffScroll ? docWidget->m_savedDiffScroll1 : (vbar1 ? vbar1->value() : 0);
+		const int vscroll2 = docWidget->m_hasSavedDiffScroll ? docWidget->m_savedDiffScroll2 : (vbar2 ? vbar2->value() : 0);
 		do_diff();
 		if( !vbar1.isNull() && !vbar2.isNull() ) {
 			QTimer::singleShot(0, this, [vbar1, vbar2, vscroll1, vscroll2]() {
@@ -202,15 +199,16 @@ bool MainWindow::nativeEvent(const QByteArray &eventType, void *message, qintptr
         if (msg->message == WM_IME_NOTIFY) {
             if (msg->wParam == IMN_SETOPENSTATUS) {
                 HIMC hImc = ImmGetContext(msg->hwnd);
-                bool imeOpen = ImmGetOpenStatus(hImc);
-                ImmReleaseContext(msg->hwnd, hImc);
-                //qDebug() << "IME状態:" << (imeOpen ? "日本語モード" : "直接入力");
-                if( imeOpen && gvi.m_currentMode == ViMode::Normal ) {
-					gvi.m_currentMode = ViMode::Insert;
-					statusBar()->showMessage("-- INSERT --");
-					DocWidget *docWidget = getCurDocWidget();
-					if( docWidget != nullptr )
-						docWidget->m_editor->viewport()->update();
+                if (hImc) {
+                    bool imeOpen = ImmGetOpenStatus(hImc);
+                    ImmReleaseContext(msg->hwnd, hImc);
+                    if( g.m_viKeybindings && imeOpen && gvi.m_currentMode == ViMode::Normal ) {
+                        gvi.m_currentMode = ViMode::Insert;
+                        statusBar()->showMessage("-- INSERT --");
+                        DocWidget *docWidget = getCurDocWidget();
+                        if( docWidget != nullptr )
+                            docWidget->m_editor->viewport()->update();
+                    }
                 }
             }
         }
@@ -530,34 +528,52 @@ void MainWindow::onAction_MarkdownTable_CSV() {
 	docWidget->m_editor->convert_MarkdownTable_CSV();
 }
 void MainWindow::onAction_NaviBack() {
+	if( m_docLocHist.isEmpty() ) return;
+	if( m_docLocIX >= m_docLocHist.size() ) m_docLocIX = m_docLocHist.size() - 1;
 	if( m_docLocIX < 1 ) return;
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget != nullptr )
 		m_docLocHist[m_docLocIX].m_position = docWidget->m_editor->textCursor().position();
-	const auto &item = m_docLocHist[--m_docLocIX];
+	int nextIx = m_docLocIX - 1;
+	while( nextIx >= 0 && m_docLocHist[nextIx].m_fullPath.isEmpty()
+		&& tabIndexOf(m_docLocHist[nextIx].m_title, "") < 0 ) {
+		--nextIx;
+	}
+	if( nextIx < 0 ) return;
+	m_docLocIX = nextIx;
+	const DocLocation item = m_docLocHist[m_docLocIX];
 	++m_processing;
-	do_open(item.m_title, item.m_fullPath, item.m_title);
+	do_open(item.m_title, item.m_fullPath, QString());
 	if( item.m_position >= 0 ) {
-		DocWidget *docWidget = getCurDocWidget();
-		if( docWidget != nullptr ) {
-			docWidget->setEditorCurPos(item.m_position);
+		DocWidget *dw = getCurDocWidget();
+		if( dw != nullptr ) {
+			dw->setEditorCurPos(item.m_position);
 		}
 	}
 	--m_processing;
 	printDocLocHist();
 }
 void MainWindow::onAction_NaviForward() {
+	if( m_docLocHist.isEmpty() ) return;
+	if( m_docLocIX < 0 ) m_docLocIX = 0;
 	if( m_docLocIX + 1 >= m_docLocHist.size() ) return;
 	DocWidget *docWidget = getCurDocWidget();
-	if( docWidget != nullptr )
+	if( docWidget != nullptr && m_docLocIX < m_docLocHist.size() )
 		m_docLocHist[m_docLocIX].m_position = docWidget->m_editor->textCursor().position();
-	const auto &item = m_docLocHist[++m_docLocIX];
+	int nextIx = m_docLocIX + 1;
+	while( nextIx < m_docLocHist.size() && m_docLocHist[nextIx].m_fullPath.isEmpty()
+		&& tabIndexOf(m_docLocHist[nextIx].m_title, "") < 0 ) {
+		++nextIx;
+	}
+	if( nextIx >= m_docLocHist.size() ) return;
+	m_docLocIX = nextIx;
+	const DocLocation item = m_docLocHist[m_docLocIX];
 	++m_processing;
-	do_open(item.m_title, item.m_fullPath, item.m_title);
+	do_open(item.m_title, item.m_fullPath, QString());
 	if( item.m_position >= 0 ) {
-		DocWidget *docWidget = getCurDocWidget();
-		if( docWidget != nullptr ) {
-			docWidget->setEditorCurPos(item.m_position);
+		DocWidget *dw = getCurDocWidget();
+		if( dw != nullptr ) {
+			dw->setEditorCurPos(item.m_position);
 		}
 	}
 	--m_processing;
@@ -880,7 +896,10 @@ void MainWindow::onAction_FindWord() {
 		mdEditor->moveToEndOfWord(cursor, /*selection:*/true);		
 		mdEditor->setTextCursor(cursor);
 	}
-	m_searchCB->setCurrentText(g.m_lastSearchedPat = cursor.selectedText());
+	QString pat = cursor.selectedText();
+	if( g.m_regexp )
+		pat = QRegularExpression::escape(pat);
+	m_searchCB->setCurrentText(g.m_lastSearchedPat = pat);
 	do_find();
 }
 void MainWindow::onAction_ClearSearchHighlights() {
@@ -1072,7 +1091,9 @@ void MainWindow::onCurrentTabChanged(int ix) {
 		ui->action_DiffMode->setChecked(false);
 		return;
 	}
-	if( m_processing != 0 ) return;		//	再入禁止
+	const bool recordHistory = (m_processing == 0);
+	if( recordHistory )
+		appendToDocLoc(docWidget->m_title, docWidget->m_fullPath, docWidget->m_editor->textCursor().position());		//	現在位置をリストに追加
 	++m_processing;
 	//##qDebug() << "MainWindow::onCurrentTabChanged()";
 	{
@@ -1086,9 +1107,6 @@ void MainWindow::onCurrentTabChanged(int ix) {
 	gvi.m_vMode = u' ';
 	statusBar()->clearMessage();
 	docWidget->m_editor->highlightVText(docWidget->m_editor->textCursor());		//	選択解除
-	//int curBlockNum = docWidget->m_editor->textCursor().blockNumber();
-	int curPos = docWidget->m_editor->textCursor().position();
-	appendToDocLoc(m_curTitle, m_curFullPath, curPos);		//	現在位置をリストに追加
 	//QString mess = QString("encoding = %1").arg((int)docWidget->m_encoding);
 	//QString mess = docWidget->m_encoding.nema();
 	if( !docWidget->m_fullPath.isEmpty() ) {
@@ -1098,9 +1116,12 @@ void MainWindow::onCurrentTabChanged(int ix) {
 		//##qDebug() << "setCurrent(" << dirPath << ")";
 	}
 #if 1
-	int data = docWidget->m_encoding*2 + (docWidget->m_withBOM ? 1 : 0);
-	ix = m_encodingCombo->findData(data);
-	if( ix >= 0 ) m_encodingCombo->setCurrentIndex(ix);
+	{
+		QSignalBlocker encBlocker(m_encodingCombo);
+		int data = docWidget->m_encoding*2 + (docWidget->m_withBOM ? 1 : 0);
+		ix = m_encodingCombo->findData(data);
+		if( ix >= 0 ) m_encodingCombo->setCurrentIndex(ix);
+	}
 #else
 	QString mess = "UTF-8";
 	switch( docWidget->m_encoding ) {
@@ -1123,11 +1144,16 @@ void MainWindow::removeHistoryEntries(const QString& title, const QString& fullP
 				m_docLocHist[i].m_title == title && m_docLocHist[i].m_position == pos )
 		{
 			m_docLocHist.removeAt(i);
+			if( i <= m_docLocIX )
+				--m_docLocIX;
 		}
 	}
+	if( m_docLocIX >= m_docLocHist.size() )
+		m_docLocIX = m_docLocHist.size() - 1;
 }
 void MainWindow::appendToDocLoc(const QString& title, const QString& fullPath, int pos) {
-	while( m_docLocHist.size()-1 > m_docLocIX)
+	if( m_processing != 0 ) return;
+	while( (int)m_docLocHist.size() - 1 > m_docLocIX )
 		m_docLocHist.pop_back();
 	removeHistoryEntries(title, fullPath, pos);
 	m_docLocHist.push_back(DocLocation(title, fullPath, pos));
@@ -1159,11 +1185,15 @@ void MainWindow::onFileChanged(const QString& fullPath) {
 
 	int tix = tabIndexOf("", fullPath);
 	if( tix < 0 ) return;
-	DocWidget *docWidget = (DocWidget*)ui->tabWidget->widget(tix);
-	if( docWidget == nullptr || docWidget->m_saving ) return;
+	QPointer<DocWidget> docWidget(static_cast<DocWidget*>(ui->tabWidget->widget(tix)));
+	if( docWidget.isNull() || docWidget->m_saving ) return;
 
 	QFileInfo fi(fullPath);
-	if( fi.exists() && docWidget->m_lastFileSize >= 0
+	if( !fi.exists() ) {
+		statusBar()->showMessage(tr("File was removed or temporarily unavailable: %1").arg(fullPath), 5000);
+		return;
+	}
+	if( docWidget->m_lastFileSize >= 0
 		&& fi.lastModified() == docWidget->m_lastFileMtime
 		&& fi.size() == docWidget->m_lastFileSize ) {
 		return;		//	自己保存または内容変化なし
@@ -1176,12 +1206,14 @@ void MainWindow::onFileChanged(const QString& fullPath) {
 		msgBox.setText(tr("The file for the unsaved document has been modified externally."));
 		msgBox.setInformativeText(tr("Do you want to reload it?"));
 
-		// ボタンの設定 (Yes, No を配置)
+		// ボタンの設定 (Yes, No を配置。誤操作で未保存変更を捨てないよう既定は No)
 		msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-		msgBox.setDefaultButton(QMessageBox::Yes);
+		msgBox.setDefaultButton(QMessageBox::No);
 
 		int ret = msgBox.exec();
+		if( docWidget.isNull() ) return;
 		if( ret == QMessageBox::No ) {
+			fi.refresh();
 			if( fi.exists() ) {
 				docWidget->m_lastFileMtime = fi.lastModified();
 				docWidget->m_lastFileSize = fi.size();
@@ -1189,6 +1221,7 @@ void MainWindow::onFileChanged(const QString& fullPath) {
 			return;
 		}
 	}
+	if( docWidget.isNull() ) return;
 	do_load(fullPath);
 }
 #if 0
@@ -1551,12 +1584,12 @@ void MainWindow::onMarkdownPreviewLineClicked(/*int nth,*/ bool checked) {
 	if (!block.isValid()) return;
 	QTextCursor cursor(block);
 	QString text = block.text();
-	int ix = text.indexOf("- [");
-	if( ix < 0 ) return;
-	cursor.setPosition(block.position() + ix + 3);
+	static const QRegularExpression reCb(R"(^\s*[-*+]\s+\[([ xX])\])");
+	auto m = reCb.match(text);
+	if( !m.hasMatch() ) return;
+	cursor.setPosition(block.position() + m.capturedStart(1));
 	cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor);
-	//cursor.insertText(text[ix+3] == u' ' ? "x" : " ");
-	cursor.insertText(checked ? "x" : " ");
+	docWidget->m_editor->do_insertText(cursor, checked ? "x" : " ");
 	// undone: 完了時は (YYYY-MM-DD) を付加？
 #if 0
 	statusBar()->showMessage(QString("html block num = %1").arg(bln));
@@ -1643,6 +1676,8 @@ void MainWindow::onTextRemovedAtPreview(int charsRemoved) {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
 	if( docWidget->m_incrementalUpdating ) return;
+	QScopedValueRollback<bool> editGuard(m_edittingInPreview, true);
+	docWidget->m_editor->setIgnoreCC(true);
 	QTextCursor cursor = docWidget->m_editor->textCursor();
 	int from = cursor.position();
 	cursor.movePosition(QTextCursor::Right, QTextCursor::KeepAnchor, charsRemoved);
@@ -1670,14 +1705,19 @@ void MainWindow::onTextRemovedAtPreview(int charsRemoved) {
 	}
 	cursor.setPosition(from);
 	cursor.setPosition(to, QTextCursor::KeepAnchor);
-	cursor.removeSelectedText();
-	//syncPreviewCursorWithEditor();
+	docWidget->m_editor->openUndoBlock();
+	docWidget->m_editor->do_deleteText(cursor);
+	renormalizeTrailingNbsp(docWidget->m_editor, cursor);
+	docWidget->m_editor->closeUndoBlock();
+	docWidget->m_editor->setTextCursor(cursor);
+	docWidget->m_editor->setIgnoreCC(false);
 }
 void MainWindow::onDel_pressed(bool ctrl) {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
 	if( docWidget->m_incrementalUpdating ) return;
 	QTextCursor cursor = docWidget->m_editor->textCursor();
+	docWidget->m_editor->openUndoBlock();
 	if( cursor.hasSelection() ) {
 		//cursor.deleteChar();
 		expandRangeForNbsp(cursor, docWidget->m_editor->document());
@@ -1688,7 +1728,8 @@ void MainWindow::onDel_pressed(bool ctrl) {
 		else {
 			auto pos = cursor.position();
 			if( pos > 0 && docWidget->m_editor->document()->characterAt(pos-1) == '\\' ) {
-				cursor.deletePreviousChar();
+				cursor.movePosition(QTextCursor::Left, QTextCursor::KeepAnchor);
+				docWidget->m_editor->do_deleteText(cursor);
 			}
 			expandRangeForNbsp(cursor, docWidget->m_editor->document());
 			//cursor.deleteChar();
@@ -1696,11 +1737,13 @@ void MainWindow::onDel_pressed(bool ctrl) {
 		}
 	}
 	renormalizeTrailingNbsp(docWidget->m_editor, cursor);
+	docWidget->m_editor->closeUndoBlock();
 	docWidget->m_editor->setTextCursor(cursor);
 }
 void MainWindow::onEnter_pressed() {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
+	if( docWidget->m_incrementalUpdating ) return;
 	docWidget->m_editor->insertEnter();
 	//QTextCursor cursor = docWidget->m_editor->textCursor();
 	//cursor.insertText("\n");
@@ -1734,7 +1777,9 @@ static int listMarkerBSLength(const QTextCursor &cursor) {
 void MainWindow::onBS_pressed(bool ctrl) {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
+	if( docWidget->m_incrementalUpdating ) return;
 	QTextCursor cursor = docWidget->m_editor->textCursor();
+	docWidget->m_editor->openUndoBlock();
 	if( cursor.hasSelection() ) {
 		//cursor.deleteChar();
 		expandRangeForNbsp(cursor, docWidget->m_editor->document());
@@ -1767,6 +1812,7 @@ void MainWindow::onBS_pressed(bool ctrl) {
 		}
 	}
 	renormalizeTrailingNbsp(docWidget->m_editor, cursor);
+	docWidget->m_editor->closeUndoBlock();
 	docWidget->m_editor->setTextCursor(cursor);
 	//syncPreviewCursorWithEditor();
 }
@@ -1783,7 +1829,7 @@ void MainWindow::onUndoTriggered() {
 void MainWindow::onRedoTriggered() {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
-	docWidget->m_editor->redo();
+	docWidget->m_editor->do_redo();
 }
 void MainWindow::dragEnterEvent(QDragEnterEvent *event)
 {
@@ -2238,7 +2284,13 @@ static bool readTextFile(const QString &fullPath, QString &content, bool &withBO
 	}
 
 	QStringDecoder decoder(encoding);
-	content = decoder.decode(QByteArrayView(raw).sliced(dataStart));
+	QString decoded = decoder.decode(QByteArrayView(raw).sliced(dataStart));
+	if( !withBOM && encoding == QStringConverter::Utf8 && decoder.hasError() ) {
+		encoding = QStringConverter::System;
+		QStringDecoder sysDec(encoding);
+		decoded = sysDec.decode(QByteArrayView(raw).sliced(dataStart));
+	}
+	content = decoded;
 	content.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
 	content.replace(QChar('\r'), QChar('\n'));
 	return true;
@@ -2462,6 +2514,13 @@ bool MainWindow::do_save(bool fDialog, int ix) {
 					return false;
 			}
 		}
+		int otherTab = tabIndexOf("", fullPath);
+		int peerTab = diffPeerTabIndexOf(fullPath);
+		if( (otherTab >= 0 && otherTab != ix) || (peerTab >= 0 && peerTab != ix) ) {
+			QMessageBox::warning(this, tr("Save File"),
+				tr("The file is already open in another tab:\n%1").arg(fullPath));
+			return false;
+		}
 	}
 	if( !do_save(fullPath, ix) )
 		return false;
@@ -2505,11 +2564,13 @@ bool MainWindow::do_save(const QString& fullPath, int ix) {
 		m_watcher->removePath(fullPath);		//	一旦ウォッチリストから外す
 	bool saved = false;
 	QSaveFile file(fullPath);
-	if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+	file.setDirectWriteFallback(true);
+	if (file.open(QIODevice::WriteOnly)) {
 		QTextStream out(&file);
 		out.setEncoding(docWidget->m_encoding); 
 		out.setGenerateByteOrderMark(docWidget->m_withBOM);
 		MarkdownEditor *mdEditor = docWidget->m_editor;
+		QString outText;
 		if( docWidget->m_diffMode && mdEditor->dummyInserted() ) {
 			//	diff 表示中はダミー行を除いて保存する（v0.3 #1388）
 			//	ダミー行は常に空行。テキストがある行は実テキストなので除かない（#1255 のガードと同様）
@@ -2518,11 +2579,15 @@ bool MainWindow::do_save(const QString& fullPath, int ix) {
 				if( isDummyLine(mdEditor, block) && block.text().isEmpty() ) continue;
 				lines << block.text();
 			}
-			out << lines.join(u'\n');
+			outText = lines.join(u'\n');
 		} else
-			out << mdEditor->toPlainText();
+			outText = mdEditor->toPlainText();
+#ifdef Q_OS_WIN
+		outText.replace(QChar('\n'), QStringLiteral("\r\n"));
+#endif
+		out << outText;
 		out.flush();
-		if (file.commit()) {
+		if (out.status() == QTextStream::Ok && file.commit()) {
 			saved = true;
 			addToRecentFiles(absTarget);
 			if( isSameFile ) {
@@ -3752,7 +3817,10 @@ void MainWindow::onMdEditEscPressed() {
 void MainWindow::onMdEditCurPosChanged() {
 #if 1
 	//	ステータスバーにカーソル行・カラム位置表示
-	MarkdownEditor *editor = (MarkdownEditor*)sender();
+	MarkdownEditor *editor = qobject_cast<MarkdownEditor*>(sender());
+	if( editor == nullptr ) return;
+	DocWidget *cur = getCurDocWidget();
+	if( cur == nullptr || (editor != cur->m_editor && editor != cur->m_diffview) ) return;
 	QTextCursor cursor = editor->textCursor();
 	int clmn = cursor.position() - cursor.block().position();
 	m_lcLabel->setText(QString("%1:%2 (pos = %3)").arg(cursor.blockNumber()+1).arg(clmn+1).arg(cursor.position()));
@@ -3776,31 +3844,40 @@ void MainWindow::onMdEditCurPosChanged() {
 #endif
 }
 //	パスワードの SHA-256 ハッシュを返す
+static const QString &authPasswordHash() {
+	static const QString PASSWORD_HASH = QStringLiteral("acf1983a74876e026faca476a03b7fc21dd85ce24aad212a1b7672602de9b776");		//	done: 正規パスワードのハッシュ
+	return PASSWORD_HASH;
+}
 static QString hashAuthPassword(const QString& password) {
 	return QString::fromLatin1(QCryptographicHash::hash(password.toUtf8(), QCryptographicHash::Sha256).toHex());
 }
-//	パスワード（または保存済みハッシュ）が正規パスワードと一致するか照合する
+//	入力された平文パスワードが正規パスワードと一致するか照合する
 bool checkAuthPassword(const QString& password) {
-	static const QString PASSWORD_HASH = QStringLiteral("acf1983a74876e026faca476a03b7fc21dd85ce24aad212a1b7672602de9b776");		//	done: 正規パスワードのハッシュ
-	return password == PASSWORD_HASH || hashAuthPassword(password) == PASSWORD_HASH;
+	return hashAuthPassword(password) == authPasswordHash();
+}
+//	設定ファイルに保存された値（ハッシュ値、または旧版の平文）が正規かを照合する
+static bool checkStoredAuthPassword(const QString& stored) {
+	return stored == authPasswordHash() || hashAuthPassword(stored) == authPasswordHash();
 }
 
 void MainWindow::onAction_UserAuth() {
 	//qDebug() << "MainWindow::onAction_UserAuth()";
 	int prevUserType = g.m_userType;
-	bool authenticated = g.m_userType == UT_COMMERCIAL && checkAuthPassword(g.m_authPassword);
+	bool authenticated = g.m_userType == UT_COMMERCIAL && checkStoredAuthPassword(g.m_authPassword);
 	UserAuthDialog dlg(this, authenticated);
 	if( dlg.exec() != QDialog::Accepted ) return;
 	if( g.m_userType == UT_COMMERCIAL ) {
-		//	商用ユーザの場合はパスワード照合
-		if( !checkAuthPassword(dlg.password()) )
-		{
+		//	商用ユーザの場合はパスワード照合（既に認証済みで空欄OKの場合は維持）
+		if( authenticated && dlg.password().isEmpty() ) {
+			g.m_authPassword = authPasswordHash();
+		} else if( !checkAuthPassword(dlg.password()) ) {
 			QMessageBox::warning(this, tr("User Authentication"), tr("Incorrect password."));
 			g.m_userType = prevUserType;		//	認証失敗時は種別を元に戻す
 			return;
+		} else {
+			g.m_authPassword = hashAuthPassword(dlg.password());		//	認証成功時はハッシュ値のみ保持・保存
+			QMessageBox::information(this, tr("User Authentication"), tr("You have been authenticated as a legitimate user."));
 		}
-		g.m_authPassword = hashAuthPassword(dlg.password());		//	認証成功時はハッシュ値のみ保持・保存
-		QMessageBox::information(this, tr("User Authentication"), tr("You have been authenticated as a legitimate user."));
 	}
 	save_settings();		//	設定を全て保存
 }
