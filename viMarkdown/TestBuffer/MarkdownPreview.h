@@ -22,6 +22,7 @@ public:
 
 	void setMarkdown(const QString &markdown);
 	void setMarkdown(TextDocument *srcDoc);
+	void updateMarkdown(TextDocument *srcDoc, int hintSrcLine, bool *outHeadingsChanged = nullptr);
 	void setTableColors(const QColor &header, const QColor &zebra1, const QColor &zebra2);
 	void scrollToSourceLine(int srcLine, qreal subLineFrac = 0.0);
 	bool topSourceLine(int &outLine, qreal &outFrac) const;
@@ -53,6 +54,9 @@ private:
 	QVector<int> m_srcLineToBlock;
 	QVector<int> m_blockToSrcLine;
 	QVector<SyncSpan> m_syncSpans;
+	int m_prevSrcLineCount = 0;
+	int m_prevSrcCharCount = 0;
+	bool m_prevHasMultiLineState = false;
 	bool m_hasImages = false;
 	int m_lastImageMaxWidth = -1;
 	QColor m_tableHeaderColor = QColor(0xE6, 0xF0, 0xFF);

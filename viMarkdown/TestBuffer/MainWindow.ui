@@ -101,9 +101,17 @@
      </property>
      <addaction name="action_TestVi"/>
     </widget>
+    <widget class="QMenu" name="menu_Benchmark">
+     <property name="title">
+      <string>&amp;Benchmark</string>
+     </property>
+     <addaction name="action_BenchmarkPushBack"/>
+     <addaction name="action_BenchmarkPushFront"/>
+    </widget>
     <addaction name="action_Settings"/>
     <addaction name="action_ViKeybind"/>
     <addaction name="menu_OtherTest"/>
+    <addaction name="menu_Benchmark"/>
     <addaction name="action_AboutViMarkdown"/>
    </widget>
    <addaction name="menuFile"/>
@@ -400,6 +408,16 @@
   <action name="action_AboutViMarkdown">
    <property name="text">
     <string>&amp;About viMarkdown</string>
+   </property>
+  </action>
+  <action name="action_BenchmarkPushBack">
+   <property name="text">
+    <string>Push_&amp;back</string>
+   </property>
+  </action>
+  <action name="action_BenchmarkPushFront">
+   <property name="text">
+    <string>push_&amp;front</string>
    </property>
   </action>
  </widget>

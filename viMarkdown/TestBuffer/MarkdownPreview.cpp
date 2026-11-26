@@ -28,6 +28,7 @@
 #include <QTextTable>
 #include <QTextTableCell>
 #include <QTextTableCellFormat>
+#include <algorithm>
 #include <QTextTableFormat>
 #include <QTimer>
 #include <QUrl>
@@ -2084,9 +2085,408 @@ void MarkdownPreview::setMarkdown(TextDocument *srcDoc)
 		finishBlockMarginIfNeeded(cursor, kBlockCode);
 
 	cursor.endEditBlock();
+	m_prevSrcLineCount = nLines;
+	m_prevSrcCharCount = static_cast<int>(srcDoc->characterCount());
+	m_prevHasMultiLineState = st.inCodeBlock || st.inHtmlComment || st.inQuote;
 	m_hasImages = st.hasImages;
 	m_lastImageMaxWidth = maxWInt;
 	doc->setModified(false);
 	if( QScrollBar *sb = verticalScrollBar() )
 		sb->setValue(qMin(prevScroll, sb->maximum()));
+}
+
+static bool isSimpleLineType(LineMgr::LineType t)
+{
+	return t == LineMgr::LT_BODY || t == LineMgr::LT_HEADING;
+}
+
+static bool isSimpleSingleLine(const QString &line)
+{
+	if( line.contains(QStringLiteral("<!--")) || line.contains(QStringLiteral("-->")) || line.contains(QChar('|')) )
+		return false;
+	qsizetype i = 0;
+	while( i < line.size() && (line[i] == QChar(' ') || line[i] == QChar('\t')) )
+		++i;
+	const QStringView rest = QStringView(line).mid(i);
+	if( rest.isEmpty() )
+		return true;
+	const QChar c0 = rest[0];
+	if( c0 == QChar('`') && rest.startsWith(u"```") )
+		return false;
+	if( c0 == QChar('>') )
+		return false;
+	if( (c0 == QChar('-') || c0 == QChar('*') || c0 == QChar('+'))
+		&& (rest.size() >= 2 && (rest[1] == QChar(' ') || rest[1] == QChar('\t'))) )
+		return false;
+	if( (c0 == QChar('-') || c0 == QChar('*') || c0 == QChar('_') || c0 == QChar('=')) && rest.size() >= 3 ) {
+		bool allSame = true;
+		for( qsizetype k = 0; k < rest.size(); ++k ) {
+			if( rest[k] != c0 && rest[k] != QChar(' ') && rest[k] != QChar('\t') ) {
+				allSame = false;
+				break;
+			}
+		}
+		if( allSame )
+			return false;
+	}
+	if( c0 >= QChar('0') && c0 <= QChar('9') ) {
+		qsizetype d = 0;
+		while( d < rest.size() && rest[d] >= QChar('0') && rest[d] <= QChar('9') )
+			++d;
+		if( d < rest.size() && (rest[d] == QChar('.') || rest[d] == QChar(')'))
+			&& d + 1 < rest.size() && (rest[d + 1] == QChar(' ') || rest[d + 1] == QChar('\t')) )
+			return false;
+	}
+	return true;
+}
+
+void MarkdownPreview::updateMarkdown(TextDocument *srcDoc, int hintSrcLine, bool *outHeadingsChanged)
+{
+	if( outHeadingsChanged )
+		*outHeadingsChanged = true;
+	if( !srcDoc ) {
+		clear();
+		m_srcLineToBlock.clear();
+		m_blockToSrcLine.clear();
+		m_syncSpans.clear();
+		m_prevSrcLineCount = 0;
+		m_prevSrcCharCount = 0;
+		m_prevHasMultiLineState = false;
+		return;
+	}
+
+	QTextDocument *doc = document();
+	ViewLineMgr &mgr = srcDoc->lineMgr();
+	const int nLines = mgr.lineCount();
+	const int newTotalSrcChars = static_cast<int>(srcDoc->characterCount());
+
+	//	Fast Path A: 単一行インプレース編集（本文・見出しの1文字入力/削除等）
+	if( !m_prevHasMultiLineState
+		&& nLines == m_prevSrcLineCount
+		&& hintSrcLine >= 0 && hintSrcLine < nLines
+		&& m_srcLineToBlock.size() == nLines
+		&& isSimpleLineType(mgr.lineType(hintSrcLine))
+		&& (hintSrcLine == 0 || isSimpleLineType(mgr.lineType(hintSrcLine - 1))) )
+	{
+		const int bn = m_srcLineToBlock[hintSrcLine];
+		QTextBlock block = (bn >= 0 && bn < doc->blockCount()) ? doc->findBlockByNumber(bn) : QTextBlock();
+		if( block.isValid() ) {
+			QTextCursor checkCur(block);
+			if( !checkCur.currentTable() && !checkCur.currentList() ) {
+				QString line = srcDoc->findBlockByNumber(hintSrcLine).text();
+				if( line.endsWith(QChar('\n')) ) line.chop(1);
+				if( line.endsWith(QChar('\r')) ) line.chop(1);
+				if( isSimpleSingleLine(line) ) {
+					const QSignalBlocker blocker(verticalScrollBar());
+					const QSignalBlocker selfBlocker(this);
+					const int prevScroll = verticalScrollBar() ? verticalScrollBar()->value() : 0;
+
+					const LineMgr::LineType oldType = mgr.lineType(hintSrcLine);
+					const int oldBlockPos = block.position();
+					const int oldBlockTextLen = qMax(0, block.length() - 1);
+
+					QTextCursor cursor(doc);
+					cursor.beginEditBlock();
+					cursor.setPosition(oldBlockPos);
+					cursor.setPosition(oldBlockPos + oldBlockTextLen, QTextCursor::KeepAnchor);
+					cursor.removeSelectedText();
+
+					ParseState st;
+					st.basePt = doc->defaultFont().pointSizeF() > 0.0 ? doc->defaultFont().pointSizeF() : 10.0;
+					const int maxWInt = qMax(0, viewport()->width() - 24);
+					st.maxImgWidth = static_cast<qreal>(maxWInt);
+					st.tableHeaderColor = m_tableHeaderColor;
+					st.tableZebraColor1 = m_tableZebraColor1;
+					st.tableZebraColor2 = m_tableZebraColor2;
+					st.hasEmittedBlock = false;
+
+					QVector<SyncSpan> newSpans;
+					const int lineStartPos = static_cast<int>(mgr.lineStartPos(hintSrcLine));
+					const LineMgr::LineType newType = parseAndAppendLine(cursor, line, st, hintSrcLine, lineStartPos, &newSpans);
+					cursor.endEditBlock();
+
+					if( st.lastLineEmitted ) {
+						const int newBlockTextLen = qMax(0, cursor.block().length() - 1);
+						const int deltaPrv = newBlockTextLen - oldBlockTextLen;
+						const int deltaSrc = newTotalSrcChars - m_prevSrcCharCount;
+
+						auto itFirst = std::lower_bound(
+							m_syncSpans.begin(), m_syncSpans.end(), oldBlockPos,
+							[](const SyncSpan &s, int p) { return s.prvPos < p; });
+						const int oldBlockEnd = oldBlockPos + oldBlockTextLen;
+						auto itEnd = itFirst;
+						while( itEnd != m_syncSpans.end() && itEnd->prvPos <= oldBlockEnd )
+							++itEnd;
+
+						const qsizetype firstIdx = itFirst - m_syncSpans.begin();
+						const qsizetype oldCnt = itEnd - itFirst;
+						const qsizetype newCnt = newSpans.size();
+						if( oldCnt == newCnt ) {
+							for( qsizetype k = 0; k < newCnt; ++k )
+								m_syncSpans[firstIdx + k] = newSpans[k];
+						} else {
+							m_syncSpans.erase(itFirst, itEnd);
+							for( qsizetype k = 0; k < newCnt; ++k )
+								m_syncSpans.insert(firstIdx + k, newSpans[k]);
+						}
+						if( deltaSrc != 0 || deltaPrv != 0 ) {
+							for( qsizetype k = firstIdx + newCnt; k < m_syncSpans.size(); ++k ) {
+								m_syncSpans[k].srcPos += deltaSrc;
+								m_syncSpans[k].prvPos += deltaPrv;
+							}
+						}
+
+						mgr.setLineType(hintSrcLine, newType);
+						m_prevSrcCharCount = newTotalSrcChars;
+						if( st.hasImages ) m_hasImages = true;
+						doc->setModified(false);
+						if( QScrollBar *sb = verticalScrollBar() )
+							sb->setValue(qMin(prevScroll, sb->maximum()));
+						if( outHeadingsChanged )
+							*outHeadingsChanged = (oldType == LineMgr::LT_HEADING || newType == LineMgr::LT_HEADING);
+						return;
+					}
+				}
+			}
+		}
+	}
+
+	//	Fast Path B: 任意位置（先頭・途中・末尾）での改行による1行→2行分割
+	if( !m_prevHasMultiLineState
+		&& nLines == m_prevSrcLineCount + 1
+		&& m_prevSrcLineCount > 0
+		&& hintSrcLine >= 1 && hintSrcLine < nLines
+		&& m_srcLineToBlock.size() == m_prevSrcLineCount )
+	{
+		const int ln0 = hintSrcLine - 1;
+		const int ln1 = hintSrcLine;
+		const LineMgr::LineType oldType0 = mgr.lineType(ln0);
+		if( isSimpleLineType(oldType0)
+			&& (ln0 == 0 || isSimpleLineType(mgr.lineType(ln0 - 1)))
+			&& (ln1 + 1 >= nLines || isSimpleLineType(mgr.lineType(ln1 + 1))) )
+		{
+			const int bn = m_srcLineToBlock[ln0];
+			QTextBlock block = (bn >= 0 && bn < doc->blockCount()) ? doc->findBlockByNumber(bn) : QTextBlock();
+			if( block.isValid() ) {
+				QTextCursor checkCur(block);
+				if( !checkCur.currentTable() && !checkCur.currentList() ) {
+					QString line0 = srcDoc->findBlockByNumber(ln0).text();
+					if( line0.endsWith(QChar('\n')) ) line0.chop(1);
+					if( line0.endsWith(QChar('\r')) ) line0.chop(1);
+					QString line1 = srcDoc->findBlockByNumber(ln1).text();
+					if( line1.endsWith(QChar('\n')) ) line1.chop(1);
+					if( line1.endsWith(QChar('\r')) ) line1.chop(1);
+					if( isSimpleSingleLine(line0) && isSimpleSingleLine(line1) ) {
+						const QSignalBlocker blocker(verticalScrollBar());
+						const QSignalBlocker selfBlocker(this);
+						const int prevScroll = verticalScrollBar() ? verticalScrollBar()->value() : 0;
+
+						const int oldBlockPos = block.position();
+						const int oldBlockTextLen = qMax(0, block.length() - 1);
+
+						QTextCursor cursor(doc);
+						cursor.beginEditBlock();
+						cursor.setPosition(oldBlockPos);
+						cursor.setPosition(oldBlockPos + oldBlockTextLen, QTextCursor::KeepAnchor);
+						cursor.removeSelectedText();
+
+						ParseState st;
+						st.basePt = doc->defaultFont().pointSizeF() > 0.0 ? doc->defaultFont().pointSizeF() : 10.0;
+						const int maxWInt = qMax(0, viewport()->width() - 24);
+						st.maxImgWidth = static_cast<qreal>(maxWInt);
+						st.tableHeaderColor = m_tableHeaderColor;
+						st.tableZebraColor1 = m_tableZebraColor1;
+						st.tableZebraColor2 = m_tableZebraColor2;
+						st.hasEmittedBlock = false;
+
+						QVector<SyncSpan> newSpans;
+						const LineMgr::LineType newType0 = parseAndAppendLine(
+							cursor, line0, st, ln0, static_cast<int>(mgr.lineStartPos(ln0)), &newSpans);
+						const bool emitted0 = st.lastLineEmitted;
+						const int bn0 = cursor.block().blockNumber();
+						const int blk0Len = cursor.block().length();
+
+						const LineMgr::LineType newType1 = parseAndAppendLine(
+							cursor, line1, st, ln1, static_cast<int>(mgr.lineStartPos(ln1)), &newSpans);
+						const bool emitted1 = st.lastLineEmitted;
+						const int bn1 = cursor.block().blockNumber();
+						const int blk1Len = cursor.block().length();
+						cursor.endEditBlock();
+
+						if( emitted0 && emitted1 && bn0 == bn && bn1 == bn + 1 ) {
+							const int deltaPrv = (blk0Len + blk1Len - 1) - oldBlockTextLen;
+							const int deltaSrc = newTotalSrcChars - m_prevSrcCharCount;
+
+							auto itFirst = std::lower_bound(
+								m_syncSpans.begin(), m_syncSpans.end(), oldBlockPos,
+								[](const SyncSpan &s, int p) { return s.prvPos < p; });
+							const int oldBlockEnd = oldBlockPos + oldBlockTextLen;
+							auto itEnd = itFirst;
+							while( itEnd != m_syncSpans.end() && itEnd->prvPos <= oldBlockEnd )
+								++itEnd;
+
+							const qsizetype firstIdx = itFirst - m_syncSpans.begin();
+							const qsizetype oldCnt = itEnd - itFirst;
+							const qsizetype newCnt = newSpans.size();
+							if( oldCnt == newCnt ) {
+								for( qsizetype k = 0; k < newCnt; ++k )
+									m_syncSpans[firstIdx + k] = newSpans[k];
+							} else {
+								m_syncSpans.erase(itFirst, itEnd);
+								for( qsizetype k = 0; k < newCnt; ++k )
+									m_syncSpans.insert(firstIdx + k, newSpans[k]);
+							}
+							if( deltaSrc != 0 || deltaPrv != 0 ) {
+								for( qsizetype k = firstIdx + newCnt; k < m_syncSpans.size(); ++k ) {
+									m_syncSpans[k].srcPos += deltaSrc;
+									m_syncSpans[k].prvPos += deltaPrv;
+								}
+							}
+
+							m_srcLineToBlock.insert(ln1, bn1);
+							for( int k = ln1 + 1; k < m_srcLineToBlock.size(); ++k ) {
+								if( m_srcLineToBlock[k] >= 0 )
+									++m_srcLineToBlock[k];
+							}
+							if( bn1 <= m_blockToSrcLine.size() )
+								m_blockToSrcLine.insert(bn1, ln1);
+							else {
+								m_blockToSrcLine.resize(bn1 + 1, ln1);
+								m_blockToSrcLine[bn1] = ln1;
+							}
+							for( int k = bn1 + 1; k < m_blockToSrcLine.size(); ++k )
+								++m_blockToSrcLine[k];
+
+							mgr.setLineType(ln0, newType0);
+							mgr.setLineType(ln1, newType1);
+							m_prevSrcLineCount = nLines;
+							m_prevSrcCharCount = newTotalSrcChars;
+							if( st.hasImages ) m_hasImages = true;
+							doc->setModified(false);
+							if( QScrollBar *sb = verticalScrollBar() )
+								sb->setValue(qMin(prevScroll, sb->maximum()));
+							if( outHeadingsChanged )
+								*outHeadingsChanged = (oldType0 == LineMgr::LT_HEADING || newType0 == LineMgr::LT_HEADING || newType1 == LineMgr::LT_HEADING);
+							return;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	//	Fast Path C: 改行削除・1行削除による2行→1行統合（Backspace / Delete / dd 等）
+	if( !m_prevHasMultiLineState
+		&& nLines == m_prevSrcLineCount - 1
+		&& nLines > 0
+		&& hintSrcLine >= 0 && hintSrcLine < nLines
+		&& m_srcLineToBlock.size() == m_prevSrcLineCount )
+	{
+		const int ln0 = hintSrcLine;
+		const LineMgr::LineType oldType0 = mgr.lineType(ln0);
+		if( isSimpleLineType(oldType0)
+			&& (ln0 == 0 || isSimpleLineType(mgr.lineType(ln0 - 1)))
+			&& (ln0 + 1 >= nLines || isSimpleLineType(mgr.lineType(ln0 + 1))) )
+		{
+			const int bn0 = m_srcLineToBlock[ln0];
+			const int bn1 = m_srcLineToBlock[ln0 + 1];
+			if( bn0 >= 0 && bn1 == bn0 + 1 && bn1 < doc->blockCount() ) {
+				QTextBlock block0 = doc->findBlockByNumber(bn0);
+				QTextBlock block1 = doc->findBlockByNumber(bn1);
+				if( block0.isValid() && block1.isValid() ) {
+					QTextCursor c0(block0), c1(block1);
+					if( !c0.currentTable() && !c0.currentList() && !c1.currentTable() && !c1.currentList() ) {
+						QString line0 = srcDoc->findBlockByNumber(ln0).text();
+						if( line0.endsWith(QChar('\n')) ) line0.chop(1);
+						if( line0.endsWith(QChar('\r')) ) line0.chop(1);
+						if( isSimpleSingleLine(line0) ) {
+							const QSignalBlocker blocker(verticalScrollBar());
+							const QSignalBlocker selfBlocker(this);
+							const int prevScroll = verticalScrollBar() ? verticalScrollBar()->value() : 0;
+
+							const int oldStart = block0.position();
+							const int blk0Len = block0.length();
+							const int blk1Len = block1.length();
+							const int oldEnd = block1.position() + qMax(0, blk1Len - 1);
+
+							QTextCursor cursor(doc);
+							cursor.beginEditBlock();
+							cursor.setPosition(oldStart);
+							cursor.setPosition(oldEnd, QTextCursor::KeepAnchor);
+							cursor.removeSelectedText();
+
+							ParseState st;
+							st.basePt = doc->defaultFont().pointSizeF() > 0.0 ? doc->defaultFont().pointSizeF() : 10.0;
+							const int maxWInt = qMax(0, viewport()->width() - 24);
+							st.maxImgWidth = static_cast<qreal>(maxWInt);
+							st.tableHeaderColor = m_tableHeaderColor;
+							st.tableZebraColor1 = m_tableZebraColor1;
+							st.tableZebraColor2 = m_tableZebraColor2;
+							st.hasEmittedBlock = false;
+
+							QVector<SyncSpan> newSpans;
+							const LineMgr::LineType newType = parseAndAppendLine(
+								cursor, line0, st, ln0, static_cast<int>(mgr.lineStartPos(ln0)), &newSpans);
+							const int newBlkLen = cursor.block().length();
+							cursor.endEditBlock();
+
+							if( st.lastLineEmitted && cursor.block().blockNumber() == bn0 ) {
+								const int deltaPrv = newBlkLen - (blk0Len + blk1Len);
+								const int deltaSrc = newTotalSrcChars - m_prevSrcCharCount;
+
+								auto itFirst = std::lower_bound(
+									m_syncSpans.begin(), m_syncSpans.end(), oldStart,
+									[](const SyncSpan &s, int p) { return s.prvPos < p; });
+								auto itEnd = itFirst;
+								while( itEnd != m_syncSpans.end() && itEnd->prvPos <= oldEnd )
+									++itEnd;
+
+								const qsizetype firstIdx = itFirst - m_syncSpans.begin();
+								const qsizetype oldCnt = itEnd - itFirst;
+								const qsizetype newCnt = newSpans.size();
+								if( oldCnt == newCnt ) {
+									for( qsizetype k = 0; k < newCnt; ++k )
+										m_syncSpans[firstIdx + k] = newSpans[k];
+								} else {
+									m_syncSpans.erase(itFirst, itEnd);
+									for( qsizetype k = 0; k < newCnt; ++k )
+										m_syncSpans.insert(firstIdx + k, newSpans[k]);
+								}
+								if( deltaSrc != 0 || deltaPrv != 0 ) {
+									for( qsizetype k = firstIdx + newCnt; k < m_syncSpans.size(); ++k ) {
+										m_syncSpans[k].srcPos += deltaSrc;
+										m_syncSpans[k].prvPos += deltaPrv;
+									}
+								}
+
+								m_srcLineToBlock.removeAt(ln0 + 1);
+								for( int k = ln0 + 1; k < m_srcLineToBlock.size(); ++k ) {
+									if( m_srcLineToBlock[k] >= 0 )
+										--m_srcLineToBlock[k];
+								}
+								if( bn1 < m_blockToSrcLine.size() )
+									m_blockToSrcLine.removeAt(bn1);
+								for( int k = bn1; k < m_blockToSrcLine.size(); ++k )
+									--m_blockToSrcLine[k];
+
+								mgr.setLineType(ln0, newType);
+								m_prevSrcLineCount = nLines;
+								m_prevSrcCharCount = newTotalSrcChars;
+								if( st.hasImages ) m_hasImages = true;
+								doc->setModified(false);
+								if( QScrollBar *sb = verticalScrollBar() )
+									sb->setValue(qMin(prevScroll, sb->maximum()));
+								if( outHeadingsChanged )
+									*outHeadingsChanged = true;
+								return;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	//	フォールバック: 複数行要素・複数行削除・構造変化時は全文再構築
+	setMarkdown(srcDoc);
 }

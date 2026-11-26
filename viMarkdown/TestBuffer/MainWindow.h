@@ -71,6 +71,8 @@ private:
     void onOutlineItemClicked(QTreeWidgetItem *item, int column);
 
     void	onAction_About();
+    void	onBenchmarkPushBack();
+    void	onBenchmarkPushFront();
 
     Ui::MainWindowClass *ui;
     QTabWidget *m_tabWidget = nullptr;

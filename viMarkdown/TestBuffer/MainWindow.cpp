@@ -8,6 +8,7 @@
 #include <QDialogButtonBox>
 #include <QDir>
 #include <QDockWidget>
+#include <QElapsedTimer>
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
@@ -273,6 +274,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->action_TestVi, &QAction::triggered, this, [this]() {
         do_test_vi(this);
     });
+    connect(ui->action_BenchmarkPushBack, &QAction::triggered, this, &MainWindow::onBenchmarkPushBack);
+    connect(ui->action_BenchmarkPushFront, &QAction::triggered, this, &MainWindow::onBenchmarkPushFront);
 	connect(ui->action_AboutViMarkdown, &QAction::triggered, this, &MainWindow::onAction_About);
 }
 
@@ -341,16 +344,19 @@ TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath
     });
     auto syncingCursor = std::make_shared<bool>(false);
     edit->setTextChangedCallback([this, splitter, edit, preview, syncingCursor]() {
-        preview->setMarkdown(edit->document());
+        const TextCursor tc = edit->textCursor();
+        const int curLine = edit->document()->lineMgr().lineAtPos(tc.position());
+        bool headingsChanged = true;
+        preview->updateMarkdown(edit->document(), curLine, &headingsChanged);
         if (!*syncingCursor && edit->markdownHighlight()) {
             *syncingCursor = true;
-            const TextCursor tc = edit->textCursor();
             preview->setCursorFromSrcPos(
                 static_cast<int>(tc.position()),
                 tc.hasSelection() ? static_cast<int>(tc.anchor()) : -1);
             *syncingCursor = false;
         }
-        updateOutlineForTab(splitter);
+        if (headingsChanged)
+            updateOutlineForTab(splitter);
         updateUndoRedoEnabled();
     });
     edit->setCursorChangedCallback([edit, preview, syncingCursor]() {
@@ -1427,6 +1433,118 @@ void MainWindow::onOutlineItemClicked(QTreeWidgetItem *item, int column)
     }
     edit->setFocus();
 }
+void MainWindow::onBenchmarkPushBack()
+{
+    TextEdit *edit = currentTextEdit();
+    if (!edit) {
+        onNewTab();
+        edit = currentTextEdit();
+        if (!edit) return;
+    }
+
+    //	1セクション = 見出し1行 + 本文24行 = 25行、4セクションで合計100行
+    constexpr int kSections = 4;
+    constexpr int kBodyLinesPerSection = 24;
+    const QString bodyLine = QStringLiteral("body text ").repeated(10) + QChar('\n');
+    QString payload;
+    payload.reserve(kSections * (16 + kBodyLinesPerSection * bodyLine.size()));
+    for (int s = 1; s <= kSections; ++s) {
+        payload += QStringLiteral("## heading %1\n").arg(s);
+        for (int b = 0; b < kBodyLinesPerSection; ++b)
+            payload += bodyLine;
+    }
+
+    const bool wasVi = edit->viEngine()->isEnabled();
+    if (wasVi)
+        edit->setViEnabled(false);
+
+    //	文書末尾へ移動してから1文字ずつ挿入
+    TextCursor cur = edit->textCursor();
+    cur.setPosition(edit->document()->characterCount());
+    edit->setTextCursor(cur);
+
+    const int totalLines = kSections * (1 + kBodyLinesPerSection);
+    const qsizetype totalChars = payload.size();
+    do_output(QStringLiteral("\n[Benchmark] Push_back: inserting %1 lines (%2 chars) 1 char at a time...\n")
+                  .arg(totalLines).arg(totalChars));
+
+    QElapsedTimer timer;
+    timer.start();
+    for (qsizetype i = 0; i < totalChars; ++i) {
+        const QChar ch = payload[i];
+        if (ch == QChar('\n')) {
+            QKeyEvent ev(QEvent::KeyPress, Qt::Key_Return, Qt::NoModifier, QStringLiteral("\n"));
+            edit->replayKeyEvent(&ev);
+        } else {
+            QKeyEvent ev(QEvent::KeyPress, 0, Qt::NoModifier, QString(ch));
+            edit->replayKeyEvent(&ev);
+        }
+    }
+    const qint64 elapsedMs = timer.elapsed();
+
+    if (wasVi)
+        edit->setViEnabled(true);
+
+    const double avgMs = totalChars > 0 ? static_cast<double>(elapsedMs) / static_cast<double>(totalChars) : 0.0;
+    do_output(QStringLiteral("[Benchmark] Push_back done: %1 ms (%2 lines, %3 chars, %4 ms/char)\n")
+                  .arg(elapsedMs).arg(totalLines).arg(totalChars).arg(avgMs, 0, 'f', 4));
+}
+
+void MainWindow::onBenchmarkPushFront()
+{
+    TextEdit *edit = currentTextEdit();
+    if (!edit) {
+        onNewTab();
+        edit = currentTextEdit();
+        if (!edit) return;
+    }
+
+    //	1セクション = 見出し1行 + 本文24行 = 25行、4セクションで合計100行
+    constexpr int kSections = 4;
+    constexpr int kBodyLinesPerSection = 24;
+    const QString bodyLine = QStringLiteral("body text ").repeated(10) + QChar('\n');
+    QString payload;
+    payload.reserve(kSections * (16 + kBodyLinesPerSection * bodyLine.size()));
+    for (int s = 1; s <= kSections; ++s) {
+        payload += QStringLiteral("## heading %1\n").arg(s);
+        for (int b = 0; b < kBodyLinesPerSection; ++b)
+            payload += bodyLine;
+    }
+
+    const bool wasVi = edit->viEngine()->isEnabled();
+    if (wasVi)
+        edit->setViEnabled(false);
+
+    const int totalLines = kSections * (1 + kBodyLinesPerSection);
+    const qsizetype totalChars = payload.size();
+    do_output(QStringLiteral("\n[Benchmark] push_front: inserting %1 lines (%2 chars) 1 char at a time at pos 0...\n")
+                  .arg(totalLines).arg(totalChars));
+
+    QElapsedTimer timer;
+    timer.start();
+    for (qsizetype i = totalChars - 1; i >= 0; --i) {
+        TextCursor cur = edit->textCursor();
+        cur.setPosition(0);
+        edit->setTextCursor(cur);
+        const QChar ch = payload[i];
+        if (ch == QChar('\n')) {
+            QKeyEvent ev(QEvent::KeyPress, Qt::Key_Return, Qt::NoModifier, QStringLiteral("\n"));
+            edit->replayKeyEvent(&ev);
+        } else {
+            QKeyEvent ev(QEvent::KeyPress, 0, Qt::NoModifier, QString(ch));
+            edit->replayKeyEvent(&ev);
+        }
+    }
+    const qint64 elapsedMs = timer.elapsed();
+
+    if (wasVi)
+        edit->setViEnabled(true);
+
+    const double avgMs = totalChars > 0 ? static_cast<double>(elapsedMs) / static_cast<double>(totalChars) : 0.0;
+    do_output(QStringLiteral("[Benchmark] push_front done: %1 ms (%2 lines, %3 chars, %4 ms/char)\n")
+                  .arg(elapsedMs).arg(totalLines).arg(totalChars).arg(avgMs, 0, 'f', 4));
+}
+
 void MainWindow::onAction_About() {
 	QMessageBox::about(this, 
 		"About viMarkdown", // タイトルバー
