@@ -1,27 +1,11 @@
 ﻿#include <algorithm>
 #include <vector>
-#include <QSplitter>
+#include <QCoreApplication>
 #include <QPlainTextEdit>
 #include <QTextEdit>
-#include <QFileDialog>
-#include <QMessageBox>
-#include <QScrollBar>
-#include <QSettings>
 #include <QTextBlock>
-#include <QComboBox>
-#include <QClipboard>
 #include <QLabel>
-#include <QDockWidget>
-#include <QDragEnterEvent>
-#include <QDropEvent>
-#include <QMimeData>
-#include <QUrl>
-#include <QFileSystemWatcher>
-#include <QPrinter>
-#include <QPrintDialog>
-#include <QDesktopServices>
 #include <QLineEdit>
-#include <QToolButton>
 #include <QTextTable>
 #include <QRegularExpression>
 #include <QStatusBar>
@@ -31,8 +15,6 @@
 #include "DocWidget.h"
 #include "MarkdownEditor.h"
 #include "MarkdownPreview.h"
-#include "SettingsDialog.h"
-#include "ReplaceDialog.h"
 #include "diff.h"
 
 using namespace std;
@@ -321,7 +303,7 @@ void MainWindow::onAction_TestAll() {
 
 void MainWindow::do_test(int type) {
 	addTab(QString("QA-%1").arg(++m_QA_tab_number));
-	DocWidget *docWidget = getCurDocWidget();;
+	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
 	int total_tested = 0;
 	int total_failed = 0;
@@ -404,11 +386,8 @@ void MainWindow::do_test(DocWidget *docWidget, int type) {
 		}
 		if (!block2.isValid()) break;
 #endif
-		int n1 = block1.blockNumber();
-		int n2 = block2.blockNumber();
-		QString t1 = block1.text();
-		QString t2 = block2.text();
-		assert( block2.isValid() );
+		if( !ASSERT(block2.isValid(), block1.blockNumber()) )
+			break;
 		if( isCommentOuted(getBlockData(block1)) ) {		//	（非空行で、）１行全てコメントアウトされている場合はスキップ
 			block1 = block1.next();
 			continue;
@@ -476,16 +455,17 @@ void MainWindow::do_test(DocWidget *docWidget, int type) {
 		int lineStartPos = block2.position();		//	行先頭位置
 		QTextTable *table = QTextCursor(block2).currentTable();
 		if( table != nullptr ) {	//	CSV・GFM テーブル中の場合
+			bool tableValid = true;
 			for(int i = 0; i < table->columns() - 1; ++i) {
 				block2 = block2.next();
-				assert( block2.isValid() );
-				buf2 += " " + block2.text().trimmed();		//	セル文字列は半角空白j区切り
+				if( !ASSERT(block2.isValid(), block1.blockNumber()) ) {
+					tableValid = false;
+					break;
+				}
+				buf2 += " " + block2.text().trimmed();		//	セル文字列は半角空白区切り
 			}
-			//block2 = block2.next();
-			assert( block2.isValid() );
-			//inTable = true;
-		} else {
-			//inTable = false;
+			if( !tableValid )
+				break;
 		}
 		BlockData *data = getBlockData(block1);
 		int k = 0;
@@ -797,8 +777,6 @@ void MainWindow::test_charFlags(DocWidget *docWidget) {
 		buf += QA_TEXT_FLAGS[i] + "\n";
 	docWidget->m_editor->setPlainText(buf);
 	QTextBlock block1 = docWidget->m_editor->document()->firstBlock();
-	QTextBlock block2 = docWidget->m_preview->document()->firstBlock();
-	//for(auto flags: QA_MD_FLAGS) {
 	for(int i = 1; i < QA_TEXT_FLAGS.size(); i += 2 ) {
 		if( !block1.isValid() ) {
 			ASSERT(false, i / 2);
@@ -857,7 +835,7 @@ void MainWindow::test_contextAt(DocWidget *docWidget) {
 		buf += QA_CONTEXT_AT[i] + "\n";
 	docWidget->m_editor->setPlainText(buf);
 	QTextCursor cursor = docWidget->m_editor->textCursor();
-	for(auto tc: g_testCaseContextAt) {
+	for(const auto &tc : g_testCaseContextAt) {
 		cursor.setPosition(tc.m_position);
 		PosContext pc = docWidget->m_editor->contextAt(tc.m_position);
 		const int ln = cursor.block().blockNumber();
@@ -890,8 +868,7 @@ void MainWindow::onAction_DumpBlockUserData() {
 			const DiffBlockUserData *userData = dynamic_cast<const DiffBlockUserData*>(block.userData());
 			if( userData != nullptr ) {
 				const QList<DiffRange> &ranges = userData->ranges;
-				QString txt;
-				for(const auto dr: ranges) {
+				for(const auto &dr : ranges) {
 					do_output(QString("(%1 %2) ").arg(dr.start).arg(dr.length));
 				}
 			}
@@ -905,8 +882,7 @@ void MainWindow::onAction_DumpBlockUserData() {
 			const DiffBlockUserData *userData = dynamic_cast<const DiffBlockUserData*>(block.userData());
 			if( userData != nullptr ) {
 				const QList<DiffRange> &ranges = userData->ranges;
-				QString txt;
-				for(const auto dr: ranges) {
+				for(const auto &dr : ranges) {
 					do_output(QString("(%1 %2) ").arg(dr.start).arg(dr.length));
 				}
 			}
@@ -1036,7 +1012,6 @@ void MainWindow::run_previewTestScript(const QString &script) {
 	for (const QString& line : lst) {
 		QCoreApplication::processEvents();		//	溜まっているイベント処理
 		QTextCursor cursor = docWidget->m_preview->textCursor();
-		int pos = cursor.position();
         QString trimmed = line.trimmed();
         if (trimmed.isEmpty() || trimmed.startsWith("//") || trimmed.startsWith("#")) continue; // 空行やコメントをスキップ
 
@@ -4726,7 +4701,7 @@ QString actualFoldText(const QTextCursor& cursor) {
 void MainWindow::onAction_TestViCommands() {
 	qDebug() << "MainWindow::onAction_TestViCommands()";
 	addTab(QString("QA-%1").arg(++m_QA_tab_number));
-	DocWidget *docWidget = getCurDocWidget();;
+	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
 	MarkdownEditor *editor = docWidget->m_editor;
 	const ViStatus savedGvi = gvi;
@@ -4768,22 +4743,22 @@ void MainWindow::onAction_TestViCommands() {
 			before.insert(toVisiblePos(cursor.document(), cursor.position()), u'┃');
 			before.replace('\n', "\\n");
 			const QString cmd_text = steps[k];
-			for(int i = 0; i < cmd_text.size(); ++i) {
-				do_viCmd(cmd_text[i], cursor);
+			for(int ci = 0; ci < cmd_text.size(); ++ci) {
+				do_viCmd(cmd_text[ci], cursor);
 				if( gvi.m_currentMode == ViMode::Insert ) {
-					auto txt = gvi.m_insertedText = cmd_text.mid(i+1);
+					auto txt = gvi.m_insertedText = cmd_text.mid(ci+1);
 					editor->openUndoBlock();
 					editor->do_insertText(cursor, txt);
 					exitInsertMode(cursor);
 					break;
 				} else if( gvi.m_currentMode == ViMode::CommandLine ) {
-					if( cmd_text[i] == u':' ) {
-						do_exCmd(cmd_text.mid(i+1), cursor);
+					if( cmd_text[ci] == u':' ) {
+						do_exCmd(cmd_text.mid(ci+1), cursor);
 						cursor = editor->textCursor();	// do_exCmd はエディタ側カーソルを移動させる
 					    gvi.m_currentMode = ViMode::Normal;
-					} else if( cmd_text[i] == u'/' || cmd_text[i] == u'?' ) {
+					} else if( cmd_text[ci] == u'/' || cmd_text[ci] == u'?' ) {
 						//	SPR #1204: 検索コマンドもテスト可能にする（本物の Enter 経路は do_vi_search を直接呼ぶ）
-						do_vi_search(cmd_text.mid(i), cursor, qMax(1, gvi.m_repeatCount), docWidget);
+						do_vi_search(cmd_text.mid(ci), cursor, qMax(1, gvi.m_repeatCount), docWidget);
 						cursor = editor->textCursor();	// do_vi_search はエディタ側カーソルを移動させる
 						gvi.m_currentMode = ViMode::Normal;
 						gvi.m_pendingCommand.clear();
@@ -4795,7 +4770,6 @@ void MainWindow::onAction_TestViCommands() {
 			editor->setTextCursor(cursor);
 			QCoreApplication::processEvents();		//	溜まっているイベント処理
 			cursor = editor->textCursor();
-			int cpos1 = cursor.position();
 			QString expNoFold;
 			QSet<int> expHidden = parseFoldMarkers(steps[k+1], expNoFold);
 			QString exp = removeCursor(expNoFold, pos, anchor);
@@ -4876,9 +4850,12 @@ void MainWindow::onAction_TestViCommands() {
 テキストは行ごとの文字列の連結で、各行の先頭1文字がマーカー：
 
 = 不変行、+ 追加行、! 変更行、- ダミー行（その側には存在しない行。実文書には入れない）
-アクション文字列：
-	先頭の >	＝右側に操作、< ＝左側（省略時も左）
-	x			＝カーソル位置の1文字削除、i...Esc ＝文字列挿入。カーソルは文書先頭（set_text が位置0に置く）固定
+アクション文字列（runDiffAction / do_action）：
+	先頭の L / R（省略時は L）で対象ペインを指定し、続けて以下を記述：
+	  :exコマンド / /検索 / ?逆検索
+	  v{viコマンド列}
+	  @行:カラム[x|i文字列]  （移動のみ / 1文字削除 / 文字列挿入、\x1b で打ち切り）
+	  d行 / J行 / b行 / w行:カラム / u / U
 */
 
 QStringList g_diffTestCase[] = {
@@ -5259,7 +5236,7 @@ void set_text(MarkdownEditor* editor, const QString& text) {
 	//	lst.pop_back();		//	余分な改行のみ最終行削除
 	int curPos = 0;
 	bool hasCursor = false;
-	for(const auto t: lst) {
+	for(const auto &t : lst) {
 		if( !t.startsWith('-') ) {	//	削除行でなければ、
 			QString t2 = t.mid(1);
 			t2.remove(u'《');	//	範囲指定の括弧は文書には入れない
@@ -5750,7 +5727,7 @@ bool MainWindow::test_diff_line(MarkdownEditor* editor, const QString& text, int
 	QTextBlock block = editor->document()->begin();
 	auto lst = splitDiffRows(text);
 	int expectedCursorBlock = -1, expectedCursorCol = -1;
-	for(const auto t: lst) {
+	for(const auto &t : lst) {
 		if( !block.isValid() ) {
 			do_output(QString("\n[FAILED #%1] Unexpected end of document (fewer blocks than expected)\n").arg(++total_failed));
 			return false;
@@ -5858,7 +5835,7 @@ bool MainWindow::test_diff_line(MarkdownEditor* editor, const QString& text, int
 void MainWindow::onAction_TestDiff() {
 	qDebug() << "onAction_TestDiff()";
 	addTab(QString("QA-%1").arg(++m_QA_tab_number));
-	DocWidget *docWidget = getCurDocWidget();;
+	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
 	docWidget->setupDiffMode();
 	docWidget->updatePanes();
@@ -6063,7 +6040,7 @@ static QString syncActualText(const QTextCursor &cursor, bool trimTail) {
 void MainWindow::onAction_TestCursorSync() {
 	qDebug() << "onAction_TestCursorSync()";
 	addTab(QString("QA-%1").arg(++m_QA_tab_number));
-	DocWidget *docWidget = getCurDocWidget();;
+	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
 	MarkdownEditor *editor = docWidget->m_editor;
 	MarkdownPreview *preview = docWidget->m_preview;
@@ -6113,8 +6090,6 @@ void MainWindow::onAction_TestCursorSync() {
 			do_output(QString("Actual:   '%1'\n").arg(after));
 			continue;
 		}
-		++total_tested;
-		do_output(".");
 		if( pos2 != cursor2.position() ) {
 			++total_failed;
 			do_output(QString("\n[FAILED #%1] wrong cursor position.\n").arg(total_failed));
@@ -6122,8 +6097,6 @@ void MainWindow::onAction_TestCursorSync() {
 			do_output(QString("Actual:   '%1'\n").arg(after));
 			continue;
 		}
-		++total_tested;
-		do_output(".");
 		if( (anchor2 >= 0) != cursor2.hasSelection() || (anchor2 >= 0 && anchor2 != cursor2.anchor()) ) {
 			++total_failed;
 			do_output(QString("\n[FAILED #%1] wrong selection anchor.\n").arg(total_failed));
@@ -6138,8 +6111,6 @@ void MainWindow::onAction_TestCursorSync() {
 			removeCursor(expE, pos3, anchor3);
 			expE.replace('\n', "\\n");
 			QTextCursor cursorP = preview->textCursor();
-			//cursorP.setPosition(pos2);		//	EtoP 結果位置から逆同期する
-			//cursorP.clearSelection();
 			if( anchor2 >= 0 ) {
 				cursorP.setPosition(anchor2);
 				cursorP.setPosition(pos2, QTextCursor::KeepAnchor);
@@ -6151,8 +6122,6 @@ void MainWindow::onAction_TestCursorSync() {
 			preview->onCursorPosChanged();		//	位置不変だとシグナルが発火しないため直接呼ぶ
 			QCoreApplication::processEvents();
 			QTextCursor cursorE = editor->textCursor();
-			//QString afterE = cursorE.document()->toPlainText();		//	実際のエディタテキスト
-			//afterE.insert(cursorE.position(), u'┃');
 			QString afterE = syncActualText(cursorE, false);		//	実際のエディタテキスト（選択範囲も描画）
 			afterE.replace('\n', "\\n");
 			++total_tested;
@@ -6164,8 +6133,6 @@ void MainWindow::onAction_TestCursorSync() {
 				do_output(QString("Actual:   '%1'\n").arg(afterE));
 				continue;
 			}
-			++total_tested;
-			do_output(".");
 			if( pos3 != cursorE.position() ) {
 				++total_failed;
 				do_output(QString("\n[FAILED #%1] wrong editor cursor position (PtoE).\n").arg(total_failed));
@@ -6173,8 +6140,6 @@ void MainWindow::onAction_TestCursorSync() {
 				do_output(QString("Actual:   '%1'\n").arg(afterE));
 				continue;
 			}
-			++total_tested;
-			do_output(".");
 			if( (anchor3 >= 0) != cursorE.hasSelection() || (anchor3 >= 0 && anchor3 != cursorE.anchor()) ) {
 				++total_failed;
 				do_output(QString("\n[FAILED #%1] wrong editor selection anchor (PtoE).\n").arg(total_failed));

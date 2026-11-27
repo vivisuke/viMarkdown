@@ -1627,8 +1627,18 @@ SPR# 状 P Open Close ver     Type  概要
 1613 ◎ C 11/28 11/28 03224│問題│test_diff_line()で0長範囲をactGapsへ追記後に未ソート比較するため同集合でも誤失敗する（Gemini）
 1614 ◎ C 11/28 11/28 03224│問題│Vi/Diff自動テストでケース間のgvi状態やUndo履歴・コマンド欄UI状態が初期化されず持ち越される（Gemini）
 1615 ◎ C 11/28 11/28 03224│問題│onAction_TestViCommands()のステップループにk+1<steps.size()判定がなく奇数要素時に範囲外参照（Gemini）
-1616 ● C 11/28            │問題│
-1617 ● C 11/28            │問題│
-1618 ● C 11/28            │問題│
-1619 ● C 11/28            │問題│
-1620 ● C 11/28            │問題│
+1616 ◎ C 11/28 11/28 03224│問題│do_test()内で標準assert()が混在しDebug強制終了やRelease無効化が起きるためASSERT()へ統一要（Gemini）
+1617 ◎ C 11/28 11/28 03224│問題│g_diffTestCase直前の仕様コメントが旧書式(>や<等)のまま放置され現行do_action()仕様と乖離（Gemini）
+1618 ◎ C 11/28 11/28 03224│問題│onAction_TestViCommands()で外側for(int i)内に同名ループ変数iがありシャドーイングしている（Gemini）
+1619 ◎ C 11/28 11/28 03224│問題│onAction_TestCursorSync()で1方向あたり3回total_tested加算し失敗時continueで分母が歪む（Gemini）
+1620 ◎ C 11/28 11/28 03224│問題│AutoTest.cpp冒頭に多数の未使用#includeと#if 0等のデッドコード・空関数onAction_Test()が残留（Gemini）
+1621 ◎ C 11/28 11/28 03224│問題│AutoTest.cppに二重セミコロン・未使用変数(n1/t1/cpos1等)・範囲forの値コピーが散在している（Gemini）
+1622 ● C 11/28            │問題│
+1623 ● C 11/28            │問題│
+1624 ● C 11/28            │問題│
+1625 ● C 11/28            │問題│
+1626 ● C 11/28            │問題│
+1627 ● C 11/28            │問題│
+1628 ● C 11/28            │問題│
+1629 ● C 11/28            │問題│
+1630 ● C 11/28            │問題│
