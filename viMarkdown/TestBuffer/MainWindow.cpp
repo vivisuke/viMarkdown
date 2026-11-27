@@ -3186,3 +3186,22 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+bool MainWindow::nativeEvent(const QByteArray &eventType, void *message, qintptr *result)
+{
+#ifdef Q_OS_WIN
+    if (eventType == "windows_generic_MSG" || eventType == "windows_dispatcher_MSG") {
+        const MSG *msg = static_cast<const MSG *>(message);
+        if (msg && (msg->message == WM_IME_NOTIFY || msg->message == WM_IME_STARTCOMPOSITION)) {
+            if (auto *edit = dynamic_cast<TextEdit *>(QApplication::focusWidget())) {
+                if (msg->message == WM_IME_STARTCOMPOSITION) {
+                    edit->enterInsertModeFromIme();
+                } else if (msg->wParam == IMN_SETOPENSTATUS) {
+                    edit->syncImeToViMode();
+                }
+            }
+        }
+    }
+#endif
+    return QMainWindow::nativeEvent(eventType, message, result);
+}
+

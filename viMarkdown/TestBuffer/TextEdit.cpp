@@ -120,6 +120,26 @@ void forceImeOff(QWidget *w)
 #endif
 }
 
+bool isImeOpen(QWidget *w)
+{
+#ifdef Q_OS_WIN
+	HWND hwnd = w ? reinterpret_cast<HWND>(w->effectiveWinId()) : nullptr;
+	if( !hwnd )
+		hwnd = GetFocus();
+	if( !hwnd )
+		return false;
+	if( HIMC himc = ImmGetContext(hwnd) ) {
+		const BOOL open = ImmGetOpenStatus(himc);
+		ImmReleaseContext(hwnd, himc);
+		return open != FALSE;
+	}
+	return false;
+#else
+	Q_UNUSED(w);
+	return false;
+#endif
+}
+
 enum WordCharClass {
 	WCC_NEWLINE = 0,
 	WCC_SPACE,
@@ -1549,11 +1569,38 @@ void TextEdit::paintEvent(QPaintEvent *event)
 	}
 }
 
+void TextEdit::enterInsertModeFromIme()
+{
+	if( !m_vi.isEnabled() || m_vi.mode() == ViMode::Insert )
+		return;
+	m_vi.setMode(ViMode::Insert, this);
+	m_caretVisible = true;
+	if( hasFocus() && m_blinkTimer )
+		m_blinkTimer->start();
+	viewport()->update();
+}
+
+void TextEdit::syncImeToViMode()
+{
+	if( !m_vi.isEnabled() || m_vi.mode() == ViMode::Insert )
+		return;
+	if( isImeOpen(this) )
+		enterInsertModeFromIme();
+}
+
 void TextEdit::keyPressEvent(QKeyEvent *event)
 {
 	if( event->key() == Qt::Key_Escape
 		|| (m_vi.isEnabled() && (event->modifiers() & Qt::ControlModifier) && event->key() == Qt::Key_BracketLeft) ) {
 		forceImeOff(this);
+	} else if( m_vi.isEnabled() && m_vi.mode() != ViMode::Insert ) {
+		const int k = event->key();
+		if( k == Qt::Key_Zenkaku_Hankaku || k == Qt::Key_Kanji
+			|| k == Qt::Key_Hiragana || k == Qt::Key_Katakana
+			|| k == Qt::Key_Hiragana_Katakana || k == Qt::Key_Henkan
+			|| k == Qt::Key_Eisu_toggle ) {
+			QTimer::singleShot(0, this, [this]() { syncImeToViMode(); });
+		}
 	}
 	if( m_vi.handleKeyPress(this, event) ) {
 		event->accept();
@@ -1956,6 +2003,10 @@ void TextEdit::handleReturnKey()
 
 void TextEdit::inputMethodEvent(QInputMethodEvent *event)
 {
+	if( m_vi.isEnabled() && m_vi.mode() != ViMode::Insert
+		&& (!event->preeditString().isEmpty() || !event->commitString().isEmpty()) ) {
+		enterInsertModeFromIme();
+	}
 	bool textChanged = false;
 	if( event->replacementLength() > 0 ) {
 		TextDocument::pos_t pos = m_cursor.position() + event->replacementStart();

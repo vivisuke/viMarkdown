@@ -97,6 +97,8 @@ public:
 	ViEngine *viEngine() { return &m_vi; }
 	const ViEngine *viEngine() const { return &m_vi; }
 	void setViEnabled(bool enabled);
+	void syncImeToViMode();
+	void enterInsertModeFromIme();
 	void onSaved();
 	void setTextChangedCallback(std::function<void()> cb) { m_onTextChanged = std::move(cb); }
 	void setCursorChangedCallback(std::function<void()> cb) { m_onCursorChanged = std::move(cb); }
