@@ -238,6 +238,8 @@ bool do_fFtT(QTextCursor& cursor, QChar cmd, QChar ch, int rcnt, bool isRepeat =
 	int ix = cursor.position() - block.position();		//	ブロック内インデックス
 	int ix0 = ix, ix2 = -1;
 	if( cmd== 'f' || cmd== 't' ) {		//	順方向検索
+		if( isRepeat && cmd == 't' && ix + 1 < buf.size() && buf[ix + 1] == ch )
+			++ix;
 		for(int i = 0; i != rcnt; ++i) {
 			ix2 = buf.indexOf(ch, ix+1);
 			if( ix2 < 0 ) break;	//	未発見
@@ -246,7 +248,10 @@ bool do_fFtT(QTextCursor& cursor, QChar cmd, QChar ch, int rcnt, bool isRepeat =
 		if( cmd== 't' ) --ix;
 		if( ix2 < 0 ) ix = ix0;		//	未発見の場合
 	} else if( ix != 0 ) {		//	F T 逆方向検索
+		if( isRepeat && cmd == 'T' && ix - 1 >= 0 && buf[ix - 1] == ch )
+			--ix;
 		for(int i = 0; i != rcnt; ++i) {
+			if( ix <= 0 ) { ix2 = -1; break; }
 			ix2 = buf.lastIndexOf(ch, ix-1);
 			if( ix2 < 0 ) break;	//	未発見
 			ix = ix2;
@@ -254,12 +259,12 @@ bool do_fFtT(QTextCursor& cursor, QChar cmd, QChar ch, int rcnt, bool isRepeat =
 		if( cmd== 'T' ) ++ix;
 		if( ix2 < 0 ) ix = ix0;		//	未発見の場合
 	}
+	if( !isRepeat && ix2 >= 0 ) {
+		gvi.m_last_fFtT = cmd;
+		gvi.m_last_fFtT_char = ch;
+	}
 	//	順方向 't' で対象が直後の場合、着地位置は変わらないが演算子範囲は1文字ある（#1376）
 	if( ix != ix0 || (ix2 >= 0 && cmd == 't' && gvi.m_operator != ' ') ) {
-		if( !isRepeat ) {
-			gvi.m_last_fFtT = cmd;
-			gvi.m_last_fFtT_char = ch;
-		}
 		if( gvi.m_operator == ' ' )
 			cursor.setPosition(block.position() + ix);
 		else {

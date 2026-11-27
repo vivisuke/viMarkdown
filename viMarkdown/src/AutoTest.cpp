@@ -4572,6 +4572,70 @@ const QList<ViTestCase> viTestCases = {
 	        "u", "┃hello world\nhello again\n"
 	    }
 	},
+	// ------------------------------------------------------------------
+	//	優先度高テスト拡充（Gemini 提案）
+	// ------------------------------------------------------------------
+	{ "Empty document - Motions are safe no-ops",
+	    "┃",
+	    {
+	        "h", "┃", "l", "┃", "j", "┃", "k", "┃",
+	        "w", "┃", "b", "┃", "e", "┃",
+	        "0", "┃", "^", "┃", "$", "┃", "G", "┃", "gg", "┃"
+	    }
+	},
+	{ "Empty document - Edits and Ex are safe no-ops",
+	    "┃",
+	    {
+	        "x", "┃", "X", "┃", "dd", "┃", "D", "┃", "dw", "┃",
+	        "J", "┃", "~", "┃", "<<", "┃", "rx", "┃", "u", "┃",
+	        "p", "┃", "P", "┃", "/a", "┃", ":d", "┃", ":s/a/b/", "┃", ":%s/a/b/g", "┃"
+	    }
+	},
+	{ "Repeat till (t/T with ; and ,) - Adjacent target advances",
+	    "┃a.b.c.d\n",
+	    {
+	        "t.", "┃a.b.c.d\n",		// 既に '.' の1つ手前 'a' に留まる
+	        ";",  "a.┃b.c.d\n",		// ; は現在地直後の '.' を越えて次の '.' の手前 'b' へ進む
+	        ";",  "a.b.┃c.d\n",		// さらに次の '.' の手前 'c' へ
+	        ",",  "a.┃b.c.d\n",		// 逆方向（T. 相当）で前の '.' の直後 'b' へ
+	        ",",  "a.┃b.c.d\n"		// 左にこれ以上 '.' は進めない（先頭 'a' の左に '.' なし）
+	    }
+	},
+	{ "Repeat till backwards (T with ; and ,)",
+	    "a.b.c.┃d\n",
+	    {
+	        "T.", "a.b.c.┃d\n",		// 既に '.' の直後 'd' に留まる
+	        ";",  "a.b.┃c.d\n",		// ; は左の '.' を越えてその前の '.' の直後 'c' へ
+	        ";",  "a.┃b.c.d\n",		// さらに前の '.' の直後 'b' へ
+	        ",",  "a.b.┃c.d\n"		// 逆方向（t. 相当）で次の '.' の手前 'c' へ
+	    }
+	},
+	{ "Ex Substitute - Zero-width anchors (^ and $) and empty replacement",
+	    "┃foo\nbar\n",
+	    {
+	        ":s/^/pre_/",   "┃pre_foo\nbar\n",
+	        ":s/$/_suf/",   "┃pre_foo_suf\nbar\n",
+	        ":%s/^/  /g",   "  pre_foo_suf\n  ┃bar\n",
+	        ":1s/pre_//g",  "  ┃foo_suf\n  bar\n"
+	    }
+	},
+	{ "Ex Global - Undo (:g/pat/s and :g/pat/d)",
+	    "┃foo 1\nkeep\nfoo 2\n",
+	    {
+	        ":g/foo/s/foo/bar/", "bar 1\nkeep\n┃bar 2\n",
+	        "u",                 "┃foo 1\nkeep\nfoo 2\n",
+	        ":g/foo/d",          "┃keep\n",
+	        "u",                 "foo 1\nkeep\n┃foo 2\n"
+	    }
+	},
+	{ "Ex Range - Out-of-bounds line numbers (:0, :999, :1,999d)",
+	    "line 1\nli┃ne 2\nline 3\n",
+	    {
+	        ":0",      "┃line 1\nline 2\nline 3\n",
+	        ":999",    "line 1\nline 2\n┃line 3\n",
+	        ":2,999d", "┃line 1\n"
+	    }
+	},
 };
 QString removeCursor(const QString &src, int &pos, int &anchor) {
 	QString dst;
@@ -5223,6 +5287,43 @@ QStringList g_diffTestCase[] = {
 		"R:d",
 		"=one two three\n=alpha beta\n+last line\n",
 		"=one two three\n=┃alpha beta\n-\n",
+	},
+	//	優先度高テスト拡充（Gemini 提案）：Rw および日本語・絵文字の単語反映
+	{"Reflect word right-to-left (Rw) and left undo",
+		"!aaa 《bbb》 ccc\n",
+		"!aaa 《xxx》 ccc\n",
+		"Rw1:5",
+		"=aaa xxx ccc\n",
+		"=aaa xxx ccc\n",
+		"Lu",
+		"!aaa 《bbb》 ccc\n",
+		"!aaa 《xxx》 ccc\n",
+	},
+	{"Reflect Japanese word (Rw and Lw)",
+		"!あいうえお《漢字》カタカナ\n",
+		"!あいうえお《幹事》カタカナ\n",
+		"Rw1:6",
+		"=あいうえお幹事カタカナ\n",
+		"=あいうえお幹事カタカナ\n",
+		"Lu",
+		"!あいうえお《漢字》カタカナ\n",
+		"!あいうえお《幹事》カタカナ\n",
+		"Lw1:6",
+		"=あいうえお漢字カタカナ\n",
+		"=あいうえお漢字カタカナ\n",
+	},
+	{"Reflect word after surrogate pair emoji (Rw and Lw)",
+		"!a\xF0\x9F\x98\x80《foo》b\n",
+		"!a\xF0\x9F\x98\x80《bar》b\n",
+		"Rw1:3",
+		"=a\xF0\x9F\x98\x80" "barb\n",
+		"=a\xF0\x9F\x98\x80" "barb\n",
+		"Lu",
+		"!a\xF0\x9F\x98\x80《foo》b\n",
+		"!a\xF0\x9F\x98\x80《bar》b\n",
+		"Lw1:3",
+		"=a\xF0\x9F\x98\x80" "foob\n",
+		"=a\xF0\x9F\x98\x80" "foob\n",
 	},
 };
 void set_text(MarkdownEditor* editor, const QString& text) {
@@ -6002,6 +6103,10 @@ QList<SyncTestCase> g_syncTestCase = {
 	{"Heading・空白4・先頭", "    ## ┃hoge\n", "┃hoge\n", "    ## ┃hoge\n"},
 	{"Heading・空白4・中間", "    ## ho┃ge\n", "ho┃ge\n", "    ## ho┃ge\n"},
 	{"Heading・空白4・末尾", "    ## hoge┃\n", "hoge┃\n", "    ## hoge┃\n"},
+	//	優先度高テスト拡充（Gemini 提案）：逆方向選択（┃...《）の EtoP / PtoE 同期
+	{"逆方向選択・プレーン", "a┃bc《d\n", "a┃bc《d\n", "a┃bc《d\n"},
+	{"逆方向選択・Bold全体", "ab **┃bold《** cd\n", "ab ┃bold《 cd\n", "ab **┃bold《** cd\n"},
+	{"逆方向選択・Bold跨ぎ", "a┃b **bold** c《d\n", "a┃b bold c《d\n", "a┃b **bold** c《d\n"},
 #if 0		//	v0.3 では NPTF, v0.4 で対処予定
 	{"f*u**ga・先頭", "┃f*u**ga\n", "┃f*u**ga\n", "┃f*u**ga\n"},
 	{"f*u**ga・f直後", "f┃*u**ga\n", "f┃*u**ga\n", "f┃*u**ga\n"},
