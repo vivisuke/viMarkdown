@@ -1672,10 +1672,10 @@ SPR# 状 P Open Close ver     Type  概要
 1658 ◎ C 11/28 11/28 03224│問題│main.cppの複数コマンドライン引数未対応・不要qDebug・#if 0・インデント混在を整理（Gemini）
 1659 ◎ C 11/28 11/28 03224│問題│LangDialogで設定ファイルに想定外の言語設定値があると全ラジオボタンが未選択になる（Gemini）
 1660 ◎ C 11/28 11/28 03224│問題│LangDialogのaccepted接続先を&LangDialog::acceptへ明示化し再起動反映の案内等を検討（Gemini）
-1661 ● C 11/28            │問題│
-1662 ● C 11/28            │問題│
-1663 ● C 11/28            │問題│
-1664 ● C 11/28            │問題│
+1661 ◎ C 11/28 11/28 03224│問題│OutputView::mouseDoubleClickEvent()で単語選択不可かつ行番号・パス行の誤判定がある（Gemini）
+1662 ◎ C 11/28 11/28 03224│問題│OutputView::keyPressEvent()が修飾キーを誤判定しevent()のショートカット基準と不統一（Gemini）
+1663 ◎ C 11/28 11/28 03224│問題│OutputView::highlightSearchText()がg.m_regexpによる正規表現検索のハイライト未対応（Gemini）
+1664 ◎ C 11/28 11/28 03224│問題│OutputViewのFindFlagsループ外移動・不要qDebug削除・不足includeやデストラクタ整理（Gemini）
 1665 ● C 11/28            │問題│
 1666 ● C 11/28            │問題│
 1667 ● C 11/28            │問題│
