@@ -911,14 +911,39 @@ static QString smartListPrefix(const TextDocument &doc, int ln)
 {
 	const ViewLineMgr &mgr = doc.lineMgr();
 	const LineMgr::LineType lt = mgr.lineType(ln);
-	if( lt != LineMgr::LT_LIST && lt != LineMgr::LT_CHECKBOX && lt != LineMgr::LT_NUM_LIST )
-		return QString();
 	QString lineText = doc.findBlockByNumber(ln).text();
 	if( lineText.endsWith(QChar('\n')) ) lineText.chop(1);
 	if( lineText.endsWith(QChar('\r')) ) lineText.chop(1);
 	qsizetype i = 0;
 	while( i < lineText.size() && (lineText[i] == QChar(' ') || lineText[i] == QChar('\t')) )
 		++i;
+	const QStringView rest = QStringView(lineText).mid(i);
+	if( rest.startsWith(QChar('[')) ) {
+		const qsizetype closePos = rest.indexOf(QChar(']'), 1);
+		if( closePos > 0 && (closePos + 1 == rest.size() || rest[closePos + 1] == QChar(' ') || rest[closePos + 1] == QChar('\t')) ) {
+			const QStringView inner = rest.mid(1, closePos - 1);
+			bool validBox = true;
+			qsizetype p = 0;
+			while( p < inner.size() ) {
+				while( p < inner.size() && (inner[p] == QChar(' ') || inner[p] == QChar('\t')) ) ++p;
+				if( p >= inner.size() ) break;
+				const qsizetype s = p;
+				while( p < inner.size() && inner[p] != QChar(' ') && inner[p] != QChar('\t') ) ++p;
+				const QStringView tok = inner.mid(s, p - s);
+				if( tok != u">" && tok != u"->"
+					&& tok.compare(u"left", Qt::CaseInsensitive) != 0
+					&& tok.compare(u"center", Qt::CaseInsensitive) != 0
+					&& tok.compare(u"right", Qt::CaseInsensitive) != 0 ) {
+					validBox = false;
+					break;
+				}
+			}
+			if( validBox )
+				return lineText.left(i) + QStringLiteral("[] ");
+		}
+	}
+	if( lt != LineMgr::LT_LIST && lt != LineMgr::LT_CHECKBOX && lt != LineMgr::LT_NUM_LIST )
+		return QString();
 	if( lt == LineMgr::LT_NUM_LIST ) {
 		qsizetype d = i;
 		while( d < lineText.size() && lineText[d] >= QChar('0') && lineText[d] <= QChar('9') )

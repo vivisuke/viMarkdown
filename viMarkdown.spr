@@ -1612,13 +1612,13 @@ SPR# 状 P Open Close ver     Type  概要
 1598 ◎ C 11/27 11/27 03223│問題│Save As時に別タブで開いている保存先を未確認のため他タブのファイルを上書き競合させてしまう（ChatGPT）
 1599 ◎ C 11/27 11/27 03223│問題│nativeEvent()の非Vi時INSERT誤遷移・ImmGetContext未NULL確認やdiffTimer/タブ変更時の防御漏れ（Gemini）
 1600 ◎ C 11/27 11/27 03223│問題│readTextFile()がBOMなしUTF-8固定でhasError未確認のためShift-JIS文書が文字化け破損する（Claude）
-1601 ● C 11/27            │問題│
-1602 ● C 11/27            │問題│
-1603 ● C 11/27            │問題│
-1604 ● C 11/27            │問題│
-1605 ● C 11/27            │問題│
-1606 ● C 11/27            │問題│
-1607 ● C 11/27            │問題│
-1608 ● C 11/27            │問題│
-1609 ● C 11/27            │問題│
-1610 ● C 11/27            │問題│
+1601 ◎ C 11/28 11/28 03224│問題│onAction_TestViCommands()がVisual選択範囲のanchorを取得後に一度も検証せず素通りする（Gemini）
+1602 ◎ C 11/28 11/28 03224│問題│do_test()のTEST_EtoP_CUR_SYNCでASSERT_EQ()にk2とk1が逆順で渡され失敗ログが反転する（Gemini）
+1603 ◎ C 11/28 11/28 03224│問題│do_test()のQA_MD_TEXT_2設定がTEST_LINE_CRSP内に限定されEtoP単独実行時に空文書になる（Gemini）
+1604 ◎ C 11/28 11/28 03224│問題│test_charFlags()で失敗詳細が未出力かつサイズ不一致やg_flag_char不足(14vs18)で範囲外参照（Gemini）
+1605 ◎ C 11/28 11/28 03224│問題│test_diff_line()末尾のblock.next()判定で末尾改行無しを無ログ失敗とし余剰行も未検出になる（Gemini）
+1606 ◎ C 11/28 11/28 03224│問題│QA_MD_TEXT_2のCSV行"69, ""hasshi""..."が文字列連結になり引用符テストが消失している（Gemini）
+1607 ◎ C 11/28 11/28 03224│問題│ASSERT_EQ(bool,bool,int)に失敗時のdo_output()が抜けており失敗箇所がログに出力されない（Gemini）
+1608 ◎ C 11/28 11/28 03224│問題│test_contextAt()がm_anchorCharしか検証せずm_offsetとm_nthを一切未確認のままにしている（Gemini）
+1609 ◎ C 11/28            │問題│
+1610 ◎ C 11/28            │問題│

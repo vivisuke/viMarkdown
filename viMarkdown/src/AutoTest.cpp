@@ -46,6 +46,8 @@ int getDiff(MarkdownEditor* editor, const QTextBlock &block);
 
 QChar g_flag_char[] = {
 	u'v',	//	PCF_VISIBLE = 0,	// プレビューに表示される
+	u'!',	//	PCF_IMAGE_BEGIN,	//	最初の '!' 位置
+	u'.',	//	PCF_NOT_VISIBLE,	//	以下以外で非表示
 	u'-',	//	PCF_COMMENTED,		//	コメントアウトされた文字
 	u'E',	//	PCF_ESCAPE,			//	エスケープ文字
 	u'H',	//	PCF_HEADING,		//	タイトル・見出し行
@@ -57,7 +59,9 @@ QChar g_flag_char[] = {
 	u'C',	//	PCF_CODE,			// ```
 	u'S',	//	PCF_CSV,
 	u'T',	//	PCF_TABLE,			//	マークダウン表要素
-	u'K',	//	PCF_KEISEN,
+	u',',	//	PCF_CELL_SEPARATOR,	//	表区切り文字
+	u'k',	//	PCF_KEISEN,
+	u'G',	//	PCF_SVG,
 	u'=',	//	PCF_EMPHASIZED,		//	ボールド、イタリック等
 };
 enum {
@@ -76,7 +80,7 @@ const QString QA_MD_TEXT_2 =
 	"abc, xy, z123\n"
 	"id, , h3\n"
 	"id, h*h*h2, **h3**\n"
-	"69, ""hasshi"", h\\*o\\*ge\n"
+	"69, \"hasshi\", h\\*o\\*ge\n"
 	",,\n"
 	"\"\",\"\",\n"	//	途中のセルが ""
 	",,\"\"\n"	//	最後のセルが ""
@@ -214,7 +218,7 @@ const QString QA_MD_TEXT_2 =
 	"abc, xy, z123\n"
 	"id, , h3\n"
 	"id, h*h*h2, **h3**\n"
-	"69, ""hasshi"", h\\*o\\*ge\n"
+	"69, \"hasshi\", h\\*o\\*ge\n"
 	",,\n"
 	"\"\",\"\",\n"	//	途中のセルが ""
 	",,\"\"\n"	//	最後のセルが ""
@@ -254,6 +258,7 @@ bool MainWindow::ASSERT_EQ(bool expected, bool actual, int ln) {
 	++g_tested_count;
 	if( actual == expected ) return true;
 	++g_failed_count;
+	do_output(QString("%1: %2 expected. but %3\n").arg(ln+1).arg(expected ? "true" : "false").arg(actual ? "true" : "false"));
 	return false;
 }
 bool MainWindow::ASSERT_EQ(int expected, int actual, int ln) {
@@ -336,10 +341,12 @@ void MainWindow::do_test(int type) {
 		total_tested += g_tested_count;
 		total_failed += g_failed_count;
 	}
+	if( (type & (TEST_LINE_CRSP | TEST_EtoP_CUR_SYNC | TEST_PtoE_CUR_SYNC)) != 0 ) {
+		docWidget->m_editor->setPlainText(QA_MD_TEXT_2);
+	}
 	if( (type & TEST_LINE_CRSP) != 0 ) {
 		g_tested_count = 0;
 		g_failed_count = 0;
-		docWidget->m_editor->setPlainText(QA_MD_TEXT_2);
 		do_test(docWidget, TEST_LINE_CRSP);
 		do_output(QString("\nTest Line Corresponding: %1 failed / %2 tested.\n\n").arg(g_failed_count).arg(g_tested_count));
 		total_tested += g_tested_count;
@@ -544,7 +551,7 @@ void MainWindow::do_test(DocWidget *docWidget, int type) {
 						}
 					}
 					QChar ch = document->characterAt(cursor.position());
-					if( !ASSERT_EQ( k2, k1, block1.blockNumber(), ch, i, TEST_EtoP_CUR_SYNC ) ) {
+					if( !ASSERT_EQ( k1, k2, block1.blockNumber(), ch, i, TEST_EtoP_CUR_SYNC ) ) {
 						qDebug() << "ch = " << ch;
 					}
 					cursor.movePosition(QTextCursor::Right);
@@ -787,23 +794,31 @@ void MainWindow::test_charFlags(DocWidget *docWidget) {
 	QTextBlock block2 = docWidget->m_preview->document()->firstBlock();
 	//for(auto flags: QA_MD_FLAGS) {
 	for(int i = 1; i < QA_TEXT_FLAGS.size(); i += 2 ) {
+		if( !block1.isValid() ) {
+			ASSERT(false, i / 2);
+			break;
+		}
 		QString buf1 = block1.text();
 		QString flags = QA_TEXT_FLAGS[i];
 		BlockData *data = getBlockData(block1);
-		ASSERT_EQ( (int)flags.size(), (int)data->m_charFlags.size(), block1.blockNumber());
-		for(int i = 0; i < flags.size(); ++i) {
+		if( !ASSERT_EQ( (int)flags.size(), (int)data->m_charFlags.size(), block1.blockNumber() ) ) {
+			block1 = block1.next();
+			continue;
+		}
+		for(int j = 0; j < flags.size(); ++j) {
 			++g_tested_count;
-			if( (flags[i] == u'v' || flags[i] == u' ') && data->m_charFlags[i] != PCF_VISIBLE ||
-				!(flags[i] == u'v' || flags[i] == u' ') && data->m_charFlags[i] == PCF_VISIBLE )
+			if( (flags[j] == u'v' || flags[j] == u' ') && data->m_charFlags[j] != PCF_VISIBLE ||
+				!(flags[j] == u'v' || flags[j] == u' ') && data->m_charFlags[j] == PCF_VISIBLE )
 			{
-				g_result += QString("%1: flags[%2] is NOT correct.\n").arg(block1.blockNumber()+1).arg(i);
+				do_output(QString("%1: flags[%2] is NOT correct.\n").arg(block1.blockNumber()+1).arg(j));
 				QString f = "m_charFlags[] = {";
 				int len = f.size();
 				for(int k = 0; k < flags.size(); ++k) {
-					f += g_flag_char[data->m_charFlags[k]];
+					const int fc = static_cast<unsigned char>(data->m_charFlags[k]);
+					f += (fc < static_cast<int>(std::size(g_flag_char))) ? g_flag_char[fc] : u'?';
 				}
-				g_result += f + "}\n";
-				g_result += QString(len + i, QChar(0x00a0)) + "^\n";
+				do_output(f + "}\n");
+				do_output(QString(len + j, QChar(0x00a0)) + "^\n");
 				++g_failed_count;
 			}
 		}
@@ -839,7 +854,10 @@ void MainWindow::test_contextAt(DocWidget *docWidget) {
 	for(auto tc: g_testCaseContextAt) {
 		cursor.setPosition(tc.m_position);
 		PosContext pc = docWidget->m_editor->contextAt(tc.m_position);
-		ASSERT_EQ( tc.m_anchorChar, pc.m_anchorChar, cursor.block().blockNumber() );
+		const int ln = cursor.block().blockNumber();
+		ASSERT_EQ( tc.m_anchorChar, pc.m_anchorChar, ln );
+		ASSERT_EQ( tc.m_offset, pc.m_offset, ln );
+		ASSERT_EQ( tc.m_nth, pc.m_nth, ln );
 	}
 }
 void MainWindow::onAction_DumpBlockUserData() {
@@ -4788,6 +4806,18 @@ void MainWindow::onAction_TestViCommands() {
 				//editor->setTextCursor(cursor);
 				break;
 			}
+			if( (anchor >= 0 && (gvi.m_vMode != u'v' || toVisiblePos(cursor.document(), gvi.m_vAnchor) != anchor))
+				|| (anchor < 0 && gvi.m_vMode == u'v') ) {
+				QString exp = steps[k+1];
+				exp.replace('\n', "\\n");
+				QString act = actualText(cursor);
+				++total_failed;
+				do_output(QString("\n[FAILED #%1] wrong visual selection.\n").arg(total_failed));
+				do_output(QString("Before:   '%1'\n").arg(before));
+				do_output("Commands: '" + cmd_text + "'\n");
+				do_output(QString("Expected: '%1'\nActual:   '%2'\n").arg(exp).arg(act));
+				break;
+			}
 			if( steps[k+1].contains(u'『') || steps[k+1].contains(u'【') ) {
 				QSet<int> actHidden;
 				int ln = 0;
@@ -5697,6 +5727,10 @@ bool MainWindow::test_diff_line(MarkdownEditor* editor, const QString& text, int
 	auto lst = splitDiffRows(text);
 	int expectedCursorBlock = -1, expectedCursorCol = -1;
 	for(const auto t: lst) {
+		if( !block.isValid() ) {
+			do_output(QString("\n[FAILED #%1] Unexpected end of document (fewer blocks than expected)\n").arg(++total_failed));
+			return false;
+		}
 		QChar marker = t[0];
 		DiffExpect exp;
 		parseDiffExpect(diffRowBody(t), exp);	//	《》の対応の正しさは lint で検証済み
@@ -5775,7 +5809,14 @@ bool MainWindow::test_diff_line(MarkdownEditor* editor, const QString& text, int
 
 
 
-		if( !(block = block.next()).isValid() ) return false;
+		block = block.next();
+	}
+	if( block.isValid() ) {
+		const bool isTrailingEmptyOnly = !block.next().isValid() && block.text().isEmpty();
+		if( !isTrailingEmptyOnly ) {
+			do_output(QString("\n[FAILED #%1] Extra unexpected block %2 ('%3')\n").arg(++total_failed).arg(block.blockNumber()).arg(block.text()));
+			return false;
+		}
 	}
 	if( expectedCursorBlock >= 0 ) {
 		QTextCursor cur = editor->textCursor();

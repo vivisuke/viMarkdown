@@ -1812,35 +1812,52 @@ bool TextEdit::indentSelection(bool unindent)
 		--endLine;
 
 	bool changed = false;
+	int singleLineDelta = 0;
 	m_doc.undoMgr().openBlock();
 	for( int ln = startLine; ln <= endLine; ++ln ) {
 		const TextDocument::pos_t lineStart = mgr.lineStartPos(ln);
 		if( !unindent ) {
 			m_doc.insert(lineStart, QStringLiteral("  "));
+			if( !hadSelection )
+				singleLineDelta = 2;
 			changed = true;
 		} else {
 			const TextDocument::pos_t len = mgr.lineLength(ln);
 			if( len >= 1 && m_doc.characterAt(lineStart) == QChar('\t') ) {
 				m_doc.erase(lineStart, lineStart + 1);
+				if( !hadSelection )
+					singleLineDelta = -1;
 				changed = true;
 			} else if( len >= 2 && m_doc.characterAt(lineStart) == QChar(' ') && m_doc.characterAt(lineStart + 1) == QChar(' ') ) {
 				m_doc.erase(lineStart, lineStart + 2);
+				if( !hadSelection )
+					singleLineDelta = -2;
 				changed = true;
 			} else if( len >= 1 && m_doc.characterAt(lineStart) == QChar(' ') ) {
 				m_doc.erase(lineStart, lineStart + 1);
+				if( !hadSelection )
+					singleLineDelta = -1;
 				changed = true;
 			}
 		}
 	}
 	m_doc.undoMgr().closeBlock();
 
-	if( changed && hadSelection && startLine < endLine ) {
-		const TextDocument::pos_t newStart = mgr.lineStartPos(startLine);
-		const TextDocument::pos_t newEnd = (endLine + 1 < mgr.lineCount())
-			? mgr.lineStartPos(endLine + 1)
-			: mgr.lineEndPos(endLine);
-		m_cursor.setPosition(newStart);
-		m_cursor.setPosition(newEnd, TextCursor::KeepAnchor);
+	if( changed ) {
+		if( !hadSelection ) {
+			const TextDocument::pos_t lineStart = mgr.lineStartPos(startLine);
+			const TextDocument::pos_t newPos = (singleLineDelta >= 0)
+				? (selStart + singleLineDelta)
+				: qMax(lineStart, selStart + singleLineDelta);
+			m_cursor.setPosition(qBound(static_cast<TextDocument::pos_t>(0), newPos, m_doc.characterCount()));
+		} else if( startLine < endLine ) {
+			const TextDocument::pos_t newStart = mgr.lineStartPos(startLine);
+			const TextDocument::pos_t newEnd = (endLine + 1 < mgr.lineCount())
+				? mgr.lineStartPos(endLine + 1)
+				: mgr.lineEndPos(endLine);
+			m_cursor.setPosition(newStart);
+			m_cursor.setPosition(newEnd, TextCursor::KeepAnchor);
+		}
 	}
 	return changed;
 }
@@ -1853,6 +1870,47 @@ void TextEdit::handleReturnKey()
 		const TextDocument::pos_t lineStart = mgr.lineStartPos(ln);
 		const TextDocument::pos_t lineEnd = mgr.lineEndPos(ln);
 		const LineMgr::LineType lt = mgr.lineType(ln);
+		if( m_cursor.position() == lineEnd ) {
+			QString lineText = m_doc.findBlockByNumber(ln).text();
+			if( lineText.endsWith(QChar('\n')) ) lineText.chop(1);
+			if( lineText.endsWith(QChar('\r')) ) lineText.chop(1);
+			qsizetype i = 0;
+			while( i < lineText.size() && (lineText[i] == QChar(' ') || lineText[i] == QChar('\t')) )
+				++i;
+			//	枠ブロック行（"[オプション...] "）の行末 Enter で "[] " を自動継続（マーカーのみ行なら終了）
+			const QStringView rest = QStringView(lineText).mid(i);
+			if( rest.startsWith(QChar('[')) ) {
+				const qsizetype closePos = rest.indexOf(QChar(']'), 1);
+				if( closePos > 0 && (closePos + 1 == rest.size() || rest[closePos + 1] == QChar(' ') || rest[closePos + 1] == QChar('\t')) ) {
+					const QStringView inner = rest.mid(1, closePos - 1);
+					bool validBox = true;
+					qsizetype p = 0;
+					while( p < inner.size() ) {
+						while( p < inner.size() && (inner[p] == QChar(' ') || inner[p] == QChar('\t')) ) ++p;
+						if( p >= inner.size() ) break;
+						const qsizetype s = p;
+						while( p < inner.size() && inner[p] != QChar(' ') && inner[p] != QChar('\t') ) ++p;
+						const QStringView tok = inner.mid(s, p - s);
+						if( tok != u">" && tok != u"->"
+							&& tok.compare(u"left", Qt::CaseInsensitive) != 0
+							&& tok.compare(u"center", Qt::CaseInsensitive) != 0
+							&& tok.compare(u"right", Qt::CaseInsensitive) != 0 ) {
+							validBox = false;
+							break;
+						}
+					}
+					if( validBox ) {
+						if( rest.mid(closePos + 1).trimmed().isEmpty() ) {
+							m_doc.erase(lineStart, lineEnd);
+							return;
+						}
+						const QString prefix = lineText.left(i) + QStringLiteral("[] ");
+						m_cursor.insertText(QStringLiteral("\n") + prefix);
+						return;
+					}
+				}
+			}
+		}
 		if( (lt == LineMgr::LT_LIST || lt == LineMgr::LT_CHECKBOX || lt == LineMgr::LT_NUM_LIST)
 			&& m_cursor.position() == lineEnd ) {
 			QString lineText = m_doc.findBlockByNumber(ln).text();

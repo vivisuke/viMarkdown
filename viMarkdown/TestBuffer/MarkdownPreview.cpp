@@ -35,6 +35,7 @@
 #include <QWheelEvent>
 #include <QXmlStreamReader>
 #include <algorithm>
+#include <memory>
 #include "lunasvg.h"
 
 namespace {
@@ -774,6 +775,112 @@ bool parseQuote(const QString &line, QString &outText)
 		return true;
 	}
 	return false;
+}
+
+//	行頭インデント幅を計測（半角スペース=1、タブ=2）
+int measureIndent(const QString &line)
+{
+	int spaces = 0;
+	for( qsizetype i = 0; i < line.size(); ++i ) {
+		if( line[i] == QChar(' ') )
+			++spaces;
+		else if( line[i] == QChar('\t') )
+			spaces += 2;
+		else
+			break;
+	}
+	return spaces;
+}
+
+//	行頭から最大 maxIndent 幅分の空白・タブを除去し、除去した文字数を返す
+QString stripIndentWidth(const QString &line, int maxIndent, int *outStrippedChars = nullptr)
+{
+	int acc = 0;
+	qsizetype i = 0;
+	while( i < line.size() && acc < maxIndent ) {
+		if( line[i] == QChar(' ') ) {
+			++acc;
+			++i;
+		} else if( line[i] == QChar('\t') ) {
+			acc += 2;
+			++i;
+		} else {
+			break;
+		}
+	}
+	if( outStrippedChars ) *outStrippedChars = static_cast<int>(i);
+	return line.mid(i);
+}
+
+struct BoxOptions {
+	bool horizontal = false;
+	bool arrow = false;
+	Qt::Alignment align = Qt::AlignLeft;
+};
+
+//	枠ブロック行（[空白]* "[オプション...] テキスト" または単独の "[オプション...]"）を判定
+//	オプションは空白区切り: > (横並び), -> (矢印付き横並び), left, center, right
+bool parseBoxLine(const QString &line, int &outIndent, BoxOptions &outOpt, QString &outText, int *outTextCol = nullptr)
+{
+	qsizetype i = 0;
+	int spaces = 0;
+	while( i < line.size() ) {
+		if( line[i] == QChar(' ') ) {
+			++spaces;
+			++i;
+		} else if( line[i] == QChar('\t') ) {
+			spaces += 2;
+			++i;
+		} else {
+			break;
+		}
+	}
+	if( i >= line.size() || line[i] != QChar('[') )
+		return false;
+	const qsizetype closePos = line.indexOf(QChar(']'), i + 1);
+	if( closePos < 0 )
+		return false;
+	if( closePos + 1 < line.size() && line[closePos + 1] != QChar(' ') && line[closePos + 1] != QChar('\t') )
+		return false;
+
+	BoxOptions opt;
+	const QStringView inner = QStringView(line).mid(i + 1, closePos - (i + 1));
+	qsizetype p = 0;
+	while( p < inner.size() ) {
+		while( p < inner.size() && (inner[p] == QChar(' ') || inner[p] == QChar('\t')) )
+			++p;
+		if( p >= inner.size() )
+			break;
+		const qsizetype tokStart = p;
+		while( p < inner.size() && inner[p] != QChar(' ') && inner[p] != QChar('\t') )
+			++p;
+		const QStringView tok = inner.mid(tokStart, p - tokStart);
+		if( tok == u">" ) {
+			opt.horizontal = true;
+		} else if( tok == u"->" ) {
+			opt.horizontal = true;
+			opt.arrow = true;
+		} else if( tok.compare(u"left", Qt::CaseInsensitive) == 0 ) {
+			opt.align = Qt::AlignLeft;
+		} else if( tok.compare(u"center", Qt::CaseInsensitive) == 0 ) {
+			opt.align = Qt::AlignCenter;
+		} else if( tok.compare(u"right", Qt::CaseInsensitive) == 0 ) {
+			opt.align = Qt::AlignRight;
+		} else {
+			return false;	//	未知の単語を含む [Note] 等は通常のテキストとして扱う
+		}
+	}
+
+	outIndent = spaces;
+	outOpt = opt;
+	if( closePos + 1 == line.size() ) {
+		outText.clear();
+		if( outTextCol ) *outTextCol = static_cast<int>(closePos + 1);
+		return true;
+	}
+	outText = line.mid(closePos + 2);
+	if( outTextCol ) *outTextCol = static_cast<int>(closePos + 2);
+	return true;
 }
 
 struct ParseState {
@@ -1947,6 +2054,376 @@ void insertStyledTable(
 	st.hasEmittedBlock = false;
 }
 
+struct BoxNode;
+struct BoxChild {
+	bool isBox = false;
+	std::shared_ptr<BoxNode> box;
+	QString rawLine;
+	int srcLine = -1;
+	int lineStartPos = -1;
+};
+
+struct BoxNode {
+	int indent = 0;
+	BoxOptions opt;
+	QString title;
+	int srcLine = -1;
+	int srcBasePos = -1;
+	int contentBaseIndent = -1;
+	QVector<BoxChild> children;
+};
+
+//	枠ブロックノードを再帰的に QTextTable として描画する
+void renderBoxNode(
+	QTextCursor &cursor,
+	const BoxNode &node,
+	ParseState &st,
+	QVector<int> &srcLineToBlock,
+	QVector<int> &blockToSrcLine,
+	QVector<MarkdownPreview::SyncSpan> *spans,
+	int depth = 0)
+{
+	if( st.inQuote ) {
+		st.inQuote = false;
+		finishBlockMarginIfNeeded(cursor, kBlockQuote);
+	}
+	st.activeListIndent = 0;
+	st.listNum = 0;
+	if( QTextList *curList = cursor.currentList() ) {
+		if( st.hasEmittedBlock )
+			cursor.insertBlock();
+		curList->remove(cursor.block());
+	}
+
+	QTextTableFormat tableFmt;
+	tableFmt.setBorder(1.5);
+	tableFmt.setBorderStyle(QTextFrameFormat::BorderStyle_Solid);
+	tableFmt.setBorderBrush(QColor(0x66, 0x77, 0x88));
+	tableFmt.setBorderCollapse(true);
+	tableFmt.setCellPadding(8.0);
+	tableFmt.setCellSpacing(0.0);
+	tableFmt.setTopMargin(depth == 0 ? 6.0 : 4.0);
+	tableFmt.setBottomMargin(depth == 0 ? 6.0 : 4.0);
+	tableFmt.setWidth(QTextLength(QTextLength::PercentageLength, 100));
+
+	QTextTable *table = cursor.insertTable(1, 1, tableFmt);
+	if( !table )
+		return;
+
+	QTextTableCell cell = table->cellAt(0, 0);
+	if( cell.isValid() ) {
+		QTextCursor cellCur = cell.firstCursorPosition();
+		ParseState cellSt = st;
+		cellSt.activeListIndent = 0;
+		cellSt.listNum = 0;
+		cellSt.inQuote = false;
+		cellSt.inCodeBlock = false;
+		cellSt.codeHasLines = false;
+		cellSt.inHtmlComment = false;
+		cellSt.hasEmittedBlock = false;
+		cellSt.lastLineEmitted = false;
+		cellSt.hasImages = false;
+
+		if( !node.title.isEmpty() || node.children.isEmpty() ) {
+			QTextBlockFormat titleBf;
+			titleBf.setAlignment(node.opt.align);
+			cellCur.setBlockFormat(titleBf);
+			QTextCharFormat cf;
+			cellCur.setCharFormat(cf);
+			const qsizetype spansBefore = spans ? spans->size() : 0;
+			const int cellPrvStart = cellCur.position();
+			insertInlineFormatted(cellCur, node.title, cf, cellSt.basePt, cellSt.maxImgWidth, &cellSt.hasImages, node.srcBasePos, spans);
+			if( spans && node.srcBasePos >= 0 && spans->size() == spansBefore )
+				spans->push_back({node.srcBasePos, cellPrvStart, 0});
+			cellSt.hasEmittedBlock = true;
+
+			const int bn = cell.firstCursorPosition().block().blockNumber();
+			if( node.srcLine >= 0 ) {
+				if( node.srcLine < srcLineToBlock.size() )
+					srcLineToBlock[node.srcLine] = bn;
+				if( blockToSrcLine.size() <= bn )
+					blockToSrcLine.resize(bn + 1, node.srcLine);
+				blockToSrcLine[bn] = node.srcLine;
+			}
+		} else if( node.srcLine >= 0 ) {
+			const int bn = cell.firstCursorPosition().block().blockNumber();
+			if( node.srcLine < srcLineToBlock.size() )
+				srcLineToBlock[node.srcLine] = bn;
+			if( blockToSrcLine.size() <= bn )
+				blockToSrcLine.resize(bn + 1, node.srcLine);
+			blockToSrcLine[bn] = node.srcLine;
+		}
+
+		if( node.opt.horizontal && !node.children.isEmpty() ) {
+			//	[>] / [->] 横並び：子ボックスおよび連続テキスト群を1行N列のレイアウトテーブルに均等配置
+			struct HorizCol {
+				bool isBox = false;
+				std::shared_ptr<BoxNode> box;
+				QVector<BoxChild> lines;
+			};
+			QVector<HorizCol> cols;
+			for( const BoxChild &child : node.children ) {
+				if( child.isBox && child.box ) {
+					HorizCol hc;
+					hc.isBox = true;
+					hc.box = child.box;
+					cols.append(hc);
+				} else if( child.rawLine.trimmed().isEmpty() ) {
+					continue;
+				} else {
+					if( cols.isEmpty() || cols.back().isBox ) {
+						HorizCol hc;
+						hc.isBox = false;
+						cols.append(hc);
+					}
+					cols.back().lines.append(child);
+				}
+			}
+			if( !cols.isEmpty() ) {
+				const int colCount = static_cast<int>(cols.size());
+				const bool withArrows = node.opt.arrow && colCount >= 2;
+				const int tableCols = withArrows ? (colCount * 2 - 1) : colCount;
+				QTextTableFormat rowFmt;
+				rowFmt.setBorder(0.0);
+				rowFmt.setCellPadding(0.0);
+				rowFmt.setCellSpacing(withArrows ? 2.0 : 6.0);
+				rowFmt.setTopMargin(node.title.isEmpty() ? 0.0 : 6.0);
+				rowFmt.setBottomMargin(0.0);
+				rowFmt.setWidth(QTextLength(QTextLength::PercentageLength, 100));
+				QVector<QTextLength> colWidths;
+				colWidths.reserve(tableCols);
+				if( withArrows ) {
+					const int nArrows = colCount - 1;
+					const qreal arrowPct = qMin(5.0, 20.0 / nArrows);
+					const qreal itemPct = (100.0 - arrowPct * nArrows) / colCount;
+					for( int tc = 0; tc < tableCols; ++tc ) {
+						const qreal pct = ((tc % 2) == 1) ? arrowPct : itemPct;
+						colWidths.append(QTextLength(QTextLength::PercentageLength, pct));
+					}
+				} else {
+					colWidths.fill(QTextLength(QTextLength::PercentageLength, 100.0 / colCount), colCount);
+				}
+				rowFmt.setColumnWidthConstraints(colWidths);
+
+				QTextTable *rowTable = cellCur.insertTable(1, tableCols, rowFmt);
+				if( rowTable ) {
+					for( int c = 0; c < colCount; ++c ) {
+						const int tc = withArrows ? (c * 2) : c;
+						QTextTableCell colCell = rowTable->cellAt(0, tc);
+						if( colCell.isValid() ) {
+							QTextTableCellFormat cfmt = colCell.format().toTableCellFormat();
+							cfmt.setVerticalAlignment(withArrows ? QTextCharFormat::AlignMiddle : QTextCharFormat::AlignTop);
+							colCell.setFormat(cfmt);
+
+							QTextCursor colCur = colCell.firstCursorPosition();
+							ParseState colSt = cellSt;
+							colSt.activeListIndent = 0;
+							colSt.listNum = 0;
+							colSt.inQuote = false;
+							colSt.inCodeBlock = false;
+							colSt.codeHasLines = false;
+							colSt.inHtmlComment = false;
+							colSt.hasEmittedBlock = false;
+							colSt.lastLineEmitted = false;
+							colSt.hasImages = false;
+							if( cols[c].isBox && cols[c].box ) {
+								renderBoxNode(colCur, *cols[c].box, colSt, srcLineToBlock, blockToSrcLine, spans, depth + 1);
+							} else {
+								const int stripBase = (node.contentBaseIndent >= 0) ? node.contentBaseIndent : (node.indent + 2);
+								for( const BoxChild &lineChild : cols[c].lines ) {
+									int strippedChars = 0;
+									const QString innerLine = stripIndentWidth(lineChild.rawLine, stripBase, &strippedChars);
+									const int linePos = (lineChild.lineStartPos >= 0) ? (lineChild.lineStartPos + strippedChars) : -1;
+									parseAndAppendLine(colCur, innerLine, colSt, lineChild.srcLine, linePos, spans);
+									if( colSt.lastLineEmitted && lineChild.srcLine >= 0 ) {
+										const int bn = colCur.block().blockNumber();
+										if( lineChild.srcLine < srcLineToBlock.size() )
+											srcLineToBlock[lineChild.srcLine] = bn;
+										if( blockToSrcLine.size() <= bn )
+											blockToSrcLine.resize(bn + 1, lineChild.srcLine);
+										blockToSrcLine[bn] = lineChild.srcLine;
+									}
+								}
+							}
+							if( colSt.inQuote )
+								finishBlockMarginIfNeeded(colCur, kBlockQuote);
+							if( colSt.inCodeBlock && colSt.codeHasLines )
+								finishBlockMarginIfNeeded(colCur, kBlockCode);
+							if( colSt.hasImages )
+								cellSt.hasImages = true;
+						}
+						if( withArrows && c + 1 < colCount ) {
+							QTextTableCell arrowCell = rowTable->cellAt(0, tc + 1);
+							if( arrowCell.isValid() ) {
+								QTextTableCellFormat afmt = arrowCell.format().toTableCellFormat();
+								afmt.setVerticalAlignment(QTextCharFormat::AlignMiddle);
+								arrowCell.setFormat(afmt);
+								QTextCursor arrowCur = arrowCell.firstCursorPosition();
+								QTextBlockFormat abf;
+								abf.setAlignment(Qt::AlignCenter);
+								arrowCur.setBlockFormat(abf);
+								QTextCharFormat acf;
+								acf.setFontWeight(QFont::Bold);
+								acf.setFontPointSize(cellSt.basePt * 1.2);
+								acf.setForeground(QColor(0x55, 0x66, 0x77));
+								arrowCur.insertText(QStringLiteral("\u2192"), acf);
+							}
+						}
+					}
+					cellCur.setPosition(rowTable->lastPosition());
+					cellCur.movePosition(QTextCursor::NextCharacter);
+					cellSt.hasEmittedBlock = false;
+				}
+			}
+		} else {
+			for( const BoxChild &child : node.children ) {
+				if( child.isBox && child.box ) {
+					renderBoxNode(cellCur, *child.box, cellSt, srcLineToBlock, blockToSrcLine, spans, depth + 1);
+				} else {
+					const int stripBase = (node.contentBaseIndent >= 0) ? node.contentBaseIndent : (node.indent + 2);
+					int strippedChars = 0;
+					const QString innerLine = child.rawLine.trimmed().isEmpty()
+						? QString()
+						: stripIndentWidth(child.rawLine, stripBase, &strippedChars);
+					const int linePos = (child.lineStartPos >= 0) ? (child.lineStartPos + strippedChars) : -1;
+					parseAndAppendLine(cellCur, innerLine, cellSt, child.srcLine, linePos, spans);
+					if( cellSt.lastLineEmitted ) {
+						if( node.opt.align != Qt::AlignLeft && cellCur.blockFormat().alignment() == Qt::Alignment() ) {
+							QTextBlockFormat bf = cellCur.blockFormat();
+							bf.setAlignment(node.opt.align);
+							cellCur.setBlockFormat(bf);
+						}
+						if( child.srcLine >= 0 ) {
+							const int bn = cellCur.block().blockNumber();
+							if( child.srcLine < srcLineToBlock.size() )
+								srcLineToBlock[child.srcLine] = bn;
+							if( blockToSrcLine.size() <= bn )
+								blockToSrcLine.resize(bn + 1, child.srcLine);
+							blockToSrcLine[bn] = child.srcLine;
+						}
+					}
+				}
+			}
+		}
+
+		if( cellSt.inQuote )
+			finishBlockMarginIfNeeded(cellCur, kBlockQuote);
+		if( cellSt.inCodeBlock && cellSt.codeHasLines )
+			finishBlockMarginIfNeeded(cellCur, kBlockCode);
+		if( cellSt.hasImages )
+			st.hasImages = true;
+	}
+
+	cursor.setPosition(table->lastPosition());
+	cursor.movePosition(QTextCursor::NextCharacter);
+	cursor.setBlockFormat(QTextBlockFormat());
+	cursor.setBlockCharFormat(QTextCharFormat());
+	st.hasEmittedBlock = false;
+}
+
+//	行 ln から始まる枠ブロック（インデントされた子アイテム・入れ子枠を含む）を消費して描画する
+int parseAndInsertBoxBlock(
+	QTextCursor &cursor,
+	const QStringList &lines,
+	const QVector<int> &lineStarts,
+	int startLn,
+	ParseState &st,
+	QVector<int> &srcLineToBlock,
+	QVector<int> &blockToSrcLine,
+	QVector<MarkdownPreview::SyncSpan> *spans)
+{
+	const int nLines = static_cast<int>(lines.size());
+	int rootIndent = 0;
+	BoxOptions rootOpt;
+	QString rootTitle;
+	int rootCol = 0;
+	if( !parseBoxLine(lines[startLn], rootIndent, rootOpt, rootTitle, &rootCol) )
+		return startLn;
+
+	auto root = std::make_shared<BoxNode>();
+	root->indent = rootIndent;
+	root->opt = rootOpt;
+	root->title = rootTitle;
+	root->srcLine = startLn;
+	root->srcBasePos = lineStarts[startLn] + rootCol;
+
+	QVector<BoxNode *> stack;
+	stack.append(root.get());
+
+	int lastConsumedLn = startLn;
+	int ln = startLn + 1;
+	bool afterBlank = false;
+	while( ln < nLines ) {
+		if( lines[ln].trimmed().isEmpty() ) {
+			//	空行の先を覗いて、親枠より深くインデントされた行が続く場合のみ枠内空行として取り込む
+			int probe = ln + 1;
+			while( probe < nLines && lines[probe].trimmed().isEmpty() )
+				++probe;
+			if( probe >= nLines || measureIndent(lines[probe]) <= rootIndent )
+				break;
+			for( int k = ln; k < probe; ++k ) {
+				BoxChild c;
+				c.isBox = false;
+				c.rawLine.clear();
+				c.srcLine = k;
+				c.lineStartPos = lineStarts[k];
+				stack.back()->children.append(c);
+				lastConsumedLn = k;
+			}
+			ln = probe;
+			afterBlank = true;
+			continue;
+		}
+
+		const int ind = measureIndent(lines[ln]);
+		int childIndent = 0;
+		BoxOptions childOpt;
+		QString childTitle;
+		int childCol = 0;
+		const bool isBox = parseBoxLine(lines[ln], childIndent, childOpt, childTitle, &childCol);
+
+		if( isBox ) {
+			if( ind <= rootIndent )
+				break;
+			while( stack.size() > 1 && ind <= stack.back()->indent )
+				stack.pop_back();
+			auto childBox = std::make_shared<BoxNode>();
+			childBox->indent = childIndent;
+			childBox->opt = childOpt;
+			childBox->title = childTitle;
+			childBox->srcLine = ln;
+			childBox->srcBasePos = lineStarts[ln] + childCol;
+			BoxChild c;
+			c.isBox = true;
+			c.box = childBox;
+			stack.back()->children.append(c);
+			stack.append(childBox.get());
+		} else {
+			if( afterBlank ) {
+				if( ind <= rootIndent )
+					break;
+				while( stack.size() > 1 && ind <= stack.back()->indent )
+					stack.pop_back();
+			}
+			//	空行なしの非ボックス行は、インデントに関わらず直前ボックス（stack.back()）の枠内改行として取り込む
+			if( stack.back()->contentBaseIndent < 0 && ind > stack.back()->indent )
+				stack.back()->contentBaseIndent = ind;
+			BoxChild c;
+			c.isBox = false;
+			c.rawLine = lines[ln];
+			c.srcLine = ln;
+			c.lineStartPos = lineStarts[ln];
+			stack.back()->children.append(c);
+		}
+		afterBlank = false;
+		lastConsumedLn = ln;
+		++ln;
+	}
+
+	renderBoxNode(cursor, *root, st, srcLineToBlock, blockToSrcLine, spans, 0);
+	return lastConsumedLn;
+}
+
 void MarkdownPreview::setTableColors(const QColor &header, const QColor &zebra1, const QColor &zebra2)
 {
 	if( header.isValid() ) m_tableHeaderColor = header;
@@ -2037,6 +2514,15 @@ void MarkdownPreview::setMarkdown(const QString &markdown)
 			const int endLn = qMin(ln, nLines - 1);
 			insertSvgBlock(cursor, svgLines.join(QChar('\n')), st, startLn, endLn, m_srcLineToBlock, m_blockToSrcLine);
 			continue;
+		}
+		if( !st.inCodeBlock && !st.inHtmlComment ) {
+			int boxIndent = 0;
+			BoxOptions boxOpt;
+			QString boxText;
+			if( parseBoxLine(line, boxIndent, boxOpt, boxText) ) {
+				ln = parseAndInsertBoxBlock(cursor, lines, lineStarts, ln, st, m_srcLineToBlock, m_blockToSrcLine, &m_syncSpans);
+				continue;
+			}
 		}
 		if( !st.inCodeBlock && !st.inHtmlComment && ln + 1 < nLines ) {
 			QStringList headerCells;
@@ -2200,6 +2686,18 @@ void MarkdownPreview::setMarkdown(TextDocument *srcDoc)
 			insertSvgBlock(cursor, svgLines.join(QChar('\n')), st, startLn, endLn, m_srcLineToBlock, m_blockToSrcLine);
 			continue;
 		}
+		if( !st.inCodeBlock && !st.inHtmlComment ) {
+			int boxIndent = 0;
+			BoxOptions boxOpt;
+			QString boxText;
+			if( parseBoxLine(line, boxIndent, boxOpt, boxText) ) {
+				const int endLn = parseAndInsertBoxBlock(cursor, lines, lineStarts, ln, st, m_srcLineToBlock, m_blockToSrcLine, &m_syncSpans);
+				for( int k = ln; k <= endLn; ++k )
+					mgr.setLineType(k, LineMgr::LT_TABLE);
+				ln = endLn;
+				continue;
+			}
+		}
 		if( !st.inCodeBlock && !st.inHtmlComment && ln + 1 < nLines ) {
 			QStringList headerCells;
 			QVector<int> headerCols;
@@ -2287,6 +2785,13 @@ static bool isSimpleSingleLine(const QString &line)
 		return false;
 	if( c0 == QChar('>') )
 		return false;
+	if( c0 == QChar('[') ) {
+		int dummyIndent = 0;
+		BoxOptions dummyOpt;
+		QString dummyText;
+		if( parseBoxLine(line, dummyIndent, dummyOpt, dummyText) )
+			return false;
+	}
 	if( (c0 == QChar('-') || c0 == QChar('*') || c0 == QChar('+'))
 		&& (rest.size() >= 2 && (rest[1] == QChar(' ') || rest[1] == QChar('\t'))) )
 		return false;
