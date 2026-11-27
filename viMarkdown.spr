@@ -1639,6 +1639,16 @@ SPR# 状 P Open Close ver     Type  概要
 1625 ◎ C 11/28 11/28 03224│問題│g_diffTestCaseに右から左への単語反映(Rw)および日本語・絵文字を含むLw/Rwテストを追加する（Gemini）
 1626 ◎ C 11/28 11/28 03224│問題│g_syncTestCaseに右から左への逆方向選択(┃...《)のEtoP/PtoEカーソル同期テストを追加する（Gemini）
 1627 ◎ C 11/28 11/28 03224│問題│do_fFtT()で隣接文字へのt/T時に前回コマンド未記録かつ;/,繰り返し時に隣接対象を越えられない（Gemini）
-1628 ● C 11/28            │問題│
-1629 ● C 11/28            │問題│
-1630 ● C 11/28            │問題│
+1628 ◎ C 11/28 11/28 03224│問題│paintCell()内のstatic QPixmapがQApplication破棄後に解体され終了時クラッシュの恐れ（Gemini）
+1629 ◎ C 11/28 11/28 03224│問題│paintCell()でm_dayInfoMapをcontains()と[]で二重検索しconst関数内で一時値コピーが発生（Gemini）
+1630 ◎ C 11/28 11/28 03224│問題│paintCell()でアイコン非描画時もscaled()が走り両画像とも非null前提の判定になっている（Gemini）
+1631 ◎ C 11/28 11/28 03224│問題│paintCell()のToDo進捗高さ計算にclosedCountの範囲クランプとfillHeight>0判定が抜けている（Gemini）
+1632 ◎ C 11/28 11/28 03224│問題│paintCell()で毎回QPixmap::scaled()を生成しており描画負荷とHiDPI環境での画質劣化が起きる（Gemini）
+1633 ◎ C 11/28 11/28 03224│問題│CalendarWidget.cppに不要なqDebug()出力・#if 0デッドコード・タブ/空白混在が残っている（Gemini）
+1634 ● C 11/28            │問題│
+1635 ● C 11/28            │問題│
+1636 ● C 11/28            │問題│
+1637 ● C 11/28            │問題│
+1638 ● C 11/28            │問題│
+1639 ● C 11/28            │問題│
+1640 ● C 11/28            │問題│
