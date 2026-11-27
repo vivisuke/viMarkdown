@@ -1645,10 +1645,20 @@ SPR# 状 P Open Close ver     Type  概要
 1631 ◎ C 11/28 11/28 03224│問題│paintCell()のToDo進捗高さ計算にclosedCountの範囲クランプとfillHeight>0判定が抜けている（Gemini）
 1632 ◎ C 11/28 11/28 03224│問題│paintCell()で毎回QPixmap::scaled()を生成しており描画負荷とHiDPI環境での画質劣化が起きる（Gemini）
 1633 ◎ C 11/28 11/28 03224│問題│CalendarWidget.cppに不要なqDebug()出力・#if 0デッドコード・タブ/空白混在が残っている（Gemini）
-1634 ● C 11/28            │問題│
-1635 ● C 11/28            │問題│
-1636 ● C 11/28            │問題│
-1637 ● C 11/28            │問題│
-1638 ● C 11/28            │問題│
-1639 ● C 11/28            │問題│
+1634 ◎ C 11/28 11/28 03224│問題│do_merge_file()で既にDiffモードON時にsetChecked(true)が発火せず差分表示が起動しない（Gemini）
+1635 ◎ C 11/28 11/28 03224│問題│tokenize()が改行\nを他空白と1トークンにまとめ複数行ハンクの単語差分範囲が行末をはみ出す（Gemini）
+1636 ◎ C 11/28 11/28 03224│問題│removeAllDummyLines()の非空誤削除ガード発動時にm_diffBlockNumbers再構築と行数が食い違う（Gemini）
+1637 ◎ C 11/28 11/28 03224│問題│parseUnifiedDiff()に重複return・非git複数ファイル上書き・先頭ファイルのみのハンク判定がある（Gemini）
+1638 ◎ C 11/28 11/28 03224│問題│do_merge_file()でstripDiffPrefix二重適用・適用失敗時ゴミタブ残存・diffview初期化漏れがある（Gemini）
+1639 ◎ C 11/28 11/28 03224│問題│onAction_DiffMode()でdocWidget生ポインタのままprocessEvents()を2回呼びUAFの恐れがある（Gemini）
 1640 ● C 11/28            │問題│
+1641 ● C 11/28            │問題│
+1642 ● C 11/28            │問題│
+1643 ● C 11/28            │問題│
+1644 ● C 11/28            │問題│
+1645 ● C 11/28            │問題│
+1646 ● C 11/28            │問題│
+1647 ● C 11/28            │問題│
+1648 ● C 11/28            │問題│
+1649 ● C 11/28            │問題│
+1650 ● C 11/28            │問題│

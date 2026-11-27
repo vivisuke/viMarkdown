@@ -16,8 +16,10 @@
 #include <QPushButton>
 #include <QClipboard>
 #include <QStringDecoder>
+#include <QPointer>
 #include <vector>
 #include <utility>
+#include <algorithm>
 #include <assert.h>
 #include "dtl/dtl.hpp"
 #include "MainWindow.h"
@@ -175,6 +177,9 @@ void MarkdownEditor::removeAllDummyLines() {
     // 描画更新を一時停止し、処理を高速化
     cursor.beginEditBlock();
 
+    // 実際に削除されたブロック番号を記録（非空ガード発動時に m_diffBlockNumbers と行数がずれないようにする）
+    std::vector<bool> removed(m_diffBlockNumbers.size(), false);
+
     // 末尾のブロックから先頭に向かって逆順に巡回します
     // （空の prevBlock との結合で QTextBlock ハンドルが無効化されるのを防ぐため、ブロック番号で辿る）
     for (int bn = doc->blockCount() - 1; bn >= 0; --bn) {
@@ -193,6 +198,7 @@ void MarkdownEditor::removeAllDummyLines() {
                 // 「自ブロックの先頭」から「次のブロックの先頭」までを選択（これで改行コードも含まれます）
                 cursor.movePosition(QTextCursor::NextBlock, QTextCursor::KeepAnchor);
                 cursor.removeSelectedText();
+                if (bn < (int)removed.size()) removed[bn] = true;
             } else {
                 // パターンB: 末尾のブロックを削除する場合
                 if (bn > 0) {
@@ -201,8 +207,9 @@ void MarkdownEditor::removeAllDummyLines() {
                     cursor.movePosition(QTextCursor::StartOfBlock, QTextCursor::KeepAnchor);
                     cursor.movePosition(QTextCursor::PreviousCharacter, QTextCursor::KeepAnchor); // 手前の改行を巻き込む
                     cursor.removeSelectedText();
+                    if (bn < (int)removed.size()) removed[bn] = true;
                 } else {
-                    // ドキュメントにこの1行しか残っていない場合は、プレーンにテキストのみクリア
+                    // ドキュメントにこの1行しか残っていない場合は、プレーンにテキストのみクリア（ブロック自体は残る）
                     cursor.select(QTextCursor::BlockUnderCursor);
                     cursor.removeSelectedText();
                 }
@@ -217,7 +224,7 @@ void MarkdownEditor::removeAllDummyLines() {
         newBlockNumbers.reserve(doc->blockCount());
         newFlags.reserve(doc->blockCount());
         for (size_t i = 0; i < m_diffBlockNumbers.size(); ++i) {
-            if (m_diffBlockNumbers[i] == DUMMY_LINE_NUM) continue; // ダミー行分は捨てる
+            if (removed[i]) continue; // 実際に削除されたダミー行分だけ捨てる
             newFlags.push_back(i < m_diffFlags.size() ? m_diffFlags[i] : uchar(0));
             newBlockNumbers.push_back((int)newBlockNumbers.size()); // 実在行の連番に振り直し
         }
@@ -638,7 +645,7 @@ void DocWidget::setupDiffMode() {
 	connect(bar2, &QScrollBar::valueChanged, bar1, &QScrollBar::setValue, Qt::UniqueConnection);
 }
 void MainWindow::onAction_DiffMode(bool checked) {
-	DocWidget *docWidget = getCurDocWidget();
+	QPointer<DocWidget> docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
 	//docWidget->m_diffMode = checked;
 	//docWidget->m_editor->setDiffMode(checked);
@@ -648,9 +655,12 @@ void MainWindow::onAction_DiffMode(bool checked) {
 	if (checked) {
 		docWidget->setupDiffMode();
 		QCoreApplication::processEvents();
+		if( !docWidget ) { --m_doing_diff; return; }
 		do_diff();
+		if( !docWidget ) { --m_doing_diff; return; }
 		docWidget->m_editor->syncDiffViewCursorFromEditor();	//	diff 進入時に比較先カーソルをエディタ位置へ同期（#1365）
 		QCoreApplication::processEvents();
+		if( !docWidget ) { --m_doing_diff; return; }
 		//QTimer::singleShot(0, this, [this]() {
         //    do_diff();
         //});
@@ -775,23 +785,18 @@ std::vector<WordToken> tokenize(const QString &text) {
     int len = text.length();
 
     while (i < len) {
-        if (text[i].isSpace()) {
-            // 空白セグメント（スペースやタブの連続）
+        if (text[i] == u'\n') {
+            // 改行は単独トークンとして分離（複数行ハンクで次行インデントと結合しないようにする）
+            tokens.push_back({text.mid(i, 1), i});
+            i++;
+        }
+        else if (text[i].isSpace()) {
+            // 空白セグメント（改行を除くスペースやタブの連続）
             int start = i;
-            while (i < len && text[i].isSpace()) {
+            while (i < len && text[i].isSpace() && text[i] != u'\n') {
                 i++;
             }
             tokens.push_back({text.mid(start, i - start), start});
-
-
-
-
-
-
-
-
-
-
         } 
         else if (text[i].isLetterOrNumber()) {
         	auto t = getCharType(text[i]);
@@ -1463,7 +1468,6 @@ bool parseUnifiedDiff(const QString &text, QVector<DiffFile> &files, QString *er
 	auto fail = [&](int ln, const QString &msg) {
 		if( error != nullptr )
 			*error = QString("line %1: %2: ").arg(ln + 1).arg(msg) + lines[ln];
-	return false;
 		return false;
 	};
 	for( int ln = 0; ln < lines.size(); ++ln ) {
@@ -1496,7 +1500,10 @@ bool parseUnifiedDiff(const QString &text, QVector<DiffFile> &files, QString *er
 			files.push_back(DiffFile());
 			fi = (int)files.size() - 1;
 		} else if( line.startsWith("--- ") ) {
-			if( fi < 0 ) { files.push_back(DiffFile()); fi = 0; }
+			if( fi < 0 || !files[fi].m_hunks.isEmpty() || !files[fi].m_oldPath.isEmpty() ) {
+				files.push_back(DiffFile());
+				fi = (int)files.size() - 1;
+			}
 			QString p = line.mid(4);
 			int tab = p.indexOf(u'\t');		//	古典形式のタイムスタンプを除く
 			if( tab >= 0 ) p = p.left(tab);
@@ -1526,11 +1533,14 @@ bool parseUnifiedDiff(const QString &text, QVector<DiffFile> &files, QString *er
 		} else if( !isPatchPreambleLine(line) ) {
 			return fail(ln, "unexpected line");	
 		}
-		//	それ以外の行（index 行、format-patch のメールヘッダ等）は無視
+		//	パッチのプリアンブル行（index 行、モード変更行等）は無視
 	}
 	if( hi >= 0 && (needOld > 0 || needNew > 0) )
 		return fail((int)lines.size() - 1, "hunk is truncated");
-	if( files.isEmpty() || files.front().m_hunks.isEmpty() ) {
+	//	ハンクを持たないファイル（モード変更のみ等）を除外し、有効なハンクが1つも無ければ失敗とする
+	files.erase(std::remove_if(files.begin(), files.end(),
+		[](const DiffFile &f) { return f.m_hunks.isEmpty(); }), files.end());
+	if( files.isEmpty() ) {
 		if( error != nullptr ) *error = "no hunk found";
 		return false;
 	}
@@ -1627,7 +1637,8 @@ void MainWindow::do_merge_file(const DiffFile &file, bool wrapRight) {
 	}
 
 	//	対象ファイルのフルパスを解決する：現在の文書のディレクトリを優先し、次にそのままのパス
-	QString relPath = stripDiffPrefix(file.m_oldPath);
+	//	（parseUnifiedDiff() で stripDiffPrefix() 適用済みのため二重適用しない）
+	QString relPath = file.m_oldPath;
 	QString fullPath;
 	DocWidget *cur = getCurDocWidget();
 	if( cur != nullptr && !cur->m_fullPath.isEmpty() ) {
@@ -1667,15 +1678,7 @@ void MainWindow::do_merge_file(const DiffFile &file, bool wrapRight) {
 	if( !alreadyOpen ) do_close();	//	:merge が開いたタブは取り込み後に閉じる
 
 
-	//	元のテキストのまま新規タブを開く
-	QString title = QFileInfo(fullPath).fileName();
-	title.remove(QRegularExpression("\\.md$"));
-	//addTab(title + " (merge)", fullPath, oldText, srcWidget->m_withBOM, srcWidget->m_encoding);
-	addTab(title  /*+ " (merge)"*/, fullPath, oldText, srcWithBOM, srcEncoding);
-	DocWidget *docWidget = getCurDocWidget();
-	if( docWidget == nullptr ) return;
-
-	//	開いたタブの内容に対してパッチを適用する
+	//	タブ作成前にパッチ適用を検証・実行する（失敗時にゴミタブを残さない）
 	QStringList oldLines = oldText.split('\n');
 	if( oldText.endsWith('\n') ) oldLines.removeLast();
 	QStringList newLines;
@@ -1686,7 +1689,7 @@ void MainWindow::do_merge_file(const DiffFile &file, bool wrapRight) {
 		do_output(msg + "\n");
 		if( !detail.isEmpty() ) do_output(detail + "\n");
 		//dumpLinesToOutput("buffer:", oldLines);
-		return;		//	タブには元のテキストが残るだけ
+		return;
 	}
 	QString newText = newLines.join('\n');
 	bool trailingNewline = oldText.isEmpty() || oldText.endsWith('\n');
@@ -1697,13 +1700,26 @@ void MainWindow::do_merge_file(const DiffFile &file, bool wrapRight) {
 	}
 	if( trailingNewline && !newText.isEmpty() ) newText += '\n';
 
-	//	左＝適用結果、右＝元のソースで diff 表示にする
+	//	新規タブを開き、左＝適用結果、右＝元のソースで diff 表示にする
+	QString title = QFileInfo(fullPath).fileName();
+	title.remove(QRegularExpression("\\.md$"));
+	//addTab(title + " (merge)", fullPath, oldText, srcWidget->m_withBOM, srcWidget->m_encoding);
+	addTab(title  /*+ " (merge)"*/, fullPath, oldText, srcWithBOM, srcEncoding);
+	DocWidget *docWidget = getCurDocWidget();
+	if( docWidget == nullptr ) return;
+
 	docWidget->m_editor->setPlainText(newText);
 	docWidget->m_editor->document()->setModified(true);
 	docWidget->m_diffPeerTitle = QFileInfo(fullPath).fileName() + " (before)";		//	右側は適用前の元のソース
 	docWidget->m_diffviewLabel->setText(docWidget->m_diffPeerTitle);
+	docWidget->m_diffview->setDummyInserted(false);
+	docWidget->m_diffview->diffBlockNumbers().clear();
+	docWidget->m_diffview->diffFlags().clear();
+	docWidget->m_diffview->clearNDummyLines();
 	docWidget->m_diffview->setPlainText(oldText);
 	docWidget->m_diffview->document()->setModified(false);
+	docWidget->m_diffview->initUndoMgr();
+	updateUndoRedoEnabled();
 	docWidget->m_diffMode = true;
 	docWidget->m_diffPeerFullPath = fullPath;
 	docWidget->m_diffPeerEncoding = srcEncoding;
@@ -1721,5 +1737,9 @@ void MainWindow::do_merge_file(const DiffFile &file, bool wrapRight) {
 	docWidget->m_editor->setLineWrapMode(wrapMode);
 	docWidget->m_diffview->setLineWrapMode(wrapMode);
 	docWidget->updatePanes();
-	ui->action_DiffMode->setChecked(true);
+	if( ui->action_DiffMode->isChecked() ) {
+		onAction_DiffMode(true);
+	} else {
+		ui->action_DiffMode->setChecked(true);
+	}
 }
