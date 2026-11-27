@@ -1663,10 +1663,10 @@ SPR# 状 P Open Close ver     Type  概要
 1649 ◎ C 11/28 11/28 03224│問題│isEscapedChar()が半角空白を含み記号不足かつupdateCharFlags()のリンク判定順が不適切（Gemini）
 1650 ◎ C 11/28 11/28 03224│問題│DocWidget::getTitle()が見出し無し文書の1行目を誤認し複数行HTMLコメントにも対応していない（Gemini）
 1651 ◎ C 11/28 11/28 03224│問題│DocWidget.cppのCSV内O(N^2)文字列生成・初期化順警告・不要デバッグ出力やデッドコード整理（Gemini）
-1652 ● C 11/28            │問題│
-1653 ● C 11/28            │問題│
-1654 ● C 11/28            │問題│
-1655 ● C 11/28            │問題│
+1652 ◎ C 11/28 11/28 03224│問題│GrepDialogでチェック変更時にg.m_*を即時書換しておりCancelしても設定が元に戻らない（Gemini）
+1653 ◎ C 11/28 11/28 03224│問題│GrepDialogのディレクトリ選択ボタンがclickedでなくpressed接続で押下残留やキー操作不可（Gemini）
+1654 ◎ C 11/28 11/28 03224│問題│GrepDialogのdirCBにcurrentPathが重複登録され履歴先頭でなく常にカレントが初期値になる（Gemini）
+1655 ◎ C 11/28 11/28 03224│問題│GrepDialogのsetChecked簡略化・checkStateChanged依存解消・不要qDebugやインデント整理（Gemini）
 1656 ● C 11/28            │問題│
 1657 ● C 11/28            │問題│
 1658 ● C 11/28            │問題│

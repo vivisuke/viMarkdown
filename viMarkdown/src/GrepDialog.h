@@ -18,13 +18,10 @@ public:
 	const QString searchText() const { return ui->searchTextCB->currentText(); }
 	const QString dirText() const { return ui->dirCB->currentText(); }
 	bool isGrepSubDir() const { return ui->grepSubDir->isChecked(); }
+	void accept() override;
 
 protected:
 	void	onDirBtnClicked();
-	void	onIgnoreCaseCheckStateChanged(Qt::CheckState state);
-	void	onRegexpCheckStateChanged(Qt::CheckState state);
-	void	onGrepSubDirCheckStateChanged(Qt::CheckState state);
-	void	onClearOutputCheckStateChanged(Qt::CheckState state);
 
 private:
 	Ui::GrepDialogClass *ui;
