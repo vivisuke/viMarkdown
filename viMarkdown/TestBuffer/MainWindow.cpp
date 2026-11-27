@@ -2,6 +2,7 @@
 #include "MarkdownPreview.h"
 #include "TextEdit.h"
 #include <QApplication>
+#include <QBuffer>
 #include <QCalendarWidget>
 #include <QCheckBox>
 #include <QCloseEvent>
@@ -32,6 +33,7 @@
 #include <QPushButton>
 #include <QSaveFile>
 #include <QScrollBar>
+#include <QSet>
 #include <QSettings>
 #include <QShortcut>
 #include <QSpinBox>
@@ -44,6 +46,7 @@
 #include <QTextCharFormat>
 #include <QTextCursor>
 #include <QTextEdit>
+#include <QTextFragment>
 #include <QTextStream>
 #include <QTimer>
 #include <QTreeWidget>
@@ -589,6 +592,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->action_Open, &QAction::triggered, this, &MainWindow::onOpen);
     connect(ui->action_Save, &QAction::triggered, this, &MainWindow::onSave);
     connect(ui->action_ExportPDF, &QAction::triggered, this, &MainWindow::onExportPDF);
+    connect(ui->action_ExportHTML, &QAction::triggered, this, &MainWindow::onExportHTML);
     connect(ui->action_Close, &QAction::triggered, this, &MainWindow::onClose);
     connect(ui->action_Exit, &QAction::triggered, this, &QWidget::close);
     connect(ui->action_Undo, &QAction::triggered, this, &MainWindow::onUndo);
@@ -1718,6 +1722,85 @@ void MainWindow::onExportPDF()
     printer.setOutputFileName(fileName);
     preview->print(&printer);
     statusBar()->showMessage(tr("PDF exported: %1").arg(fileName), 5000);
+}
+
+void MainWindow::onExportHTML()
+{
+    MarkdownPreview *preview = currentPreviewEdit();
+    if (!preview || !preview->document())
+        return;
+
+    QString defaultPath;
+    if (QWidget *curTab = m_tabWidget ? m_tabWidget->currentWidget() : nullptr) {
+        const QString filePath = curTab->property(PROP_FILE_PATH).toString();
+        if (!filePath.isEmpty()) {
+            const QFileInfo fi(filePath);
+            defaultPath = fi.absolutePath() + QLatin1Char('/') + fi.completeBaseName() + QStringLiteral(".html");
+        } else if (m_tabWidget) {
+            QString title = m_tabWidget->tabText(m_tabWidget->currentIndex());
+            if (title.endsWith(QLatin1Char('*')))
+                title.chop(1);
+            defaultPath = QDir::currentPath() + QLatin1Char('/') + title + QStringLiteral(".html");
+        }
+    }
+
+    QString fileName = QFileDialog::getSaveFileName(
+        this,
+        tr("Export as HTML"),
+        defaultPath,
+        tr("HTML Files (*.html *.htm)"));
+    if (fileName.isEmpty())
+        return;
+    if (!fileName.endsWith(QStringLiteral(".html"), Qt::CaseInsensitive)
+        && !fileName.endsWith(QStringLiteral(".htm"), Qt::CaseInsensitive)) {
+        fileName += QStringLiteral(".html");
+    }
+
+    QTextDocument *doc = preview->document();
+    QString html = doc->toHtml();
+
+    //	埋め込み画像・SVG ブロック（svg://... や file:///...）を Base64 Data URI に変換して単一 HTML 化
+    QSet<QString> processed;
+    for (QTextBlock b = doc->begin(); b.isValid(); b = b.next()) {
+        for (QTextBlock::iterator it = b.begin(); !it.atEnd(); ++it) {
+            const QTextFragment frag = it.fragment();
+            if (!frag.isValid() || !frag.charFormat().isImageFormat())
+                continue;
+            const QString name = frag.charFormat().toImageFormat().name();
+            if (name.isEmpty() || processed.contains(name))
+                continue;
+            processed.insert(name);
+            const QImage img = doc->resource(QTextDocument::ImageResource, QUrl(name)).value<QImage>();
+            if (img.isNull())
+                continue;
+            QByteArray pngBytes;
+            QBuffer buf(&pngBytes);
+            buf.open(QIODevice::WriteOnly);
+            if (!img.save(&buf, "PNG"))
+                continue;
+            const QString dataUri = QStringLiteral("data:image/png;base64,") + QString::fromLatin1(pngBytes.toBase64());
+            html.replace(QStringLiteral("src=\"%1\"").arg(name.toHtmlEscaped()), QStringLiteral("src=\"%1\"").arg(dataUri));
+            html.replace(QStringLiteral("src=\"%1\"").arg(name), QStringLiteral("src=\"%1\"").arg(dataUri));
+        }
+    }
+
+    const int headEnd = html.indexOf(QStringLiteral("</head>"), 0, Qt::CaseInsensitive);
+    if (headEnd >= 0) {
+        html.insert(headEnd, QStringLiteral("<style>body { max-width: 960px; margin: 24px auto; padding: 0 16px; } img { max-width: 100%; height: auto; }</style>\n"));
+    }
+
+    QSaveFile file(fileName);
+    file.setDirectWriteFallback(true);
+    if (!file.open(QIODevice::WriteOnly)) {
+        QMessageBox::warning(this, tr("Export as HTML"), tr("Cannot write file:\n%1").arg(fileName));
+        return;
+    }
+    const QByteArray utf8 = html.toUtf8();
+    if (file.write(utf8) != utf8.size() || !file.commit()) {
+        QMessageBox::warning(this, tr("Export as HTML"), tr("Cannot write file:\n%1").arg(fileName));
+        return;
+    }
+    statusBar()->showMessage(tr("HTML exported: %1").arg(fileName), 5000);
 }
 
 void MainWindow::do_output(const QString& txt)
