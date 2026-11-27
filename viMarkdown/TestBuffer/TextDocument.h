@@ -91,6 +91,22 @@ public:
 		m_modified = true;
 	}
 	void erase(pos_t pos) { erase(pos, pos + 1); }	//	1文字削除
+	void replace(pos_t pos1, pos_t pos2, const QString &text) {	//	[pos1, pos2) を text で置換（ACT_REPLACE）
+		if( pos2 < pos1 ) pos2 = pos1;
+		const int dsz = static_cast<int>(pos2 - pos1);
+		const int isz = static_cast<int>(text.size());
+		if( dsz == 0 && isz == 0 ) return;
+		m_undoMgr.push_back_repText((int)pos1, dsz, isz);
+		if( dsz > 0 )
+			eraseRaw(pos1, pos2);
+		if( isz > 0 )
+			insertRaw(pos1, text);
+		const int ln0 = m_lineMgr.lineAtPos(pos1);
+		const int ln1 = m_lineMgr.lineAtPos(pos1 + isz);
+		for( int ln = ln0; ln <= ln1; ++ln )
+			m_lineMgr.setLineState(ln, LineMgr::LS_MODIFIED);
+		m_modified = true;
+	}
 
 	//	undo / redo（戻り値はカーソル位置。アプリ版 UndoMgr の流儀）
 	int undo() { return m_undoMgr.undo(); }

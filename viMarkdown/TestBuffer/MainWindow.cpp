@@ -689,6 +689,24 @@ MainWindow::MainWindow(QWidget *parent)
         if (TextEdit *edit = currentTextEdit())
             edit->unindent();
     });
+    QAction *actToggleCheckbox = ui->menuEdit->addAction(tr("To&ggle Checkbox"));
+    actToggleCheckbox->setShortcuts({
+        QKeySequence(Qt::CTRL | Qt::Key_Return),
+        QKeySequence(Qt::CTRL | Qt::Key_Enter),
+    });
+    connect(actToggleCheckbox, &QAction::triggered, this, [this]() {
+        TextEdit *edit = currentTextEdit();
+        if (!edit) return;
+        MarkdownPreview *preview = currentPreviewEdit();
+        QWidget *fw = QApplication::focusWidget();
+        if (preview && fw && (fw == preview || preview->isAncestorOf(fw))) {
+            const int srcPos = preview->prvToSrcPos(preview->textCursor().position());
+            const int ln = edit->document()->lineMgr().lineAtPos(srcPos);
+            edit->toggleCheckboxAtLine(ln);
+        } else {
+            edit->toggleCheckboxAtCursor();
+        }
+    });
     updateUndoRedoEnabled();
     ui->action_Settings->setShortcut(QKeySequence(Qt::Key_F8));
     connect(ui->action_Settings, &QAction::triggered, this, [this]() { onSettings(0); });

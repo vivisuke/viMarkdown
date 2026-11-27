@@ -88,6 +88,7 @@ struct UndoActionReplace : public UndoAction
 	int		m_sizeDel;	//	削除文字数（for UTF16）
 	int		m_ixDel;	//	削除文字列のUndoバッファインデックス
 	int		m_lcDel;	//	削除行数
+	bool	m_prohibitMerge;	//	マージ禁止
 	std::vector<uint8_t>	m_prevStates;	//	置換前の影響行の LineState
 public:
 	UndoActionReplace(pos_t pos = 0, int ln = 0,
@@ -102,6 +103,7 @@ public:
 		, m_sizeDel(sizeDel)
 		, m_ixDel(ixDel)
 		, m_lcDel(lcDel)
+		, m_prohibitMerge(false)
 		{}
 	~UndoActionReplace() {}
 };

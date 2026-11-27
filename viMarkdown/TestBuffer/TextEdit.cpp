@@ -503,11 +503,34 @@ void TextEdit::toggleCheckboxAtLine(int line, bool checked)
 	const QChar target = checked ? QChar('x') : QChar(' ');
 	if( m_doc.characterAt(chkPos) == target )
 		return;
-	m_doc.undoMgr().openBlock();
-	m_doc.erase(chkPos, chkPos + 1);
-	m_doc.insert(chkPos, QString(target));
-	m_doc.undoMgr().closeBlock();
+	m_doc.replace(chkPos, chkPos + 1, QString(target));
+	m_doc.undoMgr().prohibitMergeUndo();
 	afterChange(true);
+}
+
+bool TextEdit::toggleCheckboxAtLine(int line)
+{
+	const ViewLineMgr &mgr = m_doc.lineMgr();
+	if( line < 0 || line >= mgr.lineCount() || mgr.lineType(line) != LineMgr::LT_CHECKBOX )
+		return false;
+	const TextDocument::pos_t lineStart = mgr.lineStartPos(line);
+	const TextDocument::pos_t lineLen = mgr.lineLength(line);
+	TextDocument::pos_t i = 0;
+	while( i < lineLen && (m_doc.characterAt(lineStart + i) == QChar(' ') || m_doc.characterAt(lineStart + i) == QChar('\t')) )
+		++i;
+	if( i + 4 >= lineLen )
+		return false;
+	const TextDocument::pos_t chkPos = lineStart + i + 3;
+	const bool nowChecked = (m_doc.characterAt(chkPos) != QChar(' '));
+	toggleCheckboxAtLine(line, !nowChecked);
+	return true;
+}
+
+bool TextEdit::toggleCheckboxAtCursor()
+{
+	const ViewLineMgr &mgr = m_doc.lineMgr();
+	const int ln = mgr.lineAtPos(m_cursor.position());
+	return toggleCheckboxAtLine(ln);
 }
 
 namespace {
@@ -1552,10 +1575,12 @@ void TextEdit::paintEvent(QPaintEvent *event)
 						const int w = (chAt == QChar('\n') || chAt == QChar('\t') || chAt.isNull())
 							? qMax(6, fm.horizontalAdvance(QChar(' ')))
 							: qMax(6, fm.horizontalAdvance(chAt));
-						if( m_vi.mode() == ViMode::Replace )
-							painter.fillRect(x, y0 + caretH - 3, w, 3, Qt::red);
-						else
+						if( m_vi.mode() == ViMode::Replace ) {
 							painter.fillRect(x, y0, w, caretH, QColor(255, 0, 0, 120));
+						} else {
+							const int halfH = qMax(2, caretH / 2);
+							painter.fillRect(x, y0 + caretH - halfH, w, halfH, QColor(255, 0, 0, 120));
+						}
 					} else {
 						painter.fillRect(x, y0, 2, caretH, Qt::red);
 					}

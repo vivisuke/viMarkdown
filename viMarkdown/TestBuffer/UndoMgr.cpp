@@ -183,11 +183,14 @@ bool UndoMgr::push_back(UndoAction *ptr)
 	return true;
 }
 
-void UndoMgr::prohibitMergeUndo() // 挿入マージ禁止
+void UndoMgr::prohibitMergeUndo() // 挿入・置換マージ禁止
 {
-	if( m_cur != 0 && m_stack[m_cur - 1]->m_type == UndoAction::ACT_INSERT ) {
-		UndoActionInsert *ptr = (UndoActionInsert *)m_stack[m_cur - 1];
-		ptr->m_prohibitMerge = true;
+	if( m_cur == 0 ) return;
+	UndoAction *act = m_stack[m_cur - 1];
+	if( act->m_type == UndoAction::ACT_INSERT ) {
+		static_cast<UndoActionInsert *>(act)->m_prohibitMerge = true;
+	} else if( act->m_type == UndoAction::ACT_REPLACE ) {
+		static_cast<UndoActionReplace *>(act)->m_prohibitMerge = true;
 	}
 }
 bool UndoMgr::push_back_insText(int pos, int sz, uint8_t prevState)
@@ -247,6 +250,32 @@ bool UndoMgr::push_back_delText(int pos, int sz, bool BS /*, int ln*/)
 
 UndoActionReplace *UndoMgr::push_back_repText(int pos, int dsz, int isz /*, int ln*/)
 {
+	// 連続する位置への同一行内置換は、直前の ACT_REPLACE アクションにマージする
+	if( m_cur != 0 && m_stack[m_cur - 1]->m_type == UndoAction::ACT_REPLACE ) {
+		auto *ptr = static_cast<UndoActionReplace *>(m_stack[m_cur - 1]);
+		const bool sameLine = !m_buffer
+			|| (m_buffer->lineMgr().lineAtPos(pos) == m_buffer->lineMgr().lineAtPos(pos + dsz));
+		if( !ptr->m_prohibitMerge
+			&& (ptr->m_flags & UndoAction::FLAG_BLOCK) == 0
+			&& !isBlockOpened()
+			&& sameLine
+			&& ptr->m_pos + ptr->m_sizeIns == pos
+			&& ptr->m_ixDel + ptr->m_sizeDel == m_delText.size() )
+		{
+			if( dsz > 0 ) {
+				const int ix = m_delText.size();
+				m_delText.resize(ix + dsz);
+				m_delText.replace(ix, dsz, getText(m_buffer, pos, dsz));
+				ptr->m_sizeDel += dsz;
+			}
+			ptr->m_sizeIns += isz;
+			truncateRedo();
+			if( m_savePointCur >= m_cur )
+				m_savePointCur = -1;
+			return ptr;
+		}
+	}
+
 	const int ix = m_delText.size();
 	m_delText.resize(ix + dsz);
 	m_delText.replace(ix, dsz, getText(m_buffer, pos, dsz));

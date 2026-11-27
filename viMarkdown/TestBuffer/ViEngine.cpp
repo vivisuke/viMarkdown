@@ -254,6 +254,7 @@ void ViEngine::setMode(ViMode m, TextEdit *edit)
 	resetPending();
 	if( edit ) {
 		if( m_mode == ViMode::Normal ) {
+			edit->document()->undoMgr().prohibitMergeUndo();
 			TextCursor c = edit->textCursor();
 			if( prevMode == ViMode::Visual || prevMode == ViMode::VisualLine )
 				c.setPosition(m_visualCursor);
@@ -1001,8 +1002,12 @@ bool ViEngine::handleKeyPress(TextEdit *edit, QKeyEvent *event)
 			const TextDocument::pos_t pos = edit->textCursor().position();
 			const int ln = doc->lineMgr().lineAtPos(pos);
 			const TextDocument::pos_t lineEnd = doc->lineMgr().lineEndPos(ln);
-			const int delEnd = (pos < lineEnd) ? static_cast<int>(pos + 1) : static_cast<int>(pos);
-			edit->applyPreviewEdit(static_cast<int>(pos), delEnd, txt);
+			const TextDocument::pos_t delEnd = (pos < lineEnd) ? (pos + 1) : pos;
+			doc->replace(pos, delEnd, txt);
+			TextCursor c = edit->textCursor();
+			c.setPosition(pos + static_cast<TextDocument::pos_t>(txt.size()));
+			edit->setTextCursor(c);
+			edit->notifyTextChanged();
 			return true;
 		}
 		return false;	//	Insert の通常入力は TextEdit へ任せる

@@ -84,6 +84,8 @@ public:
 	void paste();
 	void selectAll();
 	void toggleCheckboxAtLine(int line, bool checked);
+	bool toggleCheckboxAtLine(int line);
+	bool toggleCheckboxAtCursor();
 	bool convertCsvToGfmTable();
 	bool convertGfmTableToCsv();
 	void setLineAlignment(Qt::Alignment align);
