@@ -10,60 +10,29 @@
 
 uchar blockType(const QTextBlock &block);
 
+static void updateMiniMapFromY(MiniMap *mm, qreal y) {
+	if( mm->m_docWidget == nullptr || mm->m_docWidget->m_editor == nullptr ) return;
+	int mx = mm->m_docWidget->m_editor->verticalScrollBar()->maximum();
+	int h = mm->height();
+	int targetLine = (mm->m_totalLines > h && h > 0)
+		? (int)((qint64)y * mm->m_totalLines / h)
+		: (int)y;
+	mm->m_firstVisibleLine = qBound(0, targetLine - mm->m_visibleLines / 2, mx);
+	mm->m_docWidget->syncEditorWithMinimap(mm->m_firstVisibleLine);
+	mm->update();
+}
 void MiniMap::mousePressEvent(QMouseEvent *event) {
-//#if 0
+	if( event->button() != Qt::LeftButton ) return;
 	m_mousePressed = true;
-	auto pos = event->position();
-	//m_pressedY = pos.y();
-#if 0
-	int line = height() > 0 ? (int)pos.y() * m_totalLines / height() : 0;	//	ピクセル → 行番号への逆換算
-	int mx = m_docWidget->m_editor->verticalScrollBar()->maximum();
-	m_firstVisibleLine = qMin(qMax(0, line - m_visibleLines/2), mx);
-	m_docWidget->syncEditorWithMinimap(m_firstVisibleLine);
-	update();
-//#else
-	m_mousePressed = true;
-	auto pos = event->position();
-	//m_pressedY = pos.y();
-	m_firstVisibleLine = qMax(0, (int)pos.y() - m_visibleLines/2);
-#endif
-	if( m_totalLines > height() && height() > 0 ) {	//	自動スケーリング時：ピクセル → 行番号への逆換算
-		int line = (int)pos.y() * m_totalLines / height();
-		int mx = m_docWidget->m_editor->verticalScrollBar()->maximum();
-		m_firstVisibleLine = qMin(qMax(0, line - m_visibleLines/2), mx);
-	} else {
-		m_firstVisibleLine = qMax(0, (int)pos.y() - m_visibleLines/2);
-	}
-	m_docWidget->syncEditorWithMinimap(m_firstVisibleLine);
-	update();
-//#endif
+	updateMiniMapFromY(this, event->position().y());
 }
 void MiniMap::mouseReleaseEvent(QMouseEvent *event) {
-	m_mousePressed = false;
+	if( event->button() == Qt::LeftButton )
+		m_mousePressed = false;
 }
 void MiniMap::mouseMoveEvent(QMouseEvent *event) {
-#if 0
 	if( !m_mousePressed ) return;
-	auto pos = event->position();
-	int line = height() > 0 ? (int)pos.y() * m_totalLines / height() : 0;	//	ピクセル → 行番号への逆換算
-	int mx = m_docWidget->m_editor->verticalScrollBar()->maximum();
-	m_firstVisibleLine = qMin(qMax(0, line - m_visibleLines/2), mx);
-	m_docWidget->syncEditorWithMinimap(m_firstVisibleLine);
-	update();
-#else
-	if( !m_mousePressed ) return;
-	auto pos = event->position();
-	int mx = m_docWidget->m_editor->verticalScrollBar()->maximum();
-	//m_firstVisibleLine = qMin(qMax(0, (int)pos.y() - m_visibleLines/2), mx);
-	if( m_totalLines > height() && height() > 0 ) {	//	自動スケーリング時：ピクセル → 行番号への逆換算
-		int line = (int)pos.y() * m_totalLines / height();
-		m_firstVisibleLine = qMin(qMax(0, line - m_visibleLines/2), mx);
-	} else {
-		m_firstVisibleLine = qMin(qMax(0, (int)pos.y() - m_visibleLines/2), mx);
-	}
-	m_docWidget->syncEditorWithMinimap(m_firstVisibleLine);
-	update();
-#endif
+	updateMiniMapFromY(this, event->position().y());
 }
 void MiniMap::resizeEvent(QResizeEvent *event) {
 	QWidget::resizeEvent(event);
@@ -259,17 +228,18 @@ static QRegularExpression link_re(R"((?<![!\\])\[([^\]]+)\]\(([^)]+)\))");
 static QRegularExpression image_re(R"((?<!\\)!\[([^\]]+)\]\(([^)]+)\))");
 bool isTableLine(const QString& lnStr0, const QString& lnStr, QStringList &tableTokens, BlockData* data) {
 	assert( data == nullptr || data->m_charFlags.size() == lnStr0.size() );
+	const int flagLen = (data != nullptr) ? qMin((int)data->m_charFlags.size(), (int)lnStr0.size()) : 0;
 	QString sv(lnStr);
 	tableTokens.clear();
 	//if( data != nullptr ) data->m_charFlags.fill(PCF_VISIBLE);	← ここでクリアするとすでに設定されているコメントアウト情報が消えてしまう
 	int ix = 0;
 	if (ix < sv.size() && sv[ix] == u'|') {
-		if( data != nullptr )
+		if( data != nullptr && ix < flagLen )
 			data->m_charFlags[ix] = PCF_TABLE;
 		++ix;			//	先頭 '|' スキップ
 	}
 	while( ix < sv.size() && sv[ix] == u' ' ) {
-		if( data != nullptr )
+		if( data != nullptr && ix < flagLen )
 			data->m_charFlags[ix] = PCF_NOT_VISIBLE;	//	| 直後空白は非表示
 		++ix;		//	空白スキップ
 	}
@@ -280,32 +250,38 @@ bool isTableLine(const QString& lnStr0, const QString& lnStr, QStringList &table
 			else ++ix;
 		}
 		tableTokens.push_back(sv.mid(ix0, ix-ix0));
-		if( data != nullptr ) {
-			for(int i = ix; --i >= 0 && lnStr0[i] == u' '; )	//	| 直前空白は非表示
+		if( data != nullptr && ix0 < flagLen ) {
+			const int end0 = qMin(ix, flagLen);
+			for(int i = end0; --i >= 0 && lnStr0[i] == u' '; )	//	| 直前空白は非表示
 				data->m_charFlags[i] = PCF_NOT_VISIBLE;
-			if( ix < sv.size() )
+			//	注：末尾 '|' は PtoE/EtoP カーソル同期（AutoTest）との整合のため PCF_CELL_SEPARATOR のまま維持
+			if( ix < sv.size() && ix < flagLen )
 				data->m_charFlags[ix] = PCF_CELL_SEPARATOR;
-			for(int i = ix + 1; i < lnStr0.size() && lnStr0[i] == u' '; ++i)	//	| 直後空白も非表示
+			for(int i = ix + 1; i < flagLen && lnStr0[i] == u' '; ++i)	//	| 直後空白も非表示
 				data->m_charFlags[i] = PCF_NOT_VISIBLE;
-			updateCharFlags(data, lnStr0, ix0, ix, true);		//	true for エスケープ文字処理
+			updateCharFlags(data, lnStr0, ix0, end0, true);		//	true for エスケープ文字処理
 			auto imatch = image_re.match(lnStr0, ix0);	//	セル内画像にも PCF_IMAGE を設定
-			while( imatch.hasMatch() && imatch.capturedStart() < ix ) {
+			while( imatch.hasMatch() && imatch.capturedStart() < end0 ) {
 				int start = imatch.capturedStart();
-				int end = qMin(imatch.capturedEnd(), ix);
-				data->m_charFlags[start] = PCF_IMAGE_BEGIN;	//	'!'
-				for(int i = start + 1; i < end; ++i)
-					data->m_charFlags[i] = PCF_IMAGE;
-				imatch = image_re.match(lnStr0, end);
+				int mend = imatch.capturedEnd();
+				if( mend <= end0 ) {
+					data->m_charFlags[start] = PCF_IMAGE_BEGIN;	//	'!'
+					for(int i = start + 1; i < mend; ++i)
+						data->m_charFlags[i] = PCF_IMAGE;
+				}
+				imatch = image_re.match(lnStr0, qMin(mend, end0));
 			}
 			auto lmatch = link_re.match(lnStr0, ix0);	//	セル内リンクの記号にも PCF_LINK を設定
-			while( lmatch.hasMatch() && lmatch.capturedStart() < ix ) {
+			while( lmatch.hasMatch() && lmatch.capturedStart() < end0 ) {
 				int start = lmatch.capturedStart();
-				int end = qMin(lmatch.capturedEnd(), ix);
-				data->m_charFlags[start] = PCF_LINK;	//	'['
+				int mend = lmatch.capturedEnd();
 				int ixr = lnStr0.indexOf(u']', start);
-				for(int i = ixr; i < end; ++i)
-					data->m_charFlags[i] = PCF_LINK;	//	'](url)' 部分
-				lmatch = link_re.match(lnStr0, end);
+				if( mend <= end0 && ixr >= 0 && ixr < mend ) {
+					data->m_charFlags[start] = PCF_LINK;	//	'['
+					for(int i = ixr; i < mend; ++i)
+						data->m_charFlags[i] = PCF_LINK;	//	'](url)' 部分
+				}
+				lmatch = link_re.match(lnStr0, qMin(mend, end0));
 			}
 		}
 		++ix;			//	'|' スキップ
@@ -319,21 +295,18 @@ bool isTableHyphenLine(const QString& lnStr, std::vector<char> &tableAlign, Bloc
 	while( ix < sv.size() && sv[ix] == u' ' ) ++ix;		//	空白スキップ
 	if (ix < sv.size() && sv[ix] == u'|') ++ix;			//	先頭 '|' スキップ
 	while( ix < sv.size() ) {
-		char aln = 0;
 		while( ix < sv.size() && sv[ix] == u' ' ) ++ix;		//	空白スキップ
-		if( ix < sv.size() && sv[ix] == u':' ) { aln = ALIGHN_LEFT; ++ix; }
-		while( ix < sv.size() && sv[ix] != u'|' ) {		//	次の'|' までループ
-			if( ix+1 < sv.size() && sv[ix] == u'\\' ) ++ix;
-			if( sv[ix] != u'-' && sv[ix] != u':' && sv[ix] != u' ' )
-				return false;
-			++ix;
-		}
-		int i = ix - 1;
-		while( i >= 0 && sv[i] == u' ' ) --i;		//	空白スキップ
-		if( i >= 0 && sv[i] == u':' )
-			aln |= ALIGHN_RIGHT;
+		if( ix >= sv.size() ) break;						//	末尾 '|' 後の空白のみ
+		char aln = 0;
+		if( sv[ix] == u':' ) { aln = ALIGHN_LEFT; ++ix; }
+		int hyphens = 0;
+		while( ix < sv.size() && sv[ix] == u'-' ) { ++hyphens; ++ix; }
+		if( hyphens == 0 ) return false;					//	ハイフン1個以上必須
+		if( ix < sv.size() && sv[ix] == u':' ) { aln |= ALIGHN_RIGHT; ++ix; }
+		while( ix < sv.size() && sv[ix] == u' ' ) ++ix;		//	末尾空白スキップ
+		if( ix < sv.size() && sv[ix] != u'|' ) return false;
 		tableAlign.push_back(aln);
-		++ix;
+		if( ix < sv.size() ) ++ix;							//	'|' スキップ
 	}
 	if( tableAlign.size() > 1 ) {
 		if( data != nullptr ) {
@@ -349,9 +322,11 @@ bool isUnderlineHeading(const QString &txt) {
 	return re.match(txt).hasMatch();
 }
 bool isEscapedChar(QChar ch) {
-	return ch.unicode() >= u' ' && ch.unicode() <= u'/' ||
-			ch.unicode() >= u'[' && ch.unicode() <= u']' ||		//	[ \ ]
-			ch.unicode() == u'>';
+	ushort u = ch.unicode();
+	return (u >= u'!' && u <= u'/') ||		//	!"#$%&'()*+,-./（半角スペースは除外）
+			(u >= u':' && u <= u'@') ||		//	:;<=>?@
+			(u >= u'[' && u <= u'`') ||		//	[\]^_`
+			(u >= u'{' && u <= u'~');		//	{|}~
 }
 
 
@@ -428,25 +403,57 @@ void updateCharFlags(QTextBlock srcBlock) {
 	QString buf = srcBlock.text();
 	BlockData *data = getBlockData(srcBlock, false);
 	bool modified = false;
+	//	インラインコード区間（`...`）を先に収集し、コード内／跨ぎのリンク・画像誤判定を防ぐ
+	QList<QPair<int, int>> codeSpans;
+	for( int i = 0; i < buf.size(); ) {
+		if( i + 1 < buf.size() && buf[i] == u'\\' && isEscapedChar(buf[i + 1]) ) {
+			i += 2;
+		} else if( buf[i] == u'`' ) {
+			int n = 1;
+			while( i + n < buf.size() && buf[i + n] == u'`' && n < 3 ) ++n;
+			QString sym = buf.mid(i, n);
+			int ix2 = buf.indexOf(sym, i + n);
+			if( ix2 >= 0 ) {
+				codeSpans.append({i, ix2 + n});
+				i = ix2 + n;
+			} else {
+				i += n;
+			}
+		} else {
+			++i;
+		}
+	}
+	auto overlapsCodeSpan = [&](int s, int e) {
+		for( const auto &sp : codeSpans ) {
+			if( s < sp.second && e > sp.first ) return true;
+		}
+		return false;
+	};
 	auto match = image_re.match(buf);		//	![title](image.png) を含むか？
 	while( match.hasMatch() ) {
-		modified = true;
 		int start = match.capturedStart(); // マッチした最初の位置
 	    int length = match.capturedLength(); // マッチした全体の長さ
-    	data->m_charFlags[start] = PCF_IMAGE_BEGIN;
-	    for(int i = start + 1; i < start + length; ++i)
-	    	data->m_charFlags[i] = PCF_IMAGE;
+		if( !overlapsCodeSpan(start, start + length) ) {
+			modified = true;
+			data->m_charFlags[start] = PCF_IMAGE_BEGIN;
+			for(int i = start + 1; i < start + length; ++i)
+				data->m_charFlags[i] = PCF_IMAGE;
+		}
 		match = image_re.match(buf, start + length);
 	}
 	match = link_re.match(buf);		//	[title](image.png) を含むか？
 	while( match.hasMatch() ) {
-		modified = true;
 		int start = match.capturedStart(); // マッチした最初の位置（'['）
 	    int length = match.capturedLength(); // マッチした全体の長さ
-	    data->m_charFlags[start] = PCF_LINK;
-	    int ix = buf.indexOf(']', start);
-	    for(int i = ix; i < start + length && i < data->m_charFlags.size(); ++i)
-	    	data->m_charFlags[i] = PCF_LINK;
+		if( !overlapsCodeSpan(start, start + length) ) {
+			modified = true;
+			data->m_charFlags[start] = PCF_LINK;
+			int ix = buf.indexOf(']', start);
+			if( ix >= 0 ) {
+				for(int i = ix; i < start + length && i < data->m_charFlags.size(); ++i)
+					data->m_charFlags[i] = PCF_LINK;
+			}
+		}
 		match = link_re.match(buf, start + length);
 	}
 	for(int i = 0; i < buf.size() && buf[i] == u' '; ++i)
@@ -531,28 +538,49 @@ void DocWidget::setModified(bool b) {
 }
 QString DocWidget::getTitle() const {
 	QString title;
-#if 0
-	auto hbn = m_preview->getHeadingsBlockNum();
-	if( !hbn.empty() && hbn[0] == 0 ) {		//	（コメントを無視した）最初の行が見出し行
-		title = m_preview->document()->begin().text();
-	}
-#else
-	int ln = 0;
 	QTextDocument *doc = m_editor->document();
 	QTextBlock block = doc->begin();
-	while( block.isValid() && (block.text().startsWith("<!--") || block.text().isEmpty()) ) {
-		++ln;
-		block = block.next();
+	bool inComment = false;
+	while( block.isValid() ) {
+		QString txt = block.text().trimmed();
+		if( inComment ) {
+			int endIx = txt.indexOf("-->");
+			if( endIx >= 0 ) {
+				inComment = false;
+				if( txt.mid(endIx + 3).trimmed().isEmpty() ) {
+					block = block.next();
+					continue;
+				}
+				break;
+			}
+			block = block.next();
+			continue;
+		}
+		if( txt.isEmpty() ) {
+			block = block.next();
+			continue;
+		}
+		if( txt.startsWith("<!--") ) {
+			int endIx = txt.indexOf("-->", 4);
+			if( endIx < 0 ) {
+				inComment = true;
+				block = block.next();
+				continue;
+			}
+			if( txt.mid(endIx + 3).trimmed().isEmpty() ) {
+				block = block.next();
+				continue;
+			}
+		}
+		break;
 	}
-	auto hln = getSrcHeadingsBlocks();
-	if( !hln.empty() && hln[0] == ln ) {		//	コメントを除いた最初の行が見出し行
+	if( block.isValid() && blockType(block) == BT_HEADING ) {		//	コメントを除いた最初の行が見出し行
 		title = block.text();
 		int i = 0;
 		while( i < title.size() && title[i] == u'#' ) ++i;
 		while( i < title.size() && title[i] == u' ' ) ++i;
 		title = title.mid(i);
 	}
-#endif
 	return title;
 }
 int DocWidget::previewPosToEditorPos(int pos) {
@@ -560,21 +588,19 @@ int DocWidget::previewPosToEditorPos(int pos) {
 }
 int DocWidget::prvToSrcHeading(int blockNum) {
 	assert( m_prvHeadingBlocks.size() == m_srcHeadingBlocks.size() );
-	auto it = std::lower_bound(m_prvHeadingBlocks.begin(), m_prvHeadingBlocks.end(), blockNum);
-	if (it != m_prvHeadingBlocks.end()) {
-		size_t ix = std::distance(m_prvHeadingBlocks.begin(), it);
-		return m_srcHeadingBlocks[ix];
-	} else
-		return 0;
+	if (m_prvHeadingBlocks.empty()) return 0;
+	auto it = std::upper_bound(m_prvHeadingBlocks.begin(), m_prvHeadingBlocks.end(), blockNum);
+	if (it == m_prvHeadingBlocks.begin()) return 0;
+	size_t ix = std::distance(m_prvHeadingBlocks.begin(), std::prev(it));
+	return m_srcHeadingBlocks[ix];
 }
 int DocWidget::srcToPrvHeading(int blockNum) {
 	assert( m_prvHeadingBlocks.size() == m_srcHeadingBlocks.size() );
-	auto it = std::lower_bound(m_srcHeadingBlocks.begin(), m_srcHeadingBlocks.end(), blockNum);
-	if (it != m_srcHeadingBlocks.end()) {
-		size_t ix = std::distance(m_srcHeadingBlocks.begin(), it);
-		return m_prvHeadingBlocks[ix];
-	} else
-		return 0;
+	if (m_srcHeadingBlocks.empty()) return 0;
+	auto it = std::upper_bound(m_srcHeadingBlocks.begin(), m_srcHeadingBlocks.end(), blockNum);
+	if (it == m_srcHeadingBlocks.begin()) return 0;
+	size_t ix = std::distance(m_srcHeadingBlocks.begin(), std::prev(it));
+	return m_prvHeadingBlocks[ix];
 }
 void DocWidget::setEditorCurPos(int pos) {
 	QTextCursor cursor = m_editor->textCursor();
