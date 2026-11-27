@@ -17,6 +17,8 @@
 #include <QClipboard>
 #include <QStringDecoder>
 #include <QPointer>
+#include <QSaveFile>
+#include <QScopeGuard>
 #include <vector>
 #include <utility>
 #include <algorithm>
@@ -77,9 +79,13 @@ void setDummyLine(MarkdownEditor* editor, QTextBlock block) {
     int bn = block.blockNumber();
     if( bn < 0 ) return;
     auto &vbn = editor->diffBlockNumbers();
+    auto &flgs = editor->diffFlags();
     if( (int)vbn.size() < bn + 1 )
-    	vbn.resize(bn + 1);
+        vbn.resize(bn + 1, 0);
+    if( (int)flgs.size() < bn + 1 )
+        flgs.resize(bn + 1, 0);
     vbn[bn] = DUMMY_LINE_NUM;
+    flgs[bn] = 0;
     //block.setUserState(0);
 }
 
@@ -477,8 +483,14 @@ bool MainWindow::confirmSaveDiffPeer(DocWidget *docWidget) {
 			if( path.isEmpty() ) return false;
 			if( QFileInfo(path).suffix().isEmpty() ) path += ".md";
 		}
-		QFile file(path);
-		if( !file.open(QIODevice::WriteOnly | QIODevice::Text) ) {
+		QSaveFile file(path);
+		QIODevice::OpenMode mode = QIODevice::WriteOnly;
+		if( docWidget->m_diffPeerEncoding != QStringConverter::Utf16
+		 && docWidget->m_diffPeerEncoding != QStringConverter::Utf16LE
+		 && docWidget->m_diffPeerEncoding != QStringConverter::Utf16BE ) {
+			mode |= QIODevice::Text;
+		}
+		if( !file.open(mode) ) {
 			QMessageBox::warning(this, tr("Error"), tr("Cannot write file:\n%1").arg(path));
 			return false;
 		}
@@ -496,14 +508,43 @@ bool MainWindow::confirmSaveDiffPeer(DocWidget *docWidget) {
 		} else {
 			out << diffView->toPlainText();
 		}
-		file.close();
+		out.flush();
+		if( out.status() != QTextStream::Ok || !file.commit() ) {
+			QMessageBox::warning(this, tr("Error"), tr("Cannot write file:\n%1").arg(path));
+			return false;
+		}
 		docWidget->m_diffPeerFullPath = path;
+		docWidget->m_diffPeerTitle = QFileInfo(path).fileName();
+		docWidget->m_diffviewLabel->setText(docWidget->m_diffPeerTitle);
 		diffView->document()->setModified(false);
 		return true;
 	} else if( reply == QMessageBox::Discard ) {
 		return true;
 	}
 	return false;
+}
+//	比較先ファイルを読み込み、docWidget->m_diffview と付随状態を初期化する共通ヘルパ
+static bool loadDiffPeerIntoWidget(QWidget *parent, DocWidget *docWidget, const QString &fullPath) {
+	QString content;
+	QStringConverter::Encoding peerEnc = QStringConverter::Utf8;
+	bool peerBOM = false;
+	if (!readDiffPeerFile(fullPath, content, peerEnc, peerBOM)) {
+		QMessageBox::warning(parent, QObject::tr("Error"), QObject::tr("Cannot open file:\n%1").arg(fullPath));
+		return false;
+	}
+	docWidget->m_diffPeerEncoding = peerEnc;
+	docWidget->m_diffPeerWithBOM = peerBOM;
+	docWidget->m_diffPeerFullPath = fullPath;
+	QFileInfo fi2(fullPath);
+	docWidget->m_diffviewLabel->setText(docWidget->m_diffPeerTitle = fi2.fileName());
+	docWidget->m_diffview->setDummyInserted(false);
+	docWidget->m_diffview->diffBlockNumbers().clear();
+	docWidget->m_diffview->diffFlags().clear();
+	docWidget->m_diffview->clearNDummyLines();
+	docWidget->m_diffview->setPlainText(content);
+	docWidget->m_diffview->document()->setModified(false);
+	docWidget->m_diffview->initUndoMgr();
+	return true;
 }
 void MainWindow::diffview_open() {		//	文書を選択して比較
 	DocWidget *docWidget = getCurDocWidget();
@@ -518,25 +559,7 @@ void MainWindow::diffview_open() {		//	文書を選択して比較
 		"markdown file (*.md *.markdown);;text file(*.txt);;all(*.*)"	// フィルター
 	);
 	if( fullPath.isEmpty() ) return;
-	QString content;
-	QStringConverter::Encoding peerEnc = QStringConverter::Utf8;
-	bool peerBOM = false;
-	if (!readDiffPeerFile(fullPath, content, peerEnc, peerBOM)) {
-		QMessageBox::warning(this, tr("Error"), tr("Cannot open file:\n%1").arg(fullPath));
-		return;
-	}
-    docWidget->m_diffPeerEncoding = peerEnc;
-    docWidget->m_diffPeerWithBOM = peerBOM;
-    QFileInfo fi2(fullPath);
-    docWidget->m_diffPeerFullPath = fullPath;
-    docWidget->m_diffviewLabel->setText(docWidget->m_diffPeerTitle = fi2.fileName());
-    docWidget->m_diffview->setDummyInserted(false);
-    docWidget->m_diffview->diffBlockNumbers().clear();
-    docWidget->m_diffview->diffFlags().clear();
-    docWidget->m_diffview->clearNDummyLines();
-	docWidget->m_diffview->setPlainText(content);
-	docWidget->m_diffview->document()->setModified(false);
-	docWidget->m_diffview->initUndoMgr();
+	if( !loadDiffPeerIntoWidget(this, docWidget, fullPath) ) return;
 	updateUndoRedoEnabled();
 	do_diff();
 }
@@ -581,29 +604,13 @@ void MainWindow::do_diff(const QString &diffPeerFullPath) {
 	if( docWidget == nullptr ) return;
 	if( docWidget->m_diffMode && !confirmSaveDiffPeer(docWidget) )
 		return;
-	QString content;
-	QStringConverter::Encoding peerEnc = QStringConverter::Utf8;
-	bool peerBOM = false;
-	if (!readDiffPeerFile(diffPeerFullPath, content, peerEnc, peerBOM)) {
-		QMessageBox::warning(this, tr("Error"), tr("Cannot open file:\n%1").arg(diffPeerFullPath));
+	if( !loadDiffPeerIntoWidget(this, docWidget, diffPeerFullPath) )
 		return;
-	}
-    docWidget->m_diffPeerEncoding = peerEnc;
-    docWidget->m_diffPeerWithBOM = peerBOM;
-    QFileInfo fi2(diffPeerFullPath);
-    docWidget->m_diffviewLabel->setText(docWidget->m_diffPeerTitle = fi2.fileName());
-    docWidget->m_diffview->setDummyInserted(false);
-    docWidget->m_diffview->diffBlockNumbers().clear();
-    docWidget->m_diffview->diffFlags().clear();
-    docWidget->m_diffview->clearNDummyLines();
-	docWidget->m_diffview->setPlainText(content);
-	docWidget->m_diffview->document()->setModified(false);
-	docWidget->m_diffview->initUndoMgr();
 	updateUndoRedoEnabled();
 	//
 	docWidget->m_diffMode = true;
-	docWidget->m_diffPeerFullPath = diffPeerFullPath;
 	docWidget->m_editor->setDiffMode(true);
+	docWidget->m_diffview->setDiffMode(true);
 	docWidget->m_editor->expandAll();
 	docWidget->m_editor->setHighlightDiff(true);
 	docWidget->m_diffview->setHighlightDiff(true);
@@ -623,6 +630,7 @@ void MainWindow::do_diff(const QString &diffPeerFullPath) {
 void DocWidget::setupDiffMode() {
 	this->m_diffMode = true;
 	this->m_editor->setDiffMode(true);
+	this->m_diffview->setDiffMode(true);
 	QScrollBar *bar1 = this->m_editor->horizontalScrollBar();
 	QScrollBar *bar2 = this->m_diffview->horizontalScrollBar();
 	this->m_editor->expandAll();
@@ -652,15 +660,16 @@ void MainWindow::onAction_DiffMode(bool checked) {
 	//QScrollBar *bar1 = docWidget->m_editor->horizontalScrollBar();
 	//QScrollBar *bar2 = docWidget->m_diffview->horizontalScrollBar();
 	++m_doing_diff;
+	auto doingDiffGuard = qScopeGuard([this]() { --m_doing_diff; });
 	if (checked) {
 		docWidget->setupDiffMode();
 		QCoreApplication::processEvents();
-		if( !docWidget ) { --m_doing_diff; return; }
+		if( !docWidget ) return;
 		do_diff();
-		if( !docWidget ) { --m_doing_diff; return; }
+		if( !docWidget ) return;
 		docWidget->m_editor->syncDiffViewCursorFromEditor();	//	diff 進入時に比較先カーソルをエディタ位置へ同期（#1365）
 		QCoreApplication::processEvents();
-		if( !docWidget ) { --m_doing_diff; return; }
+		if( !docWidget ) return;
 		//QTimer::singleShot(0, this, [this]() {
         //    do_diff();
         //});
@@ -670,7 +679,6 @@ void MainWindow::onAction_DiffMode(bool checked) {
 		if( docWidget->m_diffMode && !confirmSaveDiffPeer(docWidget) ) {
 			QSignalBlocker blocker(ui->action_DiffMode);
 			ui->action_DiffMode->setChecked(true);
-			--m_doing_diff;
 			return;
 		}
 		docWidget->m_diffview->document()->setModified(false);
@@ -678,6 +686,7 @@ void MainWindow::onAction_DiffMode(bool checked) {
 		docWidget->m_hasSavedDiffScroll = false;
 		docWidget->m_diffPeerFullPath.clear();
 		docWidget->m_editor->setDiffMode(false);
+		docWidget->m_diffview->setDiffMode(false);
 		QScrollBar *bar1 = docWidget->m_editor->horizontalScrollBar();
 		QScrollBar *bar2 = docWidget->m_diffview->horizontalScrollBar();
 		if( docWidget->m_docType == DocType::Markdown )
@@ -688,7 +697,6 @@ void MainWindow::onAction_DiffMode(bool checked) {
 		QTextDocument *doc1 = docWidget->m_editor->document();
 		QTextDocument *doc2 = docWidget->m_diffview->document();
 		bool modified1 = doc1->isModified();
-		bool modified2 = doc2->isModified();
 #if 0
 		if( docWidget->m_editor->dummyInserted() )
 			doc1->undo();
@@ -703,7 +711,7 @@ void MainWindow::onAction_DiffMode(bool checked) {
 	    docWidget->m_editor->setDummyInserted(false);
 	    docWidget->m_diffview->setDummyInserted(false);
 		doc1->setModified(modified1);
-		doc2->setModified(modified2);
+		doc2->setModified(false);
 		disconnect(docWidget->m_editor->verticalScrollBar(), &QScrollBar::valueChanged,
             docWidget, &DocWidget::syncScrollFromLeft);
 	    disconnect(docWidget->m_diffview->verticalScrollBar(), &QScrollBar::valueChanged,
@@ -719,7 +727,6 @@ void MainWindow::onAction_DiffMode(bool checked) {
 	docWidget->updatePanes();
 	//b = docWidget->m_editor->document()->isModified();
 	//qDebug() << "modified = " << b;
-	--m_doing_diff;
 }
 void MainWindow::onDiffViewChanged() {	//	比較先エディタが編集された場合
 	//##qDebug() << "MainWindow::onDiffViewChanged()";
@@ -947,17 +954,18 @@ void calculateAndSetWordDiff(QTextBlock block1, QTextBlock block2, const QString
         flushRun();
     }
     auto distributeGaps = [](QTextBlock block, const std::vector<int> &gaps, int textLen) {
+        const int maxPos = qMax(0, textLen - 1);
         int start = 0;	// block のテキスト内開始位置
         size_t gi = 0;
         while (block.isValid() && gi < gaps.size()) {
             int bsize = block.text().size();
-            while (gi < gaps.size() && qMin(gaps[gi], textLen - 1) - start <= bsize) {
+            while (gi < gaps.size() && qMin(gaps[gi], maxPos) - start <= bsize) {
                 auto *ud = dynamic_cast<DiffBlockUserData*>(block.userData());
                 if (!ud) {
                     ud = new DiffBlockUserData();
                     block.setUserData(ud);
                 }
-                ud->gaps.append(qMin(gaps[gi], textLen - 1) - start);
+                ud->gaps.append(qBound(0, qMin(gaps[gi], maxPos) - start, bsize));
                 ++gi;
             }
             start += bsize + 1;
@@ -966,91 +974,6 @@ void calculateAndSetWordDiff(QTextBlock block1, QTextBlock block2, const QString
     };
     distributeGaps(block1, gaps1, (int)text1.size());
     distributeGaps(block2, gaps2, (int)text2.size());
-}
-//void calculateAndSetCharDiff(QTextBlock block1, QTextBlock block2, const std::vector<QChar>& text1, const std::vector<QChar>& text2) {
-void calculateAndSetCharDiff(QTextBlock block1, QTextBlock block2, const QString& text1, const QString& text2) {
-    //QString t1(text1.data(), text1.size()), t2(text2.data(), text2.size());
-	//##qDebug() << "calculateAndSetCharDiff(" << text1 << ", " << text2 << ")";
-	std::vector<QChar> t1(text1.data(), text1.data() + text1.size());
-	std::vector<QChar> t2(text2.data(), text2.data() + text2.size());
-	auto b1 = block1, b2 = block2;
-	dtl::Diff<QChar, std::vector<QChar>> d(t1, t2);
-    d.compose();
-    auto ses = d.getSes().getSequence();
-    DiffBlockUserData *userData1 = nullptr;
-    DiffBlockUserData *userData2 = nullptr;
-    int ix1 = 0, ix2 = 0;
-    int deleteStart = -1;
-    int deleteLen = 0;
-    int addStart = -1;
-    int addLen = 0;
-	auto flushDeleteRange = [&]() {
-        if (deleteStart != -1) {
-            if (!userData1) userData1 = new DiffBlockUserData();
-            userData1->ranges.append({deleteStart, deleteLen});
-            //##qDebug() << "flushDeleteRange " << deleteStart << ", " << deleteLen;
-            deleteStart = -1;
-            deleteLen = 0;
-        }
-    };
-
-    // 溜まっている追加（右側）のハイライト範囲を確定してuserDataに保存するラムダ
-    auto flushAddRange = [&]() {
-        if (addStart != -1) {
-            if (!userData2) userData2 = new DiffBlockUserData();
-            userData2->ranges.append({addStart, addLen});
-            //##qDebug() << "flushAddRange " << addStart << ", " << addLen;
-            addStart = -1;
-            addLen = 0;
-        }
-    };
-    for (const auto &item : ses) {
-        dtl::elemInfo info = item.second;
-        switch( info.type ) {
-    	case dtl::SES_COMMON:
-			flushDeleteRange();
-            flushAddRange();
-            if( ++ix1 > block1.text().size() ) {
-				block1.setUserData(userData1);
-				userData1 = nullptr;
-    			ix1 = 0;
-    			block1 = block1.next();
-    		}
-    		if( ++ix2 > block2.text().size() ) {
-				block2.setUserData(userData2);
-				userData2 = nullptr;
-    			ix2 = 0;
-    			block2 = block2.next();
-    		}
-        	break;
-    	case dtl::SES_DELETE:	//	左側（doc1）のみに存在する行
-        	flushAddRange(); // 右側の追加区間が終了したので確定
-            // 削除された文字の範囲を記録
-            if (deleteStart == -1) {
-                deleteStart = ix1;
-            }
-            deleteLen++;
-            ix1++; // 【重要】左側（doc1）に存在する文字なのでインデックスを進める
-        	break;
-    	case dtl::SES_ADD:		//	右側（doc2）で新しく追加された行
-        	flushDeleteRange(); // 左側の削除区間が終了したので確定
-            // 追加された文字の範囲を記録
-            if (addStart == -1) {
-                addStart = ix2;
-            }
-            addLen++;
-            ix2++; // 【重要】右側（doc2）に存在する文字なのでインデックスを進める
-        	break;
-        }
-    }
-	flushDeleteRange();
-    flushAddRange();
-    if (block1.isValid()) {
-        block1.setUserData(userData1);
-    }
-    if (block2.isValid()) {
-        block2.setUserData(userData2);
-    }
 }
 //
 #if 0
@@ -1291,6 +1214,7 @@ void MainWindow::do_diff() {
     DocWidget *docWidget = getCurDocWidget();
     if (!docWidget || !docWidget->m_diffMode) return;
     ++m_doing_diff;
+    auto doingDiffGuard = qScopeGuard([this]() { --m_doing_diff; });
     QSignalBlocker blocker(this); 
     QTextCursor cursor0 = docWidget->m_editor->textCursor();
     QTextCursor cursor2 = docWidget->m_diffview->textCursor();	//	右ビューのカーソルも保存する（v0.3 #1393）
@@ -1305,6 +1229,7 @@ void MainWindow::do_diff() {
     //qDebug() << "cursor.position() = " << pos0 << ", blockNumber() = " << cursor.blockNumber();;
 
     ++m_processing;
+    auto processingGuard = qScopeGuard([this]() { --m_processing; });
     //m_diffBlockNumbers.clear();
     // --- 1. 前処理 ---
     QTextDocument *doc1 = docWidget->m_editor->document();
@@ -1378,6 +1303,7 @@ void MainWindow::do_diff() {
     }
     assert( vbn2.size() == flg2.size() );
 
+    processingGuard.dismiss();
     --m_processing;
 
     //##//	カーソル復元に伴う「カーソルを表示範囲に入れる」最小スクロールが、ダミー行の抜き差しで
@@ -1429,7 +1355,6 @@ void MainWindow::do_diff() {
     //	この revision のテキストに対するスナップショットになる（v0.3 #1394）
     docWidget->m_diffRev1 = doc1->revision();
     docWidget->m_diffRev2 = doc2->revision();
-    --m_doing_diff;
 }
 //----------------------------------------------------------------------
 //	--- の前に現れてよい既知の前置き行かどうか
@@ -1550,6 +1475,7 @@ bool parseUnifiedDiff(const QString &text, QVector<DiffFile> &files, QString *er
 bool applyDiffFile(const QStringList &oldLines, const DiffFile &file, QStringList &newLines, QString *error = nullptr, QString *detail = nullptr) {
 	newLines.clear();
 	int srcPos = 0;		//	oldLines の読み進み位置
+	int fuzzDelta = 0;	//	前ハンクのファジー検索による位置ズレ（後続の純挿入ハンクにも引き継ぐ）
 	for( int hi = 0; hi < file.m_hunks.size(); ++hi ) {
 		const DiffHunk &hunk = file.m_hunks[hi];
 		QStringList oldSide, newSide;
@@ -1558,12 +1484,14 @@ bool applyDiffFile(const QStringList &oldLines, const DiffFile &file, QStringLis
 			if( dl.m_type != u'-' ) newSide << dl.m_text;
 		}
 		//	適用位置（oldStart は1始まり。oldCount==0 のときは oldStart 行の直後）
-		int pos = hunk.m_oldCount == 0 ? hunk.m_oldStart : hunk.m_oldStart - 1;
-		if( pos < srcPos || pos > oldLines.size() ) {
-			if( error != nullptr ) *error = QString("hunk %1: out of range").arg(hi + 1);
-			return false;
-		}
-		if( !oldSide.isEmpty() ) {
+		int basePos = hunk.m_oldCount == 0 ? hunk.m_oldStart : hunk.m_oldStart - 1;
+		int pos = basePos + fuzzDelta;
+		if( oldSide.isEmpty() ) {
+			if( pos < srcPos || pos > oldLines.size() ) {
+				if( error != nullptr ) *error = QString("hunk %1: out of range").arg(hi + 1);
+				return false;
+			}
+		} else {
 			//	旧側テキストが一致するか検証し、ずれている場合は最も近い一致位置を探す
 			auto matchesAt = [&](int p) {
 				if( p < srcPos || p + oldSide.size() > oldLines.size() ) return false;
@@ -1583,13 +1511,14 @@ bool applyDiffFile(const QStringList &oldLines, const DiffFile &file, QStringLis
 						for( const QString &s : oldSide ) d << s;
 						d << "current:";
 						int end = qMin(pos + (int)oldSide.size(), (int)oldLines.size());
-						for( int i = pos; i < end; ++i ) d << oldLines[i];
-						if( end <= pos ) d << "(no lines: beyond end of file)";
+						for( int i = qMax(0, pos); i < end; ++i ) d << oldLines[i];
+						if( end <= qMax(0, pos) ) d << "(no lines: beyond end of file)";
 						*detail = d.join('\n');
 					}
 					return false;
 				}
 				pos = found;
+				fuzzDelta = pos - basePos;
 			}
 		}
 		for( int i = srcPos; i < pos; ++i ) newLines << oldLines[i];	//	ハンク間の無変更部分

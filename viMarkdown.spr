@@ -1651,12 +1651,12 @@ SPR# 状 P Open Close ver     Type  概要
 1637 ◎ C 11/28 11/28 03224│問題│parseUnifiedDiff()に重複return・非git複数ファイル上書き・先頭ファイルのみのハンク判定がある（Gemini）
 1638 ◎ C 11/28 11/28 03224│問題│do_merge_file()でstripDiffPrefix二重適用・適用失敗時ゴミタブ残存・diffview初期化漏れがある（Gemini）
 1639 ◎ C 11/28 11/28 03224│問題│onAction_DiffMode()でdocWidget生ポインタのままprocessEvents()を2回呼びUAFの恐れがある（Gemini）
-1640 ● C 11/28            │問題│
-1641 ● C 11/28            │問題│
-1642 ● C 11/28            │問題│
-1643 ● C 11/28            │問題│
-1644 ● C 11/28            │問題│
-1645 ● C 11/28            │問題│
+1640 ◎ C 11/28 11/28 03224│問題│onEditorContentsChange()にm_incrementalUpdating誤り・配列外参照・見出し表不整合がある（Gemini）
+1641 ◎ C 11/28 11/28 03224│問題│updateCharFlags()が上限ix9を超えて終了マーカーにマッチしエスケープ記号も誤認する（Gemini）
+1642 ◎ C 11/28 11/28 03224│問題│syncScrollFromLeft()/Right()でsrc->maximum()==0時に相手側が末尾へ飛ぶ不具合がある（Gemini）
+1643 ◎ C 11/28 11/28 03224│問題│parseCsvLine()にクォートフラグ矛盾・コメント未設定・csv行破壊・先頭空白消失がある（Gemini）
+1644 ◎ C 11/28 11/28 03224│問題│getBlockData()がuserData()をstatic_castしておりDiffBlockUserData混在時に未定義動作（Gemini）
+1645 ◎ C 11/28 11/28 03224│問題│DocWidget::removeDummyBlocks()が廃止済みのundo()方式のまま残存し編集履歴破壊の危険（Gemini）
 1646 ● C 11/28            │問題│
 1647 ● C 11/28            │問題│
 1648 ● C 11/28            │問題│

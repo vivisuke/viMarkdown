@@ -1,6 +1,7 @@
 ﻿#include <QTextBlock>
 #include <QRegularExpression>
 #include <QElapsedTimer>
+#include <QScopeGuard>
 #include <algorithm>
 #include "MarkdownEditor.h"
 #include "DocWidget.h"
@@ -75,7 +76,7 @@ BlockData* getBlockData(QTextBlock srcBlock, bool init /*, int length*/) {
 	int bn = srcBlock.blockNumber();	//	for Debug
 	assert( bn >= 0 );
 	QString txt = srcBlock.text();	//	for Debug
-	BlockData* data = static_cast<BlockData*>(srcBlock.userData());
+	BlockData* data = dynamic_cast<BlockData*>(srcBlock.userData());
 	//if( !length )
 	int length = srcBlock.text().size();
 	if (!data) {
@@ -114,16 +115,25 @@ void printCharFlags(QTextBlock block) {
 }
 bool parseCsvLine(QStringList &fields, QByteArray& ba, const QString &line, bool inQuotes, bool &inComment, bool &commented, BlockData* data) {
 	//QStringList fields;
+	commented = false;
+	if( !inComment && line.startsWith("```csv", Qt::CaseInsensitive) )
+		return inQuotes;
 	if( data != nullptr ) {
 		assert( line.size() == data->m_charFlags.size() );
 		data->m_charFlags.fill(0);
 		//##qDebug() << "data != nullptr";
 	}
-	commented = false;
 	int i = 0;
 	if( inComment ) {
 		int ix = line.indexOf("-->");
-		if( ix < 0 ) return inQuotes;
+		if( ix < 0 ) {
+			if( data != nullptr ) data->m_charFlags.fill(PCF_COMMENTED);
+			return inQuotes;
+		}
+		if( data != nullptr ) {
+			for( int k = 0; k < ix + 3; ++k )
+				data->m_charFlags[k] = PCF_COMMENTED;
+		}
 		inComment = false;
 		if( (i = ix + 3) >= line.length() ) {	//	"-->" までスキップ
 			commented = fields.isEmpty();
@@ -131,10 +141,8 @@ bool parseCsvLine(QStringList &fields, QByteArray& ba, const QString &line, bool
 		}
 
 	}
-	if( line.startsWith("```csv", Qt::CaseInsensitive) )
-		return inQuotes;
 	QString currentField;
-	bool quoted = false;
+	bool quoted = inQuotes;
 	if( !inQuotes ) {
 		fields.clear();
 		ba.clear();
@@ -147,9 +155,13 @@ bool parseCsvLine(QStringList &fields, QByteArray& ba, const QString &line, bool
 	//bool inQuotes = false;
 	int ix0 = i;
 	for (; i < line.length(); ++i) {
-		if( !inQuotes && line.mid(i).startsWith("<!--") ) {
+		if( !inQuotes && QStringView(line).mid(i).startsWith(u"<!--") ) {
 			int ix = line.indexOf("-->", i + 4);
 			if( ix > 0 ) {	//	コメント終了を発見
+				if( data != nullptr ) {
+					for( int k = i; k < ix + 3; ++k )
+						data->m_charFlags[k] = PCF_COMMENTED;
+				}
 				if( ix + 3 >= line.length() ) {	//	"-->" までスキップ
 					if( fields.isEmpty() && currentField.isEmpty() ) {
 						commented = true;
@@ -160,6 +172,10 @@ bool parseCsvLine(QStringList &fields, QByteArray& ba, const QString &line, bool
 				i = ix + 2;	//	for ループの ++i で ix + 3 へ進める
 				continue;
 			} else {
+				if( data != nullptr ) {
+					for( int k = i; k < line.length(); ++k )
+						data->m_charFlags[k] = PCF_COMMENTED;
+				}
 				inComment = true;
 				if( fields.isEmpty() && currentField.isEmpty() ) {
 					commented = true;
@@ -170,25 +186,41 @@ bool parseCsvLine(QStringList &fields, QByteArray& ba, const QString &line, bool
 		}
 		QChar c = line.at(i);
 		if (c == '"') {
-			if( data != nullptr )
-				data->m_charFlags[i] = PCF_CSV;
 			// ダブルクォートの中のダブルクォート（エスケープ）をチェック
 			if (inQuotes && i + 1 < line.length() && line.at(i + 1) == '"') {
+				if( data != nullptr )
+					data->m_charFlags[i] = PCF_CSV;
 				currentField += '"';
 				i++; // 1文字飛ばす
-			} else if( currentField.isEmpty() || i + 1 == line.length() || line.at(i + 1) == ',') {
-				inQuotes = !inQuotes; // クォート状態の反転
-				if( inQuotes ) quoted = true;
+			} else if( !inQuotes && currentField.isEmpty() ) {
+				if( data != nullptr )
+					data->m_charFlags[i] = PCF_CSV;
+				inQuotes = true;
+				quoted = true;
+			} else if( inQuotes ) {
+				int next = i + 1;
+				while( next < line.length() && line.at(next) == u' ' ) ++next;
+				if( next == line.length() || line.at(next) == ',' ) {
+					if( data != nullptr ) {
+						data->m_charFlags[i] = PCF_CSV;
+						for( int k = i + 1; k < next; ++k )
+							data->m_charFlags[k] = PCF_NOT_VISIBLE;
+					}
+					inQuotes = false;
+					i = next - 1;	//	for ループの ++i で ',' または行末へ進める
+				} else {
+					currentField += '"';
+				}
 			} else {
 				currentField += '"';
 			}
 		} else if (c == ',' && !inQuotes) {		// クォートの外にあるカンマはセパレータ
-			if( data != nullptr ) {
+			if( data != nullptr && !quoted ) {
 				for(int k = i; --k >= 0 && line[k] == u' ';) {
 					data->m_charFlags[k] = PCF_NOT_VISIBLE;
 				}
 			}
-			fields.append(currentField.trimmed());
+			fields.append(quoted ? currentField : currentField.trimmed());
 			ba.push_back(quoted);
 			currentField.clear();
 			quoted = false;
@@ -200,7 +232,7 @@ bool parseCsvLine(QStringList &fields, QByteArray& ba, const QString &line, bool
 			}
 			ix0 = i + 1;
 		} else { // 通常の文字
-			if( c == u' ' ) {
+			if( c == u' ' && !inQuotes ) {
 				if( currentField.isEmpty() ) {
 					if( data != nullptr )
 						data->m_charFlags[i] = PCF_NOT_VISIBLE;
@@ -210,13 +242,13 @@ bool parseCsvLine(QStringList &fields, QByteArray& ba, const QString &line, bool
 				currentField += c;
 		}
 	}
-	if( data != nullptr ) {
+	if( data != nullptr && !quoted ) {
 		for(int k = i; --k >= 0 && line[k] == u' ';) {
 			data->m_charFlags[k] = PCF_NOT_VISIBLE;
 		}
 	}
 	// 最後のフィールドを追加
-	fields.append(currentField.trimmed());
+	fields.append(quoted ? currentField : currentField.trimmed());
 	ba.push_back(quoted);
 	if( data != nullptr ) {
 		updateCharFlags(data, line, ix0, i, true);		//	true for エスケープ文字処理
@@ -338,9 +370,9 @@ bool updateCharFlags(BlockData* data, const QString &buf, int ix, int ix9, bool 
 		}
 	}
 	while( ix < ix9 ) {
-		if( ix + 1 < buf.size() && buf[ix] == u'\\' && isEscapedChar(buf[ix+1]) )
+		if( ix + 1 < ix9 && buf[ix] == u'\\' && isEscapedChar(buf[ix+1]) )
 			ix += 2;
-		else if( buf[ix] == u'*' || buf[ix] == u'_' || buf[ix] == u'`' || buf[ix] == u'~' && ix+1 < ix9 && buf[ix+1] == buf[ix]) {
+		else if( buf[ix] == u'*' || buf[ix] == u'_' || buf[ix] == u'`' || (buf[ix] == u'~' && ix+1 < ix9 && buf[ix+1] == buf[ix]) ) {
 			QString sym;
 			if( buf[ix] == u'~' ) {
 				sym = "~~";
@@ -353,7 +385,23 @@ bool updateCharFlags(BlockData* data, const QString &buf, int ix, int ix9, bool 
 				} else
 					sym = buf[ix];
 			}
-			int ix2 = buf.indexOf(sym, ix+sym.size());
+			// 探索範囲 [ix + sym.size(), ix9) 内でエスケープされていない閉じマーカーを探す
+			int ix2 = -1;
+			int searchPos = ix + sym.size();
+			while( searchPos + sym.size() <= ix9 ) {
+				int found = buf.indexOf(sym, searchPos);
+				if( found < 0 || found + sym.size() > ix9 ) break;
+				if( sym[0] != u'`' ) {
+					int bs = 0;
+					for( int k = found - 1; k >= ix + sym.size() && buf[k] == u'\\'; --k ) ++bs;
+					if( (bs & 1) != 0 ) {
+						searchPos = found + 1;
+						continue;
+					}
+				}
+				ix2 = found;
+				break;
+			}
 			if( ix2 >= 0 ) {	//	バランスしている場合
 				for(int i = 0; i < sym.size(); ++i) {
 					data->m_charFlags[ix+i] = PCF_EMPHASIZED;
@@ -466,16 +514,12 @@ void DocWidget::removeDummyBlocks() {
 	if( !m_diffMode ) return;
 	if( m_editor->dummyInserted() ) {
 		m_editor->setProcessing(true);
-		bool modified = m_editor->document()->isModified();
-		m_editor->document()->undo();
-		m_editor->document()->setModified(modified);
+		m_editor->removeAllDummyLines();
 		m_editor->setProcessing(false);
 	}
 	if( m_diffview->dummyInserted() ) {
 		m_diffview->setProcessing(true);
-		bool modified = m_diffview->document()->isModified();
-		m_diffview->document()->undo();
-		m_diffview->document()->setModified(modified);
+		m_diffview->removeAllDummyLines();
 		m_diffview->setProcessing(false);
 	}
 }
@@ -547,7 +591,7 @@ void DocWidget::syncScrollFromLeft(int value)
     // 左が末尾までスクロールされたら、右も右自身の末尾に合わせる（最大値の差を吸収）
     QScrollBar *src = m_editor->verticalScrollBar();
     QScrollBar *dst = m_diffview->verticalScrollBar();
-    dst->setValue(value >= src->maximum() ? dst->maximum() : value);
+    dst->setValue(src->maximum() > 0 && value >= src->maximum() ? dst->maximum() : value);
     m_isSyncingScroll = false;
 }
 
@@ -559,7 +603,7 @@ void DocWidget::syncScrollFromRight(int value)
     // 右が末尾までスクロールされたら、左も左自身の末尾に合わせる（最大値の差を吸収）
     QScrollBar *src = m_diffview->verticalScrollBar();
     QScrollBar *dst = m_editor->verticalScrollBar();
-    dst->setValue(value >= src->maximum() ? dst->maximum() : value);
+    dst->setValue(src->maximum() > 0 && value >= src->maximum() ? dst->maximum() : value);
     m_isSyncingScroll = false;
 }
 #else
@@ -605,9 +649,11 @@ void DocWidget::onEditorContentsChange(int pos, int charsRemoved, int charsAdded
     timer.start();
 	if( m_editor == nullptr || m_preview == nullptr ) return;
 	if( m_mainWindow->is_opening_file() ) return;
+	if( m_incrementalUpdating || m_diffMode || m_docType != DocType::Markdown ) return;
 	QTextCursor cur0 = m_editor->textCursor();
 	//##QTimer::singleShot(0, this, [this, pos]() {
 		m_incrementalUpdating = true;
+		auto incGuard = qScopeGuard([this]() { m_incrementalUpdating = false; });
 		QTextBlock block = m_editor->document()->findBlock(pos);
 		//	undone: 最初からブロック行の場合＆非ブロック行になった場合対応
 		while( block.isValid() && blockType(block) != BT_HEADING )
@@ -618,31 +664,38 @@ void DocWidget::onEditorContentsChange(int pos, int charsRemoved, int charsAdded
 		QTextBlock pvBlock = m_preview->document()->begin();		//	edBlock に対応するプレビュー block
 		if( edBlock.position() != 0 ) {		//	edBlock が文書先頭でない場合
 			int bn = edBlock.blockNumber();
-			for(; i < m_srcHeadingBlocks.size(); ++i) {
+			for(; i < (int)m_srcHeadingBlocks.size(); ++i) {
 				if( m_srcHeadingBlocks[i] >= bn ) break;
 			}
-			pvBlock = m_preview->document()->findBlockByNumber(m_prvHeadingBlocks[i]);
+			if( i < (int)m_prvHeadingBlocks.size() )
+				pvBlock = m_preview->document()->findBlockByNumber(m_prvHeadingBlocks[i]);
+			else
+				pvBlock = m_preview->document()->end();
 		}
 		qDebug() << "pvBlock.position() = " << pvBlock.position();
-		QTextBlock pvEndBlock = i+1 < m_prvHeadingBlocks .size() ? m_preview->document()->findBlockByNumber(m_prvHeadingBlocks[i+1]) : m_preview->document()->end();
+		QTextBlock pvEndBlock = i+1 < (int)m_prvHeadingBlocks.size() ? m_preview->document()->findBlockByNumber(m_prvHeadingBlocks[i+1]) : m_preview->document()->end();
 		qDebug() << "pvEndBlock.position() = " << pvEndBlock.position() << ", isValid(): " << pvEndBlock.isValid();
-		QTextCursor cursor(pvBlock);
-		if( pvEndBlock.isValid() )
+		QTextCursor cursor = pvBlock.isValid() ? QTextCursor(pvBlock) : QTextCursor(m_preview->document());
+		if( !pvBlock.isValid() )
+			cursor.movePosition(QTextCursor::End);
+		else if( pvEndBlock.isValid() )
 			cursor.setPosition(pvEndBlock.position(), QTextCursor::KeepAnchor);
 		else
 			cursor.movePosition(QTextCursor::End, QTextCursor::KeepAnchor);
 		qDebug() << "hasSelection: " << cursor.hasSelection();
 		cursor.beginEditBlock();
 		if( cursor.hasSelection() ) {
-			if( i < m_prvHeadingBlocks.size() )
-				m_prvHeadingBlocks.erase(m_prvHeadingBlocks.begin() + i);
 			cursor.removeSelectedText();
 			m_preview->setTextCursor(cursor);
 		}
-		//
-		auto itr = std::lower_bound(m_srcHeadingBlocks.begin() + 1, m_srcHeadingBlocks.end(), edBlock.blockNumber());
-		if( itr != m_srcHeadingBlocks.end() && *itr == edBlock.blockNumber() )
-			m_srcHeadingBlocks.erase(itr);
+		//	見出しテーブルは src / prv を常にペアで削除してサイズ整合を保つ
+		if( edBlock.position() != 0
+		 && i < (int)m_srcHeadingBlocks.size()
+		 && i < (int)m_prvHeadingBlocks.size()
+		 && m_srcHeadingBlocks[i] == edBlock.blockNumber() ) {
+			m_srcHeadingBlocks.erase(m_srcHeadingBlocks.begin() + i);
+			m_prvHeadingBlocks.erase(m_prvHeadingBlocks.begin() + i);
+		}
 #if 1
 		QStringList lst;
 		block = edBlock;
@@ -655,7 +708,6 @@ void DocWidget::onEditorContentsChange(int pos, int charsRemoved, int charsAdded
 		m_preview->insertMarkdown(m_editor->document(), edBlock.blockNumber(), lst.size(), cursor);
 #endif
 		cursor.endEditBlock();
-		m_incrementalUpdating = true;
 	//##});
 	m_editor->setTextCursor(cur0);
 	m_editor->syncPreviewCursorFromEditor();
