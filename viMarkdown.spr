@@ -1667,8 +1667,8 @@ SPR# 状 P Open Close ver     Type  概要
 1653 ◎ C 11/28 11/28 03224│問題│GrepDialogのディレクトリ選択ボタンがclickedでなくpressed接続で押下残留やキー操作不可（Gemini）
 1654 ◎ C 11/28 11/28 03224│問題│GrepDialogのdirCBにcurrentPathが重複登録され履歴先頭でなく常にカレントが初期値になる（Gemini）
 1655 ◎ C 11/28 11/28 03224│問題│GrepDialogのsetChecked簡略化・checkStateChanged依存解消・不要qDebugやインデント整理（Gemini）
-1656 ● C 11/28            │問題│
-1657 ● C 11/28            │問題│
-1658 ● C 11/28            │問題│
+1656 ◎ C 11/28 11/28 03224│問題│main.cppのqtbase_ja読込がTranslationsPathのみで配布環境のtranslations/を未探索（Gemini）
+1657 ◎ C 11/28 11/28 03224│問題│main.cppのQDir::setCurrent(exeDir)が起動時の作業フォルダを強制上書きする副作用（Gemini）
+1658 ◎ C 11/28 11/28 03224│問題│main.cppの複数コマンドライン引数未対応・不要qDebug・#if 0・インデント混在を整理（Gemini）
 1659 ● C 11/28            │問題│
 1660 ● C 11/28            │問題│
