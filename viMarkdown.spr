@@ -1620,5 +1620,15 @@ SPR# 状 P Open Close ver     Type  概要
 1606 ◎ C 11/28 11/28 03224│問題│QA_MD_TEXT_2のCSV行"69, ""hasshi""..."が文字列連結になり引用符テストが消失している（Gemini）
 1607 ◎ C 11/28 11/28 03224│問題│ASSERT_EQ(bool,bool,int)に失敗時のdo_output()が抜けており失敗箇所がログに出力されない（Gemini）
 1608 ◎ C 11/28 11/28 03224│問題│test_contextAt()がm_anchorCharしか検証せずm_offsetとm_nthを一切未確認のままにしている（Gemini）
-1609 ◎ C 11/28            │問題│
-1610 ◎ C 11/28            │問題│
+1609 ◎ C 11/28 11/28 03224│問題│removeCursor()でカーソル記号'┃'が無い場合に引数posが未初期化のまま返り未定義動作になる（Gemini）
+1610 ◎ C 11/28 11/28 03224│問題│do_test(DocWidget*,int)のスキップwhileにisValid()判定がなく末尾のblock1/2残余検出も不備（Gemini）
+1611 ◎ C 11/28 11/28 03224│問題│actualText()のVisual選択括弧挿入で末尾超過による空白パディングやサロゲートペア分断が起きる（Gemini）
+1612 ◎ C 11/28 11/28 03224│問題│AutoTest各テスト関数の集計でtotal_tested==0のゼロ除算ガードが無く成功率がNaN表示になる（Gemini）
+1613 ◎ C 11/28 11/28 03224│問題│test_diff_line()で0長範囲をactGapsへ追記後に未ソート比較するため同集合でも誤失敗する（Gemini）
+1614 ◎ C 11/28 11/28 03224│問題│Vi/Diff自動テストでケース間のgvi状態やUndo履歴・コマンド欄UI状態が初期化されず持ち越される（Gemini）
+1615 ◎ C 11/28 11/28 03224│問題│onAction_TestViCommands()のステップループにk+1<steps.size()判定がなく奇数要素時に範囲外参照（Gemini）
+1616 ● C 11/28            │問題│
+1617 ● C 11/28            │問題│
+1618 ● C 11/28            │問題│
+1619 ● C 11/28            │問題│
+1620 ● C 11/28            │問題│

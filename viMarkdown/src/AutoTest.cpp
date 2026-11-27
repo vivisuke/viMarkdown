@@ -1,4 +1,5 @@
-﻿#include <vector>
+﻿#include <algorithm>
+#include <vector>
 #include <QSplitter>
 #include <QPlainTextEdit>
 #include <QTextEdit>
@@ -376,8 +377,9 @@ void MainWindow::do_test(int type) {
 	//do_test(docWidget, PATH_3);		//	PtoE 行内表示文字一致テスト
 	//QString mess = QString("Total: %1 failed / %2 tested. (Fail:%3%)")
 	//				.arg(total_failed).arg(total_tested).arg(total_failed*100.0/total_tested, 0, 'f', 1);
+	const double successRate = total_tested > 0 ? (100.0 - total_failed * 100.0 / total_tested) : 0.0;
 	QString mess = QString("\nTotal: %1 failed / %2 tested. (Success:%3%)")
-					.arg(total_failed).arg(total_tested).arg(100.0 - total_failed*100.0/total_tested, 0, 'f', 1);
+					.arg(total_failed).arg(total_tested).arg(successRate, 0, 'f', 1);
 	statusBar()->showMessage(mess);
 	//g_result += mess;
 	do_output(mess);
@@ -419,26 +421,28 @@ void MainWindow::do_test(DocWidget *docWidget, int type) {
 		//if( blockType(block1) == BT_TABLE && blockType(block2) != BT_TABLE )		//	block2 には何故かダミー？がある
 		//	block2 = block2.next();
 		ASSERT(block2.isValid(), block1.blockNumber());
-		while( (blockType(block1) == BT_CODE_BLOCK || blockType(block1) == BT_CODE_BLOCK_END) &&
+		while( block1.isValid() && (blockType(block1) == BT_CODE_BLOCK || blockType(block1) == BT_CODE_BLOCK_END) &&
 			block1.text().startsWith("```") )
 		{
 			block1 = block1.next();
 		}
+		if( !block1.isValid() ) break;
 		if( blockType(block1) == BT_KEISEN_BEGIN || blockType(block1) == BT_KEISEN_BLOCK ) {
-			while( blockType(block1) == BT_KEISEN_BEGIN || blockType(block1) == BT_KEISEN_BLOCK )
+			while( block1.isValid() && (blockType(block1) == BT_KEISEN_BEGIN || blockType(block1) == BT_KEISEN_BLOCK) )
 				block1 = block1.next();
 			block2 = block2.next();
 			continue;
 		}
 		if( blockType(block1) == BT_SVG_BEGIN || blockType(block1) == BT_SVG_BLOCK ) {
-			while( blockType(block1) == BT_SVG_BEGIN || blockType(block1) == BT_SVG_BLOCK )
+			while( block1.isValid() && (blockType(block1) == BT_SVG_BEGIN || blockType(block1) == BT_SVG_BLOCK) )
 				block1 = block1.next();
 			block2 = block2.next();
 			continue;
 		}
-		while( /*blockType(block1) == BT_KEISEN_BLOCK &&*/ block1.text().startsWith("```") ) {
+		while( block1.isValid() && /*blockType(block1) == BT_KEISEN_BLOCK &&*/ block1.text().startsWith("```") ) {
 			block1 = block1.next();
 		}
+		if( !block1.isValid() ) break;
 #if 0
 		if( blockType(block1) == BT_TABLE) {
 			if( !inTable ) {
@@ -452,9 +456,10 @@ void MainWindow::do_test(DocWidget *docWidget, int type) {
 			inTable = false;
 		}
 #endif
-		while( blockType(block2) == BT_TABLE ) {		//	テーブル前後ダミーブロックはスキップ
+		while( block2.isValid() && blockType(block2) == BT_TABLE ) {		//	テーブル前後ダミーブロックはスキップ
 			block2 = block2.next();
 		}
+		if( !block2.isValid() ) break;
 		qDebug() << "block1: " << block1.blockNumber() << ", block2: " << block2.blockNumber();
 		qDebug() << "charAt(block2) = " << docWidget->m_preview->document()->characterAt(block2.position());
 		QString buf1 = block1.text();
@@ -648,7 +653,8 @@ void MainWindow::do_test(DocWidget *docWidget, int type) {
 			block2 = block2.next();
 		}
 	}
-	ASSERT( !block2.isValid(), block1.blockNumber());	//	同行数のはず
+	ASSERT( !block1.isValid() && !block2.isValid(),
+		block1.isValid() ? block1.blockNumber() : (block2.isValid() ? block2.blockNumber() : 0) );	//	同行数のはず
 }
 const QStringList QA_TEXT_FLAGS = {
 	"text",
@@ -4595,6 +4601,7 @@ const QList<ViTestCase> viTestCases = {
 QString removeCursor(const QString &src, int &pos, int &anchor) {
 	QString dst;
 	int p = 0;
+	pos = 0;
 	anchor = -1;
 	for(auto ch: src) {
 		if( ch == u'┃' ) {
@@ -4645,17 +4652,20 @@ int toVisiblePos(QTextDocument *doc, int pos) {
 QString actualText(const QTextCursor& cursor) {
 	QTextDocument *doc = cursor.document();
 	QString act = visiblePlainText(doc);
-	int vpos = toVisiblePos(doc, cursor.position());
-	act.insert(vpos, u'┃');
+	int vpos = qBound(0, toVisiblePos(doc, cursor.position()), (int)act.size());
 	if( gvi.m_vMode == u'v' ) {
-		int vanchor = toVisiblePos(doc, gvi.m_vAnchor);
-		if( vanchor <= vpos ) {
-			act.insert(vanchor, u'《');
-			act.insert(vpos + 3, u'》');
-		} else {
-			act.insert(vpos, u'《');
-			act.insert(vanchor + 3, u'》');
+		int vanchor = qBound(0, toVisiblePos(doc, gvi.m_vAnchor), (int)act.size());
+		int lo = qMin(vanchor, vpos);
+		int hi = qMax(vanchor, vpos);
+		int hiEnd = hi;
+		if( hi < act.size() ) {
+			hiEnd += (hi + 1 < act.size() && act[hi].isHighSurrogate() && act[hi + 1].isLowSurrogate()) ? 2 : 1;
 		}
+		act.insert(hiEnd, u'》');
+		act.insert(vpos, u'┃');
+		act.insert(lo, u'《');
+	} else {
+		act.insert(vpos, u'┃');
 	}
 	act.replace('\n', "\\n");
 	return act;
@@ -4719,15 +4729,20 @@ void MainWindow::onAction_TestViCommands() {
 	DocWidget *docWidget = getCurDocWidget();;
 	if( docWidget == nullptr ) return;
 	MarkdownEditor *editor = docWidget->m_editor;
+	const ViStatus savedGvi = gvi;
+	gvi = ViStatus();
 	gvi.m_currentMode = ViMode::Normal;
+	gvi.m_editor = editor;
 	int total_tested = 0;
 	int total_failed = 0;
 	do_output("\n");
 	do_output("Test vi commands...\n\n");
 	int pos, anchor;
 	for(int i = 0; i < viTestCases.size(); ++i) {
+		gvi = ViStatus();
 		gvi.m_currentMode = ViMode::Normal;
 		gvi.m_vMode = u' ';
+		gvi.m_editor = editor;
 		do_output(viTestCases[i].m_name + ": ");
 		editor->initUndoMgr();
 		QTextCursor cursor = editor->textCursor();
@@ -4740,7 +4755,13 @@ void MainWindow::onAction_TestViCommands() {
 		editor->savePrefferedX(cursor);
 		QCoreApplication::processEvents();		//	溜まっているイベント処理
 		const QStringList &steps = viTestCases[i].m_steps;
-		for(int k = 0; k < steps.size(); k+=2) {
+		if( (steps.size() % 2) != 0 ) {
+			++total_tested;
+			++total_failed;
+			do_output(QString("\n[FAILED #%1] malformed test case (odd step count: %2)\n").arg(total_failed).arg(steps.size()));
+			continue;
+		}
+		for(int k = 0; k + 1 < steps.size(); k+=2) {
 			++total_tested;
 			do_output(".");
 			QString before = visiblePlainText(cursor.document());
@@ -4838,8 +4859,10 @@ void MainWindow::onAction_TestViCommands() {
 		}
 		do_output("\n");
 	}
+	gvi = savedGvi;
+	const double successRate = total_tested > 0 ? (100.0 - total_failed * 100.0 / total_tested) : 0.0;
 	QString mess = QString("\nTotal: %1 failed / %2 tested. (Success:%3%)")
-					.arg(total_failed).arg(total_tested).arg(100.0 - total_failed*100.0/total_tested, 0, 'f', 1);
+					.arg(total_failed).arg(total_tested).arg(successRate, 0, 'f', 1);
 	statusBar()->showMessage(mess);
 	do_output(mess);
 }
@@ -5228,6 +5251,7 @@ QStringList g_diffTestCase[] = {
 void set_text(MarkdownEditor* editor, const QString& text) {
 	editor->removeAllDummyLines();	//	前のケースのダミー行と diff 状態（ブロック番号表・挿入フラグ）を持ち越さない
 	editor->clear();
+	editor->initUndoMgr();
 	QTextCursor cursor = editor->textCursor();
 	//auto lst = text.split(u'\n', Qt::SkipEmptyParts);
 	auto lst = text.split(QRegularExpression("(?<=\n)"), Qt::SkipEmptyParts);
@@ -5799,6 +5823,7 @@ bool MainWindow::test_diff_line(MarkdownEditor* editor, const QString& text, int
 					} else
 						actRangesCmp.append(r);
 				}
+				std::sort(actGaps.begin(), actGaps.end());
 				if( actRangesCmp != mergeAdjacent(expRanges) || actGaps != expGaps ) {
 					do_output(QString("\n[FAILED #%1] Block %2 word ranges/gaps mismatch\n").arg(++total_failed).arg(block.blockNumber()));
 					return false;
@@ -5842,6 +5867,10 @@ void MainWindow::onAction_TestDiff() {
 	int total_failed = 0;
 	MarkdownEditor *editor = docWidget->m_editor;
 	MarkdownEditor *diffview = docWidget->m_diffview;
+	const QString savedPrefix = m_prefixLabel ? m_prefixLabel->text() : QString();
+	const QString savedCmdText = m_cmdLine ? m_cmdLine->text() : QString();
+	const QPointer<QWidget> savedPrevFocus = gvi.m_prevFocusWidget;
+	MarkdownEditor *savedGviEditor = gvi.m_editor;
 	auto runDiffAction = [&](const QString &act, QString &error) -> bool {
 		if( !act.isEmpty() ) {
 			MarkdownEditor *ptr = editor;
@@ -5929,8 +5958,13 @@ void MainWindow::onAction_TestDiff() {
 			//if( i + 1 >= tc.size() ) break;
 		}
 	}
+	if( m_prefixLabel ) m_prefixLabel->setText(savedPrefix);
+	if( m_cmdLine ) m_cmdLine->setText(savedCmdText);
+	gvi.m_prevFocusWidget = savedPrevFocus;
+	gvi.m_editor = savedGviEditor;
+	const double successRate = total_tested > 0 ? (100.0 - total_failed * 100.0 / total_tested) : 0.0;
 	QString mess = QString("\n\nTotal: %1 failed / %2 tested. (Success:%3%)")
-					.arg(total_failed).arg(total_tested).arg(100.0 - total_failed*100.0/total_tested, 0, 'f', 1);
+					.arg(total_failed).arg(total_tested).arg(successRate, 0, 'f', 1);
 	statusBar()->showMessage(mess);
 	do_output(mess);
 }
@@ -6151,8 +6185,9 @@ void MainWindow::onAction_TestCursorSync() {
 		}
 		do_output("\n");
 	}
+	const double successRate = total_tested > 0 ? (100.0 - total_failed * 100.0 / total_tested) : 0.0;
 	QString mess = QString("\nTotal: %1 failed / %2 tested. (Success:%3%)")
-					.arg(total_failed).arg(total_tested).arg(100.0 - total_failed*100.0/total_tested, 0, 'f', 1);
+					.arg(total_failed).arg(total_tested).arg(successRate, 0, 'f', 1);
 	statusBar()->showMessage(mess);
 	do_output(mess);
 }
