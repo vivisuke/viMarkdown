@@ -52,6 +52,8 @@ private:
     void onViCmdLineReturn();
     void cancelViIncSearch();
     void onCurrentTabChanged(int index);
+    void onSwitchToAltFile();
+    void onSwitchPane();
     void onTabCloseRequested(int index);
     void onNewTab();
     void onOpen();
@@ -145,5 +147,6 @@ private:
     QStringList m_searchHist;
     int m_exHistIdx = -1;
     QString m_lastDir;
+    QList<QPointer<QWidget>> m_tabHistory;
 };
 

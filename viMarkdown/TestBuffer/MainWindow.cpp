@@ -366,6 +366,18 @@ MainWindow::MainWindow(QWidget *parent)
     viewMenu->addAction(outputAct);
     viewMenu->addAction(calAct);
     menuBar()->insertMenu(ui->menuTest->menuAction(), viewMenu);
+
+    QMenu *naviMenu = new QMenu(tr("&Navi"), this);
+    QAction *actSwitchPane = naviMenu->addAction(tr("&Switch Pane"));
+    actSwitchPane->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_Backslash));
+    connect(actSwitchPane, &QAction::triggered, this, &MainWindow::onSwitchPane);
+    QAction *actAltFile = naviMenu->addAction(tr("&Alt file"));
+    actAltFile->setShortcuts({
+        QKeySequence(Qt::CTRL | Qt::Key_AsciiCircum),
+        QKeySequence(Qt::CTRL | Qt::Key_6),
+    });
+    connect(actAltFile, &QAction::triggered, this, &MainWindow::onSwitchToAltFile);
+    menuBar()->insertMenu(ui->menuTest->menuAction(), naviMenu);
 #if defined(Q_OS_WIN) || defined(Q_OS_LINUX)
     //	メニューバーをメインツールバーに統合（viMarkdown と同じ方式）
     ui->mainToolBar->insertWidget(ui->action_Undo, ui->menuBar);
@@ -964,11 +976,23 @@ void MainWindow::onCurrentTabChanged(int index)
         m_cmdLine->hide();
         cancelViIncSearch();
     }
+    //	閉じたタブの履歴エントリを掃除し、アクティブになったタブを履歴末尾（最新）へ積む
+    for (int i = m_tabHistory.size() - 1; i >= 0; --i) {
+        if (!m_tabHistory[i] || !m_tabWidget || m_tabWidget->indexOf(m_tabHistory[i]) < 0)
+            m_tabHistory.removeAt(i);
+    }
     if (index < 0) {
         setWindowTitle(QStringLiteral("TestBuffer"));
         updateUndoRedoEnabled();
         setFocus();
         return;
+    }
+    if (QWidget *w = m_tabWidget ? m_tabWidget->widget(index) : nullptr) {
+        for (int i = m_tabHistory.size() - 1; i >= 0; --i) {
+            if (m_tabHistory[i] == w)
+                m_tabHistory.removeAt(i);
+        }
+        m_tabHistory.append(w);
     }
     setWindowTitle(m_tabWidget->tabText(index) + QStringLiteral(" - TestBuffer"));
     updateUndoRedoEnabled();
@@ -979,6 +1003,40 @@ void MainWindow::onCurrentTabChanged(int index)
     }
     if (TextEdit *edit = currentTextEdit())
         edit->setFocus();
+}
+
+void MainWindow::onSwitchToAltFile()
+{
+    if (!m_tabWidget || m_tabWidget->count() < 2)
+        return;
+    QWidget *cur = m_tabWidget->currentWidget();
+    for (int i = m_tabHistory.size() - 1; i >= 0; --i) {
+        QWidget *cand = m_tabHistory[i];
+        if (!cand || cand == cur)
+            continue;
+        const int ix = m_tabWidget->indexOf(cand);
+        if (ix >= 0) {
+            m_tabWidget->setCurrentIndex(ix);
+            return;
+        }
+    }
+}
+
+void MainWindow::onSwitchPane()
+{
+    TextEdit *edit = currentTextEdit();
+    MarkdownPreview *preview = currentPreviewEdit();
+    if (!edit && !preview)
+        return;
+    QWidget *fw = QApplication::focusWidget();
+    const bool focusInEdit = edit && fw && (fw == edit || edit->isAncestorOf(fw));
+    if (focusInEdit && preview && preview->isVisible()) {
+        preview->setFocus();
+    } else if (edit) {
+        edit->setFocus();
+    } else if (preview) {
+        preview->setFocus();
+    }
 }
 
 bool MainWindow::maybeSaveTab(int index)
