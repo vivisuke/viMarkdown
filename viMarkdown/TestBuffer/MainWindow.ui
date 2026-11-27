@@ -54,6 +54,8 @@
     <addaction name="action_Close"/>
     <addaction name="menu_RecentFiles"/>
     <addaction name="menu_FavoriteFiles"/>
+    <addaction name="action_Print"/>
+    <addaction name="action_PrintPreview"/>
     <addaction name="separator"/>
     <addaction name="action_Exit"/>
    </widget>
@@ -226,6 +228,22 @@
   <action name="action_ExportODT">
    <property name="text">
     <string>&amp;ODT</string>
+   </property>
+  </action>
+  <action name="action_Print">
+   <property name="text">
+    <string>&amp;Print...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+P</string>
+   </property>
+  </action>
+  <action name="action_PrintPreview">
+   <property name="text">
+    <string>Print Pre&amp;view...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+P</string>
    </property>
   </action>
   <action name="action_Close">

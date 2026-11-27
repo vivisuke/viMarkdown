@@ -29,6 +29,8 @@
 #include <QMessageBox>
 #include <QPainter>
 #include <QPixmap>
+#include <QPrintDialog>
+#include <QPrintPreviewDialog>
 #include <QPrinter>
 #include <QPushButton>
 #include <QSaveFile>
@@ -595,6 +597,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->action_ExportPDF, &QAction::triggered, this, &MainWindow::onExportPDF);
     connect(ui->action_ExportHTML, &QAction::triggered, this, &MainWindow::onExportHTML);
     connect(ui->action_ExportODT, &QAction::triggered, this, &MainWindow::onExportODT);
+    connect(ui->action_Print, &QAction::triggered, this, &MainWindow::onPrint);
+    connect(ui->action_PrintPreview, &QAction::triggered, this, &MainWindow::onPrintPreview);
     connect(ui->action_Close, &QAction::triggered, this, &MainWindow::onClose);
     connect(ui->action_Exit, &QAction::triggered, this, &QWidget::close);
     connect(ui->action_Undo, &QAction::triggered, this, &MainWindow::onUndo);
@@ -1841,6 +1845,52 @@ void MainWindow::onExportODT()
         return;
     }
     statusBar()->showMessage(tr("ODT exported: %1").arg(fileName), 5000);
+}
+
+void MainWindow::onPrint()
+{
+    MarkdownPreview *preview = currentPreviewEdit();
+    if (!preview)
+        return;
+
+    QPrinter printer(QPrinter::HighResolution);
+    if (QWidget *curTab = m_tabWidget ? m_tabWidget->currentWidget() : nullptr) {
+        const QString filePath = curTab->property(PROP_FILE_PATH).toString();
+        if (!filePath.isEmpty())
+            printer.setDocName(QFileInfo(filePath).fileName());
+        else if (m_tabWidget)
+            printer.setDocName(m_tabWidget->tabText(m_tabWidget->currentIndex()));
+    }
+    QPrintDialog dialog(&printer, this);
+    dialog.setWindowTitle(tr("Print Document"));
+    if (dialog.exec() != QDialog::Accepted)
+        return;
+
+    preview->print(&printer);
+    statusBar()->showMessage(tr("Print completed."), 5000);
+}
+
+void MainWindow::onPrintPreview()
+{
+    MarkdownPreview *preview = currentPreviewEdit();
+    if (!preview)
+        return;
+
+    QPrinter printer(QPrinter::HighResolution);
+    if (QWidget *curTab = m_tabWidget ? m_tabWidget->currentWidget() : nullptr) {
+        const QString filePath = curTab->property(PROP_FILE_PATH).toString();
+        if (!filePath.isEmpty())
+            printer.setDocName(QFileInfo(filePath).fileName());
+        else if (m_tabWidget)
+            printer.setDocName(m_tabWidget->tabText(m_tabWidget->currentIndex()));
+    }
+    QPrintPreviewDialog dialog(&printer, this);
+    dialog.setWindowTitle(tr("Print Preview"));
+    dialog.resize(900, 700);
+    connect(&dialog, &QPrintPreviewDialog::paintRequested, this, [preview](QPrinter *p) {
+        preview->print(p);
+    });
+    dialog.exec();
 }
 
 void MainWindow::do_output(const QString& txt)

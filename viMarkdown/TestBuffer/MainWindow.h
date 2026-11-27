@@ -58,6 +58,8 @@ private:
     void onExportPDF();
     void onExportHTML();
     void onExportODT();
+    void onPrint();
+    void onPrintPreview();
     void onClose();
     void onUndo();
     void onRedo();
