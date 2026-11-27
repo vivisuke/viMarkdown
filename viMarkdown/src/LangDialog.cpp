@@ -7,14 +7,17 @@ LangDialog::LangDialog(QWidget *parent)
 	, ui(new Ui::LangDialogClass())
 {
 	ui->setupUi(this);
-	connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &QDialog::accept);
+	connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &LangDialog::accept);
 	connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
 	QSettings settings;
 	int lang = settings.value(KEY_LANGUAGE, SystemDefault).toInt();
-	ui->systemDefault->setChecked(lang == SystemDefault);
-	ui->english->setChecked(lang == English);
-	ui->japanese->setChecked(lang == Japanese);
+	if (lang == English)
+		ui->english->setChecked(true);
+	else if (lang == Japanese)
+		ui->japanese->setChecked(true);
+	else
+		ui->systemDefault->setChecked(true);
 }
 
 LangDialog::~LangDialog()
