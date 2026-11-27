@@ -57,6 +57,7 @@ private:
     void onSave();
     void onExportPDF();
     void onExportHTML();
+    void onExportODT();
     void onClose();
     void onUndo();
     void onRedo();

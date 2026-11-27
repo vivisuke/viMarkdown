@@ -45,6 +45,7 @@
 #include <QTextBlock>
 #include <QTextCharFormat>
 #include <QTextCursor>
+#include <QTextDocumentWriter>
 #include <QTextEdit>
 #include <QTextFragment>
 #include <QTextStream>
@@ -593,6 +594,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->action_Save, &QAction::triggered, this, &MainWindow::onSave);
     connect(ui->action_ExportPDF, &QAction::triggered, this, &MainWindow::onExportPDF);
     connect(ui->action_ExportHTML, &QAction::triggered, this, &MainWindow::onExportHTML);
+    connect(ui->action_ExportODT, &QAction::triggered, this, &MainWindow::onExportODT);
     connect(ui->action_Close, &QAction::triggered, this, &MainWindow::onClose);
     connect(ui->action_Exit, &QAction::triggered, this, &QWidget::close);
     connect(ui->action_Undo, &QAction::triggered, this, &MainWindow::onUndo);
@@ -1801,6 +1803,44 @@ void MainWindow::onExportHTML()
         return;
     }
     statusBar()->showMessage(tr("HTML exported: %1").arg(fileName), 5000);
+}
+
+void MainWindow::onExportODT()
+{
+    MarkdownPreview *preview = currentPreviewEdit();
+    if (!preview || !preview->document())
+        return;
+
+    QString defaultPath;
+    if (QWidget *curTab = m_tabWidget ? m_tabWidget->currentWidget() : nullptr) {
+        const QString filePath = curTab->property(PROP_FILE_PATH).toString();
+        if (!filePath.isEmpty()) {
+            const QFileInfo fi(filePath);
+            defaultPath = fi.absolutePath() + QLatin1Char('/') + fi.completeBaseName() + QStringLiteral(".odt");
+        } else if (m_tabWidget) {
+            QString title = m_tabWidget->tabText(m_tabWidget->currentIndex());
+            if (title.endsWith(QLatin1Char('*')))
+                title.chop(1);
+            defaultPath = QDir::currentPath() + QLatin1Char('/') + title + QStringLiteral(".odt");
+        }
+    }
+
+    QString fileName = QFileDialog::getSaveFileName(
+        this,
+        tr("Export as ODT"),
+        defaultPath,
+        tr("OpenDocument Text (*.odt)"));
+    if (fileName.isEmpty())
+        return;
+    if (!fileName.endsWith(QStringLiteral(".odt"), Qt::CaseInsensitive))
+        fileName += QStringLiteral(".odt");
+
+    QTextDocumentWriter writer(fileName, "ODF");
+    if (!writer.write(preview->document())) {
+        QMessageBox::warning(this, tr("Export as ODT"), tr("Cannot write file:\n%1").arg(fileName));
+        return;
+    }
+    statusBar()->showMessage(tr("ODT exported: %1").arg(fileName), 5000);
 }
 
 void MainWindow::do_output(const QString& txt)

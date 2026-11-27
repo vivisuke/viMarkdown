@@ -45,6 +45,7 @@
      </property>
      <addaction name="action_ExportPDF"/>
      <addaction name="action_ExportHTML"/>
+     <addaction name="action_ExportODT"/>
     </widget>
     <addaction name="action_NewTab"/>
     <addaction name="action_Open"/>
@@ -220,6 +221,11 @@
   <action name="action_ExportHTML">
    <property name="text">
     <string>&amp;HTML</string>
+   </property>
+  </action>
+  <action name="action_ExportODT">
+   <property name="text">
+    <string>&amp;ODT</string>
    </property>
   </action>
   <action name="action_Close">
