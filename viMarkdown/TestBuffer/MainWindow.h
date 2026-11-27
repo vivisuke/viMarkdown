@@ -52,6 +52,7 @@ private:
     void onViCmdLineReturn();
     void cancelViIncSearch();
     void onCurrentTabChanged(int index);
+    void updateTabTitle(QWidget *tab);
     void onSwitchToAltFile();
     void onSwitchPane();
     void onTabCloseRequested(int index);

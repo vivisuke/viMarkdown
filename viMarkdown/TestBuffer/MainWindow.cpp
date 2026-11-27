@@ -100,6 +100,7 @@ const QStringView KEY_DIRBAR_FILTER(u"dirBar/filter");
 const QStringView KEY_WINDOW_GEOMETRY(u"window/geometry");
 const QStringView KEY_WINDOW_STATE(u"window/state");
 const char PROP_FILE_PATH[] = "filePath";
+const char PROP_BASE_TITLE[] = "baseTitle";
 const char PROP_ENCODING[] = "encoding";
 const char PROP_WITH_BOM[] = "withBOM";
 const char PROP_USE_CRLF[] = "useCRLF";
@@ -856,6 +857,7 @@ TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath
         if (headingsChanged)
             updateOutlineForTab(splitter);
         updateUndoRedoEnabled();
+        updateTabTitle(splitter);
     });
     edit->setCursorChangedCallback([edit, preview, syncingCursor]() {
         if (*syncingCursor || !edit->markdownHighlight())
@@ -941,6 +943,7 @@ TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath
     splitter->setStretchFactor(1, 1);
     splitter->setSizes({1000, 1000});
     splitter->setProperty(PROP_FILE_PATH, filePath);
+    splitter->setProperty(PROP_BASE_TITLE, title);
 
     int index = m_tabWidget->addTab(splitter, title);
     if (!filePath.isEmpty())
@@ -1021,6 +1024,29 @@ void MainWindow::onCurrentTabChanged(int index)
     }
     if (TextEdit *edit = currentTextEdit())
         edit->setFocus();
+}
+
+void MainWindow::updateTabTitle(QWidget *tab)
+{
+    if (!m_tabWidget || !tab)
+        return;
+    const int index = m_tabWidget->indexOf(tab);
+    if (index < 0)
+        return;
+    QString base = tab->property(PROP_BASE_TITLE).toString();
+    if (base.isEmpty()) {
+        base = m_tabWidget->tabText(index);
+        if (base.endsWith(QStringLiteral(" *")))
+            base.chop(2);
+        tab->setProperty(PROP_BASE_TITLE, base);
+    }
+    TextEdit *edit = textEditAt(index);
+    const bool modified = (edit && edit->document()->isModified());
+    const QString display = modified ? (base + QStringLiteral(" *")) : base;
+    if (m_tabWidget->tabText(index) != display)
+        m_tabWidget->setTabText(index, display);
+    if (index == m_tabWidget->currentIndex())
+        setWindowTitle(display + QStringLiteral(" - TestBuffer"));
 }
 
 void MainWindow::onSwitchToAltFile()
@@ -1559,6 +1585,7 @@ bool MainWindow::saveTab(int index, const QString &explicitPath)
         const bool isMarkdown = (fi.suffix().compare(QStringLiteral("md"), Qt::CaseInsensitive) == 0
             || fi.suffix().compare(QStringLiteral("markdown"), Qt::CaseInsensitive) == 0);
         tab->setProperty(PROP_FILE_PATH, filePath);
+        tab->setProperty(PROP_BASE_TITLE, fi.fileName());
         m_tabWidget->setTabText(index, fi.fileName());
         m_tabWidget->setTabToolTip(index, filePath);
         if (index == m_tabWidget->currentIndex())
@@ -1581,6 +1608,7 @@ bool MainWindow::saveTab(int index, const QString &explicitPath)
     }
 
     edit->onSaved();
+    updateTabTitle(tab);
     if (m_calendarWidget) {
         const QDate d = QDate::fromString(QFileInfo(filePath).baseName(), QStringLiteral("yyyyMMdd"));
         if (d.isValid() && d.year() == m_calendarWidget->yearShown() && d.month() == m_calendarWidget->monthShown())
@@ -1637,6 +1665,7 @@ bool MainWindow::openFile(const QString &filePath)
     if (reuseTab) {
         int ix = m_tabWidget->currentIndex();
         curTab->setProperty(PROP_FILE_PATH, cleanPath);
+        curTab->setProperty(PROP_BASE_TITLE, fi.fileName());
         m_tabWidget->setTabText(ix, fi.fileName());
         m_tabWidget->setTabToolTip(ix, cleanPath);
     } else {
@@ -1651,6 +1680,7 @@ bool MainWindow::openFile(const QString &filePath)
     edit->setMarkdownHighlight(isMarkdown);
     edit->setPlainText(text);
     edit->document()->setModified(false);
+    updateTabTitle(m_tabWidget->currentWidget());
     if (MarkdownPreview *preview = currentPreviewEdit()) {
         if (isMarkdown) {
             preview->document()->setBaseUrl(QUrl::fromLocalFile(fi.absolutePath() + QLatin1Char('/')));
