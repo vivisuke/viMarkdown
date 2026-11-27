@@ -37,12 +37,12 @@
   </ImportGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="QtSettings">
     <QtInstall>6.10.2_msvc2022_64</QtInstall>
-    <QtModules>core;gui;widgets</QtModules>
+    <QtModules>core;gui;widgets;printsupport</QtModules>
     <QtBuildConfig>debug</QtBuildConfig>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'" Label="QtSettings">
     <QtInstall>6.10.2_msvc2022_64</QtInstall>
-    <QtModules>core;gui;widgets</QtModules>
+    <QtModules>core;gui;widgets;printsupport</QtModules>
     <QtBuildConfig>release</QtBuildConfig>
   </PropertyGroup>
   <Target Name="QtMsBuildNotFound" BeforeTargets="CustomBuild;ClCompile" Condition="!Exists('$(QtMsBuild)\qt.targets') or !Exists('$(QtMsBuild)\qt.props')">
@@ -60,11 +60,14 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <IncludePath>$(SolutionDir)3rdparty/lunasvg/3rdparty/plutovg/include;$(SolutionDir)3rdparty/lunasvg/include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <IncludePath>$(SolutionDir)3rdparty/lunasvg/3rdparty/plutovg/include;$(SolutionDir)3rdparty/lunasvg/include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="Configuration">
     <ClCompile>
+      <PreprocessorDefinitions>LUNASVG_STATIC;PLUTOVG_STATIC;_CRT_SECURE_NO_WARNINGS;QT_NO_DEPRECATED_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
@@ -77,6 +80,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'" Label="Configuration">
     <ClCompile>
+      <PreprocessorDefinitions>LUNASVG_STATIC;PLUTOVG_STATIC;_CRT_SECURE_NO_WARNINGS;QT_NO_DEPRECATED_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
@@ -92,6 +96,29 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\3rdparty\lunasvg\3rdparty\plutovg\source\plutovg-blend.c" />
+    <ClCompile Include="..\3rdparty\lunasvg\3rdparty\plutovg\source\plutovg-canvas.c" />
+    <ClCompile Include="..\3rdparty\lunasvg\3rdparty\plutovg\source\plutovg-font.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+    </ClCompile>
+    <ClCompile Include="..\3rdparty\lunasvg\3rdparty\plutovg\source\plutovg-ft-math.c" />
+    <ClCompile Include="..\3rdparty\lunasvg\3rdparty\plutovg\source\plutovg-ft-raster.c" />
+    <ClCompile Include="..\3rdparty\lunasvg\3rdparty\plutovg\source\plutovg-ft-stroker.c" />
+    <ClCompile Include="..\3rdparty\lunasvg\3rdparty\plutovg\source\plutovg-matrix.c" />
+    <ClCompile Include="..\3rdparty\lunasvg\3rdparty\plutovg\source\plutovg-paint.c" />
+    <ClCompile Include="..\3rdparty\lunasvg\3rdparty\plutovg\source\plutovg-path.c" />
+    <ClCompile Include="..\3rdparty\lunasvg\3rdparty\plutovg\source\plutovg-rasterize.c" />
+    <ClCompile Include="..\3rdparty\lunasvg\3rdparty\plutovg\source\plutovg-surface.c" />
+    <ClCompile Include="..\3rdparty\lunasvg\source\graphics.cpp" />
+    <ClCompile Include="..\3rdparty\lunasvg\source\lunasvg.cpp" />
+    <ClCompile Include="..\3rdparty\lunasvg\source\svgelement.cpp" />
+    <ClCompile Include="..\3rdparty\lunasvg\source\svggeometryelement.cpp" />
+    <ClCompile Include="..\3rdparty\lunasvg\source\svglayoutstate.cpp" />
+    <ClCompile Include="..\3rdparty\lunasvg\source\svgpaintelement.cpp" />
+    <ClCompile Include="..\3rdparty\lunasvg\source\svgparser.cpp" />
+    <ClCompile Include="..\3rdparty\lunasvg\source\svgproperty.cpp" />
+    <ClCompile Include="..\3rdparty\lunasvg\source\svgrenderstate.cpp" />
+    <ClCompile Include="..\3rdparty\lunasvg\source\svgtextelement.cpp" />
     <ClCompile Include="TextDocument.cpp" />
     <ClCompile Include="TextDocumentTest.cpp" />
     <ClCompile Include="TextEdit.cpp" />

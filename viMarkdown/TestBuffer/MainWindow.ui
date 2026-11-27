@@ -39,9 +39,16 @@
      <addaction name="action_AddThisFavorite"/>
      <addaction name="separator"/>
     </widget>
+    <widget class="QMenu" name="menu_Export">
+     <property name="title">
+      <string>&amp;Export</string>
+     </property>
+     <addaction name="action_ExportPDF"/>
+    </widget>
     <addaction name="action_NewTab"/>
     <addaction name="action_Open"/>
     <addaction name="action_Save"/>
+    <addaction name="menu_Export"/>
     <addaction name="action_Close"/>
     <addaction name="menu_RecentFiles"/>
     <addaction name="menu_FavoriteFiles"/>
@@ -202,6 +209,11 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="action_ExportPDF">
+   <property name="text">
+    <string>&amp;PDF</string>
    </property>
   </action>
   <action name="action_Close">

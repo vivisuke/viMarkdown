@@ -28,6 +28,7 @@
 #include <QMessageBox>
 #include <QPainter>
 #include <QPixmap>
+#include <QPrinter>
 #include <QPushButton>
 #include <QSaveFile>
 #include <QScrollBar>
@@ -274,7 +275,7 @@ MainWindow::MainWindow(QWidget *parent)
     dirHeaderRow->setSpacing(2);
     m_dirPathLabel = new QLabel(dirContainer);
     m_dirPathLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
-    auto *dirUpBtn = new QPushButton(QStringLiteral(".."), dirContainer);
+    auto *dirUpBtn = new QPushButton(style()->standardIcon(QStyle::SP_FileDialogToParent), QString(), dirContainer);
     dirUpBtn->setFixedWidth(28);
     dirUpBtn->setToolTip(tr("Parent Directory"));
     dirUpBtn->setFocusPolicy(Qt::ClickFocus);
@@ -587,6 +588,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->action_NewTab, &QAction::triggered, this, &MainWindow::onNewTab);
     connect(ui->action_Open, &QAction::triggered, this, &MainWindow::onOpen);
     connect(ui->action_Save, &QAction::triggered, this, &MainWindow::onSave);
+    connect(ui->action_ExportPDF, &QAction::triggered, this, &MainWindow::onExportPDF);
     connect(ui->action_Close, &QAction::triggered, this, &MainWindow::onClose);
     connect(ui->action_Exit, &QAction::triggered, this, &QWidget::close);
     connect(ui->action_Undo, &QAction::triggered, this, &MainWindow::onUndo);
@@ -666,7 +668,10 @@ MainWindow::MainWindow(QWidget *parent)
             edit->unindent();
     });
     updateUndoRedoEnabled();
-    connect(ui->action_Settings, &QAction::triggered, this, &MainWindow::onSettings);
+    ui->action_Settings->setShortcut(QKeySequence(Qt::Key_F8));
+    connect(ui->action_Settings, &QAction::triggered, this, [this]() { onSettings(0); });
+    auto *fontColorSettingsSc = new QShortcut(QKeySequence(Qt::SHIFT | Qt::Key_F8), this);
+    connect(fontColorSettingsSc, &QShortcut::activated, this, [this]() { onSettings(1); });
     m_cmdLine = new QLineEdit(this);
     m_cmdLine->setFrame(false);
     m_cmdLine->hide();
@@ -717,6 +722,13 @@ MainWindow::MainWindow(QWidget *parent)
     {
         const QDate today = QDate::currentDate();
         onCalendarPageChanged(today.year(), today.month());
+    }
+    {
+        const QString initDir = defaultDiaryBaseDir();
+        if (QDir(initDir).exists()) {
+            QDir::setCurrent(initDir);
+            m_lastDir = initDir;
+        }
     }
     updateDirBar(QDir::currentPath());
 }
@@ -1132,7 +1144,7 @@ void MainWindow::applyOutputFontSize(int pointSize)
     }
 }
 
-void MainWindow::onSettings()
+void MainWindow::onSettings(int initialTab)
 {
     const int origPercent = m_lineSpacingPercent;
     const QColor origHeading = m_headingColor;
@@ -1146,14 +1158,44 @@ void MainWindow::onSettings()
     const QColor origTableHeader = m_tableHeaderColor;
     const QColor origTableZebra1 = m_tableZebraColor1;
     const QColor origTableZebra2 = m_tableZebraColor2;
+    const QString origDefaultDir = defaultDiaryBaseDir();
+    const bool origViKeybind = m_viKeybind;
 
     QDialog dlg(this);
     dlg.setWindowTitle(tr("Settings"));
-    dlg.resize(620, 260);
+    dlg.resize(640, 340);
     auto *layout = new QVBoxLayout(&dlg);
+    auto *tabs = new QTabWidget(&dlg);
+
+    //	Page 0: General
+    auto *generalPage = new QWidget(tabs);
+    auto *generalLayout = new QVBoxLayout(generalPage);
+    auto *generalForm = new QFormLayout();
+    auto *defaultDirRow = new QHBoxLayout();
+    auto *defaultDirEdit = new QLineEdit(origDefaultDir, generalPage);
+    auto *defaultDirBrowse = new QPushButton(tr("Browse..."), generalPage);
+    connect(defaultDirBrowse, &QPushButton::clicked, &dlg, [&dlg, defaultDirEdit]() {
+        const QString chosen = QFileDialog::getExistingDirectory(&dlg, tr("Select Default Directory"), defaultDirEdit->text());
+        if (!chosen.isEmpty())
+            defaultDirEdit->setText(QDir::cleanPath(chosen));
+    });
+    defaultDirRow->addWidget(defaultDirEdit, 1);
+    defaultDirRow->addWidget(defaultDirBrowse);
+    generalForm->addRow(tr("Default Directory:"), defaultDirRow);
+
+    auto *viKeybindChk = new QCheckBox(tr("Enable vi keybindings"), generalPage);
+    viKeybindChk->setChecked(m_viKeybind);
+    generalForm->addRow(QString(), viKeybindChk);
+    generalLayout->addLayout(generalForm);
+    generalLayout->addStretch();
+    tabs->addTab(generalPage, tr("General"));
+
+    //	Page 1: Font / Color
+    auto *fontColorPage = new QWidget(tabs);
+    auto *fontColorLayout = new QVBoxLayout(fontColorPage);
     auto *groupsRow = new QHBoxLayout();
 
-    auto *editorGroup = new QGroupBox(tr("Editor"), &dlg);
+    auto *editorGroup = new QGroupBox(tr("Editor"), fontColorPage);
     auto *editorForm = new QFormLayout(editorGroup);
     auto *fontCombo = new QFontComboBox(editorGroup);
     fontCombo->setFontFilters(QFontComboBox::MonospacedFonts);
@@ -1276,9 +1318,9 @@ void MainWindow::onSettings()
     previewForm->addRow(tr("Table Zebra Color 2:"), tableZebra2ColorBtn);
     groupsRow->addWidget(previewGroup, 1);
 
-    layout->addLayout(groupsRow);
+    fontColorLayout->addLayout(groupsRow);
 
-    auto *outputGroup = new QGroupBox(tr("Output"), &dlg);
+    auto *outputGroup = new QGroupBox(tr("Output"), fontColorPage);
     auto *outputForm = new QFormLayout(outputGroup);
     auto *outputFontSizeSpin = new QSpinBox(outputGroup);
     outputFontSizeSpin->setRange(3, 64);
@@ -1289,8 +1331,12 @@ void MainWindow::onSettings()
         applyOutputFontSize(val);
     });
     outputForm->addRow(tr("Font Size:"), outputFontSizeSpin);
-    layout->addWidget(outputGroup);
-    layout->addStretch();
+    fontColorLayout->addWidget(outputGroup);
+    fontColorLayout->addStretch();
+    tabs->addTab(fontColorPage, tr("Font / Color"));
+
+    tabs->setCurrentIndex(qBound(0, initialTab, tabs->count() - 1));
+    layout->addWidget(tabs, 1);
 
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dlg);
     connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
@@ -1298,6 +1344,18 @@ void MainWindow::onSettings()
     layout->addWidget(buttons);
 
     if (dlg.exec() == QDialog::Accepted) {
+        const QString newDefaultDir = QDir::cleanPath(defaultDirEdit->text().trimmed());
+        if (!newDefaultDir.isEmpty()) {
+            QSettings settings;
+            settings.setValue(QStringLiteral("defaultDir"), newDefaultDir);
+            if (newDefaultDir != origDefaultDir && m_calendarWidget) {
+                if (auto *cal = dynamic_cast<DiaryCalendarWidget *>(m_calendarWidget))
+                    cal->clearDayInfo();
+                onCalendarPageChanged(m_calendarWidget->yearShown(), m_calendarWidget->monthShown());
+            }
+        }
+        if (viKeybindChk->isChecked() != origViKeybind)
+            ui->action_ViKeybind->setChecked(viKeybindChk->isChecked());
         applyEditorFont(fontCombo->currentFont().family(), fontSizeSpin->value());
         applyPreviewFont(previewFontCombo->currentFont().family(), previewFontSizeSpin->value());
         applyLineSpacing(lineSpacingSpin->value());
@@ -1625,6 +1683,43 @@ void MainWindow::onAction_AddThisFavorite()
     statusBar()->showMessage(tr("Added to favorites: %1").arg(fullPath), 3000);
 }
 
+void MainWindow::onExportPDF()
+{
+    MarkdownPreview *preview = currentPreviewEdit();
+    if (!preview)
+        return;
+
+    QString defaultPath;
+    if (QWidget *curTab = m_tabWidget ? m_tabWidget->currentWidget() : nullptr) {
+        const QString filePath = curTab->property(PROP_FILE_PATH).toString();
+        if (!filePath.isEmpty()) {
+            const QFileInfo fi(filePath);
+            defaultPath = fi.absolutePath() + QLatin1Char('/') + fi.completeBaseName() + QStringLiteral(".pdf");
+        } else if (m_tabWidget) {
+            QString title = m_tabWidget->tabText(m_tabWidget->currentIndex());
+            if (title.endsWith(QLatin1Char('*')))
+                title.chop(1);
+            defaultPath = QDir::currentPath() + QLatin1Char('/') + title + QStringLiteral(".pdf");
+        }
+    }
+
+    QString fileName = QFileDialog::getSaveFileName(
+        this,
+        tr("Export as PDF"),
+        defaultPath,
+        tr("PDF Files (*.pdf)"));
+    if (fileName.isEmpty())
+        return;
+    if (!fileName.endsWith(QStringLiteral(".pdf"), Qt::CaseInsensitive))
+        fileName += QStringLiteral(".pdf");
+
+    QPrinter printer(QPrinter::HighResolution);
+    printer.setOutputFormat(QPrinter::PdfFormat);
+    printer.setOutputFileName(fileName);
+    preview->print(&printer);
+    statusBar()->showMessage(tr("PDF exported: %1").arg(fileName), 5000);
+}
+
 void MainWindow::do_output(const QString& txt)
 {
     ui->outputBar->setVisible(true);
@@ -1775,12 +1870,15 @@ void MainWindow::onViCmdLineReturn()
     cb.newTab = [this]() {
         onNewTab();
     };
+    const QString prevDir = QDir::currentPath();
     if (edit) {
         edit->viEngine()->executeExCommand(edit, body, cb);
     } else {
         ViEngine tempEngine;
         tempEngine.executeExCommand(nullptr, body, cb);
     }
+    if (QDir::currentPath() != prevDir)
+        updateDirBar(QDir::currentPath());
 }
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
@@ -2862,6 +2960,7 @@ void MainWindow::updateDirBar(const QString &dirPath)
 
     m_dirTree->clear();
     if (!dir.exists()) return;
+    QDir::setCurrent(m_currentDirBarPath);
 
     const QIcon dirIcon = style()->standardIcon(QStyle::SP_DirIcon);
     const QIcon fileIcon = style()->standardIcon(QStyle::SP_FileIcon);

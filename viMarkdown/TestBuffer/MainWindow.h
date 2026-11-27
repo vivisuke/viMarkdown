@@ -55,11 +55,12 @@ private:
     void onNewTab();
     void onOpen();
     void onSave();
+    void onExportPDF();
     void onClose();
     void onUndo();
     void onRedo();
     void updateUndoRedoEnabled();
-    void onSettings();
+    void onSettings(int initialTab = 0);
     void onReplace();
     bool findAndSelectMatch(const QString &src, bool forward);
     void doReplaceNext(const QString &src, const QString &dst);

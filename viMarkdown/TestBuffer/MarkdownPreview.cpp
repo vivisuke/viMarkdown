@@ -33,7 +33,9 @@
 #include <QTimer>
 #include <QUrl>
 #include <QWheelEvent>
+#include <QXmlStreamReader>
 #include <algorithm>
+#include "lunasvg.h"
 
 namespace {
 constexpr int kBlockNormal = 0;
@@ -480,6 +482,19 @@ bool isCsvFence(const QString &line)
 		return false;
 	const QStringView lang = rest.mid(3).trimmed();
 	return lang.compare(u"csv", Qt::CaseInsensitive) == 0;
+}
+
+//	SVG フェンス開始行（先頭 0〜3 個の空白 + "```svg"、大文字小文字不問）を判定
+bool isSvgFence(const QString &line)
+{
+	qsizetype i = 0;
+	while( i < line.size() && i < 3 && line[i] == QChar(' ') )
+		++i;
+	const QStringView rest = QStringView(line).mid(i);
+	if( !rest.startsWith(u"```") )
+		return false;
+	const QStringView lang = rest.mid(3).trimmed();
+	return lang.compare(u"svg", Qt::CaseInsensitive) == 0;
 }
 
 //	GFM テーブルの1行をセル配列に分解（\| はエスケープされたリテラル '|' として扱う）
@@ -1152,6 +1167,139 @@ LineMgr::LineType parseAndAppendLine(
 	emitInlineWithAnchor(line, bodyCharFmt, strippedLineStart);
 	return LineMgr::LT_BODY;
 }
+
+//	```svg ... ``` フェンスブロックを LunaSVG でラスタライズして画像として挿入する
+void insertSvgBlock(
+	QTextCursor &cursor,
+	const QString &svgSource,
+	ParseState &st,
+	int startLn,
+	int endLn,
+	QVector<int> &srcLineToBlock,
+	QVector<int> &blockToSrcLine)
+{
+	if( st.inQuote ) {
+		st.inQuote = false;
+		finishBlockMarginIfNeeded(cursor, kBlockQuote);
+	}
+	st.activeListIndent = 0;
+	st.listNum = 0;
+
+	if( st.hasEmittedBlock )
+		cursor.insertBlock();
+	st.hasEmittedBlock = true;
+	st.lastLineEmitted = true;
+	if( QTextList *curList = cursor.currentList() )
+		curList->remove(cursor.block());
+
+	QTextBlockFormat bf;
+	bf.setAlignment(Qt::AlignCenter);
+	bf.setTopMargin(6.0);
+	bf.setBottomMargin(6.0);
+	cursor.setBlockFormat(bf);
+	cursor.setBlockCharFormat(QTextCharFormat());
+	cursor.block().setUserState(kBlockNormal);
+
+	const QString trimmed = svgSource.trimmed();
+	const QByteArray utf8 = trimmed.toUtf8();
+	auto svgDoc = !utf8.isEmpty() ? lunasvg::Document::loadFromData(utf8.constData(), static_cast<size_t>(utf8.size())) : nullptr;
+	QTextDocument *doc = cursor.document();
+	if( svgDoc && doc ) {
+		int width = 0;
+		int height = 0;
+		double wdScale = 1.0;
+		double htScale = 1.0;
+		bool hasWidth = false;
+		bool hasHeight = false;
+		QXmlStreamReader reader(trimmed);
+		while( !reader.atEnd() ) {
+			const QXmlStreamReader::TokenType token = reader.readNext();
+			if( token == QXmlStreamReader::StartElement && reader.name().compare(u"svg", Qt::CaseInsensitive) == 0 ) {
+				const auto attrs = reader.attributes();
+				if( attrs.hasAttribute(u"width") ) {
+					auto txt = attrs.value(u"width").trimmed();
+					if( txt.endsWith(QChar('%')) ) {
+						wdScale = txt.left(txt.size() - 1).toDouble() / 100.0;
+					} else {
+						if( txt.endsWith(u"px", Qt::CaseInsensitive) ) txt.chop(2);
+						width = qRound(txt.toDouble());
+						hasWidth = (width > 0);
+					}
+				}
+				if( attrs.hasAttribute(u"height") ) {
+					auto txt = attrs.value(u"height").trimmed();
+					if( txt.endsWith(QChar('%')) ) {
+						htScale = txt.left(txt.size() - 1).toDouble() / 100.0;
+					} else {
+						if( txt.endsWith(u"px", Qt::CaseInsensitive) ) txt.chop(2);
+						height = qRound(txt.toDouble());
+						hasHeight = (height > 0);
+					}
+				}
+				if( attrs.hasAttribute(u"viewBox") ) {
+					static const QRegularExpression reSep(QStringLiteral("[\\s,]+"));
+					const auto list = attrs.value(u"viewBox").toString().split(reSep, Qt::SkipEmptyParts);
+					if( list.size() >= 4 ) {
+						const double vbW = list[2].toDouble();
+						const double vbH = list[3].toDouble();
+						if( !hasWidth && !hasHeight ) {
+							width = qRound(vbW);
+							height = qRound(vbH);
+						} else if( !hasWidth && vbH > 0.0 ) {
+							width = qRound(height * vbW / vbH);
+						} else if( !hasHeight && vbW > 0.0 ) {
+							height = qRound(width * vbH / vbW);
+						}
+					}
+				}
+				break;
+			}
+		}
+		if( width <= 0 ) width = qRound(svgDoc->width());
+		if( height <= 0 ) height = qRound(svgDoc->height());
+		if( width <= 0 ) width = 320;
+		if( height <= 0 ) height = 200;
+		const qreal logW = static_cast<qreal>(qBound(1, qRound(width * wdScale), 4096));
+		const qreal logH = static_cast<qreal>(qBound(1, qRound(height * htScale), 4096));
+
+		const qreal dpr = (logW <= 2048.0 && logH <= 2048.0) ? 2.0 : 1.0;
+		const int pxW = qMax(1, qRound(logW * dpr));
+		const int pxH = qMax(1, qRound(logH * dpr));
+		QImage img(pxW, pxH, QImage::Format_ARGB32_Premultiplied);
+		if( !img.isNull() ) {
+			img.fill(Qt::white);
+			img.setDevicePixelRatio(dpr);
+			lunasvg::Bitmap bitmap(img.bits(), img.width(), img.height(), img.bytesPerLine());
+			svgDoc->render(bitmap);
+
+			const QUrl resUrl(QStringLiteral("svg://block_%1").arg(startLn));
+			doc->addResource(QTextDocument::ImageResource, resUrl, img);
+			QTextImageFormat imgFmt;
+			imgFmt.setName(resUrl.toString());
+			if( st.maxImgWidth > 0.0 && logW > st.maxImgWidth ) {
+				imgFmt.setWidth(st.maxImgWidth);
+				imgFmt.setHeight(logH * st.maxImgWidth / logW);
+			} else {
+				imgFmt.setWidth(logW);
+				imgFmt.setHeight(logH);
+			}
+			cursor.insertImage(imgFmt);
+			st.hasImages = true;
+		}
+	} else {
+		QTextCharFormat cf;
+		cf.setFont(codeBlockFont(st.basePt));
+		cf.setForeground(QColor(0x88, 0x88, 0x88));
+		cursor.insertText(trimmed.isEmpty() ? QStringLiteral("[SVG]") : QStringLiteral("[SVG: invalid markup]"), cf);
+	}
+
+	const int bn = cursor.block().blockNumber();
+	if( blockToSrcLine.size() <= bn )
+		blockToSrcLine.resize(bn + 1, startLn);
+	blockToSrcLine[bn] = startLn;
+	for( int ln = startLn; ln <= endLn && ln < srcLineToBlock.size(); ++ln )
+		srcLineToBlock[ln] = bn;
+}
 }
 
 MarkdownPreview::MarkdownPreview(QWidget *parent)
@@ -1418,10 +1566,11 @@ void MarkdownPreview::updateImageSizes()
 				continue;
 			QTextImageFormat imgFmt = frag.charFormat().toImageFormat();
 			const QImage img = doc->resource(QTextDocument::ImageResource, QUrl(imgFmt.name())).value<QImage>();
-			if( img.isNull() || img.width() <= 0 )
+			const QSizeF dipSize = img.deviceIndependentSize();
+			if( img.isNull() || dipSize.width() <= 0.0 )
 				continue;
-			const qreal targetW = (img.width() > maxW) ? maxW : static_cast<qreal>(img.width());
-			const qreal targetH = img.height() * targetW / img.width();
+			const qreal targetW = (dipSize.width() > maxW) ? maxW : dipSize.width();
+			const qreal targetH = dipSize.height() * targetW / dipSize.width();
 			if( qAbs(imgFmt.width() - targetW) > 0.5 || qAbs(imgFmt.height() - targetH) > 0.5 ) {
 				if( !began ) {
 					cur.beginEditBlock();
@@ -1880,6 +2029,15 @@ void MarkdownPreview::setMarkdown(const QString &markdown)
 			insertStyledTable(cursor, rows, rowSrcLines, rowStartPos, rowCellCols, {}, st, m_srcLineToBlock, m_blockToSrcLine, &m_syncSpans);
 			continue;
 		}
+		if( !st.inCodeBlock && !st.inHtmlComment && isSvgFence(line) ) {
+			const int startLn = ln;
+			QStringList svgLines;
+			while( ++ln < nLines && !isCodeFence(lines[ln]) )
+				svgLines.append(lines[ln]);
+			const int endLn = qMin(ln, nLines - 1);
+			insertSvgBlock(cursor, svgLines.join(QChar('\n')), st, startLn, endLn, m_srcLineToBlock, m_blockToSrcLine);
+			continue;
+		}
 		if( !st.inCodeBlock && !st.inHtmlComment && ln + 1 < nLines ) {
 			QStringList headerCells;
 			QVector<int> headerCols;
@@ -2026,6 +2184,20 @@ void MarkdownPreview::setMarkdown(TextDocument *srcDoc)
 				rowCellCols.append(curCols);
 			}
 			insertStyledTable(cursor, rows, rowSrcLines, rowStartPos, rowCellCols, {}, st, m_srcLineToBlock, m_blockToSrcLine, &m_syncSpans);
+			continue;
+		}
+		if( !st.inCodeBlock && !st.inHtmlComment && isSvgFence(line) ) {
+			const int startLn = ln;
+			mgr.setLineType(ln, LineMgr::LT_CODE_FENCE);
+			QStringList svgLines;
+			while( ++ln < nLines && !isCodeFence(lines[ln]) ) {
+				mgr.setLineType(ln, LineMgr::LT_CODE_BLOCK);
+				svgLines.append(lines[ln]);
+			}
+			if( ln < nLines && isCodeFence(lines[ln]) )
+				mgr.setLineType(ln, LineMgr::LT_CODE_FENCE);
+			const int endLn = qMin(ln, nLines - 1);
+			insertSvgBlock(cursor, svgLines.join(QChar('\n')), st, startLn, endLn, m_srcLineToBlock, m_blockToSrcLine);
 			continue;
 		}
 		if( !st.inCodeBlock && !st.inHtmlComment && ln + 1 < nLines ) {
