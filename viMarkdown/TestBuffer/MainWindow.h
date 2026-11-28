@@ -126,6 +126,8 @@ private:
     int m_previewFontSize = 10;
     int m_outputFontSize = 10;
     bool m_viKeybind = false;
+    bool m_keisenMode = false;
+    bool m_thickKeisen = false;
     QLineEdit *m_cmdLine = nullptr;
     QComboBox *m_searchCB = nullptr;
     QAction *m_actIgnoreCase = nullptr;

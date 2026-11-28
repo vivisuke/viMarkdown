@@ -99,6 +99,10 @@ public:
 	ViEngine *viEngine() { return &m_vi; }
 	const ViEngine *viEngine() const { return &m_vi; }
 	void setViEnabled(bool enabled);
+	void setKeisenMode(bool enabled) { m_keisenMode = enabled; }
+	bool isKeisenMode() const { return m_keisenMode; }
+	void setThickKeisen(bool thick) { m_thickKeisen = thick; }
+	bool isThickKeisen() const { return m_thickKeisen; }
 	void syncImeToViMode();
 	void enterInsertModeFromIme();
 	void onSaved();
@@ -122,6 +126,10 @@ protected:
 	bool focusNextPrevChild(bool next) override;
 
 private:
+	void doKeisenLeft(bool erase, bool thick);
+	void doKeisenRight(bool erase, bool thick);
+	void doKeisenUp(bool erase, bool thick);
+	void doKeisenDown(bool erase, bool thick);
 	bool indentSelection(bool unindent);
 	void handleReturnKey();
 	int lineHeight() const;
@@ -162,6 +170,8 @@ private:
 	LineNumberArea *m_lineNumberArea = nullptr;
 	QTimer *m_blinkTimer = nullptr;
 	bool m_caretVisible = true;
+	bool m_keisenMode = false;
+	bool m_thickKeisen = false;
 	ViEngine m_vi;
 	std::function<void()> m_onTextChanged;
 	std::function<void()> m_onCursorChanged;
@@ -188,3 +198,6 @@ protected:
 private:
 	TextEdit *m_editor;
 };
+
+//	Unicode 罫線文字 (U+2500..U+257F) の連結ビットを返す（範囲外は 0）
+ushort getKeisenConnectionBits(QChar ch);

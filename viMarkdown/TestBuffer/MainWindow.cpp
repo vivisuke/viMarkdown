@@ -5,6 +5,7 @@
 #include <QBuffer>
 #include <QCalendarWidget>
 #include <QCheckBox>
+#include <QClipboard>
 #include <QCloseEvent>
 #include <QColorDialog>
 #include <QComboBox>
@@ -22,11 +23,13 @@
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
+#include <QHelpEvent>
 #include <QIcon>
 #include <QKeyEvent>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
+#include <QMouseEvent>
 #include <QPainter>
 #include <QPixmap>
 #include <QPrintDialog>
@@ -43,6 +46,7 @@
 #include <QStandardPaths>
 #include <QStringDecoder>
 #include <QStyle>
+#include <QTabBar>
 #include <QTabWidget>
 #include <QTextBlock>
 #include <QTextCharFormat>
@@ -52,6 +56,7 @@
 #include <QTextFragment>
 #include <QTextStream>
 #include <QTimer>
+#include <QToolTip>
 #include <QTreeWidget>
 #include <QUrl>
 #include <QVBoxLayout>
@@ -200,6 +205,136 @@ protected:
 private:
     QMap<QDate, DiaryDayInfo> m_dayInfo;
 };
+
+//	マウスオーバー中のタブだけ右端に [×] ボタンを重ね描きする TabBar（タブ幅は不変）
+class HoverCloseTabBar : public QTabBar
+{
+public:
+    explicit HoverCloseTabBar(QWidget *parent = nullptr)
+        : QTabBar(parent)
+    {
+        setMouseTracking(true);
+    }
+
+protected:
+    QRect closeButtonRect(int index) const
+    {
+        const QRect r = tabRect(index);
+        if (!r.isValid())
+            return QRect();
+        const int sz = 16;
+        const int x = r.right() - sz - 3;
+        const int y = r.top() + (r.height() - sz) / 2;
+        return QRect(x, y, sz, sz);
+    }
+
+    void paintEvent(QPaintEvent *event) override
+    {
+        QTabBar::paintEvent(event);
+        if (m_hoveredTab < 0 || m_hoveredTab >= count())
+            return;
+        const QRect cr = closeButtonRect(m_hoveredTab);
+        if (!cr.isValid())
+            return;
+        QPainter p(this);
+        p.setRenderHint(QPainter::Antialiasing, true);
+        p.setPen(Qt::NoPen);
+        p.setBrush(m_hoveredClose ? QColor(0xE8, 0x11, 0x23, 0xEE) : QColor(0xD8, 0xD8, 0xD8, 0xD8));
+        p.drawRoundedRect(cr, 3, 3);
+        const int m = 4;
+        p.setPen(QPen(m_hoveredClose ? Qt::white : QColor(0x30, 0x30, 0x30), 1.6, Qt::SolidLine, Qt::RoundCap));
+        p.drawLine(cr.left() + m, cr.top() + m, cr.right() - m, cr.bottom() - m);
+        p.drawLine(cr.right() - m, cr.top() + m, cr.left() + m, cr.bottom() - m);
+    }
+
+    void mouseMoveEvent(QMouseEvent *event) override
+    {
+        const QPoint pos = event->pos();
+        const int tab = tabAt(pos);
+        const bool onClose = (tab >= 0) && closeButtonRect(tab).contains(pos);
+        if (tab != m_hoveredTab || onClose != m_hoveredClose) {
+            m_hoveredTab = tab;
+            m_hoveredClose = onClose;
+            update();
+        }
+        QTabBar::mouseMoveEvent(event);
+    }
+
+    bool event(QEvent *e) override
+    {
+        if (e->type() == QEvent::ToolTip) {
+            auto *he = static_cast<QHelpEvent *>(e);
+            const int tab = tabAt(he->pos());
+            if (tab >= 0) {
+                const QString tip = tabToolTip(tab);
+                if (!tip.isEmpty()) {
+                    const QRect r = tabRect(tab);
+                    QToolTip::showText(mapToGlobal(QPoint(r.left(), r.bottom() + 4)), tip, this, r);
+                } else {
+                    QToolTip::hideText();
+                }
+            } else {
+                QToolTip::hideText();
+            }
+            return true;
+        }
+        return QTabBar::event(e);
+    }
+
+    void leaveEvent(QEvent *event) override
+    {
+        QToolTip::hideText();
+        if (m_hoveredTab != -1 || m_hoveredClose) {
+            m_hoveredTab = -1;
+            m_hoveredClose = false;
+            update();
+        }
+        QTabBar::leaveEvent(event);
+    }
+
+    void mousePressEvent(QMouseEvent *event) override
+    {
+        if (event->button() == Qt::LeftButton) {
+            const int tab = tabAt(event->pos());
+            if (tab >= 0 && closeButtonRect(tab).contains(event->pos())) {
+                m_pressedCloseTab = tab;
+                event->accept();
+                return;
+            }
+        }
+        m_pressedCloseTab = -1;
+        QTabBar::mousePressEvent(event);
+    }
+
+    void mouseReleaseEvent(QMouseEvent *event) override
+    {
+        if (event->button() == Qt::LeftButton && m_pressedCloseTab >= 0) {
+            const int tab = m_pressedCloseTab;
+            m_pressedCloseTab = -1;
+            if (tab < count() && closeButtonRect(tab).contains(event->pos())) {
+                emit tabCloseRequested(tab);
+            }
+            event->accept();
+            return;
+        }
+        QTabBar::mouseReleaseEvent(event);
+    }
+
+private:
+    int m_hoveredTab = -1;
+    bool m_hoveredClose = false;
+    int m_pressedCloseTab = -1;
+};
+
+class HoverCloseTabWidget : public QTabWidget
+{
+public:
+    explicit HoverCloseTabWidget(QWidget *parent = nullptr)
+        : QTabWidget(parent)
+    {
+        setTabBar(new HoverCloseTabBar(this));
+    }
+};
 }
 
 MainWindow::MainWindow(QWidget *parent)
@@ -252,13 +387,40 @@ MainWindow::MainWindow(QWidget *parent)
     }
     ui->action_ViKeybind->setChecked(m_viKeybind);
     applyOutputFontSize(m_outputFontSize);
-    m_tabWidget = new QTabWidget(this);
-    m_tabWidget->setTabsClosable(true);
+    m_tabWidget = new HoverCloseTabWidget(this);
+    m_tabWidget->setTabsClosable(false);
     m_tabWidget->setMovable(true);
     m_tabWidget->setDocumentMode(true);
     setCentralWidget(m_tabWidget);
     connect(m_tabWidget, &QTabWidget::currentChanged, this, &MainWindow::onCurrentTabChanged);
-    connect(m_tabWidget, &QTabWidget::tabCloseRequested, this, &MainWindow::onTabCloseRequested);
+    connect(m_tabWidget->tabBar(), &QTabBar::tabCloseRequested, this, &MainWindow::onTabCloseRequested);
+    m_tabWidget->tabBar()->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(m_tabWidget->tabBar(), &QWidget::customContextMenuRequested, this, [this](const QPoint &pos) {
+        QTabBar *tb = m_tabWidget->tabBar();
+        const int idx = tb->tabAt(pos);
+        if (idx < 0) return;
+        QWidget *tab = m_tabWidget->widget(idx);
+        const QString fullPath = tab ? tab->property(PROP_FILE_PATH).toString() : QString();
+        const QString fileName = !fullPath.isEmpty()
+            ? QFileInfo(fullPath).fileName()
+            : (tab ? tab->property(PROP_BASE_TITLE).toString() : tb->tabText(idx));
+        QMenu menu(this);
+        QAction *actClose = menu.addAction(tr("&Close"));
+        menu.addSeparator();
+        QAction *actCopyName = menu.addAction(tr("Copy &Filename"));
+        QAction *actCopyPath = menu.addAction(tr("Copy Full &Path"));
+        actCopyPath->setEnabled(!fullPath.isEmpty());
+        QAction *chosen = menu.exec(tb->mapToGlobal(pos));
+        if (chosen == actClose) {
+            onTabCloseRequested(idx);
+        } else if (chosen == actCopyName) {
+            QApplication::clipboard()->setText(fileName);
+            statusBar()->showMessage(tr("Copied: %1").arg(fileName), 3000);
+        } else if (chosen == actCopyPath) {
+            QApplication::clipboard()->setText(fullPath);
+            statusBar()->showMessage(tr("Copied: %1").arg(fullPath), 3000);
+        }
+    });
 
     m_outlineDock = new QDockWidget(tr("OutlineBar"), this);
     m_outlineDock->setObjectName(QStringLiteral("outlineBar"));
@@ -379,6 +541,54 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(actAltFile, &QAction::triggered, this, &MainWindow::onSwitchToAltFile);
     menuBar()->insertMenu(ui->menuTest->menuAction(), naviMenu);
+
+    QMenu *toolMenu = new QMenu(tr("&Tool"), this);
+    QAction *actKeisenMode = toolMenu->addAction(tr("&Keisen mode"));
+    actKeisenMode->setCheckable(true);
+    actKeisenMode->setShortcut(QKeySequence(Qt::SHIFT | Qt::Key_F5));
+    connect(actKeisenMode, &QAction::toggled, this, [this](bool checked) {
+        m_keisenMode = checked;
+        if (m_tabWidget) {
+            for (int i = 0; i < m_tabWidget->count(); ++i) {
+                if (TextEdit *edit = textEditAt(i))
+                    edit->setKeisenMode(m_keisenMode);
+            }
+        }
+        statusBar()->showMessage(
+            m_keisenMode
+                ? tr("Keisen mode: ON (Ctrl+Arrow: draw, Ctrl+Shift+Arrow: erase)")
+                : tr("Keisen mode: OFF"),
+            4000);
+    });
+    toolMenu->addSeparator();
+    QAction *actThinKeisen = toolMenu->addAction(tr("T&hin Keisen"));
+    actThinKeisen->setCheckable(true);
+    actThinKeisen->setChecked(true);
+    QAction *actThickKeisen = toolMenu->addAction(tr("Th&ick Keisen"));
+    actThickKeisen->setCheckable(true);
+    connect(actThinKeisen, &QAction::triggered, this, [this, actThinKeisen, actThickKeisen]() {
+        m_thickKeisen = false;
+        actThinKeisen->setChecked(true);
+        actThickKeisen->setChecked(false);
+        if (m_tabWidget) {
+            for (int i = 0; i < m_tabWidget->count(); ++i) {
+                if (TextEdit *edit = textEditAt(i))
+                    edit->setThickKeisen(false);
+            }
+        }
+    });
+    connect(actThickKeisen, &QAction::triggered, this, [this, actThinKeisen, actThickKeisen]() {
+        m_thickKeisen = true;
+        actThinKeisen->setChecked(false);
+        actThickKeisen->setChecked(true);
+        if (m_tabWidget) {
+            for (int i = 0; i < m_tabWidget->count(); ++i) {
+                if (TextEdit *edit = textEditAt(i))
+                    edit->setThickKeisen(true);
+            }
+        }
+    });
+    menuBar()->insertMenu(ui->menuTest->menuAction(), toolMenu);
 #if defined(Q_OS_WIN) || defined(Q_OS_LINUX)
     //	メニューバーをメインツールバーに統合（viMarkdown と同じ方式）
     ui->mainToolBar->insertWidget(ui->action_Undo, ui->menuBar);
@@ -792,6 +1002,8 @@ TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath
     edit->setEmphasisColor(m_emphasisColor);
     edit->setSearchMatchColor(m_searchMatchColor);
     edit->setViEnabled(m_viKeybind);
+    edit->setKeisenMode(m_keisenMode);
+    edit->setThickKeisen(m_thickKeisen);
     edit->viEngine()->setSearchOptions(m_searchIgnoreCase, m_searchRegExp);
     edit->viEngine()->setCallbacks({
         [this](const QString &msg) { statusBar()->showMessage(msg, 5000); },

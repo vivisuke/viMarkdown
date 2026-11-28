@@ -250,6 +250,293 @@ QFont defaultEditorFont()
 	}
 	return QFontDatabase::systemFont(QFontDatabase::FixedFont);
 }
+
+//----------------------------------------------------------------------
+//	罫線テーブル・連結ビット計算（v0.3 MarkdownEditor.cpp より移植）
+//----------------------------------------------------------------------
+const int KEISEN_CODE_BEGIN = 0x2500;
+const int KEISEN_CODE_END = 0x2580;
+
+enum KeisenDir {
+	KDir_None  = 0x00,
+	KDir_Up    = 0x01,
+	KDir_Down  = 0x02,
+	KDir_Left  = 0x04,
+	KDir_Right = 0x08,
+	KDir_Thick = 4,
+	KDir_ThickUp    = KDir_Up << KDir_Thick,
+	KDir_ThickDown  = KDir_Down << KDir_Thick,
+	KDir_ThickLeft  = KDir_Left << KDir_Thick,
+	KDir_ThickRight = KDir_Right << KDir_Thick,
+	KDir_DblLine = 8,
+	KDir_DblUp    = KDir_Up << KDir_DblLine,
+	KDir_DblDown  = KDir_Down << KDir_DblLine,
+	KDir_DblLeft  = KDir_Left << KDir_DblLine,
+	KDir_DblRight = KDir_Right << KDir_DblLine,
+};
+
+static const unsigned short keisenTable[KEISEN_CODE_END - KEISEN_CODE_BEGIN] = {
+	/* 2500-2507 ─ ━ │ ┃ ┄ ┅ ┆ ┇ */
+	KDir_Left|KDir_Right, KDir_ThickLeft|KDir_ThickRight, KDir_Up|KDir_Down, KDir_ThickUp|KDir_ThickDown,
+	KDir_Left|KDir_Right, KDir_ThickLeft|KDir_ThickRight, KDir_Up|KDir_Down, KDir_ThickUp|KDir_ThickDown,
+	/* 2508-250F ┈ ┉ ┊ ┋ ┌ ┍ ┎ ┏ */
+	KDir_Left|KDir_Right, KDir_ThickLeft|KDir_ThickRight, KDir_Up|KDir_Down, KDir_ThickUp|KDir_ThickDown,
+	KDir_Down|KDir_Right, KDir_Down|KDir_ThickRight, KDir_ThickDown|KDir_Right, KDir_ThickDown|KDir_ThickRight,
+	/* 2510-2517 ┐ ┑ ┒ ┓ └ ┕ ┖ ┗ */
+	KDir_Down|KDir_Left, KDir_Down|KDir_ThickLeft, KDir_ThickDown|KDir_Left, KDir_ThickDown|KDir_ThickLeft,
+	KDir_Up|KDir_Right, KDir_Up|KDir_ThickRight, KDir_ThickUp|KDir_Right, KDir_ThickUp|KDir_ThickRight,
+	/* 2518-251F ┘ ┙ ┚ ┛ ├ ┝ ┞ ┟ */
+	KDir_Up|KDir_Left, KDir_Up|KDir_ThickLeft, KDir_ThickUp|KDir_Left, KDir_ThickUp|KDir_ThickLeft,
+	KDir_Up|KDir_Down|KDir_Right, KDir_Up|KDir_Down|KDir_ThickRight, KDir_ThickUp|KDir_Down|KDir_Right, KDir_Up|KDir_ThickDown|KDir_Right,
+	/* 2520-2527 ┠ ┡ ┢ ┣ ┤ ┥ ┦ ┧ */
+	KDir_ThickUp|KDir_ThickDown|KDir_Right, KDir_ThickUp|KDir_Down|KDir_ThickRight,
+	KDir_Up|KDir_ThickDown|KDir_ThickRight, KDir_ThickUp|KDir_ThickDown|KDir_ThickRight,
+	KDir_Up|KDir_Down|KDir_Left, KDir_Up|KDir_Down|KDir_ThickLeft,
+	KDir_ThickUp|KDir_Down|KDir_Left, KDir_Up|KDir_ThickDown|KDir_Left,
+	/* 2528-252F ┨ ┩ ┪ ┫ ┬ ┭ ┮ ┯ */
+	KDir_ThickUp|KDir_ThickDown|KDir_Left, KDir_ThickUp|KDir_Down|KDir_ThickLeft,
+	KDir_Up|KDir_ThickDown|KDir_ThickLeft, KDir_ThickUp|KDir_ThickDown|KDir_ThickLeft,
+	KDir_Down|KDir_Left|KDir_Right, KDir_Down|KDir_ThickLeft|KDir_Right,
+	KDir_Down|KDir_Left|KDir_ThickRight, KDir_Down|KDir_ThickLeft|KDir_ThickRight,
+	/* 2530-2537 ┰ ┱ ┲ ┳ ┴ ┵ ┶ ┷ */
+	KDir_ThickDown|KDir_Left|KDir_Right, KDir_ThickDown|KDir_ThickLeft|KDir_Right,
+	KDir_ThickDown|KDir_Left|KDir_ThickRight, KDir_ThickDown|KDir_ThickLeft|KDir_ThickRight,
+	KDir_Up|KDir_Left|KDir_Right, KDir_Up|KDir_ThickLeft|KDir_Right,
+	KDir_Up|KDir_Left|KDir_ThickRight, KDir_Up|KDir_ThickLeft|KDir_ThickRight,
+	/* 2538-253F ┸ ┹ ┺ ┻ ┼ ┽ ┾ ┿ */
+	KDir_ThickUp|KDir_Left|KDir_Right, KDir_ThickUp|KDir_ThickLeft|KDir_Right,
+	KDir_ThickUp|KDir_Left|KDir_ThickRight, KDir_ThickUp|KDir_ThickLeft|KDir_ThickRight,
+	KDir_Up|KDir_Down|KDir_Left|KDir_Right, KDir_Up|KDir_Down|KDir_ThickLeft|KDir_Right,
+	KDir_Up|KDir_Down|KDir_Left|KDir_ThickRight, KDir_Up|KDir_Down|KDir_ThickLeft|KDir_ThickRight,
+	/* 2540-2547 ╀ ╁ ╂ ╃ ╄ ╅ ╆ ╇ */
+	KDir_ThickUp|KDir_Down|KDir_Left|KDir_Right, KDir_Up|KDir_ThickDown|KDir_Left|KDir_Right,
+	KDir_ThickUp|KDir_ThickDown|KDir_Left|KDir_Right, KDir_ThickUp|KDir_Down|KDir_ThickLeft|KDir_Right,
+	KDir_ThickUp|KDir_Down|KDir_Left|KDir_ThickRight, KDir_Up|KDir_ThickDown|KDir_ThickLeft|KDir_Right,
+	KDir_Up|KDir_ThickDown|KDir_Left|KDir_ThickRight, KDir_ThickUp|KDir_Down|KDir_ThickLeft|KDir_ThickRight,
+	/* 2548-254F ╈ ╉ ╊ ╋ ╌ ╍ ╎ ╏ */
+	KDir_Up|KDir_ThickDown|KDir_ThickLeft|KDir_ThickRight, KDir_ThickUp|KDir_ThickDown|KDir_ThickLeft|KDir_Right,
+	KDir_ThickUp|KDir_ThickDown|KDir_Left|KDir_ThickRight, KDir_ThickUp|KDir_ThickDown|KDir_ThickLeft|KDir_ThickRight,
+	KDir_Left|KDir_Right, KDir_ThickLeft|KDir_ThickRight, KDir_Up|KDir_Down, KDir_ThickUp|KDir_ThickDown,
+	/* 2550-2557 ═ ║ ╒ ╓ ╔ ╕ ╖ ╗ */
+	KDir_DblLeft|KDir_DblRight, KDir_DblUp|KDir_DblDown, KDir_Down|KDir_DblRight, KDir_DblDown|KDir_Right,
+	KDir_DblDown|KDir_DblRight, KDir_Down|KDir_DblLeft, KDir_DblDown|KDir_Left, KDir_DblDown|KDir_DblLeft,
+	/* 2558-255F ╘ ╙ ╚ ╛ ╜ ╝ ╞ ╟ */
+	KDir_Up|KDir_DblRight, KDir_DblUp|KDir_Right, KDir_DblUp|KDir_DblRight, KDir_Up|KDir_DblLeft,
+	KDir_DblUp|KDir_Left, KDir_DblUp|KDir_DblLeft, KDir_Up|KDir_Down|KDir_DblRight, KDir_DblUp|KDir_DblDown|KDir_Right,
+	/* 2560-2567 ╠ ╡ ╢ ╣ ╤ ╥ ╦ ╧ */
+	KDir_DblUp|KDir_DblDown|KDir_DblRight, KDir_Up|KDir_Down|KDir_DblLeft, KDir_DblUp|KDir_DblDown|KDir_Left, KDir_DblUp|KDir_DblDown|KDir_DblLeft,
+	KDir_Down|KDir_DblLeft|KDir_DblRight, KDir_DblDown|KDir_Left|KDir_Right, KDir_DblDown|KDir_DblLeft|KDir_DblRight, KDir_Up|KDir_DblLeft|KDir_DblRight,
+	/* 2568-256F ╨ ╩ ╪ ╫ ╬ ╭ ╮ ╯ */
+	KDir_DblUp|KDir_Left|KDir_Right, KDir_DblUp|KDir_DblLeft|KDir_DblRight, KDir_Up|KDir_Down|KDir_DblLeft|KDir_DblRight, KDir_DblUp|KDir_DblDown|KDir_Left|KDir_Right,
+	KDir_DblUp|KDir_DblDown|KDir_DblLeft|KDir_DblRight, KDir_Down|KDir_Right, KDir_Down|KDir_Left, KDir_Up|KDir_Left,
+	/* 2570-2577 ╰ ╱ ╲ ╳ ╴ ╵ ╶ ╷ */
+	KDir_Up|KDir_Right, KDir_None, KDir_None, KDir_None,
+	KDir_Left, KDir_Up, KDir_Right, KDir_Down,
+	/* 2578-257F ╸ ╹ ╺ ╻ ╼ ╽ ╾ ╿ */
+	KDir_ThickLeft, KDir_ThickUp, KDir_ThickRight, KDir_ThickDown,
+	KDir_Left|KDir_ThickRight, KDir_Up|KDir_ThickDown, KDir_ThickLeft|KDir_Right, KDir_ThickUp|KDir_Down
+};
+
+static const ushort revKeisenTable[256] = {
+	// 0x00 - 0x0F: 全て細線
+	u' ',  u'╵',  u'╷',  u'│',	u'╴',  u'┘',  u'┐',  u'┤',
+	u'╶',  u'└',  u'┌',  u'├',	u'─',  u'┴',  u'┬',  u'┼',
+	// 0x10 - 0x1F: 太線 上
+	u'╹',  u'╹',  u'╿',  u'╿',	u'┚',  u'┚',  u'┦',  u'┦',
+	u'┖',  u'┖',  u'┞',  u'┞',	u'┸',  u'┸',  u'╀',  u'╀',
+	// 0x20 - 0x2F: 太線 下
+	u'╻',  u'╽',  u'╻',  u'╽',	u'┒',  u'┧',  u'┒',  u'┧',
+	u'┎',  u'┟',  u'┎',  u'┟',	u'┰',  u'╁',  u'┰',  u'╁',
+	// 0x30 - 0x3F: 太線 上下
+	u'┃',  u'┃',  u'┃',  u'┃',	u'┨',  u'┨',  u'┨',  u'┨',
+	u'┠',  u'┠',  u'┠',  u'┠',	u'╂',  u'╂',  u'╂',  u'╂',
+	// 0x40 - 0x4F: 太線 左
+	u'╸',  u'┙',  u'┑',  u'┥',	u'╸',  u'┙',  u'┑',  u'┥',
+	u'╾',  u'┵',  u'┭',  u'┽',	u'╾',  u'┵',  u'┭',  u'┽',
+	// 0x50 - 0x5F: 太線 上左
+	u'┛',  u'┛',  u'┩',  u'┩',	u'┛',  u'┛',  u'┩',  u'┩',
+	u'┹',  u'┹',  u'╃',  u'╃',	u'┹',  u'┹',  u'╃',  u'╃',
+	// 0x60 - 0x6F: 太線 下左
+	u'┓',  u'┪',  u'┓',  u'┪',	u'┓',  u'┪',  u'┓',  u'┪',
+	u'┱',  u'╅',  u'┱',  u'╅',	u'┱',  u'╅',  u'┱',  u'╅',
+	// 0x70 - 0x7F: 太線 上下左
+	u'┫',  u'┫',  u'┫',  u'┫',	u'┫',  u'┫',  u'┫',  u'┫',
+	u'╉',  u'╉',  u'╉',  u'╉',	u'╉',  u'╉',  u'╉',  u'╉',
+	// 0x80 - 0x8F: 太線 右
+	u'╺',  u'┕',  u'┍',  u'┝',	u'╼',  u'┶',  u'┮',  u'┾',
+	u'╺',  u'┕',  u'┍',  u'┝',	u'╼',  u'┶',  u'┮',  u'┾',
+	// 0x90 - 0x9F: 太線 上右
+	u'┗',  u'┗',  u'┡',  u'┡',	u'┺',  u'┺',  u'╄',  u'╄',
+	u'┗',  u'┗',  u'┡',  u'┡',	u'┺',  u'┺',  u'╄',  u'╄',
+	// 0xA0 - 0xAF: 太線 下右
+	u'┏',  u'┢',  u'┏',  u'┢',	u'┲',  u'╆',  u'┲',  u'╆',
+	u'┏',  u'┢',  u'┏',  u'┢',	u'┲',  u'╆',  u'┲',  u'╆',
+	// 0xB0 - 0xBF: 太線 上下右
+	u'┣',  u'┣',  u'┣',  u'┣',	u'╊',  u'╊',  u'╊',  u'╊',
+	u'┣',  u'┣',  u'┣',  u'┣',	u'╊',  u'╊',  u'╊',  u'╊',
+	// 0xC0 - 0xCF: 太線 左右
+	u'━',  u'┷',  u'┯',  u'┿',	u'━',  u'┷',  u'┯',  u'┿',
+	u'━',  u'┷',  u'┯',  u'┿',	u'━',  u'┷',  u'┯',  u'┿',
+	// 0xD0 - 0xDF: 太線 上左右
+	u'┻',  u'┻',  u'╇',  u'╇',	u'┻',  u'┻',  u'╇',  u'╇',
+	u'┻',  u'┻',  u'╇',  u'╇',	u'┻',  u'┻',  u'╇',  u'╇',
+	// 0xE0 - 0xEF: 太線 下左右
+	u'┳',  u'╈',  u'┳',  u'╈',	u'┳',  u'╈',  u'┳',  u'╈',
+	u'┳',  u'╈',  u'┳',  u'╈',	u'┳',  u'╈',  u'┳',  u'╈',
+	// 0xF0 - 0xFF: 太線 全方向
+	u'╋',  u'╋',  u'╋',  u'╋',	u'╋',  u'╋',  u'╋',  u'╋',
+	u'╋',  u'╋',  u'╋',  u'╋',	u'╋',  u'╋',  u'╋',  u'╋'
+};
+
+ushort getKeisenBits(QChar ch)
+{
+	const ushort uc = ch.unicode();
+	if( uc < KEISEN_CODE_BEGIN || uc >= KEISEN_CODE_END ) return 0;
+	return keisenTable[uc - KEISEN_CODE_BEGIN];
+}
+
+int visualColOfText(const QString &text, const QFontMetrics &fm)
+{
+	const int hw = qMax(1, fm.horizontalAdvance(QChar('A')));
+	return fm.horizontalAdvance(text) / hw;
+}
+
+QChar charAtVisualCol(const QString &line, int targetVc, const QFontMetrics &fm)
+{
+	if( line.isEmpty() || targetVc < 0 ) return QChar(u' ');
+	const int hw = qMax(1, fm.horizontalAdvance(QChar('A')));
+	for( int i = 0; i < line.size(); ++i ) {
+		const int vc = fm.horizontalAdvance(line.left(i)) / hw;
+		if( vc == targetVc ) return line[i];
+		if( vc > targetVc ) break;
+	}
+	return QChar(u' ');
+}
+
+ushort normalizeToJisKeisenBits(ushort bits)
+{
+	const bool u = (bits & (KDir_Up | KDir_ThickUp)) != 0;
+	const bool d = (bits & (KDir_Down | KDir_ThickDown)) != 0;
+	const bool l = (bits & (KDir_Left | KDir_ThickLeft)) != 0;
+	const bool r = (bits & (KDir_Right | KDir_ThickRight)) != 0;
+	const int cnt = (u ? 1 : 0) + (d ? 1 : 0) + (l ? 1 : 0) + (r ? 1 : 0);
+	if( cnt < 2 ) return bits;
+	bool vThick = (bits & (KDir_ThickUp | KDir_ThickDown)) != 0;
+	bool hThick = (bits & (KDir_ThickLeft | KDir_ThickRight)) != 0;
+	if( cnt == 2 && (u || d) && (l || r) ) {
+		if( vThick || hThick )
+			vThick = hThick = true;
+	}
+	ushort res = 0;
+	if( u ) res |= vThick ? KDir_ThickUp : KDir_Up;
+	if( d ) res |= vThick ? KDir_ThickDown : KDir_Down;
+	if( l ) res |= hThick ? KDir_ThickLeft : KDir_Left;
+	if( r ) res |= hThick ? KDir_ThickRight : KDir_Right;
+	return res;
+}
+
+QString calcKeisenChar(bool erase, bool thickKeisen, KeisenDir dir, bool isDst,
+                       const QString &txt, int ix, const QFontMetrics &fm,
+                       const QString &prev = QString(), const QString &next = QString())
+{
+	auto oppDir = [](KeisenDir d) -> KeisenDir {
+		switch( d ) {
+		case KDir_Up:    return KDir_Down;
+		case KDir_Down:  return KDir_Up;
+		case KDir_Left:  return KDir_Right;
+		default:         return KDir_Left;
+		}
+	};
+	auto dirMask = [](KeisenDir d) -> ushort {
+		return static_cast<ushort>(d | (d << KDir_Thick));
+	};
+	auto dirBit = [&](KeisenDir d) -> ushort {
+		return static_cast<ushort>(thickKeisen ? (d << KDir_Thick) : d);
+	};
+	auto lineStr = [](ushort bits, bool vertical) -> QString {
+		if( vertical )
+			return (bits & (KDir_ThickUp | KDir_ThickDown)) ? QStringLiteral("┃") : QStringLiteral("│");
+		else
+			return (bits & (KDir_ThickLeft | KDir_ThickRight)) ? QStringLiteral("━") : QStringLiteral("─");
+	};
+	auto arrowStr = [](KeisenDir d) -> QString {
+		switch( d ) {
+		case KDir_Down:  return QStringLiteral("↑");
+		case KDir_Up:    return QStringLiteral("↓");
+		case KDir_Right: return QStringLiteral("←");
+		default:         return QStringLiteral("→");
+		}
+	};
+
+	const QChar ch = (ix >= 0 && ix < txt.size()) ? txt[ix] : QChar(u' ');
+	const int vc = (ix >= 0) ? visualColOfText(txt.left(qMin(ix, (int)txt.size())), fm) : 0;
+	ushort bits = static_cast<ushort>(getKeisenBits(ch) & 0xFF);
+	bool fromArrow = false;
+
+	if( bits == 0 ) {
+		if( ch == u'→' ) {
+			bool th = (ix > 0 && (getKeisenBits(txt[ix - 1]) & KDir_ThickRight) != 0);
+			bits = th ? KDir_ThickLeft : KDir_Left;
+			fromArrow = true;
+		} else if( ch == u'←' ) {
+			bool th = (ix + 1 < txt.size() && (getKeisenBits(txt[ix + 1]) & KDir_ThickLeft) != 0);
+			bits = th ? KDir_ThickRight : KDir_Right;
+			fromArrow = true;
+		} else if( ch == u'↓' ) {
+			QChar pCh = charAtVisualCol(prev, vc, fm);
+			bool th = !prev.isEmpty() ? ((getKeisenBits(pCh) & KDir_ThickDown) != 0) : thickKeisen;
+			bits = th ? KDir_ThickUp : KDir_Up;
+			fromArrow = true;
+		} else if( ch == u'↑' ) {
+			QChar nCh = charAtVisualCol(next, vc, fm);
+			bool th = !next.isEmpty() ? ((getKeisenBits(nCh) & KDir_ThickUp) != 0) : thickKeisen;
+			bits = th ? KDir_ThickDown : KDir_Down;
+			fromArrow = true;
+		}
+	}
+
+	const bool isVertDir = (dir == KDir_Up || dir == KDir_Down);
+	if( !erase ) {
+		if( bits == 0 ) {
+			if( isDst ) return arrowStr(dir);
+			return lineStr(dirBit(dir), isVertDir);
+		}
+		if( !fromArrow ) {
+			if( isVertDir && (bits & (KDir_Up | KDir_Down | KDir_ThickUp | KDir_ThickDown)) == 0 ) {
+				bool hasL = (ix > 0 && ((getKeisenBits(txt[ix - 1]) & (KDir_Right | KDir_ThickRight)) != 0 || txt[ix - 1] == u'←'));
+				bool hasR = (ix + 1 < txt.size() && ((getKeisenBits(txt[ix + 1]) & (KDir_Left | KDir_ThickLeft)) != 0 || txt[ix + 1] == u'→'));
+				if( !hasL && hasR )      bits &= ~dirMask(KDir_Left);
+				else if( hasL && !hasR ) bits &= ~dirMask(KDir_Right);
+			} else if( !isVertDir && (!prev.isEmpty() || !next.isEmpty()) && (bits & (KDir_Left | KDir_Right | KDir_ThickLeft | KDir_ThickRight)) == 0 ) {
+				QChar pCh = charAtVisualCol(prev, vc, fm);
+				QChar nCh = charAtVisualCol(next, vc, fm);
+				bool hasU = ((getKeisenBits(pCh) & (KDir_Down | KDir_ThickDown)) != 0);
+				bool hasD = ((getKeisenBits(nCh) & (KDir_Up | KDir_ThickUp)) != 0);
+				if( !hasU ) bits &= ~dirMask(KDir_Up);
+				if( !hasD ) bits &= ~dirMask(KDir_Down);
+			}
+		}
+		bits = static_cast<ushort>((bits & ~dirMask(dir)) | dirBit(dir));
+		const int cnt = ((bits & dirMask(KDir_Up)) ? 1 : 0) + ((bits & dirMask(KDir_Down)) ? 1 : 0)
+		              + ((bits & dirMask(KDir_Left)) ? 1 : 0) + ((bits & dirMask(KDir_Right)) ? 1 : 0);
+		if( cnt <= 1 )
+			return lineStr(bits, (bits & (dirMask(KDir_Up) | dirMask(KDir_Down))) != 0);
+		return QString(QChar(revKeisenTable[normalizeToJisKeisenBits(bits)]));
+	} else {
+		if( bits == 0 ) return QStringLiteral("  ");
+		if( (bits & dirMask(dir)) == 0 ) return QString(ch);
+		bits &= ~dirMask(dir);
+		const int cnt = ((bits & dirMask(KDir_Up)) ? 1 : 0) + ((bits & dirMask(KDir_Down)) ? 1 : 0)
+		              + ((bits & dirMask(KDir_Left)) ? 1 : 0) + ((bits & dirMask(KDir_Right)) ? 1 : 0);
+		if( cnt == 0 ) return QStringLiteral("  ");
+		if( cnt == 1 ) {
+			if( (bits & dirMask(oppDir(dir))) != 0 )
+				return QStringLiteral("  ");
+			return lineStr(bits, (bits & (dirMask(KDir_Up) | dirMask(KDir_Down))) != 0);
+		}
+		return QString(QChar(revKeisenTable[normalizeToJisKeisenBits(bits)]));
+	}
+}
 }
 
 TextEdit::TextEdit(QWidget *parent)
@@ -1613,8 +1900,218 @@ void TextEdit::syncImeToViMode()
 		enterInsertModeFromIme();
 }
 
+void TextEdit::doKeisenRight(bool erase, bool thick)
+{
+	const QFontMetrics fm = fontMetrics();
+	const ViewLineMgr &mgr = m_doc.lineMgr();
+	const int ln = mgr.lineAtPos(m_cursor.position());
+	auto lineStr = [&](int row) {
+		if( row < 0 || row >= mgr.lineCount() ) return QString();
+		QString s = m_doc.findBlockByNumber(row).text();
+		if( s.endsWith(QChar('\n')) ) s.chop(1);
+		if( s.endsWith(QChar('\r')) ) s.chop(1);
+		return s;
+	};
+	const QString line = lineStr(ln);
+	const QString prev = lineStr(ln - 1);
+	const QString next = lineStr(ln + 1);
+	const TextDocument::pos_t lineStart = mgr.lineStartPos(ln);
+	const int ix0 = qBound(0, static_cast<int>(m_cursor.position() - lineStart), (int)line.size());
+	const int vc0 = visualColOfText(line.left(ix0), fm);
+
+	int ix1 = ix0;
+	QString str = erase ? QStringLiteral("  ") : (thick ? QStringLiteral("━") : QStringLiteral("─"));
+	if( ix0 < line.size() ) {
+		do { ++ix1; } while( ix1 < line.size() && visualColOfText(line.left(ix1), fm) < vc0 + 2 );
+		str = calcKeisenChar(erase, thick, KDir_Right, false, line, ix0, fm, prev, next);
+	}
+	int ix2 = ix1;
+	QString str2 = erase ? QStringLiteral("  ") : QStringLiteral("→");
+	if( ix1 < line.size() ) {
+		const int vc1 = visualColOfText(line.left(ix1), fm);
+		do { ++ix2; } while( ix2 < line.size() && visualColOfText(line.left(ix2), fm) < vc1 + 2 );
+		str2 = calcKeisenChar(erase, thick, KDir_Left, true, line, ix1, fm, prev, next);
+	}
+
+	m_doc.undoMgr().openBlock();
+	m_doc.replace(lineStart + ix0, lineStart + ix2, str + str2);
+	m_doc.undoMgr().closeBlock();
+	m_doc.undoMgr().prohibitMergeUndo();
+	m_cursor.setPosition(lineStart + ix0 + static_cast<TextDocument::pos_t>(str.size()));
+	afterChange(true);
+}
+
+void TextEdit::doKeisenLeft(bool erase, bool thick)
+{
+	const QFontMetrics fm = fontMetrics();
+	const ViewLineMgr &mgr = m_doc.lineMgr();
+	const int ln = mgr.lineAtPos(m_cursor.position());
+	const TextDocument::pos_t lineStart = mgr.lineStartPos(ln);
+	const int ix0 = static_cast<int>(m_cursor.position() - lineStart);
+	if( ix0 <= 0 ) return;
+
+	auto lineStr = [&](int row) {
+		if( row < 0 || row >= mgr.lineCount() ) return QString();
+		QString s = m_doc.findBlockByNumber(row).text();
+		if( s.endsWith(QChar('\n')) ) s.chop(1);
+		if( s.endsWith(QChar('\r')) ) s.chop(1);
+		return s;
+	};
+	const QString line = lineStr(ln);
+	const QString prev = lineStr(ln - 1);
+	const QString next = lineStr(ln + 1);
+	const int vc0 = visualColOfText(line.left(ix0), fm);
+
+	int ix1 = ix0;
+	QString src = erase ? QStringLiteral("  ") : (thick ? QStringLiteral("━") : QStringLiteral("─"));
+	if( ix0 < line.size() ) {
+		do { ++ix1; } while( ix1 < line.size() && visualColOfText(line.left(ix1), fm) < vc0 + 2 );
+		src = calcKeisenChar(erase, thick, KDir_Left, false, line, ix0, fm, prev, next);
+	}
+	int ixL = ix0;
+	while( ixL > 0 && visualColOfText(line.left(ixL), fm) > vc0 - 2 )
+		--ixL;
+	const QString dst = calcKeisenChar(erase, thick, KDir_Right, true, line, ixL, fm, prev, next);
+
+	m_doc.undoMgr().openBlock();
+	m_doc.replace(lineStart + ixL, lineStart + ix1, dst + src);
+	m_doc.undoMgr().closeBlock();
+	m_doc.undoMgr().prohibitMergeUndo();
+	m_cursor.setPosition(lineStart + ixL);
+	afterChange(true);
+}
+
+void TextEdit::doKeisenUp(bool erase, bool thick)
+{
+	const QFontMetrics fm = fontMetrics();
+	const ViewLineMgr &mgr = m_doc.lineMgr();
+	const int ln = mgr.lineAtPos(m_cursor.position());
+	if( ln <= 0 ) return;
+
+	auto lineStr = [&](int row) {
+		QString s = m_doc.findBlockByNumber(row).text();
+		if( s.endsWith(QChar('\n')) ) s.chop(1);
+		if( s.endsWith(QChar('\r')) ) s.chop(1);
+		return s;
+	};
+	const QString curLine = lineStr(ln);
+	const TextDocument::pos_t curStart = mgr.lineStartPos(ln);
+	const int ix0 = qBound(0, static_cast<int>(m_cursor.position() - curStart), (int)curLine.size());
+	const int vc0 = visualColOfText(curLine.left(ix0), fm);
+
+	int ix1 = ix0;
+	while( ix1 < curLine.size() && visualColOfText(curLine.left(ix1), fm) < vc0 + 2 )
+		++ix1;
+	const QString srcStr = calcKeisenChar(erase, thick, KDir_Up, false, curLine, ix0, fm);
+
+	m_doc.undoMgr().openBlock();
+	m_doc.replace(curStart + ix0, curStart + ix1, srcStr);
+
+	//	上行（ln - 1）の vc0 位置を準備して置換
+	QString upLine = lineStr(ln - 1);
+	const TextDocument::pos_t upStart = mgr.lineStartPos(ln - 1);
+	int uix = 0;
+	while( uix < upLine.size() && visualColOfText(upLine.left(uix), fm) < vc0 )
+		++uix;
+	const int uvc = visualColOfText(upLine.left(uix), fm);
+	if( uvc < vc0 ) {
+		const QString pad(vc0 - uvc, u' ');
+		m_doc.insert(upStart + uix, pad);
+		upLine.insert(uix, pad);
+		uix += static_cast<int>(pad.size());
+	}
+	QString pdLeft, pdRight;
+	while( uix > 0 && visualColOfText(upLine.left(uix), fm) > vc0 ) {
+		pdLeft += u' ';
+		--uix;
+	}
+	int uix2 = uix;
+	while( uix2 < upLine.size() && visualColOfText(upLine.left(uix2), fm) < vc0 + 2 )
+		++uix2;
+	if( visualColOfText(upLine.left(uix2), fm) > vc0 + 2 )
+		pdRight = QStringLiteral(" ");
+	const QString dstStr = calcKeisenChar(erase, thick, KDir_Down, true, upLine, uix, fm);
+	m_doc.replace(upStart + uix, upStart + uix2, pdLeft + dstStr + pdRight);
+
+	m_doc.undoMgr().closeBlock();
+	m_doc.undoMgr().prohibitMergeUndo();
+	m_cursor.setPosition(upStart + uix + static_cast<TextDocument::pos_t>(pdLeft.size()));
+	afterChange(true);
+}
+
+void TextEdit::doKeisenDown(bool erase, bool thick)
+{
+	const QFontMetrics fm = fontMetrics();
+	const ViewLineMgr &mgr = m_doc.lineMgr();
+	const int ln = mgr.lineAtPos(m_cursor.position());
+
+	auto lineStr = [&](int row) {
+		QString s = m_doc.findBlockByNumber(row).text();
+		if( s.endsWith(QChar('\n')) ) s.chop(1);
+		if( s.endsWith(QChar('\r')) ) s.chop(1);
+		return s;
+	};
+	const QString curLine = lineStr(ln);
+	const TextDocument::pos_t curStart = mgr.lineStartPos(ln);
+	const int ix0 = qBound(0, static_cast<int>(m_cursor.position() - curStart), (int)curLine.size());
+	const int vc0 = visualColOfText(curLine.left(ix0), fm);
+
+	int ix1 = ix0;
+	while( ix1 < curLine.size() && visualColOfText(curLine.left(ix1), fm) < vc0 + 2 )
+		++ix1;
+	const QString srcStr = calcKeisenChar(erase, thick, KDir_Down, false, curLine, ix0, fm);
+
+	m_doc.undoMgr().openBlock();
+	m_doc.replace(curStart + ix0, curStart + ix1, srcStr);
+
+	if( ln + 1 >= mgr.lineCount() ) {
+		m_doc.insert(mgr.lineEndPos(ln), QStringLiteral("\n"));
+	}
+
+	//	下行（ln + 1）の vc0 位置を準備して置換
+	QString dnLine = lineStr(ln + 1);
+	const TextDocument::pos_t dnStart = mgr.lineStartPos(ln + 1);
+	int dix = 0;
+	while( dix < dnLine.size() && visualColOfText(dnLine.left(dix), fm) < vc0 )
+		++dix;
+	const int dvc = visualColOfText(dnLine.left(dix), fm);
+	if( dvc < vc0 ) {
+		const QString pad(vc0 - dvc, u' ');
+		m_doc.insert(dnStart + dix, pad);
+		dnLine.insert(dix, pad);
+		dix += static_cast<int>(pad.size());
+	}
+	QString pdLeft, pdRight;
+	while( dix > 0 && visualColOfText(dnLine.left(dix), fm) > vc0 ) {
+		pdLeft += u' ';
+		--dix;
+	}
+	int dix2 = dix;
+	while( dix2 < dnLine.size() && visualColOfText(dnLine.left(dix2), fm) < vc0 + 2 )
+		++dix2;
+	if( visualColOfText(dnLine.left(dix2), fm) > vc0 + 2 )
+		pdRight = QStringLiteral(" ");
+	const QString dstStr = calcKeisenChar(erase, thick, KDir_Up, true, dnLine, dix, fm);
+	m_doc.replace(dnStart + dix, dnStart + dix2, pdLeft + dstStr + pdRight);
+
+	m_doc.undoMgr().closeBlock();
+	m_doc.undoMgr().prohibitMergeUndo();
+	m_cursor.setPosition(dnStart + dix + static_cast<TextDocument::pos_t>(pdLeft.size()));
+	afterChange(true);
+}
+
 void TextEdit::keyPressEvent(QKeyEvent *event)
 {
+	if( m_keisenMode && (event->modifiers() & Qt::ControlModifier) != 0 ) {
+		const bool erase = (event->modifiers() & Qt::ShiftModifier) != 0;
+		switch( event->key() ) {
+		case Qt::Key_Right: doKeisenRight(erase, m_thickKeisen); event->accept(); return;
+		case Qt::Key_Left:  doKeisenLeft(erase, m_thickKeisen);  event->accept(); return;
+		case Qt::Key_Up:    doKeisenUp(erase, m_thickKeisen);    event->accept(); return;
+		case Qt::Key_Down:  doKeisenDown(erase, m_thickKeisen);  event->accept(); return;
+		default: break;
+		}
+	}
 	if( event->key() == Qt::Key_Escape
 		|| (m_vi.isEnabled() && (event->modifiers() & Qt::ControlModifier) && event->key() == Qt::Key_BracketLeft) ) {
 		forceImeOff(this);
@@ -2089,4 +2586,9 @@ QVariant TextEdit::inputMethodQuery(Qt::InputMethodQuery query) const
 	default:
 		return QAbstractScrollArea::inputMethodQuery(query);
 	}
+}
+
+ushort getKeisenConnectionBits(QChar ch)
+{
+	return getKeisenBits(ch);
 }

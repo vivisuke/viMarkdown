@@ -8,6 +8,8 @@
 #include <QFileInfo>
 #include <QFont>
 #include <QFontDatabase>
+#include <QFontMetrics>
+#include <QHash>
 #include <QImage>
 #include <QInputMethodEvent>
 #include <QKeyEvent>
@@ -37,6 +39,8 @@
 #include <algorithm>
 #include <memory>
 #include "lunasvg.h"
+
+extern ushort getKeisenConnectionBits(QChar ch);
 
 namespace {
 constexpr int kBlockNormal = 0;
@@ -496,6 +500,22 @@ bool isSvgFence(const QString &line)
 		return false;
 	const QStringView lang = rest.mid(3).trimmed();
 	return lang.compare(u"svg", Qt::CaseInsensitive) == 0;
+}
+
+//	Keisen フェンス開始行（先頭 0〜3 個の空白 + "```keisen" + 任意オプション、大文字小文字不問）を判定
+bool isKeisenFence(const QString &line)
+{
+	qsizetype i = 0;
+	while( i < line.size() && i < 3 && line[i] == QChar(' ') )
+		++i;
+	const QStringView rest = QStringView(line).mid(i);
+	if( !rest.startsWith(u"```") )
+		return false;
+	const QStringView after = rest.mid(3);
+	if( !after.startsWith(u"keisen", Qt::CaseInsensitive) )
+		return false;
+	const qsizetype kLen = 6;	//	"keisen"
+	return after.size() == kLen || after[kLen].isSpace();
 }
 
 //	GFM テーブルの1行をセル配列に分解（\| はエスケープされたリテラル '|' として扱う）
@@ -1399,6 +1419,210 @@ void insertSvgBlock(
 		cf.setForeground(QColor(0x88, 0x88, 0x88));
 		cursor.insertText(trimmed.isEmpty() ? QStringLiteral("[SVG]") : QStringLiteral("[SVG: invalid markup]"), cf);
 	}
+
+	const int bn = cursor.block().blockNumber();
+	if( blockToSrcLine.size() <= bn )
+		blockToSrcLine.resize(bn + 1, startLn);
+	blockToSrcLine[bn] = startLn;
+	for( int ln = startLn; ln <= endLn && ln < srcLineToBlock.size(); ++ln )
+		srcLineToBlock[ln] = bn;
+}
+
+//	```keisen ... ``` フェンスブロックを QImage に描画して画像として挿入する（v0.3 do_keisen_block 移植）
+void insertKeisenBlock(
+	QTextCursor &cursor,
+	const QString &fenceLine,
+	const QStringList &lines,
+	ParseState &st,
+	int startLn,
+	int endLn,
+	QVector<int> &srcLineToBlock,
+	QVector<int> &blockToSrcLine)
+{
+	if( st.inQuote ) {
+		st.inQuote = false;
+		finishBlockMarginIfNeeded(cursor, kBlockQuote);
+	}
+	st.activeListIndent = 0;
+	st.listNum = 0;
+
+	const int nLines = static_cast<int>(lines.size());
+	if( nLines <= 0 )
+		return;
+
+	QTextDocument *doc = cursor.document();
+	if( !doc )
+		return;
+
+	//	```keisen 以降のオプション（background-color: ...; color: ...;）を解析
+	qsizetype fencePos = 0;
+	while( fencePos < fenceLine.size() && fencePos < 3 && fenceLine[fencePos] == QChar(' ') )
+		++fencePos;
+	QStringView buf = QStringView(fenceLine).mid(fencePos + QStringLiteral("```keisen").size());
+	QColor bgcolor(0xF5, 0xF5, 0xF5);
+	QColor color(Qt::black);
+	for( ;; ) {
+		while( !buf.isEmpty() && buf[0] == u' ' ) buf = buf.mid(1);
+		if( buf.startsWith(u"background-color:", Qt::CaseInsensitive) ) {
+			buf = buf.mid(QStringLiteral("background-color:").size());
+			while( !buf.isEmpty() && buf[0] == u' ' ) buf = buf.mid(1);
+			const qsizetype ix = buf.indexOf(u';');
+			if( ix < 0 ) break;
+			const QColor c(buf.left(ix).trimmed().toString());
+			if( c.isValid() ) bgcolor = c;
+			buf = buf.mid(ix + 1);
+		} else if( buf.startsWith(u"color:", Qt::CaseInsensitive) ) {
+			buf = buf.mid(QStringLiteral("color:").size());
+			while( !buf.isEmpty() && buf[0] == u' ' ) buf = buf.mid(1);
+			const qsizetype ix = buf.indexOf(u';');
+			if( ix < 0 ) break;
+			const QColor c(buf.left(ix).trimmed().toString());
+			if( c.isValid() ) color = c;
+			buf = buf.mid(ix + 1);
+		} else {
+			break;
+		}
+	}
+
+	QFont font;
+	font.setFamilies({QStringLiteral("MS Gothic"), QStringLiteral("MS UI Gothic"),
+	                  QStringLiteral("Osaka-mono"), QStringLiteral("monospace")});
+	font.setFixedPitch(true);
+	font.setPointSizeF(st.basePt > 0.0 ? st.basePt * 1.2 : 12.0);
+	QFontMetrics fm(font);
+
+	int width = 100;
+	for( const QString &lineText : lines )
+		width = qMax(width, fm.horizontalAdvance(lineText) + 10);
+	const int lineHeight = qMax(1, fm.lineSpacing());
+	const int height = lineHeight * nLines;
+	const int halfW = qMax(1, fm.horizontalAdvance(u'A'));
+
+	//	各行の「表示列(vc) → 連結ビット」マップを構築（隣接セルとの太さ合わせ用）
+	QVector<QHash<int, ushort>> rowBits(nLines);
+	for( int i = 0; i < nLines; ++i ) {
+		const QString &line = lines[i];
+		for( int j = 0; j < line.size(); ++j ) {
+			const ushort b = getKeisenConnectionBits(line[j]);
+			if( b != 0 ) {
+				const int vc = fm.horizontalAdvance(line.left(j)) / halfW;
+				rowBits[i].insert(vc, b);
+			}
+		}
+	}
+
+	//	KeisenDir ビット定数（TextEdit.cpp の enum KeisenDir と同一）
+	constexpr ushort K_UP = 0x01, K_DN = 0x02, K_LT = 0x04, K_RT = 0x08;
+	constexpr int K_THICK = 4, K_DBL = 8;
+	auto armStyle = [](ushort b, ushort dir) -> int {
+		if( b & (dir << K_DBL) )   return 3;
+		if( b & (dir << K_THICK) ) return 2;
+		if( b & dir )              return 1;
+		return 0;
+	};
+
+	QImage img(width, height, QImage::Format_RGB32);
+	img.fill(bgcolor);
+	QPainter painter(&img);
+	painter.setFont(font);
+	const QPen textPen(color);
+	const QPen thinPen(color, 1, Qt::SolidLine, Qt::FlatCap);
+	const QPen thickPen(color, 3, Qt::SolidLine, Qt::FlatCap);
+
+	for( int i = 0; i < nLines; ++i ) {
+		const QString &line = lines[i];
+		const int yTop = lineHeight * i;
+		const int yBot = yTop + lineHeight;
+		const int cy = yTop + lineHeight / 2;
+		const int yBaseline = yTop + (lineHeight + fm.ascent() - fm.descent()) / 2;
+
+		for( int j = 0; j < line.size(); ++j ) {
+			const QChar ch = line[j];
+			if( ch == u' ' ) continue;
+			const int adv0 = fm.horizontalAdvance(line.left(j));
+			const int adv1 = fm.horizontalAdvance(line.left(j + 1));
+			const int xL = 5 + adv0;
+			const int xR = 5 + adv1;
+			const int cx = (xL + xR) / 2;
+			const ushort bits = getKeisenConnectionBits(ch);
+
+			if( bits == 0 ) {
+				painter.setRenderHint(QPainter::Antialiasing, true);
+				painter.setPen(textPen);
+				painter.drawText(xL, yBaseline, QString(ch));
+				continue;
+			}
+
+			int u = armStyle(bits, K_UP);
+			int d = armStyle(bits, K_DN);
+			int l = armStyle(bits, K_LT);
+			int r = armStyle(bits, K_RT);
+			const int vc = adv0 / halfW;
+
+			//	隣接セルが細線で接続している場合、太線側の接続半辺を細線に合わせて段差を解消
+			if( u == 2 && i > 0 && armStyle(rowBits[i - 1].value(vc, 0), K_DN) == 1 ) u = 1;
+			if( d == 2 && i + 1 < nLines && armStyle(rowBits[i + 1].value(vc, 0), K_UP) == 1 ) d = 1;
+			if( l == 2 && armStyle(rowBits[i].value(vc - 2, 0), K_RT) == 1 ) l = 1;
+			if( r == 2 && armStyle(rowBits[i].value(vc + 2, 0), K_LT) == 1 ) r = 1;
+
+			painter.setRenderHint(QPainter::Antialiasing, false);
+			auto drawArm = [&](int style, int x1, int y1, int x2, int y2, bool vert) {
+				if( style == 0 ) return;
+				if( style == 3 ) {
+					painter.setPen(thinPen);
+					if( vert ) {
+						painter.drawLine(x1 - 1, y1, x2 - 1, y2);
+						painter.drawLine(x1 + 1, y1, x2 + 1, y2);
+					} else {
+						painter.drawLine(x1, y1 - 1, x2, y2 - 1);
+						painter.drawLine(x1, y1 + 1, x2, y2 + 1);
+					}
+					return;
+				}
+				painter.setPen(style == 2 ? thickPen : thinPen);
+				painter.drawLine(x1, y1, x2, y2);
+			};
+			const int extU = (u == 2) ? 1 : 0;
+			const int extD = (d == 2) ? 1 : 0;
+			const int extL = (l == 2) ? 1 : 0;
+			const int extR = (r == 2) ? 1 : 0;
+			drawArm(u, cx, yTop, cx, cy + extU, true);
+			drawArm(d, cx, cy - extD, cx, yBot, true);
+			drawArm(l, xL, cy, cx + extL, cy, false);
+			drawArm(r, cx - extR, cy, xR, cy, false);
+		}
+	}
+	painter.end();
+
+	if( st.hasEmittedBlock )
+		cursor.insertBlock();
+	st.hasEmittedBlock = true;
+	st.lastLineEmitted = true;
+	if( QTextList *curList = cursor.currentList() )
+		curList->remove(cursor.block());
+
+	QTextBlockFormat bf;
+	bf.setTopMargin(lineHeight / 2.0);
+	bf.setBottomMargin(6.0);
+	cursor.setBlockFormat(bf);
+	cursor.setBlockCharFormat(QTextCharFormat());
+	cursor.block().setUserState(kBlockNormal);
+
+	const QUrl resUrl(QStringLiteral("keisen://block_%1").arg(startLn));
+	doc->addResource(QTextDocument::ImageResource, resUrl, img);
+	QTextImageFormat imgFmt;
+	imgFmt.setName(resUrl.toString());
+	const qreal logW = static_cast<qreal>(width);
+	const qreal logH = static_cast<qreal>(height);
+	if( st.maxImgWidth > 0.0 && logW > st.maxImgWidth ) {
+		imgFmt.setWidth(st.maxImgWidth);
+		imgFmt.setHeight(logH * st.maxImgWidth / logW);
+	} else {
+		imgFmt.setWidth(logW);
+		imgFmt.setHeight(logH);
+	}
+	cursor.insertImage(imgFmt);
+	st.hasImages = true;
 
 	const int bn = cursor.block().blockNumber();
 	if( blockToSrcLine.size() <= bn )
@@ -2515,6 +2739,16 @@ void MarkdownPreview::setMarkdown(const QString &markdown)
 			insertSvgBlock(cursor, svgLines.join(QChar('\n')), st, startLn, endLn, m_srcLineToBlock, m_blockToSrcLine);
 			continue;
 		}
+		if( !st.inCodeBlock && !st.inHtmlComment && isKeisenFence(line) ) {
+			const int startLn = ln;
+			const QString fenceLine = line;
+			QStringList keisenLines;
+			while( ++ln < nLines && !isCodeFence(lines[ln]) )
+				keisenLines.append(lines[ln]);
+			const int endLn = qMin(ln, nLines - 1);
+			insertKeisenBlock(cursor, fenceLine, keisenLines, st, startLn, endLn, m_srcLineToBlock, m_blockToSrcLine);
+			continue;
+		}
 		if( !st.inCodeBlock && !st.inHtmlComment ) {
 			int boxIndent = 0;
 			BoxOptions boxOpt;
@@ -2684,6 +2918,21 @@ void MarkdownPreview::setMarkdown(TextDocument *srcDoc)
 				mgr.setLineType(ln, LineMgr::LT_CODE_FENCE);
 			const int endLn = qMin(ln, nLines - 1);
 			insertSvgBlock(cursor, svgLines.join(QChar('\n')), st, startLn, endLn, m_srcLineToBlock, m_blockToSrcLine);
+			continue;
+		}
+		if( !st.inCodeBlock && !st.inHtmlComment && isKeisenFence(line) ) {
+			const int startLn = ln;
+			const QString fenceLine = line;
+			mgr.setLineType(ln, LineMgr::LT_CODE_FENCE);
+			QStringList keisenLines;
+			while( ++ln < nLines && !isCodeFence(lines[ln]) ) {
+				mgr.setLineType(ln, LineMgr::LT_CODE_BLOCK);
+				keisenLines.append(lines[ln]);
+			}
+			if( ln < nLines && isCodeFence(lines[ln]) )
+				mgr.setLineType(ln, LineMgr::LT_CODE_FENCE);
+			const int endLn = qMin(ln, nLines - 1);
+			insertKeisenBlock(cursor, fenceLine, keisenLines, st, startLn, endLn, m_srcLineToBlock, m_blockToSrcLine);
 			continue;
 		}
 		if( !st.inCodeBlock && !st.inHtmlComment ) {
