@@ -11,5 +11,7 @@
         <file>images/format_align_right_48.png</file>
         <file>images/format_indent_increase_48.png</file>
         <file>images/format_indent_decrease_48.png</file>
+        <file alias="images/difference.png">../src/images/difference.png</file>
+        <file alias="images/diffWithFile.png">../src/images/diffWithFile.png</file>
     </qresource>
 </RCC>

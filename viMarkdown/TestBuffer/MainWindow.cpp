@@ -70,6 +70,7 @@
 #pragma comment(lib, "imm32.lib")
 #endif
 #include "ver.h"
+#include "../src/dtl/dtl.hpp"
 #include "GapBufferTest.h"
 #include "LineMgrTest.h"
 #include "ViewLineMgrTest.h"
@@ -109,6 +110,463 @@ const char PROP_BASE_TITLE[] = "baseTitle";
 const char PROP_ENCODING[] = "encoding";
 const char PROP_WITH_BOM[] = "withBOM";
 const char PROP_USE_CRLF[] = "useCRLF";
+const char PROP_DIFF_MODE[] = "diffMode";
+const char PROP_DIFF_PEER_PATH[] = "diffPeerPath";
+const char PROP_DIFF_PEER_LABEL[] = "diffPeerLabel";
+
+//----------------------------------------------------------------------
+//	Diff 計算エンジン（v0.3 diff.cpp 準拠・仮想表示行方式）
+//----------------------------------------------------------------------
+struct DiffWordToken {
+    QString text;
+    int start = 0;
+    bool operator==(const DiffWordToken &other) const { return text == other.text; }
+};
+
+enum DiffCharClass {
+    DCC_Other,
+    DCC_Kanji,
+    DCC_Hiragana,
+    DCC_Katakana,
+    DCC_HalfAlphaNum,
+    DCC_FullSymbol,
+};
+
+DiffCharClass diffCharClass(QChar ch)
+{
+    const ushort u = ch.unicode();
+    if ((u >= 0x4E00 && u <= 0x9FFF) || (u >= 0x3400 && u <= 0x4DBF)) return DCC_Kanji;
+    if (u >= 0x3040 && u <= 0x309F) return DCC_Hiragana;
+    if ((u >= 0x30A0 && u <= 0x30FF) || u == 0x30FC || (u >= 0xFF65 && u <= 0xFF9F)) return DCC_Katakana;
+    if (u < 0x80 && ch.isLetterOrNumber()) return DCC_HalfAlphaNum;
+    if (u >= 0x3000) return DCC_FullSymbol;
+    return DCC_Other;
+}
+
+std::vector<DiffWordToken> tokenizeDiffWords(const QString &text)
+{
+    std::vector<DiffWordToken> tokens;
+    int i = 0;
+    const int len = static_cast<int>(text.size());
+    while (i < len) {
+        if (text[i] == u'\n') {
+            tokens.push_back({text.mid(i, 1), i});
+            ++i;
+        } else if (text[i].isSpace()) {
+            const int start = i;
+            while (i < len && text[i].isSpace() && text[i] != u'\n')
+                ++i;
+            tokens.push_back({text.mid(start, i - start), start});
+        } else if (text[i].isLetterOrNumber()) {
+            const DiffCharClass t = diffCharClass(text[i]);
+            const int start = i;
+            while (i < len && text[i].isLetterOrNumber()
+                   && (diffCharClass(text[i]) == t
+                       || (text[i] == QChar(0x30FC) && (t == DCC_Hiragana || t == DCC_Katakana)))) {
+                ++i;
+            }
+            tokens.push_back({text.mid(start, i - start), start});
+        } else {
+            const int start = i;
+            while (i < len && !text[i].isSpace() && !text[i].isLetterOrNumber())
+                ++i;
+            tokens.push_back({text.mid(start, i - start), start});
+        }
+    }
+    return tokens;
+}
+
+void computeWordDiff(
+    const std::vector<QString> &lines1, int s1, int n1,
+    const std::vector<QString> &lines2, int s2, int n2,
+    QVector<DiffLineInfo> &info1,
+    QVector<DiffLineInfo> &info2)
+{
+    struct LineSpan {
+        int lineIdx;
+        int textStart;
+        int textLen;
+    };
+    QString text1, text2;
+    std::vector<LineSpan> spans1, spans2;
+    int off1 = 0;
+    for (int i = 0; i < n1 && s1 + i < static_cast<int>(lines1.size()); ++i) {
+        const QString &ln = lines1[s1 + i];
+        spans1.push_back({s1 + i, off1, static_cast<int>(ln.size())});
+        text1 += ln;
+        text1 += u'\n';
+        off1 += static_cast<int>(ln.size()) + 1;
+    }
+    int off2 = 0;
+    for (int i = 0; i < n2 && s2 + i < static_cast<int>(lines2.size()); ++i) {
+        const QString &ln = lines2[s2 + i];
+        spans2.push_back({s2 + i, off2, static_cast<int>(ln.size())});
+        text2 += ln;
+        text2 += u'\n';
+        off2 += static_cast<int>(ln.size()) + 1;
+    }
+
+    const std::vector<DiffWordToken> tokens1 = tokenizeDiffWords(text1);
+    const std::vector<DiffWordToken> tokens2 = tokenizeDiffWords(text2);
+    dtl::Diff<DiffWordToken, std::vector<DiffWordToken>> d(tokens1, tokens2);
+    d.compose();
+    const auto ses = d.getSes().getSequence();
+
+    auto appendRange = [](const std::vector<LineSpan> &spans, QVector<DiffLineInfo> &infos, int pos, int len) {
+        if (len <= 0) return;
+        for (const auto &sp : spans) {
+            if (pos <= sp.textStart + sp.textLen) {
+                const int col = pos - sp.textStart;
+                const int clampedLen = qMin(len, sp.textLen - col);
+                if (clampedLen > 0 && sp.lineIdx >= 0 && sp.lineIdx < infos.size())
+                    infos[sp.lineIdx].ranges.append({col, clampedLen});
+                return;
+            }
+        }
+    };
+
+    std::vector<int> gaps1, gaps2;
+    int pos1 = 0, pos2 = 0;
+    std::vector<DiffWordToken> delToks, addToks;
+    int runDelNL = 0, runAddNL = 0;
+    auto flushRun = [&]() {
+        const int runDel = static_cast<int>(delToks.size());
+        const int runAdd = static_cast<int>(addToks.size());
+        if (runDel == 0 && runAdd == 0) return;
+        for (const auto &tok : delToks)
+            appendRange(spans1, info1, tok.start, static_cast<int>(tok.text.size()));
+        for (const auto &tok : addToks)
+            appendRange(spans2, info2, tok.start, static_cast<int>(tok.text.size()));
+        if (runDel > runAdd && (runAdd == 0 || runDelNL != runAddNL))
+            gaps2.push_back(pos2);
+        else if (runAdd > runDel && (runDel == 0 || runDelNL != runAddNL))
+            gaps1.push_back(pos1);
+        delToks.clear();
+        addToks.clear();
+        runDelNL = runAddNL = 0;
+    };
+
+    for (const auto &item : ses) {
+        const DiffWordToken &tok = item.first;
+        const int sz = static_cast<int>(tok.text.size());
+        switch (item.second.type) {
+        case dtl::SES_COMMON:
+            flushRun();
+            pos1 += sz;
+            pos2 += sz;
+            break;
+        case dtl::SES_DELETE:
+            delToks.push_back(tok);
+            runDelNL += static_cast<int>(tok.text.count(u'\n'));
+            pos1 += sz;
+            break;
+        case dtl::SES_ADD:
+            addToks.push_back(tok);
+            runAddNL += static_cast<int>(tok.text.count(u'\n'));
+            pos2 += sz;
+            break;
+        }
+    }
+    flushRun();
+
+    auto distributeGaps = [](const std::vector<LineSpan> &spans, QVector<DiffLineInfo> &infos,
+                             const std::vector<int> &gaps, int totalLen) {
+        const int maxPos = qMax(0, totalLen - 1);
+        size_t gi = 0;
+        for (const auto &sp : spans) {
+            while (gi < gaps.size() && qMin(gaps[gi], maxPos) - sp.textStart <= sp.textLen) {
+                const int col = qBound(0, qMin(gaps[gi], maxPos) - sp.textStart, sp.textLen);
+                if (sp.lineIdx >= 0 && sp.lineIdx < infos.size())
+                    infos[sp.lineIdx].gaps.append(col);
+                ++gi;
+            }
+        }
+    };
+    distributeGaps(spans1, info1, gaps1, static_cast<int>(text1.size()));
+    distributeGaps(spans2, info2, gaps2, static_cast<int>(text2.size()));
+}
+
+void computeDiffLayout(
+    const TextEdit *leftEdit,
+    const TextEdit *rightEdit,
+    QVector<DiffDisplayRow> &rows1,
+    QVector<DiffLineInfo> &info1,
+    QVector<DiffDisplayRow> &rows2,
+    QVector<DiffLineInfo> &info2)
+{
+    rows1.clear();
+    rows2.clear();
+    const TextDocument *doc1 = leftEdit->document();
+    const TextDocument *doc2 = rightEdit->document();
+    const ViewLineMgr &mgr1 = doc1->lineMgr();
+    const ViewLineMgr &mgr2 = doc2->lineMgr();
+    const int n1 = mgr1.lineCount();
+    const int n2 = mgr2.lineCount();
+
+    std::vector<QString> lines1;
+    std::vector<QString> lines2;
+    lines1.reserve(n1);
+    lines2.reserve(n2);
+    for (int i = 0; i < n1; ++i) {
+        QString s = doc1->findBlockByNumber(i).text();
+        if (s.endsWith(QChar('\n'))) s.chop(1);
+        if (s.endsWith(QChar('\r'))) s.chop(1);
+        lines1.push_back(std::move(s));
+    }
+    for (int i = 0; i < n2; ++i) {
+        QString s = doc2->findBlockByNumber(i).text();
+        if (s.endsWith(QChar('\n'))) s.chop(1);
+        if (s.endsWith(QChar('\r'))) s.chop(1);
+        lines2.push_back(std::move(s));
+    }
+
+    info1.assign(n1, DiffLineInfo{});
+    info2.assign(n2, DiffLineInfo{});
+
+    dtl::Diff<QString, std::vector<QString>> d(lines1, lines2);
+    d.compose();
+    const auto &seq = d.getSes().getSequence();
+
+    auto emitPhysicalLine = [](const ViewLineMgr &mgr, int ln, uchar flag, QVector<DiffDisplayRow> &outRows, QVector<DiffLineInfo> &outInfo) -> int {
+        if (ln >= 0 && ln < outInfo.size())
+            outInfo[ln].flag = flag;
+        const int vc = qMax(1, mgr.viewLineCountIn(ln));
+        for (int seg = 0; seg < vc; ++seg)
+            outRows.append({ln, seg, flag});
+        return vc;
+    };
+    auto emitDummies = [](int count, uchar flag, QVector<DiffDisplayRow> &outRows) {
+        for (int k = 0; k < count; ++k)
+            outRows.append({-1, 0, flag});
+    };
+
+    int cur1 = 0, cur2 = 0;
+    int nDelete = 0, nAdd = 0;
+    auto flushHunk = [&]() {
+        if (nDelete == 0 && nAdd == 0) return;
+        if (nAdd == 0) {
+            for (int k = 0; k < nDelete && cur1 < n1; ++k, ++cur1) {
+                const int vc = emitPhysicalLine(mgr1, cur1, DIFF_ADDED, rows1, info1);
+                emitDummies(vc, DIFF_DELETED, rows2);
+            }
+        } else if (nDelete == 0) {
+            for (int k = 0; k < nAdd && cur2 < n2; ++k, ++cur2) {
+                const int vc = emitPhysicalLine(mgr2, cur2, DIFF_ADDED, rows2, info2);
+                emitDummies(vc, DIFF_DELETED, rows1);
+            }
+        } else {
+            computeWordDiff(lines1, cur1, nDelete, lines2, cur2, nAdd, info1, info2);
+            int totalVc1 = 0, totalVc2 = 0;
+            for (int k = 0; k < nDelete && cur1 < n1; ++k, ++cur1)
+                totalVc1 += emitPhysicalLine(mgr1, cur1, DIFF_MODIFIED, rows1, info1);
+            for (int k = 0; k < nAdd && cur2 < n2; ++k, ++cur2)
+                totalVc2 += emitPhysicalLine(mgr2, cur2, DIFF_MODIFIED, rows2, info2);
+            const int diffVc = totalVc1 - totalVc2;
+            if (diffVc > 0)
+                emitDummies(diffVc, DIFF_PADDING, rows2);
+            else if (diffVc < 0)
+                emitDummies(-diffVc, DIFF_PADDING, rows1);
+        }
+        nDelete = nAdd = 0;
+    };
+
+    for (const auto &item : seq) {
+        switch (item.second.type) {
+        case dtl::SES_COMMON: {
+            flushHunk();
+            const int vc1 = (cur1 < n1) ? emitPhysicalLine(mgr1, cur1++, DIFF_NONE, rows1, info1) : 0;
+            const int vc2 = (cur2 < n2) ? emitPhysicalLine(mgr2, cur2++, DIFF_NONE, rows2, info2) : 0;
+            if (vc1 > vc2)
+                emitDummies(vc1 - vc2, DIFF_PADDING, rows2);
+            else if (vc2 > vc1)
+                emitDummies(vc2 - vc1, DIFF_PADDING, rows1);
+            break;
+        }
+        case dtl::SES_DELETE:
+            ++nDelete;
+            break;
+        case dtl::SES_ADD:
+            ++nAdd;
+            break;
+        }
+    }
+    flushHunk();
+}
+
+//----------------------------------------------------------------------
+//	DiffMiniMap: diff モード時に中央に表示するミニマップ（v0.3 MiniMap 移植）
+//----------------------------------------------------------------------
+constexpr int kDiffMiniMapWidth = 40;
+
+class DiffMiniMap : public QWidget
+{
+public:
+    explicit DiffMiniMap(QWidget *parent = nullptr) : QWidget(parent)
+    {
+        setFixedWidth(kDiffMiniMapWidth);
+        setCursor(Qt::PointingHandCursor);
+    }
+
+    void setScrollCallback(std::function<void(int)> cb) { m_onScrollRequested = std::move(cb); }
+
+    void updateMap(const QVector<DiffDisplayRow> &rows1, const QVector<DiffDisplayRow> &rows2)
+    {
+        m_rows1 = rows1;
+        m_rows2 = rows2;
+        m_totalLines = qMax(1, qMax(static_cast<int>(m_rows1.size()), static_cast<int>(m_rows2.size())));
+        rebuildPixmap();
+        update();
+    }
+
+    void setViewportRange(int firstVisibleLine, int visibleLines)
+    {
+        m_firstVisibleLine = qMax(0, firstVisibleLine);
+        m_visibleLines = qMax(1, visibleLines);
+        update();
+    }
+
+protected:
+    void paintEvent(QPaintEvent *event) override
+    {
+        Q_UNUSED(event);
+        if (m_mapPixmap.isNull())
+            return;
+        QPainter p(this);
+        p.drawPixmap(0, 0, m_mapPixmap);
+        const int mapH = height();
+        if (mapH <= 0 || m_totalLines <= 0)
+            return;
+        const int w = width() - 1;
+        p.setPen(QPen(Qt::blue, 1, Qt::SolidLine));
+        if (m_totalLines > mapH) {
+            int y = static_cast<int>(static_cast<qint64>(m_firstVisibleLine) * mapH / m_totalLines);
+            int h = qMax(4, static_cast<int>(static_cast<qint64>(m_visibleLines) * mapH / m_totalLines));
+            if (y + h > mapH)
+                y = qMax(0, mapH - h);
+            p.drawRect(0, y, w, h);
+        } else {
+            p.drawRect(0, m_firstVisibleLine, w, m_visibleLines);
+        }
+    }
+
+    void mousePressEvent(QMouseEvent *event) override
+    {
+        if (event->button() != Qt::LeftButton)
+            return;
+        m_mousePressed = true;
+        jumpToY(event->position().y());
+    }
+
+    void mouseReleaseEvent(QMouseEvent *event) override
+    {
+        if (event->button() == Qt::LeftButton)
+            m_mousePressed = false;
+    }
+
+    void mouseMoveEvent(QMouseEvent *event) override
+    {
+        if (!m_mousePressed)
+            return;
+        jumpToY(event->position().y());
+    }
+
+    void resizeEvent(QResizeEvent *event) override
+    {
+        QWidget::resizeEvent(event);
+        if (!m_rows1.isEmpty() || !m_rows2.isEmpty())
+            rebuildPixmap();
+    }
+
+private:
+    void jumpToY(qreal y)
+    {
+        const int h = height();
+        const int targetLine = (m_totalLines > h && h > 0)
+            ? static_cast<int>(static_cast<qint64>(y) * m_totalLines / h)
+            : static_cast<int>(y);
+        const int first = qMax(0, targetLine - m_visibleLines / 2);
+        if (m_onScrollRequested)
+            m_onScrollRequested(first);
+    }
+
+    void rebuildPixmap()
+    {
+        static const QColor kDeleted(QStringLiteral("#e8e8e8"));
+        static const QColor kAdded(QStringLiteral("#ffa0a0"));
+        static const QColor kModified(QStringLiteral("#e0e000"));
+        const int ht = height();
+        if (ht <= 0 || m_totalLines <= 0) {
+            m_mapPixmap = QPixmap();
+            return;
+        }
+        m_mapPixmap = QPixmap(kDiffMiniMapWidth, ht);
+        m_mapPixmap.fill(kDeleted);
+        QPainter p(&m_mapPixmap);
+        const int halfW = kDiffMiniMapWidth / 2;
+
+        auto drawHalf = [&](int x, const QVector<DiffDisplayRow> &rows) {
+            const int n = static_cast<int>(rows.size());
+            if (m_totalLines > ht) {
+                std::vector<QColor> rowColor(ht, Qt::white);
+                std::vector<int> rowPrio(ht, -1);
+                for (int r = 0; r < n; ++r) {
+                    QColor col = Qt::white;
+                    int prio = 0;
+                    const uchar f = rows[r].flag;
+                    if (f == DIFF_DELETED || f == DIFF_PADDING || rows[r].line < 0) {
+                        col = kDeleted;
+                        prio = 1;
+                    } else if (f == DIFF_ADDED) {
+                        col = kAdded;
+                        prio = 2;
+                    } else if (f == DIFF_MODIFIED) {
+                        col = kModified;
+                        prio = 3;
+                    }
+                    const int y1 = static_cast<int>(static_cast<qint64>(r) * ht / m_totalLines);
+                    int y2 = static_cast<int>(static_cast<qint64>(r + 1) * ht / m_totalLines);
+                    if (y2 <= y1) y2 = y1 + 1;
+                    if (y2 > ht) y2 = ht;
+                    for (int y = y1; y < y2; ++y) {
+                        if (prio > rowPrio[y]) {
+                            rowPrio[y] = prio;
+                            rowColor[y] = col;
+                        }
+                    }
+                }
+                for (int y = 0; y < ht; ++y)
+                    p.fillRect(x, y, halfW, 1, rowColor[y]);
+            } else {
+                for (int r = 0; r < n && r < ht; ++r) {
+                    QColor col = Qt::white;
+                    const uchar f = rows[r].flag;
+                    if (f == DIFF_DELETED || f == DIFF_PADDING || rows[r].line < 0)
+                        col = kDeleted;
+                    else if (f == DIFF_ADDED)
+                        col = kAdded;
+                    else if (f == DIFF_MODIFIED)
+                        col = kModified;
+                    p.setPen(col);
+                    p.drawLine(x, r, x + halfW - 1, r);
+                }
+            }
+        };
+
+        drawHalf(0, m_rows1);
+        drawHalf(halfW, m_rows2);
+        if (m_totalLines <= ht)
+            p.fillRect(0, m_totalLines, kDiffMiniMapWidth, ht - m_totalLines, kDeleted);
+    }
+
+    QVector<DiffDisplayRow> m_rows1;
+    QVector<DiffDisplayRow> m_rows2;
+    QPixmap m_mapPixmap;
+    int m_totalLines = 1;
+    int m_firstVisibleLine = 0;
+    int m_visibleLines = 10;
+    bool m_mousePressed = false;
+    std::function<void(int)> m_onScrollRequested;
+};
 
 bool readTextFileWithMeta(const QString &filePath, QString &content,
                           QStringConverter::Encoding &encoding, bool &withBOM,
@@ -543,6 +1001,22 @@ MainWindow::MainWindow(QWidget *parent)
     menuBar()->insertMenu(ui->menuTest->menuAction(), naviMenu);
 
     QMenu *toolMenu = new QMenu(tr("&Tool"), this);
+    m_actDiffMode = toolMenu->addAction(tr("&diff"));
+    m_actDiffMode->setCheckable(true);
+    connect(m_actDiffMode, &QAction::toggled, this, &MainWindow::onToggleDiffMode);
+    QAction *actDiffWithFile = toolMenu->addAction(QIcon(QStringLiteral(":/MainWindow/images/diffWithFile.png")), tr("diff with &file..."));
+    actDiffWithFile->setToolTip(tr("Diff with file..."));
+    connect(actDiffWithFile, &QAction::triggered, this, &MainWindow::onDiffWithFile);
+    QAction *actDiffWithClipboard = toolMenu->addAction(tr("diff with &Clipboard"));
+    connect(actDiffWithClipboard, &QAction::triggered, this, &MainWindow::onDiffWithClipboard);
+    m_diffTimer = new QTimer(this);
+    m_diffTimer->setSingleShot(true);
+    m_diffTimer->setInterval(100);
+    connect(m_diffTimer, &QTimer::timeout, this, [this]() {
+        if (m_pendingDiffTab)
+            recomputeDiffForTab(m_pendingDiffTab);
+    });
+    toolMenu->addSeparator();
     QAction *actKeisenMode = toolMenu->addAction(tr("&Keisen mode"));
     actKeisenMode->setCheckable(true);
     actKeisenMode->setShortcut(QKeySequence(Qt::SHIFT | Qt::Key_F5));
@@ -552,6 +1026,8 @@ MainWindow::MainWindow(QWidget *parent)
             for (int i = 0; i < m_tabWidget->count(); ++i) {
                 if (TextEdit *edit = textEditAt(i))
                     edit->setKeisenMode(m_keisenMode);
+                if (TextEdit *de = diffEditAt(i))
+                    de->setKeisenMode(m_keisenMode);
             }
         }
         statusBar()->showMessage(
@@ -574,6 +1050,8 @@ MainWindow::MainWindow(QWidget *parent)
             for (int i = 0; i < m_tabWidget->count(); ++i) {
                 if (TextEdit *edit = textEditAt(i))
                     edit->setThickKeisen(false);
+                if (TextEdit *de = diffEditAt(i))
+                    de->setThickKeisen(false);
             }
         }
     });
@@ -585,6 +1063,8 @@ MainWindow::MainWindow(QWidget *parent)
             for (int i = 0; i < m_tabWidget->count(); ++i) {
                 if (TextEdit *edit = textEditAt(i))
                     edit->setThickKeisen(true);
+                if (TextEdit *de = diffEditAt(i))
+                    de->setThickKeisen(true);
             }
         }
     });
@@ -621,6 +1101,8 @@ MainWindow::MainWindow(QWidget *parent)
         p.drawText(QRect(0, 22, 48, 22), Qt::AlignCenter, QStringLiteral("exp"));
         return QIcon(pm);
     };
+    m_actDiffMode->setIcon(QIcon(QStringLiteral(":/MainWindow/images/difference.png")));
+    m_actDiffMode->setToolTip(tr("Diff mode"));
     m_searchCB = new QComboBox(this);
     m_searchCB->setEditable(true);
     m_searchCB->setMaxCount(20);
@@ -662,6 +1144,9 @@ MainWindow::MainWindow(QWidget *parent)
     ui->mainToolBar->insertWidget(ui->action_AlignLeft, m_searchCB);
     ui->mainToolBar->insertAction(ui->action_AlignLeft, m_actIgnoreCase);
     ui->mainToolBar->insertAction(ui->action_AlignLeft, m_actRegExp);
+    ui->mainToolBar->insertSeparator(ui->action_AlignLeft);
+    ui->mainToolBar->insertAction(ui->action_AlignLeft, m_actDiffMode);
+    ui->mainToolBar->insertAction(ui->action_AlignLeft, actDiffWithFile);
     ui->mainToolBar->insertSeparator(ui->action_AlignLeft);
     auto *searchEscShortcut = new QShortcut(QKeySequence(Qt::Key_Escape), m_searchCB);
     searchEscShortcut->setContext(Qt::WidgetWithChildrenShortcut);
@@ -833,7 +1318,7 @@ MainWindow::MainWindow(QWidget *parent)
             if (auto *te = qobject_cast<QTextEdit *>(fw)) { te->cut(); return; }
             if (qobject_cast<QPlainTextEdit *>(fw)) return;
         }
-        if (TextEdit *edit = currentTextEdit())
+        if (TextEdit *edit = activeTextEdit())
             edit->cut();
     });
     connect(ui->action_Copy, &QAction::triggered, this, [this]() {
@@ -842,7 +1327,7 @@ MainWindow::MainWindow(QWidget *parent)
             if (auto *te = qobject_cast<QTextEdit *>(fw)) { te->copy(); return; }
             if (auto *pte = qobject_cast<QPlainTextEdit *>(fw)) { pte->copy(); return; }
         }
-        if (TextEdit *edit = currentTextEdit())
+        if (TextEdit *edit = activeTextEdit())
             edit->copy();
     });
     connect(ui->action_Paste, &QAction::triggered, this, [this]() {
@@ -852,7 +1337,7 @@ MainWindow::MainWindow(QWidget *parent)
             if (auto *te = qobject_cast<QTextEdit *>(fw)) { te->paste(); return; }
             if (qobject_cast<QPlainTextEdit *>(fw)) return;
         }
-        if (TextEdit *edit = currentTextEdit())
+        if (TextEdit *edit = activeTextEdit())
             edit->paste();
     });
     connect(ui->action_SelectAll, &QAction::triggered, this, [this]() {
@@ -939,6 +1424,8 @@ MainWindow::MainWindow(QWidget *parent)
             for (int i = 0; i < m_tabWidget->count(); ++i) {
                 if (TextEdit *edit = textEditAt(i))
                     edit->setViEnabled(m_viKeybind);
+                if (TextEdit *de = diffEditAt(i))
+                    de->setViEnabled(m_viKeybind);
             }
         }
         statusBar()->showMessage(m_viKeybind ? tr("vi keybind: ON (-- NORMAL --)") : tr("vi keybind: OFF"), 3000);
@@ -1052,27 +1539,35 @@ TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath
     });
     auto syncingCursor = std::make_shared<bool>(false);
     edit->setTextChangedCallback([this, splitter, edit, preview, syncingCursor]() {
-        bool headingsChanged = false;
-        if (edit->markdownHighlight()) {
-            const TextCursor tc = edit->textCursor();
-            const int curLine = edit->document()->lineMgr().lineAtPos(tc.position());
-            headingsChanged = true;
-            preview->updateMarkdown(edit->document(), curLine, &headingsChanged);
-            if (!*syncingCursor) {
-                *syncingCursor = true;
-                preview->setCursorFromSrcPos(
-                    static_cast<int>(tc.position()),
-                    tc.hasSelection() ? static_cast<int>(tc.anchor()) : -1);
-                *syncingCursor = false;
+        if (edit->isDiffMode()) {
+            scheduleDiffUpdate(splitter);
+        } else {
+            bool headingsChanged = false;
+            if (edit->markdownHighlight()) {
+                const TextCursor tc = edit->textCursor();
+                const int curLine = edit->document()->lineMgr().lineAtPos(tc.position());
+                headingsChanged = true;
+                preview->updateMarkdown(edit->document(), curLine, &headingsChanged);
+                if (!*syncingCursor) {
+                    *syncingCursor = true;
+                    preview->setCursorFromSrcPos(
+                        static_cast<int>(tc.position()),
+                        tc.hasSelection() ? static_cast<int>(tc.anchor()) : -1);
+                    *syncingCursor = false;
+                }
             }
+            if (headingsChanged)
+                updateOutlineForTab(splitter);
         }
-        if (headingsChanged)
-            updateOutlineForTab(splitter);
         updateUndoRedoEnabled();
         updateTabTitle(splitter);
     });
+    edit->setLayoutChangedCallback([this, splitter, edit]() {
+        if (edit->isDiffMode())
+            scheduleDiffUpdate(splitter);
+    });
     edit->setCursorChangedCallback([edit, preview, syncingCursor]() {
-        if (*syncingCursor || !edit->markdownHighlight())
+        if (*syncingCursor || !edit->markdownHighlight() || edit->isDiffMode())
             return;
         *syncingCursor = true;
         const TextCursor tc = edit->textCursor();
@@ -1082,7 +1577,7 @@ TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath
         *syncingCursor = false;
     });
     connect(preview, &QTextEdit::cursorPositionChanged, edit, [edit, preview, syncingCursor]() {
-        if (*syncingCursor || !edit->markdownHighlight())
+        if (*syncingCursor || !edit->markdownHighlight() || edit->isDiffMode())
             return;
         *syncingCursor = true;
         const QTextCursor pc = preview->textCursor();
@@ -1100,9 +1595,75 @@ TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath
         }
         statusBar()->showMessage(tr("Editor Font Size: %1 pt").arg(m_editorFontSize), 5000);
     });
+
+    auto *miniMap = new DiffMiniMap(splitter);
+    auto *diffEdit = new TextEdit(splitter);
+    diffEdit->setMarkdownHighlight(false);
+    diffEdit->setEditorFont(edit->font());
+    diffEdit->setLineSpacing(qRound(diffEdit->fontMetrics().height() * m_lineSpacingPercent / 100.0));
+    diffEdit->setHeadingColor(m_headingColor);
+    diffEdit->setEmphasisColor(m_emphasisColor);
+    diffEdit->setSearchMatchColor(m_searchMatchColor);
+    diffEdit->setViEnabled(m_viKeybind);
+    diffEdit->setKeisenMode(m_keisenMode);
+    diffEdit->setThickKeisen(m_thickKeisen);
+    diffEdit->viEngine()->setSearchOptions(m_searchIgnoreCase, m_searchRegExp);
+    diffEdit->setTextChangedCallback([this, splitter, diffEdit]() {
+        if (diffEdit->isDiffMode())
+            scheduleDiffUpdate(splitter);
+        updateUndoRedoEnabled();
+        updateTabTitle(splitter);
+    });
+    diffEdit->setLayoutChangedCallback([this, splitter, diffEdit]() {
+        if (diffEdit->isDiffMode())
+            scheduleDiffUpdate(splitter);
+    });
+    diffEdit->setFontSizeChangeCallback([this](int delta) {
+        const int newSize = qBound(3, m_editorFontSize + delta, 64);
+        if (newSize != m_editorFontSize) {
+            applyEditorFont(m_editorFontFamily, newSize);
+            QSettings settings;
+            settings.setValue(KEY_EDITOR_FONT_SIZE, m_editorFontSize);
+        }
+        statusBar()->showMessage(tr("Editor Font Size: %1 pt").arg(m_editorFontSize), 5000);
+    });
+
     auto syncingScroll = std::make_shared<bool>(false);
+    auto syncingDiffScroll = std::make_shared<bool>(false);
+    miniMap->setScrollCallback([edit, diffEdit, miniMap, syncingDiffScroll](int targetFirstLine) {
+        if (!edit->isDiffMode() || !diffEdit->isDiffMode())
+            return;
+        *syncingDiffScroll = true;
+        int clamped = targetFirstLine;
+        if (QScrollBar *sb1 = edit->verticalScrollBar()) {
+            clamped = qBound(sb1->minimum(), targetFirstLine, sb1->maximum());
+            sb1->setValue(clamped);
+        }
+        if (QScrollBar *sb2 = diffEdit->verticalScrollBar())
+            sb2->setValue(qBound(sb2->minimum(), clamped, sb2->maximum()));
+        miniMap->setViewportRange(clamped, edit->visibleLineCount());
+        *syncingDiffScroll = false;
+    });
+    connect(edit->verticalScrollBar(), &QScrollBar::valueChanged, diffEdit, [edit, diffEdit, miniMap, syncingDiffScroll](int val) {
+        if (*syncingDiffScroll || !edit->isDiffMode() || !diffEdit->isDiffMode())
+            return;
+        *syncingDiffScroll = true;
+        if (QScrollBar *dst = diffEdit->verticalScrollBar())
+            dst->setValue(qBound(dst->minimum(), val, dst->maximum()));
+        miniMap->setViewportRange(val, edit->visibleLineCount());
+        *syncingDiffScroll = false;
+    });
+    connect(diffEdit->verticalScrollBar(), &QScrollBar::valueChanged, edit, [edit, diffEdit, miniMap, syncingDiffScroll](int val) {
+        if (*syncingDiffScroll || !edit->isDiffMode() || !diffEdit->isDiffMode())
+            return;
+        *syncingDiffScroll = true;
+        if (QScrollBar *dst = edit->verticalScrollBar())
+            dst->setValue(qBound(dst->minimum(), val, dst->maximum()));
+        miniMap->setViewportRange(val, edit->visibleLineCount());
+        *syncingDiffScroll = false;
+    });
     connect(edit->verticalScrollBar(), &QScrollBar::valueChanged, preview, [edit, preview, syncingScroll](int val) {
-        if (*syncingScroll || !edit->markdownHighlight())
+        if (*syncingScroll || !edit->markdownHighlight() || edit->isDiffMode())
             return;
         QScrollBar *editSb = edit->verticalScrollBar();
         QScrollBar *prevSb = preview->verticalScrollBar();
@@ -1124,7 +1685,7 @@ TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath
         *syncingScroll = false;
     });
     connect(preview->verticalScrollBar(), &QScrollBar::valueChanged, edit, [edit, preview, syncingScroll](int val) {
-        if (*syncingScroll || !edit->markdownHighlight())
+        if (*syncingScroll || !edit->markdownHighlight() || edit->isDiffMode())
             return;
         QScrollBar *editSb = edit->verticalScrollBar();
         QScrollBar *prevSb = preview->verticalScrollBar();
@@ -1151,11 +1712,19 @@ TextEdit *MainWindow::addEditorTab(const QString &title, const QString &filePath
     });
     splitter->addWidget(edit);
     splitter->addWidget(preview);
+    splitter->addWidget(miniMap);
+    splitter->addWidget(diffEdit);
+    miniMap->hide();
+    diffEdit->hide();
+    splitter->setCollapsible(2, false);
     splitter->setStretchFactor(0, 1);
     splitter->setStretchFactor(1, 1);
-    splitter->setSizes({1000, 1000});
+    splitter->setStretchFactor(2, 0);
+    splitter->setStretchFactor(3, 1);
+    splitter->setSizes({1000, 1000, 0, 0});
     splitter->setProperty(PROP_FILE_PATH, filePath);
     splitter->setProperty(PROP_BASE_TITLE, title);
+    splitter->setProperty(PROP_DIFF_MODE, false);
 
     int index = m_tabWidget->addTab(splitter, title);
     if (!filePath.isEmpty())
@@ -1173,9 +1742,31 @@ TextEdit *MainWindow::textEditAt(int index) const
     return splitter ? dynamic_cast<TextEdit *>(splitter->widget(0)) : nullptr;
 }
 
+TextEdit *MainWindow::diffEditAt(int index) const
+{
+    if (!m_tabWidget || index < 0 || index >= m_tabWidget->count())
+        return nullptr;
+    auto *splitter = qobject_cast<QSplitter *>(m_tabWidget->widget(index));
+    return (splitter && splitter->count() >= 4) ? dynamic_cast<TextEdit *>(splitter->widget(3)) : nullptr;
+}
+
 TextEdit *MainWindow::currentTextEdit() const
 {
     return m_tabWidget ? textEditAt(m_tabWidget->currentIndex()) : nullptr;
+}
+
+TextEdit *MainWindow::currentDiffEdit() const
+{
+    return m_tabWidget ? diffEditAt(m_tabWidget->currentIndex()) : nullptr;
+}
+
+TextEdit *MainWindow::activeTextEdit() const
+{
+    TextEdit *de = currentDiffEdit();
+    QWidget *fw = QApplication::focusWidget();
+    if (de && de->isVisible() && fw && (fw == de || de->isAncestorOf(fw)))
+        return de;
+    return currentTextEdit();
 }
 
 MarkdownPreview *MainWindow::currentPreviewEdit() const
@@ -1184,6 +1775,175 @@ MarkdownPreview *MainWindow::currentPreviewEdit() const
         return nullptr;
     auto *splitter = qobject_cast<QSplitter *>(m_tabWidget->currentWidget());
     return splitter ? dynamic_cast<MarkdownPreview *>(splitter->widget(1)) : nullptr;
+}
+
+void MainWindow::scheduleDiffUpdate(QWidget *tab)
+{
+    if (!tab || !m_diffTimer)
+        return;
+    m_pendingDiffTab = tab;
+    m_diffTimer->start();
+}
+
+void MainWindow::recomputeDiffForTab(QWidget *tab)
+{
+    auto *splitter = qobject_cast<QSplitter *>(tab);
+    if (!splitter || splitter->count() < 4)
+        return;
+    auto *edit = dynamic_cast<TextEdit *>(splitter->widget(0));
+    auto *miniMap = dynamic_cast<DiffMiniMap *>(splitter->widget(2));
+    auto *diffEdit = dynamic_cast<TextEdit *>(splitter->widget(3));
+    if (!edit || !diffEdit || !edit->isDiffMode() || !diffEdit->isDiffMode())
+        return;
+    QVector<DiffDisplayRow> rows1, rows2;
+    QVector<DiffLineInfo> info1, info2;
+    computeDiffLayout(edit, diffEdit, rows1, info1, rows2, info2);
+    const int savedScroll = edit->verticalScrollBar() ? edit->verticalScrollBar()->value() : 0;
+    if (miniMap)
+        miniMap->updateMap(rows1, rows2);
+    edit->setDiffData(std::move(rows1), std::move(info1));
+    diffEdit->setDiffData(std::move(rows2), std::move(info2));
+    int clampedScroll = savedScroll;
+    if (QScrollBar *sb1 = edit->verticalScrollBar()) {
+        const QSignalBlocker b1(sb1);
+        clampedScroll = qBound(sb1->minimum(), savedScroll, sb1->maximum());
+        sb1->setValue(clampedScroll);
+    }
+    if (QScrollBar *sb2 = diffEdit->verticalScrollBar()) {
+        const QSignalBlocker b2(sb2);
+        sb2->setValue(qBound(sb2->minimum(), clampedScroll, sb2->maximum()));
+    }
+    if (miniMap)
+        miniMap->setViewportRange(clampedScroll, edit->visibleLineCount());
+}
+
+void MainWindow::onToggleDiffMode(bool checked)
+{
+    if (!m_tabWidget)
+        return;
+    auto *splitter = qobject_cast<QSplitter *>(m_tabWidget->currentWidget());
+    if (!splitter || splitter->count() < 4)
+        return;
+    auto *edit = dynamic_cast<TextEdit *>(splitter->widget(0));
+    auto *preview = dynamic_cast<MarkdownPreview *>(splitter->widget(1));
+    auto *miniMap = dynamic_cast<DiffMiniMap *>(splitter->widget(2));
+    auto *diffEdit = dynamic_cast<TextEdit *>(splitter->widget(3));
+    if (!edit || !preview || !miniMap || !diffEdit)
+        return;
+
+    const bool wasDiff = splitter->property(PROP_DIFF_MODE).toBool();
+    if (wasDiff == checked)
+        return;
+
+    splitter->setProperty(PROP_DIFF_MODE, checked);
+    if (checked) {
+        preview->hide();
+        miniMap->show();
+        diffEdit->show();
+        splitter->setSizes({1000, 0, kDiffMiniMapWidth, 1000});
+        edit->setDiffMode(true, false);
+        diffEdit->setDiffMode(true, true);
+        recomputeDiffForTab(splitter);
+        QPointer<QWidget> guard(splitter);
+        QTimer::singleShot(0, this, [this, guard]() {
+            if (guard)
+                recomputeDiffForTab(guard);
+        });
+        statusBar()->showMessage(tr("Diff mode: ON"), 3000);
+    } else {
+        edit->setDiffMode(false);
+        diffEdit->setDiffMode(false);
+        miniMap->hide();
+        diffEdit->hide();
+        preview->show();
+        splitter->setSizes({1000, 1000, 0, 0});
+        splitter->setProperty(PROP_DIFF_PEER_PATH, QString());
+        splitter->setProperty(PROP_DIFF_PEER_LABEL, QString());
+        if (edit->markdownHighlight())
+            preview->setMarkdown(edit->document());
+        edit->setFocus();
+        statusBar()->showMessage(tr("Diff mode: OFF"), 3000);
+    }
+    updateTabTitle(splitter);
+    updateUndoRedoEnabled();
+}
+
+void MainWindow::onDiffWithFile()
+{
+    if (!m_tabWidget)
+        return;
+    auto *splitter = qobject_cast<QSplitter *>(m_tabWidget->currentWidget());
+    if (!splitter || splitter->count() < 4)
+        return;
+    auto *diffEdit = dynamic_cast<TextEdit *>(splitter->widget(3));
+    if (!diffEdit)
+        return;
+
+    QString initDir = m_lastDir;
+    const QString curPath = splitter->property(PROP_FILE_PATH).toString();
+    if (!curPath.isEmpty())
+        initDir = QFileInfo(curPath).absolutePath();
+
+    const QString filePath = QFileDialog::getOpenFileName(
+        this,
+        tr("Diff with File"),
+        initDir,
+        tr("Markdown Files (*.md);;Text Files (*.txt);;All Files (*)"));
+    if (filePath.isEmpty())
+        return;
+
+    QString content;
+    QStringConverter::Encoding encoding = QStringConverter::Utf8;
+    bool withBOM = false;
+    bool useCRLF = false;
+    QString errMsg;
+    if (!readTextFileWithMeta(filePath, content, encoding, withBOM, useCRLF, errMsg)) {
+        QMessageBox::warning(this, tr("Open Error"),
+            tr("Could not open file:\n%1\n\n%2").arg(filePath, errMsg));
+        return;
+    }
+
+    const QFileInfo fi(filePath);
+    m_lastDir = fi.absolutePath();
+    splitter->setProperty(PROP_DIFF_PEER_PATH, QDir::cleanPath(fi.absoluteFilePath()));
+    splitter->setProperty(PROP_DIFF_PEER_LABEL, fi.fileName());
+    diffEdit->setPlainText(content);
+    diffEdit->document()->setModified(false);
+    if (m_actDiffMode && !m_actDiffMode->isChecked()) {
+        m_actDiffMode->setChecked(true);
+    } else {
+        recomputeDiffForTab(splitter);
+    }
+    updateTabTitle(splitter);
+    statusBar()->showMessage(tr("Diff with: %1").arg(filePath), 5000);
+}
+
+void MainWindow::onDiffWithClipboard()
+{
+    if (!m_tabWidget)
+        return;
+    auto *splitter = qobject_cast<QSplitter *>(m_tabWidget->currentWidget());
+    if (!splitter || splitter->count() < 4)
+        return;
+    auto *diffEdit = dynamic_cast<TextEdit *>(splitter->widget(3));
+    if (!diffEdit)
+        return;
+
+    QString content = QApplication::clipboard()->text();
+    content.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+    content.replace(QChar('\r'), QChar('\n'));
+
+    splitter->setProperty(PROP_DIFF_PEER_PATH, QString());
+    splitter->setProperty(PROP_DIFF_PEER_LABEL, QStringLiteral("Clipboard"));
+    diffEdit->setPlainText(content);
+    diffEdit->document()->setModified(false);
+    if (m_actDiffMode && !m_actDiffMode->isChecked()) {
+        m_actDiffMode->setChecked(true);
+    } else {
+        recomputeDiffForTab(splitter);
+    }
+    updateTabTitle(splitter);
+    statusBar()->showMessage(tr("Diff with Clipboard"), 5000);
 }
 
 int MainWindow::findTabByFilePath(const QString &cleanPath) const
@@ -1216,6 +1976,10 @@ void MainWindow::onCurrentTabChanged(int index)
     }
     if (index < 0) {
         setWindowTitle(QStringLiteral("TestBuffer"));
+        if (m_actDiffMode) {
+            const QSignalBlocker sb(m_actDiffMode);
+            m_actDiffMode->setChecked(false);
+        }
         updateUndoRedoEnabled();
         setFocus();
         return;
@@ -1226,6 +1990,10 @@ void MainWindow::onCurrentTabChanged(int index)
                 m_tabHistory.removeAt(i);
         }
         m_tabHistory.append(w);
+        if (m_actDiffMode) {
+            const QSignalBlocker sb(m_actDiffMode);
+            m_actDiffMode->setChecked(w->property(PROP_DIFF_MODE).toBool());
+        }
     }
     setWindowTitle(m_tabWidget->tabText(index) + QStringLiteral(" - TestBuffer"));
     updateUndoRedoEnabled();
@@ -1254,9 +2022,28 @@ void MainWindow::updateTabTitle(QWidget *tab)
     }
     TextEdit *edit = textEditAt(index);
     const bool modified = (edit && edit->document()->isModified());
-    const QString display = modified ? (base + QStringLiteral(" *")) : base;
+    QString display = modified ? (base + QStringLiteral(" *")) : base;
+    const QString leftPath = tab->property(PROP_FILE_PATH).toString();
+    QString tip = leftPath;
+    if (tab->property(PROP_DIFF_MODE).toBool()) {
+        QString peerLabel = tab->property(PROP_DIFF_PEER_LABEL).toString();
+        if (peerLabel.isEmpty())
+            peerLabel = QStringLiteral("(Empty)");
+        TextEdit *diffEdit = diffEditAt(index);
+        const bool peerMod = (diffEdit && diffEdit->document()->isModified());
+        const QString peerDisplay = peerMod ? (peerLabel + QStringLiteral(" *")) : peerLabel;
+        display += QStringLiteral(" ↔ ") + peerDisplay;
+        const QString peerPath = tab->property(PROP_DIFF_PEER_PATH).toString();
+        if (!peerPath.isEmpty()) {
+            tip = tip.isEmpty()
+                ? (QStringLiteral("↔ ") + peerPath)
+                : (tip + QStringLiteral("\n↔ ") + peerPath);
+        }
+    }
     if (m_tabWidget->tabText(index) != display)
         m_tabWidget->setTabText(index, display);
+    if (m_tabWidget->tabToolTip(index) != tip)
+        m_tabWidget->setTabToolTip(index, tip);
     if (index == m_tabWidget->currentIndex())
         setWindowTitle(display + QStringLiteral(" - TestBuffer"));
 }
@@ -1281,11 +2068,19 @@ void MainWindow::onSwitchToAltFile()
 void MainWindow::onSwitchPane()
 {
     TextEdit *edit = currentTextEdit();
+    TextEdit *diffEdit = currentDiffEdit();
     MarkdownPreview *preview = currentPreviewEdit();
-    if (!edit && !preview)
-        return;
     QWidget *fw = QApplication::focusWidget();
     const bool focusInEdit = edit && fw && (fw == edit || edit->isAncestorOf(fw));
+    if (diffEdit && diffEdit->isVisible()) {
+        if (focusInEdit)
+            diffEdit->setFocus();
+        else if (edit)
+            edit->setFocus();
+        return;
+    }
+    if (!edit && !preview)
+        return;
     if (focusInEdit && preview && preview->isVisible()) {
         preview->setFocus();
     } else if (edit) {
@@ -1344,21 +2139,21 @@ void MainWindow::onClose()
 
 void MainWindow::onUndo()
 {
-    if (TextEdit *edit = currentTextEdit())
+    if (TextEdit *edit = activeTextEdit())
         edit->undo();
     updateUndoRedoEnabled();
 }
 
 void MainWindow::onRedo()
 {
-    if (TextEdit *edit = currentTextEdit())
+    if (TextEdit *edit = activeTextEdit())
         edit->redo();
     updateUndoRedoEnabled();
 }
 
 void MainWindow::updateUndoRedoEnabled()
 {
-    TextEdit *edit = currentTextEdit();
+    TextEdit *edit = activeTextEdit();
     ui->action_Undo->setEnabled(edit && edit->document()->canUndo());
     ui->action_Redo->setEnabled(edit && edit->document()->canRedo());
 }
@@ -1369,10 +2164,10 @@ void MainWindow::applyLineSpacing(int percent)
     if (!m_tabWidget)
         return;
     for (int i = 0; i < m_tabWidget->count(); ++i) {
-        auto *splitter = qobject_cast<QSplitter *>(m_tabWidget->widget(i));
-        auto *edit = splitter ? dynamic_cast<TextEdit *>(splitter->widget(0)) : nullptr;
-        if (edit)
+        if (TextEdit *edit = textEditAt(i))
             edit->setLineSpacing(qRound(edit->fontMetrics().height() * m_lineSpacingPercent / 100.0));
+        if (TextEdit *de = diffEditAt(i))
+            de->setLineSpacing(qRound(de->fontMetrics().height() * m_lineSpacingPercent / 100.0));
     }
 }
 
@@ -1384,12 +2179,15 @@ void MainWindow::applyColors(const QColor &heading, const QColor &emphasis, cons
     if (!m_tabWidget)
         return;
     for (int i = 0; i < m_tabWidget->count(); ++i) {
-        auto *splitter = qobject_cast<QSplitter *>(m_tabWidget->widget(i));
-        auto *edit = splitter ? dynamic_cast<TextEdit *>(splitter->widget(0)) : nullptr;
-        if (edit) {
+        if (TextEdit *edit = textEditAt(i)) {
             edit->setHeadingColor(m_headingColor);
             edit->setEmphasisColor(m_emphasisColor);
             edit->setSearchMatchColor(m_searchMatchColor);
+        }
+        if (TextEdit *de = diffEditAt(i)) {
+            de->setHeadingColor(m_headingColor);
+            de->setEmphasisColor(m_emphasisColor);
+            de->setSearchMatchColor(m_searchMatchColor);
         }
     }
 }
@@ -1420,17 +2218,20 @@ void MainWindow::applyEditorFont(const QString &family, int pointSize)
     m_editorFontSize = qBound(3, pointSize, 64);
     if (!m_tabWidget)
         return;
+    auto applyTo = [this](TextEdit *edit) {
+        if (!edit) return;
+        QFont f = edit->font();
+        if (!m_editorFontFamily.isEmpty())
+            f.setFamily(m_editorFontFamily);
+        f.setPointSize(m_editorFontSize);
+        edit->setEditorFont(f);
+        edit->setLineSpacing(qRound(edit->fontMetrics().height() * m_lineSpacingPercent / 100.0));
+    };
     for (int i = 0; i < m_tabWidget->count(); ++i) {
-        auto *splitter = qobject_cast<QSplitter *>(m_tabWidget->widget(i));
-        auto *edit = splitter ? dynamic_cast<TextEdit *>(splitter->widget(0)) : nullptr;
-        if (edit) {
-            QFont f = edit->font();
-            if (!m_editorFontFamily.isEmpty())
-                f.setFamily(m_editorFontFamily);
-            f.setPointSize(m_editorFontSize);
-            edit->setEditorFont(f);
-            edit->setLineSpacing(qRound(edit->fontMetrics().height() * m_lineSpacingPercent / 100.0));
-        }
+        applyTo(textEditAt(i));
+        applyTo(diffEditAt(i));
+        if (QWidget *w = m_tabWidget->widget(i); w && w->property(PROP_DIFF_MODE).toBool())
+            scheduleDiffUpdate(w);
     }
 }
 
@@ -1718,7 +2519,7 @@ void MainWindow::onOpen()
         this,
         tr("Open File"),
         m_lastDir,
-        tr("All Files (*);;Text Files (*.txt *.md *.cpp *.h)"));
+        tr("Markdown Files (*.md);;Text Files (*.txt);;All Files (*)"));
     if (filePath.isEmpty())
         return;
 

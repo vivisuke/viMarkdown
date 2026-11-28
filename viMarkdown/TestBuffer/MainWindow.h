@@ -41,8 +41,16 @@ protected:
 private:
     TextEdit *addEditorTab(const QString &title, const QString &filePath = QString());
     TextEdit *textEditAt(int index) const;
+    TextEdit *diffEditAt(int index) const;
     TextEdit *currentTextEdit() const;
+    TextEdit *currentDiffEdit() const;
+    TextEdit *activeTextEdit() const;
     MarkdownPreview *currentPreviewEdit() const;
+    void onToggleDiffMode(bool checked);
+    void onDiffWithFile();
+    void onDiffWithClipboard();
+    void scheduleDiffUpdate(QWidget *tab);
+    void recomputeDiffForTab(QWidget *tab);
     int findTabByFilePath(const QString &cleanPath) const;
     bool saveTab(int index, const QString &explicitPath = QString());
     bool maybeSaveTab(int index);
@@ -128,6 +136,9 @@ private:
     bool m_viKeybind = false;
     bool m_keisenMode = false;
     bool m_thickKeisen = false;
+    QAction *m_actDiffMode = nullptr;
+    QTimer *m_diffTimer = nullptr;
+    QPointer<QWidget> m_pendingDiffTab;
     QLineEdit *m_cmdLine = nullptr;
     QComboBox *m_searchCB = nullptr;
     QAction *m_actIgnoreCase = nullptr;

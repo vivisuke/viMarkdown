@@ -205,6 +205,7 @@ public:
 	QString	m_diffPeerTitle;		//	diff相手タイトル
 	//QPixmap				*m_mmPixmap = nullptr;	//	ミニマップ用画像
 	QFrame				*m_headerWidget = nullptr;
+	QLabel				*m_titleLabel = nullptr;
 	QLabel				*m_diffviewLabel = nullptr;
 	MainWindow			*m_mainWindow;
 	MarkdownEditor		*m_focusView = nullptr;	//	フォーカスを持っているMarkdownEditorへのポインタ

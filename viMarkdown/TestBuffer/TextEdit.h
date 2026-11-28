@@ -7,7 +7,33 @@
 #include <QAbstractScrollArea>
 #include <QColor>
 #include <QRegularExpression>
+#include <QVector>
 #include <functional>
+
+enum DiffLineFlag : uchar {
+	DIFF_NONE = 0,
+	DIFF_ADDED = 1,		//	片側のみに存在する行（挿入/削除）
+	DIFF_MODIFIED = 2,	//	両側で異なる変更行
+	DIFF_DELETED = 3,	//	相手側のみに存在する行のダミー行
+	DIFF_PADDING = 4,	//	変更行の高さ合わせ用パディング行
+};
+
+struct DiffWordRange {
+	int start = 0;		//	論理行内の開始オフセット
+	int length = 0;		//	長さ
+};
+
+struct DiffLineInfo {
+	uchar flag = DIFF_NONE;
+	QVector<DiffWordRange> ranges;	//	単語差分ハイライト範囲
+	QVector<int> gaps;				//	相手側のみにある単語の欠落位置（論理行内文字位置）
+};
+
+struct DiffDisplayRow {
+	int line = -1;		//	論理行番号（ダミー行は -1）
+	int seg = 0;		//	折り返し段番号（0..）
+	uchar flag = DIFF_NONE;
+};
 
 //----------------------------------------------------------------------
 //	TextEdit: QPlainTextEdit に対応する最小限のプレーンテキスト編集ウィジェット
@@ -103,12 +129,19 @@ public:
 	bool isKeisenMode() const { return m_keisenMode; }
 	void setThickKeisen(bool thick) { m_thickKeisen = thick; }
 	bool isThickKeisen() const { return m_thickKeisen; }
+	void setDiffMode(bool enabled, bool isRightPane = false);
+	bool isDiffMode() const { return m_diffMode; }
+	bool isDiffRightPane() const { return m_diffRightPane; }
+	void setDiffData(QVector<DiffDisplayRow> rows, QVector<DiffLineInfo> lineInfos);
+	void clearDiffData();
+	int visibleLineCount() const { return pageLines(); }
 	void syncImeToViMode();
 	void enterInsertModeFromIme();
 	void onSaved();
 	void setTextChangedCallback(std::function<void()> cb) { m_onTextChanged = std::move(cb); }
 	void setCursorChangedCallback(std::function<void()> cb) { m_onCursorChanged = std::move(cb); }
 	void setFontSizeChangeCallback(std::function<void(int)> cb) { m_onFontSizeChange = std::move(cb); }
+	void setLayoutChangedCallback(std::function<void()> cb) { m_onLayoutChanged = std::move(cb); }
 	QVariant inputMethodQuery(Qt::InputMethodQuery query) const override;
 
 protected:
@@ -147,6 +180,9 @@ private:
 	void ensureCursorVisible();
 	void updateLineNumberAreaGeometry();
 	void afterChange(bool textChanged = false);	//	編集・移動後のスクロール追随と再描画
+	int totalDisplayRows() const;
+	int displayRowForViewLine(int viewLine) const;
+	int viewLineForDisplayRow(int displayRow) const;
 
 	TextDocument m_doc;
 	TextCursor m_cursor;
@@ -172,10 +208,16 @@ private:
 	bool m_caretVisible = true;
 	bool m_keisenMode = false;
 	bool m_thickKeisen = false;
+	bool m_diffMode = false;
+	bool m_diffRightPane = false;
+	QVector<DiffDisplayRow> m_diffRows;
+	QVector<DiffLineInfo> m_diffLineInfos;
+	QVector<int> m_viewLineToDisplayRow;
 	ViEngine m_vi;
 	std::function<void()> m_onTextChanged;
 	std::function<void()> m_onCursorChanged;
 	std::function<void(int)> m_onFontSizeChange;
+	std::function<void()> m_onLayoutChanged;
 };
 
 //----------------------------------------------------------------------

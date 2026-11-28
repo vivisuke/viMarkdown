@@ -335,6 +335,7 @@ void MainWindow::load_settings() {
 }
 void MainWindow::save_settings() {
     QSettings settings;
+    settings.setValue(KEY_DEFAULT_DIR, g.m_defaultDir);
     settings.setValue(KEY_VI_KEYBINDINGS, g.m_viKeybindings);
     settings.setValue(KEY_IGNORE_CASE, g.m_ignoreCase);
     settings.setValue(KEY_REGEXP, g.m_regexp);
@@ -590,7 +591,13 @@ void MainWindow::onAction_Replace() {
 		updateSearchOptions();
 	}
 }
-void MainWindow::do_grep(const QString &searchText, const QString &dirPath, bool grepSubDir) {
+bool MainWindow::do_grep(const QString &searchText, const QString &dirPath, bool grepSubDir) {
+	if( !QDir(dirPath).exists() ) {
+		QString msg = tr("Directory does not exist: %1").arg(dirPath);
+		do_output(msg + "\n");
+		statusBar()->showMessage(msg, 5000);
+		return false;
+	}
 	QStringList filters;
     filters << "*.md";
     auto ic = g.m_ignoreCase ? Qt::CaseInsensitive : Qt::CaseSensitive;
@@ -602,7 +609,7 @@ void MainWindow::do_grep(const QString &searchText, const QString &dirPath, bool
 			QString msg = tr("Invalid regular expression: %1").arg(re.errorString());
 			do_output(msg + "\n");
 			statusBar()->showMessage(msg, 5000);
-			return;
+			return false;
 		}
     }
     do_output(QString(tr("Grepping '%1' in *.md under '%2' ...\n")).arg(searchText).arg(dirPath));
@@ -667,6 +674,7 @@ void MainWindow::do_grep(const QString &searchText, const QString &dirPath, bool
         file.close();
     }
 #endif
+    return true;
 }
 void MainWindow::onAction_Grep() {
 	GrepDialog dlg(m_searchHist, m_grepDirHist, this);
@@ -692,14 +700,15 @@ void MainWindow::onAction_Grep() {
 			m_grepDirHist.removeDuplicates();	//	重複削除
 			while( m_grepDirHist.size() > 20 ) m_grepDirHist.pop_back();
 			m_nMatchLines = m_nGrepFiles = 0;
-			do_grep(searchText, dirPath, dlg.isGrepSubDir());
-		    do_output(QString(tr("\nGrepped '%1' in *.md under '%2'.\n")).arg(searchText).arg(dirPath));
-		    do_output(QString(tr("%1 lines matches in %2 files.")).arg(m_nMatchLines).arg(m_nGrepFiles));
+			if( do_grep(searchText, dirPath, dlg.isGrepSubDir()) ) {
+			    do_output(QString(tr("\nGrepped '%1' in *.md under '%2'.\n")).arg(searchText).arg(dirPath));
+			    do_output(QString(tr("%1 lines matches in %2 files.")).arg(m_nMatchLines).arg(m_nGrepFiles));
 
-			DocWidget *docWidget = getCurDocWidget();
-			if( docWidget != nullptr )
-				docWidget->m_editor->highlightSearchText(searchText);
-			ui->plainTextEdit->highlightSearchText(searchText);
+				DocWidget *docWidget = getCurDocWidget();
+				if( docWidget != nullptr )
+					docWidget->m_editor->highlightSearchText(searchText);
+				ui->plainTextEdit->highlightSearchText(searchText);
+			}
 		}
 	}
 }
@@ -1080,6 +1089,7 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 	settings.setValue("geometry", saveGeometry()); // 位置・サイズ
 	settings.setValue("windowState", saveState()); // ツールバー・ドックの状態
 	settings.endGroup();
+	save_settings();
 	//
 	event->accept();
 }
@@ -1255,7 +1265,7 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	connect(diffview, &MarkdownEditor::changeFontSize, this, &MainWindow::onChangeEditorFontSize);
 	connect(diffview->document(), &QTextDocument::modificationChanged, this, &MainWindow::onDiffPeerModificationChanged);
 	QTextBlock block = diffview->document()->begin();
-	setPhysicalLine(editor, block, 1, 0);
+	setPhysicalLine(diffview, block, 1, 0);
 	diffview->setDiffMode(true);
 	//diffview->setLineWrapMode(QPlainTextEdit::NoWrap);
 	connect(diffview, &MarkdownEditor::textChanged, this, &MainWindow::onDiffViewChanged);
@@ -1279,7 +1289,7 @@ DocWidget *MainWindow::newTabWidget(const QString& title, const QString& fullPat
 	auto* headerLayout = new QHBoxLayout(headerWidget);
     headerLayout->setContentsMargins(0, 0, 0, 0);
     //QFileInfo fi(fullPath);
-	auto* titleLabel = new QLabel(fi.fileName(), headerWidget);
+	auto* titleLabel = docWidget->m_titleLabel = new QLabel(fi.fileName(), headerWidget);
     titleLabel->setStyleSheet("font-weight: bold; color: #333;");
 	docWidget->m_diffviewLabel = new QLabel("", headerWidget);
     docWidget->m_diffviewLabel->setStyleSheet("font-weight: bold; color: #333;");
@@ -1464,54 +1474,6 @@ void MainWindow::onPrvPosContextChanged(const PosContext& context, const PosCont
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
 	docWidget->m_editor->setCursorByContext(context, acontext);
-}
-//	ビューワ → エディタ カーソル位置同期
-void MainWindow::onPreviewCurPosChanged() {		//	MarkdownPreview でカーソルが移動した
-	if( m_processing != 0 ) return;		//	再入禁止
-	//##qDebug() << "MainWindow::onPreviewCurPosChanged()";
-	DocWidget *docWidget = getCurDocWidget();
-	if( docWidget == nullptr ) return;
-	if( docWidget->m_preview->isProcessing() ) return;
-	++m_processing;
-	QTextCursor cursor = docWidget->m_preview->textCursor();		//	ビューワカーソル
-	QTextBlock b0 = cursor.block();
-	while( blockType(b0) != BT_HEADING ) {		//	見出し行まで移動
-		b0 = b0.previous();
-		if( !b0.isValid() ) {
-			b0 = cursor.document()->firstBlock();
-			break;
-		}
-	}
-	//auto headingList = docWidget->m_preview->
-	QTextBlock block = cursor.block();
-	QString pat = block.text().mid(cursor.position() - block.position(), 3);
-	int curBlockNum = cursor.blockNumber();
-	bool tail = false;
-	if( pat.isEmpty() ) {
-		tail = true;
-		pat = block.text().right(3);
-	}
-	int nth = 1;
-	while( block.isValid() && blockType(block) != BT_HEADING ) block = block.previous();
-	if( !block.isValid() ) block = docWidget->m_editor->document()->begin();		//	最初のブロック
-	if( !tail ) {
-		QTextCursor cur = cursor;
-		cur.setPosition(block.position());
-		for(;;) {
-			cur = docWidget->m_preview->document()->find(pat, cur);
-			if( cur.isNull() || cur.position() >= cursor.position() ) break;
-			++nth;
-		}
-	} else {
-		while( block.blockNumber() < curBlockNum ) {
-			if( block.text().endsWith(pat) )
-				++nth;
-			block = block.next();
-			if( !block.isValid() ) break;
-		}
-	}
-	docWidget->m_editor->setCursorAtNthPat(cursor.blockNumber(), pat, nth, tail);
-	--m_processing;
 }
 void MainWindow::zoomIn() {
 	DocWidget *docWidget = getCurDocWidget();
@@ -2095,12 +2057,17 @@ void MainWindow::onAction_Help() {
 	}
 #endif
 //#endif
-	if( g.m_japanese )
-		dir.cd("docs/ja");
-	else
-		dir.cd("docs");
-	//##qDebug() << "helpdir = " << dir.path();
-	do_open("", dir.path() + "/help.md", QString(), true);
+	const QString relDir = g.m_japanese ? QStringLiteral("docs/ja") : QStringLiteral("docs");
+	if( !dir.cd(relDir) ) {
+		QMessageBox::warning(this, tr("Help"), tr("Help directory not found:\n%1/%2").arg(dir.path(), relDir));
+		return;
+	}
+	const QString helpPath = dir.filePath(QStringLiteral("help.md"));
+	if( !QFileInfo::exists(helpPath) ) {
+		QMessageBox::warning(this, tr("Help"), tr("Help file not found:\n%1").arg(helpPath));
+		return;
+	}
+	do_open("", helpPath, QString(), true);
 }
 void MainWindow::onAction_Language() {
 	LangDialog dlg(this);
@@ -2144,7 +2111,7 @@ void MainWindow::onAction_New() {
     newWin->setAttribute(Qt::WA_DeleteOnClose);		// ウィンドウが閉じられたときにメモリを自動解放
     newWin->restoreGeometry(this->saveGeometry());
     QPoint newPos = newWin->pos() + QPoint(20*nwin, 20*nwin);
-    ++nwin;
+    nwin = (nwin % 10) + 1;
     newWin->move(newPos);
     newWin->show();
 #else
@@ -2323,7 +2290,6 @@ void MainWindow::do_load(const QString& fullPath) {
 	docWidget->setModified(false);
 	ui->tabWidget->setTabText(tix, docWidget->m_title);
 	updateUndoRedoEnabled();
-	close_empty_doc();
 }
 void MainWindow::removeTopLevelItem(DocWidget* docWidget) {
 	QTreeWidgetItem *top = findTopLevelItemByFullPath(docWidget->m_title, docWidget->m_fullPath);
@@ -2353,6 +2319,7 @@ void MainWindow::do_open_pl(const QString fullPath, int ln) {		//	ln: 0 orgin
 	DocWidget *docWidget = getCurDocWidget();;
 	if( docWidget == nullptr ) return;
 	QTextBlock block = docWidget->m_editor->document()->findBlockByNumber(ln);
+	if( !block.isValid() ) return;
 	QTextCursor cursor(block);
 	docWidget->m_editor->setTextCursor(cursor);
 	docWidget->m_editor->ensureCursorVisible();
@@ -2532,6 +2499,8 @@ bool MainWindow::do_save(bool fDialog, int ix) {
 		docWidget->m_title = title2;
 		ui->tabWidget->setTabText(ix, docWidget->m_title);
 		ui->tabWidget->setTabToolTip(ix, fullPath);
+		if( docWidget->m_titleLabel != nullptr )
+			docWidget->m_titleLabel->setText(fileInfo.fileName());
 		QTreeWidgetItem *top = findTopLevelItemByFullPath(oldTitle, oldFullPath);
 		if( top != nullptr ) {
 			top->setText(0, docWidget->m_title);
@@ -3242,6 +3211,8 @@ void MainWindow::insertInline(const QString& delimiter) {
 		// ブロック番号が異なる場合＝複数行選択されている場合は無視
 		if (startBlock.blockNumber() != endBlock.blockNumber())
 			return;
+		if (docWidget->m_diffMode && isDummyLine(mdEditor, startBlock))
+			return;
 		if( isWrappedWith(cursor, delimiter) ) {
 			QString newText = cursor.selectedText();
 		    int start = cursor.selectionStart() - delimiter.size();
@@ -3256,6 +3227,8 @@ void MainWindow::insertInline(const QString& delimiter) {
 			//cursor.insertText(newText);
 		}
 	} else {
+		if (docWidget->m_diffMode && isDummyLine(mdEditor, cursor.block()))
+			return;
 		mdEditor->do_insertText(cursor, delimiter + delimiter);
 		//cursor.insertText(delimiter + delimiter);
 		cursor.movePosition(QTextCursor::Left, QTextCursor::MoveAnchor, delimiter.length());
@@ -3336,6 +3309,7 @@ void MainWindow::onAction_Heading() {
 	if( docWidget->m_diffMode && QApplication::focusWidget() == docWidget->m_diffview )
 		editor = docWidget->m_diffview;
 	QTextCursor cursor = editor->textCursor();
+	if( docWidget->m_diffMode && isDummyLine(editor, cursor.block()) ) return;
 	const QString buf = cursor.block().text();
 	cursor.movePosition(QTextCursor::StartOfBlock);
 	if( !buf.startsWith("#") ) {	//	ヘッダ行でない場合
@@ -3369,7 +3343,11 @@ void MainWindow::onAction_Strikethrough() {
 void MainWindow::onAction_Link() {
 	DocWidget *docWidget = getCurDocWidget();
 	if( docWidget == nullptr ) return;
-	docWidget->m_editor->make_link();
+	MarkdownEditor *editor = docWidget->m_editor;
+	if( docWidget->m_diffMode && QApplication::focusWidget() == docWidget->m_diffview )
+		editor = docWidget->m_diffview;
+	if( docWidget->m_diffMode && isDummyLine(editor, editor->textCursor().block()) ) return;
+	editor->make_link();
 }
 void MainWindow::onAction_AlignCenter() {
 	DocWidget *docWidget = getCurDocWidget();
@@ -3582,6 +3560,7 @@ void MainWindow::onTreeCurrentItemChanged(QTreeWidgetItem *current, QTreeWidgetI
 			int ln = current->data(0, Qt::UserRole).toInt();			//	行番号　0 org.
 			//QTextBlock block = mdEditor->document()->findBlockByLineNumber(ln);
 			QTextBlock block = mdEditor->document()->findBlockByNumber(ln);
+			if( !block.isValid() ) return;
 			QTextCursor cursor = mdEditor->textCursor();
 			cursor.setPosition(block.position());
 			mdEditor->setTextCursor(cursor);

@@ -1380,11 +1380,100 @@ int TextEdit::xOfPos(TextDocument::pos_t pos) const
 	return xOfPosInViewLine(mgr.viewLineAtPos(pos), pos);
 }
 
+void TextEdit::setDiffMode(bool enabled, bool isRightPane)
+{
+	m_diffMode = enabled;
+	m_diffRightPane = isRightPane;
+	if( enabled ) {
+		m_doc.lineMgr().unfoldAll();
+	} else {
+		m_diffRows.clear();
+		m_diffLineInfos.clear();
+		m_viewLineToDisplayRow.clear();
+	}
+	updateScrollBars();
+	viewport()->update();
+	m_lineNumberArea->update();
+}
+
+void TextEdit::setDiffData(QVector<DiffDisplayRow> rows, QVector<DiffLineInfo> lineInfos)
+{
+	m_diffRows = std::move(rows);
+	m_diffLineInfos = std::move(lineInfos);
+	const ViewLineMgr &mgr = m_doc.lineMgr();
+	const int nVl = mgr.viewLineCount();
+	m_viewLineToDisplayRow.fill(-1, nVl);
+	for( int r = 0; r < m_diffRows.size(); ++r ) {
+		const DiffDisplayRow &row = m_diffRows[r];
+		if( row.line >= 0 && row.line < mgr.lineCount() && row.seg >= 0 && row.seg < mgr.viewLineCountIn(row.line) ) {
+			const int vl = mgr.lineToViewLine(row.line) + row.seg;
+			if( vl >= 0 && vl < nVl )
+				m_viewLineToDisplayRow[vl] = r;
+		}
+	}
+	updateScrollBars();
+	viewport()->update();
+	m_lineNumberArea->update();
+}
+
+void TextEdit::clearDiffData()
+{
+	m_diffRows.clear();
+	m_diffLineInfos.clear();
+	m_viewLineToDisplayRow.clear();
+	updateScrollBars();
+	viewport()->update();
+	m_lineNumberArea->update();
+}
+
+int TextEdit::totalDisplayRows() const
+{
+	if( m_diffMode && !m_diffRows.isEmpty() )
+		return static_cast<int>(m_diffRows.size());
+	return m_doc.lineMgr().viewLineCount();
+}
+
+int TextEdit::displayRowForViewLine(int viewLine) const
+{
+	if( m_diffMode && !m_diffRows.isEmpty() ) {
+		if( viewLine >= 0 && viewLine < m_viewLineToDisplayRow.size() && m_viewLineToDisplayRow[viewLine] >= 0 )
+			return m_viewLineToDisplayRow[viewLine];
+		return qBound(0, viewLine, static_cast<int>(m_diffRows.size()) - 1);
+	}
+	return viewLine;
+}
+
+int TextEdit::viewLineForDisplayRow(int displayRow) const
+{
+	const ViewLineMgr &mgr = m_doc.lineMgr();
+	if( !m_diffMode || m_diffRows.isEmpty() )
+		return qBound(0, displayRow, qMax(0, mgr.viewLineCount() - 1));
+	const int nRows = static_cast<int>(m_diffRows.size());
+	const int r0 = qBound(0, displayRow, nRows - 1);
+	auto rowToVl = [&](int r) -> int {
+		if( r < 0 || r >= nRows ) return -1;
+		const DiffDisplayRow &row = m_diffRows[r];
+		if( row.line >= 0 && row.line < mgr.lineCount() && row.seg >= 0 && row.seg < mgr.viewLineCountIn(row.line) )
+			return mgr.lineToViewLine(row.line) + row.seg;
+		return -1;
+	};
+	if( int vl = rowToVl(r0); vl >= 0 ) return vl;
+	for( int d = 1; d < nRows; ++d ) {
+		if( int vl = rowToVl(r0 - d); vl >= 0 ) return vl;
+		if( int vl = rowToVl(r0 + d); vl >= 0 ) return vl;
+	}
+	return 0;
+}
+
 TextDocument::pos_t TextEdit::posFromPoint(const QPoint &pt) const
 {
 	const ViewLineMgr &mgr = m_doc.lineMgr();
 	if( mgr.viewLineCount() == 0 ) return 0;
-	int viewLine = verticalScrollBar()->value() + pt.y() / lineHeight();
+	const int total = totalDisplayRows();
+	int dispRow = verticalScrollBar()->value() + pt.y() / lineHeight();
+	if( dispRow < 0 ) dispRow = 0;
+	if( dispRow >= total ) dispRow = total - 1;
+	int viewLine = viewLineForDisplayRow(dispRow);
 	if( viewLine < 0 ) viewLine = 0;
 	if( viewLine >= mgr.viewLineCount() ) viewLine = mgr.viewLineCount() - 1;
 	TextDocument::pos_t s = mgr.viewLineStartPos(viewLine);
@@ -1409,7 +1498,7 @@ TextDocument::pos_t TextEdit::posFromPoint(const QPoint &pt) const
 
 void TextEdit::updateScrollBars()
 {
-	int maxTop = m_doc.lineMgr().viewLineCount() - pageLines();
+	int maxTop = totalDisplayRows() - pageLines();
 	if( maxTop < 0 ) maxTop = 0;
 	QScrollBar *bar = verticalScrollBar();
 	bar->setRange(0, maxTop);
@@ -1428,13 +1517,15 @@ void TextEdit::updateWrapWidth()
 	if( m_doc.lineMgr().lineWidth() != units ) {
 		m_doc.lineMgr().setLineWidth(units);
 		updateScrollBars();
+		if( m_onLayoutChanged )
+			m_onLayoutChanged();
 	}
 }
 
 void TextEdit::ensureCursorVisible()
 {
 	const ViewLineMgr &mgr = m_doc.lineMgr();
-	int cv = mgr.viewLineAtPos(m_cursor.position());
+	int cv = displayRowForViewLine(mgr.viewLineAtPos(m_cursor.position()));
 	QScrollBar *bar = verticalScrollBar();
 	int top = bar->value();
 	if( cv < top )
@@ -1513,6 +1604,34 @@ void TextEdit::lineNumberAreaPaintEvent(QPaintEvent *event)
 		painter.restore();
 	};
 	painter.setPen(palette().color(QPalette::Text));
+	if( m_diffMode && !m_diffRows.isEmpty() ) {
+		const int nRows = static_cast<int>(m_diffRows.size());
+		const QString mark = m_diffRightPane ? QStringLiteral("≪") : QStringLiteral("≫");
+		auto isHunkRow = [](uchar f) {
+			return f == DIFF_ADDED || f == DIFF_MODIFIED || f == DIFF_DELETED;
+		};
+		for( int i = 0; i < rows; ++i ) {
+			const int r = top + i;
+			if( r >= nRows ) break;
+			const DiffDisplayRow &row = m_diffRows[r];
+			if( row.line >= 0 && row.line < mgr.lineCount() ) {
+				const LineMgr::LineState st = mgr.lineState(row.line);
+				if( st != LineMgr::LS_UNMODIFIED ) {
+					const QColor &bg = (st == LineMgr::LS_SAVED) ? kColorSaved : kColorModified;
+					painter.fillRect(0, i * lh, areaW, lh, bg);
+				}
+				if( row.seg == 0 ) {
+					const QString num = QString::number(row.line + 1);
+					painter.drawText(right - fm.horizontalAdvance(num), i * lh + fm.ascent() + 4, num);
+				}
+			}
+			const bool curHunk = isHunkRow(row.flag);
+			const bool prevHunk = (r > 0) && (isHunkRow(m_diffRows[r - 1].flag) || m_diffRows[r - 1].flag == DIFF_PADDING);
+			if( curHunk && !prevHunk )
+				painter.drawText(2, i * lh + fm.ascent() + 4, mark);
+		}
+		return;
+	}
 	for( int i = 0; i < rows; ++i ) {
 		int viewLine = top + i;
 		if( viewLine >= mgr.viewLineCount() ) break;
@@ -1566,8 +1685,10 @@ int TextEdit::logicalLineFromY(int y) const
 	const ViewLineMgr &mgr = m_doc.lineMgr();
 	if( mgr.viewLineCount() == 0 ) return 0;
 	const int lh = lineHeight();
-	int viewLine = verticalScrollBar()->value() + (y >= 0 ? y / lh : (y - lh + 1) / lh);
-	viewLine = qBound(0, viewLine, mgr.viewLineCount() - 1);
+	const int total = totalDisplayRows();
+	int dispRow = verticalScrollBar()->value() + (y >= 0 ? y / lh : (y - lh + 1) / lh);
+	dispRow = qBound(0, dispRow, qMax(0, total - 1));
+	const int viewLine = viewLineForDisplayRow(dispRow);
 	return mgr.viewLineToLine(viewLine);
 }
 
@@ -1727,26 +1848,69 @@ void TextEdit::paintEvent(QPaintEvent *event)
 	};
 
 	painter.fillRect(viewport()->rect(), palette().base());
-	if( m_doc.characterCount() == 0 && m_preedit.isEmpty() ) {
+	if( !m_diffMode && m_doc.characterCount() == 0 && m_preedit.isEmpty() ) {
 		painter.setPen(QColor(0x99, 0x99, 0x99));
 		painter.drawText(LEFT_MARGIN, fm.ascent() + 4, tr("Enter Markdown here..."));
 	}
+	static const QColor kDiffBgDeleted(0xE8, 0xE8, 0xE8);	//	ダミー行・パディング行（明るいグレー）
+	static const QColor kDiffBgAdded(0xFF, 0xEC, 0xEC);		//	片側のみ存在する行（明るい赤）
+	static const QColor kDiffBgModified(0xFF, 0xFF, 0xEC);	//	変更行（明るい黄）
+	static const QColor kDiffBgWord(0xFF, 0xC0, 0xC0);		//	単語差分強調（濃い目の赤）
+	static const QColor kDiffGapColor(0xE0, 0x30, 0x30);	//	相手側のみ単語の欠落線
+	const bool useDiffRows = m_diffMode && !m_diffRows.isEmpty();
+	const int totalRows = totalDisplayRows();
+	const bool mdHL = m_markdownHighlight && !m_diffMode;
 	for( int i = 0; i < rows; ++i ) {
-		int viewLine = top + i;
+		const int dispRow = top + i;
+		if( dispRow >= totalRows ) break;
+		const int y = i * lh;
+		int viewLine = dispRow;
+		uchar diffFlag = DIFF_NONE;
+		if( useDiffRows ) {
+			const DiffDisplayRow &row = m_diffRows[dispRow];
+			diffFlag = row.flag;
+			if( row.line < 0 || row.line >= mgr.lineCount() || row.seg < 0 || row.seg >= mgr.viewLineCountIn(row.line) ) {
+				painter.fillRect(0, y, viewport()->width(), lh, kDiffBgDeleted);
+				continue;
+			}
+			viewLine = mgr.lineToViewLine(row.line) + row.seg;
+			if( diffFlag == DIFF_ADDED )
+				painter.fillRect(0, y, viewport()->width(), lh, kDiffBgAdded);
+			else if( diffFlag == DIFF_MODIFIED )
+				painter.fillRect(0, y, viewport()->width(), lh, kDiffBgModified);
+		}
 		if( viewLine >= mgr.viewLineCount() ) break;
 		ViewLineBlock vb = m_doc.findViewLineByNumber(viewLine);
 		TextDocument::pos_t linePos = vb.position();
-		const int y = i * lh;
 		const int ln = mgr.viewLineToLine(viewLine);
 		const qsizetype segOff = static_cast<qsizetype>(linePos - mgr.lineStartPos(ln));
+		if( useDiffRows && ln < m_diffLineInfos.size() && !m_diffLineInfos[ln].ranges.isEmpty() ) {
+			const TextDocument::pos_t lineStart = mgr.lineStartPos(ln);
+			const TextDocument::pos_t visEnd = linePos + mgr.viewLineLength(viewLine);
+			const auto &wr = m_diffLineInfos[ln].ranges;
+			for( int ri = 0; ri < wr.size(); ++ri ) {
+				const TextDocument::pos_t rs = lineStart + wr[ri].start;
+				const TextDocument::pos_t re = rs + wr[ri].length;
+				if( re <= linePos || rs >= visEnd ) continue;
+				const TextDocument::pos_t s = rs > linePos ? rs : linePos;
+				const TextDocument::pos_t e = re < visEnd ? re : visEnd;
+				int xs = xOfPosInViewLine(viewLine, s);
+				int xe = xOfPosInViewLine(viewLine, e);
+				//	隣接する差分単語の境界に 1px 隙間を空けて区別する（v0.3 #1359）
+				if( ri + 1 < wr.size() && wr[ri].start + wr[ri].length == wr[ri + 1].start && re <= visEnd && xe - xs > 2 )
+					xe -= 1;
+				if( xe > xs )
+					painter.fillRect(xs, y, xe - xs, lh, kDiffBgWord);
+			}
+		}
 		if( ln != cachedLine ) {
 			cachedLine = ln;
 			cachedSpans.clear();
 			cachedSearchMatches.clear();
-			if( m_markdownHighlight || hasSearchHL ) {
+			if( mdHL || hasSearchHL ) {
 				QString logicalText = m_doc.findBlockByNumber(ln).text();
 				if( logicalText.endsWith(QChar('\n')) ) logicalText.chop(1);
-				if( m_markdownHighlight )
+				if( mdHL )
 					cachedSpans = highlightMarkdownLine(logicalText, mgr.lineType(ln), m_headingColor, m_emphasisColor);
 				if( hasSearchHL && !logicalText.isEmpty() ) {
 					auto it = m_searchHighlightRe.globalMatch(logicalText);
@@ -1827,7 +1991,7 @@ void TextEdit::paintEvent(QPaintEvent *event)
 			int xEnd = drawColoredSegment(LEFT_MARGIN, yBase, text, segOff);
 			if( hasNewline )
 				xEnd = drawReturnMark(xEnd + 1);
-			if( m_markdownHighlight && mgr.isFolded(ln)
+			if( mdHL && mgr.isFolded(ln)
 				&& viewLine == mgr.lineToViewLine(ln) + mgr.viewLineCountIn(ln) - 1 ) {
 				const int hiddenCnt = mgr.foldedHiddenCount(ln);
 				if( hiddenCnt > 0 ) {
@@ -1843,10 +2007,22 @@ void TextEdit::paintEvent(QPaintEvent *event)
 				painter.drawText(xEnd + 2, yBase, QStringLiteral("EOF"));
 			}
 		}
+		if( useDiffRows && ln < m_diffLineInfos.size() && !m_diffLineInfos[ln].gaps.isEmpty() ) {
+			const TextDocument::pos_t lineStart = mgr.lineStartPos(ln);
+			const TextDocument::pos_t visEnd = linePos + mgr.viewLineLength(viewLine);
+			const bool isLastSeg = (viewLine == mgr.lineToViewLine(ln) + mgr.viewLineCountIn(ln) - 1);
+			for( int gapOff : m_diffLineInfos[ln].gaps ) {
+				const TextDocument::pos_t gp = lineStart + gapOff;
+				if( gp < linePos ) continue;
+				if( gp > visEnd || (!isLastSeg && gp == visEnd) ) continue;
+				const int gx = xOfPosInViewLine(viewLine, gp);
+				painter.fillRect(gx - 1, y + 2, 2, qMax(4, lh - 4), kDiffGapColor);
+			}
+		}
 	}
 	//	カーソル（フォーカス時は赤 2px 縦棒、非フォーカス時は黒 2px 幅 I ビーム）
 	if( !hasSel ) {
-		int cv = mgr.viewLineAtPos(m_cursor.position());
+		int cv = displayRowForViewLine(mgr.viewLineAtPos(m_cursor.position()));
 		if( cv >= top && cv < top + rows ) {
 			int x = xOfPos(m_cursor.position());
 			if( !m_preedit.isEmpty() )
@@ -2563,7 +2739,7 @@ QVariant TextEdit::inputMethodQuery(Qt::InputMethodQuery query) const
 	case Qt::ImCursorRectangle: {
 		const int lh = lineHeight();
 		const int top = verticalScrollBar()->value();
-		const int cv = mgr.viewLineAtPos(m_cursor.position());
+		const int cv = displayRowForViewLine(mgr.viewLineAtPos(m_cursor.position()));
 		int x = xOfPos(m_cursor.position());
 		if( !m_preedit.isEmpty() )
 			x += fontMetrics().horizontalAdvance(m_preedit.left(m_preeditCursor));
